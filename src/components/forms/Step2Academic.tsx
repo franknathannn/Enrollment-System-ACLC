@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useForm } from "react-hook-form"
 import { useEnrollmentStore } from "@/store/useEnrollmentStore"
 import { supabase } from "@/lib/supabase/client"
@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowRight, ChevronLeft, GraduationCap, School, CalendarDays, Loader2, AlertCircle } from "lucide-react"
+import { ArrowRight, ChevronLeft, GraduationCap, School, CalendarDays, Loader2, Fingerprint, Star, Sparkles, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 export default function Step2Academic() {
   const { formData, updateFormData, setStep } = useEnrollmentStore()
   const [dbSchoolYear, setDbSchoolYear] = useState<string>("")
   const [fetchingYear, setFetchingYear] = useState(true)
+  const headerCanvasRef = useRef<HTMLCanvasElement>(null)
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({ 
     defaultValues: {
@@ -25,6 +27,79 @@ export default function Step2Academic() {
       gwa_grade_10: formData.gwa_grade_10 || ""
     } 
   })
+
+  const allValues = watch();
+  const selectedCategory = watch("student_category");
+  const selectedStrand = watch("strand");
+
+  // --- LOCALIZED HEADER CONSTELLATION ENGINE ---
+  useEffect(() => {
+    const canvas = headerCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let particles: { x: number; y: number; vx: number; vy: number; size: number }[] = [];
+    const mouse = { x: -1000, y: -1000 };
+
+    const init = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      particles = [];
+      for (let i = 0; i < 35; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: (Math.random() - 0.5) * 0.3,
+          size: Math.random() * 1.5 + 0.5
+        });
+      }
+    };
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(59, 130, 246, 0.4)"; 
+      
+      particles.forEach((p) => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        const dx = mouse.x - p.x;
+        const dy = mouse.y - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 100) {
+          ctx.beginPath();
+          ctx.lineWidth = 0.8;
+          ctx.strokeStyle = `rgba(59, 130, 246, ${1 - dist / 100})`;
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.stroke();
+        }
+      });
+      requestAnimationFrame(animate);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    };
+
+    window.addEventListener("resize", init);
+    canvas.addEventListener("mousemove", handleMouseMove);
+    init(); animate();
+
+    return () => {
+      window.removeEventListener("resize", init);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
 
   useEffect(() => {
     async function fetchActiveYear() {
@@ -43,47 +118,74 @@ export default function Step2Academic() {
     fetchActiveYear()
   }, [setValue])
 
-  const selectedCategory = watch("student_category")
-
   const onSubmit = (data: any) => {
     updateFormData(data)
     setStep(3)
-    toast.success("Academic Profile Saved")
+    toast.success("Academic Intelligence Synchronized", {
+      icon: <Sparkles className="text-blue-400" />
+    })
   }
 
-  const onError = () => {
-    toast.error("Please complete all required fields.")
-  }
+  // UPDATED: Muted darker highlights + Intense Glow Tracer on Focus
+  const getFieldClassName = (fieldName: string, isLRN = false) => {
+    const value = (allValues as any)[fieldName];
+    const hasError = (errors as any)[fieldName];
+    const isNotEmpty = value && value.toString().trim() !== "";
+
+    return cn(
+      "h-12 md:h-14 rounded-xl md:rounded-2xl border-2 transition-all duration-300 font-bold outline-none text-white",
+      isLRN ? "font-mono text-base md:text-lg tracking-[0.15em] md:tracking-[0.3em]" : "text-sm md:text-base",
+      // GLOW TRACER Focus state
+      "focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.3)] focus:bg-slate-900/80",
+      hasError 
+        ? "border-red-900/50 bg-red-950/30" 
+        : isNotEmpty 
+          ? "border-blue-900/40 bg-slate-950/60 text-blue-100" // DARKER MUTED HIGHLIGHT
+          : "border-white/5 bg-white/5"
+    );
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-8 animate-in fade-in duration-500 pb-40">
-      <div className="bg-slate-900 rounded-[32px] p-6 text-white flex items-center gap-4 shadow-xl">
-        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
-          <GraduationCap className="text-blue-400" />
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 pb-10">
+      
+      {/* SECTION HEADER: Constellation Engine Applied */}
+      <div className="bg-blue-600/10 rounded-[32px] p-6 border border-blue-500/20 text-white flex items-center gap-5 shadow-2xl relative overflow-hidden group">
+        <canvas ref={headerCanvasRef} className="absolute inset-0 pointer-events-auto z-0" />
+        <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shrink-0 relative z-10 shadow-lg shadow-blue-500/20">
+          <GraduationCap className="text-white w-7 h-7" />
         </div>
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Step 02</p>
-          <h2 className="text-xl font-black tracking-tight uppercase">Academic Information</h2>
+        <div className="relative z-10">
+          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-blue-400 mb-1">Step 02</p>
+          <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase italic text-white leading-none">Academic Background</h2>
         </div>
       </div>
 
-      {/* ROW 1: LRN (Highest Priority) */}
-      <div className="relative z-[100] space-y-2">
-        <Label htmlFor="lrn" className={`font-bold text-xs uppercase tracking-widest ${errors.lrn ? 'text-red-500' : 'text-slate-700'}`}>12-Digit LRN *</Label>
-        <Input 
-          {...register("lrn", { required: "LRN is required", pattern: { value: /^\d{12}$/, message: "Must be 12 digits" } })} 
-          id="lrn"
-          placeholder="Enter 12-digit LRN" 
-          maxLength={12}
-          className={`h-14 rounded-2xl border-2 font-mono text-lg tracking-[0.3em] transition-all ${errors.lrn ? 'border-red-500 bg-red-50' : 'border-slate-100 focus:border-blue-500'}`}
-        />
-        {errors.lrn && <p className="text-red-500 text-[10px] font-black uppercase mt-1 px-1">{errors.lrn.message as string}</p>}
+      {/* ROW 1: LRN */}
+      <div className="relative z-[100] space-y-2 group">
+        <Label htmlFor="lrn" className={cn("font-black text-[10px] uppercase tracking-[0.3em] ml-2 transition-colors group-focus-within:text-blue-400", errors.lrn ? 'text-red-500' : 'text-slate-500')}>Learners Reference Number (LRN) *</Label>
+        <div className="relative">
+          <Fingerprint className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-700 transition-colors group-focus-within:text-blue-400" />
+          <Input 
+            {...register("lrn", { 
+              required: true, 
+              pattern: /^\d{12}$/,
+              onChange: (e) => {
+                // Only allow numbers
+                setValue("lrn", e.target.value.replace(/\D/g, ''));
+              }
+            })} 
+            id="lrn"
+            placeholder="000000000000" 
+            maxLength={12}
+            className={cn("pl-12", getFieldClassName("lrn", true))}
+          />
+        </div>
       </div>
 
-      {/* ROW 2: Student Category (Second Priority) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-[90]">
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-bold text-xs uppercase tracking-widest">Student Category *</Label>
+      {/* ROW 2: Student Category & SY */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 relative z-[90]">
+        <div className="space-y-2 group">
+          <Label className="text-slate-500 font-black text-[10px] uppercase tracking-[0.3em] ml-2 transition-colors group-focus-within:text-blue-400">Intel Classification *</Label>
           <Select 
             onValueChange={(v) => {
               const value = v as "JHS Graduate" | "ALS Passer";
@@ -92,32 +194,34 @@ export default function Step2Academic() {
             }} 
             defaultValue={formData.student_category || "JHS Graduate"}
           >
-            <SelectTrigger className="h-14 rounded-2xl border-2 border-slate-100 font-bold bg-white focus:ring-2 focus:ring-blue-500">
-              <SelectValue placeholder="Select Category" />
+            <SelectTrigger className={cn(
+                "h-12 md:h-14 rounded-xl md:rounded-2xl border-2 font-bold text-sm transition-all text-white focus:ring-0",
+                "focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.3)]",
+                selectedCategory ? "border-blue-900/40 bg-slate-950/60" : "border-white/5 bg-white/5"
+            )}>
+              <SelectValue placeholder="Category" />
             </SelectTrigger>
-            {/* FIX: position="popper" and high z-index keeps menu on top of the Strand field */}
-            <SelectContent position="popper" className="rounded-2xl shadow-2xl border-none z-[999] bg-white min-w-[var(--radix-select-trigger-width)]">
-              <SelectItem value="JHS Graduate" className="font-bold py-3">Junior High School Graduate</SelectItem>
-              <SelectItem value="ALS Passer" className="font-bold py-3">ALS Passer</SelectItem>
+            <SelectContent className="rounded-2xl shadow-2xl border border-white/10 bg-slate-900 text-white">
+              <SelectItem value="JHS Graduate" className="font-bold py-3 focus:bg-blue-600 focus:text-white">JHS Graduate</SelectItem>
+              <SelectItem value="ALS Passer" className="font-bold py-3 focus:bg-blue-600 focus:text-white">ALS Passer</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label className="text-slate-700 font-bold text-xs uppercase tracking-widest">School Year (Locked)</Label>
-          <div className="h-14 rounded-2xl border border-slate-100 bg-slate-50 flex items-center px-4 gap-3 text-slate-900 shadow-inner">
-            {fetchingYear ? <Loader2 size={18} className="animate-spin text-blue-600" /> : <CalendarDays size={18} className="text-blue-600" />}
-            <span className="font-black uppercase tracking-tighter text-sm">
+          <Label className="text-slate-500 font-black text-[10px] uppercase tracking-[0.3em] ml-2">Active Temporal Cycle</Label>
+          <div className="h-12 md:h-14 rounded-xl md:rounded-2xl border border-white/10 bg-slate-950/30 flex items-center px-4 gap-3 text-white shadow-inner">
+            {fetchingYear ? <Loader2 size={16} className="animate-spin text-blue-600" /> : <CalendarDays size={16} className="text-blue-700" />}
+            <span className="font-black uppercase tracking-tighter text-[10px] md:text-xs text-slate-400">
               {fetchingYear ? "Syncing..." : `S.Y. ${dbSchoolYear}`}
             </span>
           </div>
-          <input type="hidden" {...register("school_year")} />
         </div>
       </div>
 
-      {/* ROW 3: Strand Selection (Third Priority) */}
-      <div className="relative z-[80] space-y-2">
-        <Label className={`font-bold text-xs uppercase tracking-widest ${errors.strand ? 'text-red-500' : 'text-slate-700'}`}>Desired Academic Strand *</Label>
+      {/* ROW 3: Strand Selection */}
+      <div className="relative z-[80] space-y-2 group">
+        <Label className={cn("font-black text-[10px] uppercase tracking-[0.3em] ml-2 transition-colors group-focus-within:text-blue-400", errors.strand ? 'text-red-500' : 'text-slate-500')}>Strand Preferrence *</Label>
         <Select 
           onValueChange={(v) => {
             setValue("strand", v, { shouldValidate: true })
@@ -125,70 +229,84 @@ export default function Step2Academic() {
           }} 
           defaultValue={formData.strand}
         >
-          <SelectTrigger className={`h-14 rounded-2xl border-2 font-bold transition-all ${errors.strand ? 'border-red-500 bg-red-50' : 'border-slate-100 text-blue-600 bg-white'}`}>
-            <SelectValue placeholder="Choose your strand" />
+          <SelectTrigger className={cn(
+              "h-12 md:h-14 rounded-xl md:rounded-2xl border-2 font-bold text-sm transition-all text-white focus:ring-0",
+              "focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.3)]",
+              selectedStrand ? "border-blue-900/40 bg-slate-950/60" : "border-white/5 bg-white/5"
+          )}>
+            <SelectValue placeholder="Choose specialized division" />
           </SelectTrigger>
-          {/* FIX: position="popper" ensures it overlaps the Last School field */}
-          <SelectContent position="popper" className="rounded-2xl shadow-2xl border-none z-[999] bg-white min-w-[var(--radix-select-trigger-width)]">
-            <SelectItem value="ICT" className="font-bold py-3">ICT (Information & Communications Technology)</SelectItem>
-            <SelectItem value="GAS" className="font-bold py-3">GAS (General Academic Strand)</SelectItem>
+          <SelectContent className="rounded-2xl shadow-2xl border border-white/10 bg-slate-900 text-white">
+            <SelectItem value="ICT" className="font-bold py-3 focus:bg-blue-600 focus:text-white">Information and Communication Technology (ICT) </SelectItem>
+            <SelectItem value="GAS" className="font-bold py-3 focus:bg-blue-600 focus:text-white">General Academics (GAS)</SelectItem>
           </SelectContent>
         </Select>
-        <input type="hidden" {...register("strand", { required: "Strand selection is required" })} />
-        {errors.strand && <p className="text-red-500 text-[10px] font-black uppercase mt-1 px-1">{errors.strand.message as string}</p>}
       </div>
 
-      {/* ROW 4: Last School (Lower Priority) */}
-      <div className="relative z-[10] space-y-2">
-        <Label htmlFor="last_school" className={`font-bold text-xs uppercase tracking-widest ${errors.last_school_attended ? 'text-red-500' : 'text-slate-700'}`}>Last School Attended *</Label>
+      {/* ROW 4: Last School */}
+      <div className="relative z-[10] space-y-2 group">
+        <Label htmlFor="last_school" className={cn("font-black text-[10px] uppercase tracking-[0.3em] ml-2 transition-colors group-focus-within:text-blue-400", errors.last_school_attended ? 'text-red-500' : 'text-slate-500')}>Previous School *</Label>
         <div className="relative">
-            <School className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.last_school_attended ? 'text-red-400' : 'text-slate-400'}`} />
+            <School className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 transition-colors ${errors.last_school_attended ? 'text-red-400' : 'text-blue-700 group-focus-within:text-blue-400'}`} />
             <Input 
-                {...register("last_school_attended", { required: "School name is required" })} 
+                {...register("last_school_attended", { required: true })} 
                 id="last_school"
-                placeholder="Name of previous school" 
-                className={`h-14 rounded-2xl border-2 pl-12 font-bold transition-all ${errors.last_school_attended ? 'border-red-500 bg-red-50' : 'border-slate-100 focus:border-blue-500'}`}
+                placeholder="PREVIOUS SCHOOL NAME" 
+                className={cn("pl-11 md:pl-12", getFieldClassName("last_school_attended"))}
             />
         </div>
-        {errors.last_school_attended && <p className="text-red-500 text-[10px] font-black uppercase mt-1 px-1">{errors.last_school_attended.message as string}</p>}
       </div>
 
       {/* ROW 5: GWA */}
       {selectedCategory === "JHS Graduate" && (
-        <div className="relative z-[0] space-y-2 animate-in slide-in-from-top-4">
-          <Label htmlFor="gwa" className={`font-bold text-xs uppercase tracking-widest ${errors.gwa_grade_10 ? 'text-red-500' : 'text-slate-700'}`}>Grade 10 GWA *</Label>
-          <Input 
-            {...register("gwa_grade_10", { 
-              required: selectedCategory === "JHS Graduate" ? "GWA is required" : false 
-            })} 
-            id="gwa"
-            type="number" 
-            step="0.01" 
-            placeholder="e.g. 92.50" 
-            className={`h-14 rounded-2xl border-2 font-mono text-lg transition-all ${errors.gwa_grade_10 ? 'border-red-500 bg-red-50' : 'border-slate-100 focus:border-blue-500'}`}
-          />
-          {errors.gwa_grade_10 && <p className="text-red-500 text-[10px] font-black uppercase mt-1 px-1">{errors.gwa_grade_10.message as string}</p>}
+        <div className="relative z-[0] space-y-2 group animate-in slide-in-from-top-4">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="gwa" className={cn("font-black text-[10px] uppercase tracking-[0.3em] ml-2 transition-colors group-focus-within:text-blue-400", errors.gwa_grade_10 ? 'text-red-500' : 'text-slate-500')}>General Weighted Average (GWA) *</Label>
+            {errors.gwa_grade_10 && (
+              <span className="text-[9px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1 animate-in fade-in slide-in-from-right-2">
+                <AlertTriangle size={10} /> {errors.gwa_grade_10.message as string}
+              </span>
+            )}
+          </div>
+          <div className="relative">
+            <Star className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-700 transition-colors group-focus-within:text-blue-400" />
+            <Input 
+              {...register("gwa_grade_10", { 
+                required: selectedCategory === "JHS Graduate",
+                min: { value: 70, message: "Minimum grade is 70.00" },
+                max: { value: 99.99, message: "Grade must be less than 100.00" },
+                valueAsNumber: true
+              })} 
+              id="gwa"
+              type="number" 
+              step="0.01" 
+              placeholder="00.00" 
+              className={cn("pl-12", getFieldClassName("gwa_grade_10"))}
+            />
+          </div>
         </div>
       )}
 
-      {Object.keys(errors).length > 0 && (
-        <div className="p-4 bg-red-50 rounded-2xl border border-red-100 flex items-center gap-3 text-red-600 animate-pulse">
-            <AlertCircle size={18} />
-            <p className="text-[10px] font-black uppercase tracking-widest">Academic Validation Error: Check all required fields.</p>
-        </div>
-      )}
-
-      <div className="flex flex-col gap-4 pt-4">
+      {/* FOOTER ACTIONS */}
+      <div className="pt-10 flex flex-col gap-4">
         <Button 
           type="submit" 
           disabled={fetchingYear}
-          className="w-full h-16 bg-blue-600 hover:bg-blue-700 rounded-2xl text-lg font-black uppercase tracking-tight gap-3 shadow-xl shadow-blue-200 transition-all active:scale-[0.98]"
+          className="h-16 md:h-20 rounded-[32px] bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-all duration-500 active:scale-95 flex items-center justify-center gap-4 group"
         >
-          {fetchingYear ? "Syncing Logic..." : "Next: Family Contacts"} <ArrowRight className="w-6 h-6" />
+          <span className="font-black uppercase text-sm tracking-[0.4em] ml-4 text-white group-hover:text-blue-600">Analyze Step 03</span>
+          <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center group-hover:bg-blue-600 group-hover:scale-110 transition-all">
+            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+          </div>
         </Button>
-        <Button type="button" variant="ghost" onClick={() => setStep(1)} className="text-slate-400 font-bold hover:bg-slate-100 rounded-xl">
-          <ChevronLeft className="w-4 h-4 mr-1" /> Back to Identity
-        </Button>
+
+        <button 
+          type="button" 
+          onClick={() => setStep(1)} 
+          className="text-slate-600 font-black uppercase text-[9px] tracking-[0.4em] flex items-center justify-center gap-2 hover:text-white transition-colors py-4 group"
+        >
+          <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" /> Go Back
+        </button>
       </div>
     </form>
   )

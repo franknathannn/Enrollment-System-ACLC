@@ -74,7 +74,10 @@ export async function deleteAndCollapseSection(sectionId: string, strand: "ICT" 
     // Move students from the NEXT section into the CURRENT section ID
     const { error: moveError } = await supabase
       .from('students')
-      .update({ section_id: currentSectionId })
+      .update({ 
+        section_id: currentSectionId,
+        section: allSections[i].section_name
+      })
       .eq('section_id', nextSectionId)
 
     if (moveError) console.error(`Error shifting students to ${allSections[i].section_name}:`, moveError.message)

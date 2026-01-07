@@ -1,204 +1,583 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { 
- Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea" 
-import { 
- Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter
+ Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from "@/components/ui/dialog"
-import { 
- Eye, Loader2, Search, User, Phone, GraduationCap, 
- ShieldCheck, Trash2, FileDown, RotateCcw, CheckCircle2, 
- UserCircle2, XCircle, Square, CheckSquare, ListRestart,
- Mail, MapPin, Fingerprint, FileText, CalendarDays, ScrollText,
- AlertTriangle, Trash, X, ZoomIn, Maximize2, ExternalLink, 
- RotateCw, Download, RefreshCw
-} from "lucide-react"
+import { Loader2, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
-import { updateApplicantStatus, deleteApplicant } from "@/lib/actions/applicants"
-import { format } from "date-fns"
+import { updateApplicantStatus, deleteApplicant, bulkUpdateApplicantStatus, bulkDeleteApplicants } from "@/lib/actions/applicants"
+import { useTheme } from "@/hooks/useTheme"
+import { StarConstellation } from "./components/StarConstellation"
+import { StudentDossier } from "./components/StudentDossier"
+import { ApplicantsHeader } from "./components/ApplicantsHeader"
+import { ApplicantsFilter } from "./components/ApplicantsFilter"
+import { ApplicantsTable } from "./components/ApplicantsTable"
+import { BulkActionsFloatingBar } from "./components/BulkActionsFloatingBar"
+import { ApplicantModals } from "./components/ApplicantModals"
+import { DocumentViewerModal } from "./components/DocumentViewerModal"
 
 export default function ApplicantsPage() {
+ const { isDarkMode: themeDarkMode } = useTheme()
+ const [isDarkMode, setIsDarkMode] = useState(themeDarkMode)
  const [viewerOpen, setViewerOpen] = useState(false)
  const [viewingFile, setViewingFile] = useState<{url: string, label: string} | null>(null)
- const [rotation, setRotation] = useState(0) // Logic for document rotation
+ const [rotation, setRotation] = useState(0)
  const [students, setStudents] = useState<any[]>([])
  const [config, setConfig] = useState<any>(null)
  const [loading, setLoading] = useState(true)
  const [searchTerm, setSearchTerm] = useState("")
  const [filter, setFilter] = useState<"Pending" | "Accepted" | "Rejected">("Pending")
  const [selectedIds, setSelectedIds] = useState<string[]>([])
+ const [sortBy, setSortBy] = useState<string>("alpha")
+ const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
+
+ const [exitingRows, setExitingRows] = useState<Record<string, boolean>>({})
+ const [hiddenRows, setHiddenRows] = useState<Set<string>>(new Set())
+
+ const [strandStats, setStrandStats] = useState<Record<string, boolean>>({ ICT: false, GAS: false })
+ const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
+ const processingIdsRef = useRef<Set<string>>(new Set())
+
+ // 🔥 NUCLEAR FIX: Per-tab snapshots to track witnessed arrivals
+ const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set())
+ const tabSnapshotsRef = useRef<Map<string, Set<string>>>(new Map())
+ const prevFilterRef = useRef(filter)
+ const isInitialMountRef = useRef(true)
+ const activeTabRef = useRef(filter)
+
+ useEffect(() => {
+   processingIdsRef.current = processingIds
+ }, [processingIds])
+
+ useEffect(() => {
+   setIsDarkMode(themeDarkMode)
+ }, [themeDarkMode])
+
+ useEffect(() => {
+   const handleThemeChange = (e: any) => {
+     setIsDarkMode(e.detail.mode === 'dark')
+   }
+   window.addEventListener('theme-change', handleThemeChange)
+   return () => window.removeEventListener('theme-change', handleThemeChange)
+ }, [])
+
+ const filteredStudents = useMemo(() => {
+  const filtered = students.filter(s => {
+   const matchesStatus = s.status === filter || (filter === 'Accepted' && s.status === 'Approved');
+   const matchesSearch = `${s.first_name} ${s.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) || s.lrn.includes(searchTerm);
+   return matchesStatus && matchesSearch;
+  })
+
+  return filtered.sort((a, b) => {
+    switch (sortBy) {
+      case 'date_old': return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      case 'date_new': return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      case 'age': return (a.age || 0) - (b.age || 0);
+      case 'gender': return a.gender.localeCompare(b.gender);
+      case 'strand_ict': return a.strand === b.strand ? a.last_name.localeCompare(b.last_name) : (a.strand === 'ICT' ? -1 : 1);
+      case 'strand_gas': return a.strand === b.strand ? a.last_name.localeCompare(b.last_name) : (a.strand === 'GAS' ? -1 : 1);
+      case 'gwa_desc': return (parseFloat(b.gwa_grade_10) || 0) - (parseFloat(a.gwa_grade_10) || 0);
+      case 'gwa_asc': return (parseFloat(a.gwa_grade_10) || 0) - (parseFloat(b.gwa_grade_10) || 0);
+      case 'alpha_first': return a.first_name.localeCompare(b.first_name);
+      case 'alpha': default: return a.last_name.localeCompare(b.last_name);
+    }
+  })
+ }, [students, filter, searchTerm, sortBy])
+
+ // 🎯 WITNESSED ARRIVALS: Only animate students who arrive while actively viewing the tab
+ useEffect(() => {
+   // Skip initial mount
+   if (isInitialMountRef.current) {
+     isInitialMountRef.current = false
+     // Initialize snapshot for current tab
+     const initialIds = new Set(filteredStudents.map(s => s.id))
+     tabSnapshotsRef.current.set(filter, initialIds)
+     activeTabRef.current = filter
+     return
+   }
+
+   // 🔥 USER SWITCHED TABS (Manual navigation)
+   if (filter !== prevFilterRef.current) {
+     console.log('🔄 Tab Switch:', prevFilterRef.current, '→', filter)
+     
+     // Save snapshot of OLD tab before leaving
+     const oldTabStudents = students.filter(s => {
+       const matchesStatus = s.status === prevFilterRef.current || 
+                            (prevFilterRef.current === 'Accepted' && s.status === 'Approved')
+       const matchesSearch = `${s.first_name} ${s.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            s.lrn.includes(searchTerm)
+       return matchesStatus && matchesSearch
+     })
+     const oldTabIds = new Set(oldTabStudents.map(s => s.id))
+     tabSnapshotsRef.current.set(prevFilterRef.current, oldTabIds)
+     
+     // Clear hidden/exiting rows when switching (keep processing ones)
+     const currentProcessing = processingIdsRef.current
+     setHiddenRows(prev => {
+       const next = new Set<string>()
+       prev.forEach(id => { if (currentProcessing.has(id)) next.add(id) })
+       return next
+     })
+     setExitingRows(prev => {
+       const next: Record<string, boolean> = {}
+       Object.keys(prev).forEach(id => { if (currentProcessing.has(id)) next[id] = true })
+       return next
+     })
+     
+     // Update refs
+     prevFilterRef.current = filter
+     activeTabRef.current = filter
+     
+     // Initialize snapshot for NEW tab if not exists
+     if (!tabSnapshotsRef.current.has(filter)) {
+       const newTabIds = new Set(filteredStudents.map(s => s.id))
+       tabSnapshotsRef.current.set(filter, newTabIds)
+     }
+     
+     return // Don't animate on manual tab switch
+   }
+
+   // 🎯 DATA CHANGED WHILE ON CURRENT TAB (Witnessed arrivals)
+   const snapshot = tabSnapshotsRef.current.get(filter) || new Set()
+   const currentIds = new Set(filteredStudents.map(s => s.id))
+   
+   // Find NEW students who weren't in snapshot (witnessed arrivals)
+   const newArrivals = filteredStudents
+     .filter(s => !snapshot.has(s.id) && !processingIds.has(s.id))
+     .map(s => s.id)
+
+   if (newArrivals.length > 0) {
+     console.log('🔥 WITNESSED ARRIVALS on', filter, ':', newArrivals)
+     
+     setAnimatingIds(prev => {
+       const next = new Set(prev)
+       newArrivals.forEach(id => next.add(id))
+       return next
+     })
+     
+     // Clear animation after duration
+     const duration = newArrivals.length > 1 ? 600 : 500
+     setTimeout(() => {
+       setAnimatingIds(prev => {
+         const next = new Set(prev)
+         newArrivals.forEach(id => next.delete(id))
+         return next
+       })
+     }, duration)
+   }
+
+   // 🎯 UPDATE SNAPSHOT with current visible students
+   tabSnapshotsRef.current.set(filter, currentIds)
+
+ }, [filteredStudents, filter, students, searchTerm, processingIds])
+
+ // Re-show students if they reappear (cleanup after processing)
+ useEffect(() => {
+  setHiddenRows(prev => {
+    if (prev.size === 0) return prev
+    const next = new Set(prev)
+    let changed = false
+    filteredStudents.forEach(s => {
+      if (next.has(s.id) && !processingIds.has(s.id)) {
+        next.delete(s.id)
+        changed = true
+      }
+    })
+    return changed ? next : prev
+  })
+
+  setExitingRows(prev => {
+    const next = { ...prev }
+    let changed = false
+    filteredStudents.forEach(s => {
+      if (next[s.id] && !processingIds.has(s.id)) {
+        delete next[s.id]
+        changed = true
+      }
+    })
+    return changed ? next : prev
+  })
+ }, [filteredStudents, processingIds])
+
+ const handleExit = useCallback((id: string, callback: () => void) => {
+  setExitingRows(prev => ({ ...prev, [id]: true }))
+  setTimeout(() => {
+    setHiddenRows(prev => { const next = new Set(prev); next.add(id); return next })
+    callback()
+  }, 300)
+ }, [])
 
  // --- MODAL STATES ---
  const [declineModalOpen, setDeclineModalOpen] = useState(false)
  const [activeDeclineStudent, setActiveDeclineStudent] = useState<any>(null)
  const [declineReason, setDeclineReason] = useState("")
+ const [bulkDeclineModalOpen, setBulkDeclineModalOpen] = useState(false)
+ const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false)
 
  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
  const [activeDeleteStudent, setActiveDeleteStudent] = useState<any>(null)
+ const [openStudentDialog, setOpenStudentDialog] = useState<string | null>(null)
 
- // QUICK-CLICK TEMPLATES
- const QUICK_REASONS = [
-  "Blurry 2x2 Photo",
-  "Invalid LRN / Not Found",
-  "Missing Grade 10 Report Card",
-  "Incorrect Strand Selection",
-  "Incomplete Guardian Details"
- ];
+ const fetchStrandStats = useCallback(async () => {
+  const { data: sections } = await supabase
+    .from('sections')
+    .select('strand, capacity, students(status)')
 
- const fetchStudents = useCallback(async () => {
-  setLoading(true)
+  if (sections) {
+    const stats: Record<string, boolean> = {}
+    const strands = ['ICT', 'GAS']
+    
+    strands.forEach(strand => {
+      const strandSecs = sections.filter((s: any) => s.strand === strand)
+      const totalCap = strandSecs.reduce((sum, s) => sum + (s.capacity || 0), 0)
+      const totalEnrolled = strandSecs.reduce((sum, s) => 
+        sum + s.students.filter((st: any) => st.status === 'Approved' || st.status === 'Accepted').length, 0)
+      stats[strand] = totalEnrolled >= totalCap && totalCap > 0
+    })
+    
+    setStrandStats(stats)
+  }
+ }, [])
+
+ const fetchStudents = useCallback(async (isBackground = false) => {
+  if (!isBackground) setLoading(true)
   try {
    const [studentsRes, configRes] = await Promise.all([
-    supabase.from('students').select('*').order('created_at', { ascending: false }),
+    supabase
+      .from('students')
+      .select('id, lrn, first_name, last_name, middle_name, gender, strand, contact_no, phone, email, gwa_grade_10, profile_picture, status, decline_reason, guardian_name, guardian_contact, section_id, school_year, form_138_url, good_moral_url, created_at, cor_url, af5_url, diploma_url, age, civil_status, last_school_attended, guardian_first_name, guardian_middle_name, guardian_last_name, student_category, two_by_two_url, guardian_phone, birth_date, religion, address, updated_at, registrar_feedback, section')
+      .order('created_at', { ascending: false }),
     supabase.from('system_config').select('school_year').single()
    ])
 
    if (studentsRes.error) throw studentsRes.error
+   
    setStudents(studentsRes.data || [])
    if (configRes.data) setConfig(configRes.data)
+   
+   fetchStrandStats()
   } catch (err) {
-   toast.error("Failed to load registrar database")
+   console.error("⚡ Sync Error:", err)
+   if (!isBackground) toast.error("Failed to load registrar database")
   } finally {
-   setLoading(false)
+   if (!isBackground) setLoading(false)
   }
- }, [])
+ }, [fetchStrandStats])
 
- // LIVE UPDATE LOGIC: Supabase Realtime
  useEffect(() => {
   fetchStudents()
 
+  let debounceTimer: NodeJS.Timeout
+
   const channel = supabase
-    .channel('students_realtime')
+    .channel('admin_applicants_realtime')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
-      fetchStudents()
+      clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        fetchStrandStats()
+        fetchStudents(true)
+      }, 100)
     })
-    .subscribe()
+    .on('broadcast', { event: 'student_update' }, () => {
+      clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        fetchStrandStats()
+        fetchStudents(true)
+      }, 100)
+    })
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        fetchStudents(true)
+      }
+    })
 
   return () => {
+    clearTimeout(debounceTimer)
     supabase.removeChannel(channel)
   }
- }, [fetchStudents])
+ }, [fetchStudents, fetchStrandStats])
 
- // --- LOGIC: Status Transitions ---
- const handleStatusChange = async (studentId: string, name: string, status: any, feedback?: string) => {
-  const toastId = toast.loading(`Processing ${name}...`)
+ const handleStatusChange = useCallback(async (studentId: string, name: string, status: any, feedback?: string) => {
+  setProcessingIds(prev => { const next = new Set(prev); next.add(studentId); return next })
+  const toastId = toast.loading(`⚡ Processing ${name}...`)
+  
   try {
+   setExitingRows(prev => ({ ...prev, [studentId]: true }))
+   await new Promise(resolve => setTimeout(resolve, 280))
+   
+   setHiddenRows(prev => { const next = new Set(prev); next.add(studentId); return next })
+   
    const result = await updateApplicantStatus(studentId, status, feedback);
    
    if (result.success) {
     const { data: { user } } = await supabase.auth.getUser();    
     const student = students.find(s => s.id === studentId);
+    
+    const assignedSectionId = result.assignedSectionId;
+    const assignedSectionName = result.assignedSection || 'Unassigned';
+
+    let description = `Manual status transition to ${status}`;
+    if (status === 'Accepted') description = "Student Accepted";
+    else if (status === 'Rejected') description = feedback ? `Student Rejected: ${feedback}` : "Student Rejected";
+    else if (status === 'Pending') description = "Student Returned to Pending";
 
     await supabase.from('activity_logs').insert([{
       admin_id: user?.id,
-      admin_name: user?.user_metadata?.full_name || 'Authorized Admin',
+      admin_name: user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Authorized Admin',
       action_type: status.toUpperCase(),
       student_name: name,
       student_id: studentId,
       student_image: student?.two_by_two_url || student?.profile_2x2_url || student?.profile_picture,
-      details: feedback ? `Rejected: ${feedback}` : `Manual status transition to ${status}`
+      details: description
     }]);
 
-    toast.success(`${name} updated to ${status}`, { id: toastId })
-    setStudents(prev => prev.map(s => s.id === studentId ? { ...s, status: status } : s))
+    const successMsg = assignedSectionId 
+      ? `✨ ${name} → ${assignedSectionName}` 
+      : `✓ ${name} updated to ${status}`;
+      
+    toast.success(successMsg, { id: toastId })
+    
+    setStudents(prev => prev.map(s => s.id === studentId ? { 
+        ...s, 
+        status: status, 
+        section_id: assignedSectionId, 
+        section: assignedSectionName 
+    } : s))
     
     setDeclineModalOpen(false)
     setDeclineReason("")
     setActiveDeclineStudent(null)
    }
   } catch (err: any) {
-   toast.error(`Error: ${err.message}`, { id: toastId })
+   toast.error(`❌ ${err.message}`, { id: toastId })
+   setExitingRows(prev => { const next = { ...prev }; delete next[studentId]; return next })
+   setHiddenRows(prev => { const next = new Set(prev); next.delete(studentId); return next })
+  } finally {
+   setProcessingIds(prev => { const next = new Set(prev); next.delete(studentId); return next })
   }
- }
+ }, [students])
 
- // --- LOGIC: Delete Student (Spam/Troll Cleanup) ---
- const handleConfirmDelete = async () => {
+ const handleConfirmDelete = useCallback(async () => {
   if (!activeDeleteStudent) return;
   const studentId = activeDeleteStudent.id;
   const name = `${activeDeleteStudent.first_name} ${activeDeleteStudent.last_name}`;
-  const toastId = toast.loading(`Purging ${name} from core...`)
+  setProcessingIds(prev => { const next = new Set(prev); next.add(studentId); return next })
+  const toastId = toast.loading(`🗑️ Purging ${name}...`)
   
   try {
+   setExitingRows(prev => ({ ...prev, [studentId]: true }))
+   await new Promise(resolve => setTimeout(resolve, 280))
+   
+   setHiddenRows(prev => { const next = new Set(prev); next.add(studentId); return next })
+   
    const result = await deleteApplicant(studentId);
+   
    if (result.success) {
-    // Remove from UI state immediately
     setStudents(prev => prev.filter(s => s.id !== studentId));
     
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('activity_logs').insert([{
       admin_id: user?.id,
-      admin_name: user?.user_metadata?.full_name || 'Authorized Admin',
+      admin_name: user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Authorized Admin',
       action_type: 'DELETED',
       student_name: name,
-      details: `Student record permanently purged from system.`
+      details: "Deleted from the list"
     }]);
 
-    toast.success(`Record Erased: ${name}`, { id: toastId });
+    toast.success(`✓ Record Erased: ${name}`, { id: toastId });
     setDeleteModalOpen(false);
     setActiveDeleteStudent(null);
    }
   } catch (err: any) {
-   toast.error("Delete failed. Run SQL Policies.")
+   toast.error("❌ Delete failed", { id: toastId })
+   setExitingRows(prev => { const next = { ...prev }; delete next[studentId]; return next })
+   setHiddenRows(prev => { const next = new Set(prev); next.delete(studentId); return next })
+  } finally {
+   setProcessingIds(prev => { const next = new Set(prev); next.delete(studentId); return next })
   }
- }
+ }, [activeDeleteStudent, students])
 
- // --- LOGIC: Bulk Operations ---
- const handleBulkAction = async (newStatus: string) => {
-  const actionLabel = newStatus === 'Pending' ? "Resetting" : "Updating";
-  const toastId = toast.loading(`${actionLabel} ${selectedIds.length} applicants...`)
+ const processBulkUpdate = useCallback(async (newStatus: string, feedback?: string) => {
+  const count = selectedIds.length
+  
+  setProcessingIds(prev => {
+    const next = new Set(prev)
+    selectedIds.forEach(id => next.add(id))
+    return next
+  })
+  
+  const toastId = toast.loading(`⚡ Processing ${count} students...`)
   
   try {
-   const { error } = await supabase.from('students').update({ 
-    status: newStatus === 'Accepted' ? 'Approved' : newStatus,
-    registrar_feedback: null 
-   }).in('id', selectedIds)
-
-   if (error) throw error
+   setExitingRows(prev => {
+     const next = { ...prev }
+     selectedIds.forEach(id => { next[id] = true })
+     return next
+   })
    
+   await new Promise(resolve => setTimeout(resolve, 280))
+
+   setHiddenRows(prev => {
+     const next = new Set(prev)
+     selectedIds.forEach(id => next.add(id))
+     return next
+   })
+
+   const targetStatus = newStatus === 'Accepted' ? 'Approved' : newStatus
+   
+   const result = await bulkUpdateApplicantStatus(selectedIds, targetStatus, feedback);
+
+   if (result.success) {
+     const { data: { user } } = await supabase.auth.getUser();
+     const selectedStudents = students.filter(s => selectedIds.includes(s.id));
+
+     const logEntries = selectedStudents.map(s => ({
+       admin_id: user?.id,
+       admin_name: user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Authorized Admin',
+       action_type: newStatus.toUpperCase(),
+       student_name: `${s.first_name} ${s.last_name}`,
+       student_id: s.id,
+       student_image: s.two_by_two_url || s.profile_2x2_url,
+       details: newStatus === 'Accepted' ? "Student Accepted" : (newStatus === 'Pending' ? "Student Returned to Pending" : `Batch update to ${newStatus}${feedback ? `: ${feedback}` : ''}`)
+     }));
+
+     await supabase.from('activity_logs').insert(logEntries);
+
+     const successfulUpdates = result.results.filter(r => r.success);
+     setStudents(prev => prev.map(s => {
+       const update = successfulUpdates.find(u => u.id === s.id);
+       if (update) {
+         return {
+           ...s,
+           status: targetStatus,
+           section_id: update.assignedSectionId || null,
+           section: update.assignedSection || 'Unassigned'
+         };
+       }
+       return s;
+     }));
+     
+     toast.success(`✨ ${count} students → ${newStatus}`, { id: toastId })
+     
+     setBulkDeclineModalOpen(false)
+     setDeclineReason("")
+   }
+  } catch (err: any) {
+   toast.error("❌ Bulk action failed", { id: toastId })
+   setExitingRows(prev => { const next = { ...prev }; selectedIds.forEach(id => delete next[id]); return next })
+   setHiddenRows(prev => { const next = new Set(prev); selectedIds.forEach(id => next.delete(id)); return next })
+  } finally {
+   setSelectedIds([])
+   setExitingRows(prev => {
+     const next = { ...prev }
+     selectedIds.forEach(id => delete next[id])
+     return next
+   })
+   setHiddenRows(prev => {
+     const next = new Set(prev)
+     selectedIds.forEach(id => next.delete(id))
+     return next
+   })
+   setProcessingIds(prev => {
+     const next = new Set(prev)
+     selectedIds.forEach(id => next.delete(id))
+     return next
+   })
+  }
+ }, [selectedIds, students])
+
+ const processBulkDelete = useCallback(async () => {
+  const count = selectedIds.length
+  setProcessingIds(prev => {
+    const next = new Set(prev)
+    selectedIds.forEach(id => next.add(id))
+    return next
+  })
+  
+  const toastId = toast.loading(`🗑️ Purging ${count} records...`)
+  
+  try {
+   setExitingRows(prev => {
+     const next = { ...prev }
+     selectedIds.forEach(id => { next[id] = true })
+     return next
+   })
+   
+   await new Promise(resolve => setTimeout(resolve, 280))
+
+   setHiddenRows(prev => {
+     const next = new Set(prev)
+     selectedIds.forEach(id => next.add(id))
+     return next
+   })
+
    const { data: { user } } = await supabase.auth.getUser();
    const selectedStudents = students.filter(s => selectedIds.includes(s.id));
    
    const logEntries = selectedStudents.map(s => ({
-    admin_id: user?.id,
-    admin_name: user?.user_metadata?.full_name || 'Authorized Admin',
-    action_type: newStatus.toUpperCase(),
-    student_name: `${s.first_name} ${s.last_name}`,
-    student_id: s.id,
-    student_image: s.two_by_two_url || s.profile_2x2_url,
-    details: `Batch processing update to ${newStatus}`
+     admin_id: user?.id,
+     admin_name: user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Authorized Admin',
+     action_type: 'DELETED',
+     student_name: `${s.first_name} ${s.last_name}`,
+     details: "Batch deletion from database"
    }));
 
-   await supabase.from('activity_logs').insert(logEntries);
+   await Promise.all([
+     bulkDeleteApplicants(selectedIds),
+     supabase.from('activity_logs').insert(logEntries)
+   ])
 
-   setStudents(prev => prev.map(s => selectedIds.includes(s.id) ? { ...s, status: newStatus } : s))
-   setSelectedIds([])
-   toast.success(`Batch Process Complete: ${newStatus}`, { id: toastId })
+   setStudents(prev => prev.filter(s => !selectedIds.includes(s.id)))
+   
+   toast.success(`✓ ${count} records deleted`, { id: toastId })
+   setBulkDeleteModalOpen(false)
   } catch (err: any) {
-   toast.error("Bulk action failed", { id: toastId })
+   toast.error("❌ Bulk deletion failed", { id: toastId })
+   setExitingRows(prev => { const next = { ...prev }; selectedIds.forEach(id => delete next[id]); return next })
+   setHiddenRows(prev => { const next = new Set(prev); selectedIds.forEach(id => next.delete(id)); return next })
+  } finally {
+   setSelectedIds([])
+   setExitingRows(prev => {
+     const next = { ...prev }
+     selectedIds.forEach(id => delete next[id])
+     return next
+   })
+   setHiddenRows(prev => {
+     const next = new Set(prev)
+     selectedIds.forEach(id => next.delete(id))
+     return next
+   })
+   setProcessingIds(prev => {
+     const next = new Set(prev)
+     selectedIds.forEach(id => next.delete(id))
+     return next
+   })
   }
- }
+ }, [selectedIds, students])
 
- const toggleSelect = (id: string) => {
+ const handleBulkAction = useCallback((newStatus: string) => {
+  if (newStatus === 'Rejected') {
+    setBulkDeclineModalOpen(true)
+  } else {
+    processBulkUpdate(newStatus)
+  }
+ }, [processBulkUpdate])
+
+ const toggleSelect = useCallback((id: string) => {
   setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
- }
+ }, [])
 
- const toggleSelectAll = () => {
+ const toggleSelectAll = useCallback(() => {
   if (selectedIds.length === filteredStudents.length) setSelectedIds([])
   else setSelectedIds(filteredStudents.map(s => s.id))
- }
+ }, [selectedIds.length, filteredStudents])
 
- const filteredStudents = students.filter(s => {
-  const matchesStatus = s.status === filter || (filter === 'Accepted' && s.status === 'Approved');
-  const matchesSearch = `${s.first_name} ${s.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) || s.lrn.includes(searchTerm);
-  return matchesStatus && matchesSearch;
- })
+ const selectedStudentForDialog = useMemo(() => {
+  if (!openStudentDialog) return null
+  return filteredStudents.find(s => s.id === openStudentDialog) || students.find(s => s.id === openStudentDialog)
+ }, [openStudentDialog, filteredStudents, students])
 
  const exportToCSV = () => {
   const headers = ["LRN", "Full Name", "Gender", "Strand", "GWA", "Status", "School Year"]
@@ -216,358 +595,131 @@ export default function ApplicantsPage() {
  if (loading && students.length === 0) return (
   <div className="h-screen flex flex-col items-center justify-center gap-4 text-slate-400">
    <Loader2 className="animate-spin text-blue-600 w-10 h-10" />
-   <p className="text-[10px] font-black uppercase tracking-widest text-center">Syncing Admissions Matrix...</p>
+   <p className="text-[10px] font-black uppercase tracking-widest text-center animate-pulse">⚡ Syncing Admissions Matrix...</p>
   </div>
  )
 
  return (
-  <div className="space-y-8 p-8 animate-in fade-in duration-700 pb-32">
-   {/* HEADER SECTION */}
-   <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-    <div>
-     <h1 className="text-5xl font-black tracking-tighter text-slate-900 leading-none uppercase">Admissions</h1>
-     <p className="text-slate-500 font-medium italic mt-2 text-sm md:text-base">
-      Registrar Verification Queue S.Y. {config?.school_year || "..."}
-     </p>
-    </div>
-    
-    <div className="flex items-center gap-3 w-full md:w-auto">
-     <Button onClick={fetchStudents} variant="ghost" className="h-12 w-12 p-0 rounded-2xl text-slate-400 hover:text-blue-600 hover:bg-blue-50">
-        <RefreshCw className={loading ? "animate-spin" : ""} size={20} />
-     </Button>
-     <div className="relative flex-1">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-      <Input 
-       placeholder="Search LRN or Name..." 
-       className="h-12 pl-10 w-full md:w-72 rounded-2xl bg-white shadow-sm border-none font-bold" 
-       value={searchTerm}
-       onChange={(e) => setSearchTerm(e.target.value)}
+  <div className="relative min-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-colors duration-500">
+   <style jsx global>{`
+     body { overflow-y: auto; }
+     ::-webkit-scrollbar { display: none; }
+     * { -ms-overflow-style: none; scrollbar-width: none; }
+   `}</style>
+
+   <StarConstellation />
+   
+   <div className="relative z-10 space-y-6 md:space-y-8 p-4 md:p-8 animate-in fade-in duration-700 pb-32">
+    {(strandStats.ICT || strandStats.GAS) && (
+      <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3 text-amber-500 mb-2 animate-pulse">
+        <AlertTriangle size={20} className="shrink-0" />
+        <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">
+          SYSTEM ALERT: {strandStats.ICT && strandStats.GAS ? "ALL SECTIONS" : (strandStats.ICT ? "ICT STRAND" : "GAS STRAND")} AT FULL CAPACITY. 
+          <span className="opacity-70 block mt-1 font-bold">New applicants cannot be approved until space is available.</span>
+        </p>
+      </div>
+    )}
+
+    <ApplicantsHeader 
+      isDarkMode={isDarkMode}
+      loading={loading}
+      config={config}
+      searchTerm={searchTerm}
+      setSearchTerm={setSearchTerm}
+      fetchStudents={fetchStudents}
+      exportToCSV={exportToCSV}
+    />
+
+    <ApplicantsFilter 
+      isDarkMode={isDarkMode}
+      filter={filter}
+      setFilter={setFilter}
+      students={students}
+      setSelectedIds={setSelectedIds}
+      sortBy={sortBy}
+      setSortBy={setSortBy}
+      sortDropdownOpen={sortDropdownOpen}
+      setSortDropdownOpen={setSortDropdownOpen}
+    />
+
+    <ApplicantsTable 
+      isDarkMode={isDarkMode}
+      filteredStudents={filteredStudents}
+      selectedIds={selectedIds}
+      toggleSelect={toggleSelect}
+      toggleSelectAll={toggleSelectAll}
+      hiddenRows={hiddenRows}
+      exitingRows={exitingRows}
+      animatingIds={animatingIds}
+      setOpenStudentDialog={setOpenStudentDialog}
+      handleExit={handleExit}
+      handleStatusChange={handleStatusChange}
+      setActiveDeclineStudent={setActiveDeclineStudent}
+      setDeclineModalOpen={setDeclineModalOpen}
+      setActiveDeleteStudent={setActiveDeleteStudent}
+      setDeleteModalOpen={setDeleteModalOpen}
+      strandStats={strandStats}
+    />
+   </div>
+
+   {selectedStudentForDialog && (
+    <Dialog open={!!openStudentDialog} onOpenChange={(open) => !open && setOpenStudentDialog(null)}>
+     <DialogContent className="w-[95vw] md:w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[32px] md:rounded-[48px] p-0 border-none shadow-2xl [&>button]:text-red-500">
+      <DialogHeader className="sr-only">
+       <DialogTitle>Profile Detail: {selectedStudentForDialog.first_name} {selectedStudentForDialog.last_name}</DialogTitle>
+       <DialogDescription>Verification matrix for applicant {selectedStudentForDialog.lrn}</DialogDescription>
+      </DialogHeader>
+      <StudentDossier 
+       student={selectedStudentForDialog} 
+       onOpenFile={(url, label) => {
+        setViewingFile({ url, label });
+        setRotation(0);
+        setViewerOpen(true);
+       }}
+       isDarkMode={isDarkMode}
       />
-     </div>
-     <Button onClick={exportToCSV} className="h-12 px-6 rounded-2xl bg-slate-900 text-white font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-200">
-      <FileDown className="mr-2" size={16} /> Export CSV
-     </Button>
-    </div>
-   </div>
-
-   {/* FILTER TABS */}
-   <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-[24px] w-fit">
-    {["Pending", "Accepted", "Rejected"].map((tab: any) => (
-     <button
-      key={tab}
-      onClick={() => { setFilter(tab); setSelectedIds([]); }}
-      className={`px-8 py-3 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all ${
-       filter === tab ? 'bg-white text-blue-600 shadow-md' : 'text-slate-400 hover:text-slate-600'
-      }`}
-     >
-      {tab} ({students.filter(s => s.status === tab || (tab === 'Accepted' && s.status === 'Approved')).length})
-     </button>
-    ))}
-   </div>
-
-   {/* APPLICANT TABLE */}
-   <div className="bg-white rounded-[48px] shadow-2xl shadow-slate-200/50 overflow-hidden border border-slate-100">
-    <Table>
-     <TableHeader className="bg-slate-50/50">
-      <TableRow className="border-none">
-       <TableHead className="w-12 pl-8">
-        <button onClick={toggleSelectAll}>
-         {selectedIds.length === filteredStudents.length && filteredStudents.length > 0 
-          ? <CheckSquare className="text-blue-600" size={18} /> 
-          : <Square className="text-slate-300" size={18} />
-         }
-        </button>
-       </TableHead>
-       <TableHead className="px-6 py-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Applicant Identity</TableHead>
-       {/* NEW: GENDER CATEGORY */}
-       <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">Gender</TableHead>
-       <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">Strand</TableHead>
-       <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">GWA</TableHead>
-       <TableHead className="text-right px-8 font-black uppercase text-[10px] tracking-widest text-slate-400">Actions</TableHead>
-      </TableRow>
-     </TableHeader>
-     <TableBody>
-      {filteredStudents.length === 0 ? (
-       <TableRow><TableCell colSpan={6} className="py-32 text-center text-slate-400 italic">No applicants match this criteria.</TableCell></TableRow>
-      ) : filteredStudents.map((student) => (
-       <TableRow key={student.id} className={`transition-all border-b border-slate-50 group ${selectedIds.includes(student.id) ? 'bg-blue-50/30' : 'hover:bg-slate-50/80'}`}>
-        <TableCell className="pl-8">
-         <button onClick={() => toggleSelect(student.id)}>
-          {selectedIds.includes(student.id) ? <CheckSquare className="text-blue-600" size={18} /> : <Square className="text-slate-200" size={18} />}
-         </button>
-        </TableCell>
-        <TableCell className="px-6 py-5">
-         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 overflow-hidden border-2 border-white shadow-sm shrink-0">
-           <img 
-            src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
-            alt="Avatar" 
-            className="w-full h-full object-cover" 
-           />
-          </div>
-          <div>
-           <div className="font-black text-slate-900 uppercase tracking-tighter text-base leading-none">{student.first_name} {student.last_name}</div>
-           <div className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">LRN: {student.lrn}</div>
-          </div>
-         </div>
-        </TableCell>
-        {/* GENDER COLUMN */}
-        <TableCell className="text-center font-black text-[10px] uppercase text-slate-500">
-            <span className={student.gender === 'Female' ? 'text-pink-500' : 'text-blue-500'}>{student.gender}</span>
-        </TableCell>
-        <TableCell className="text-center">
-         <Badge className={`border-none px-3 py-1 text-[9px] font-black uppercase ${student.strand === 'ICT' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
-          {student.strand}
-         </Badge>
-        </TableCell>
-        <TableCell className="text-center font-black text-slate-900">{student.gwa_grade_10 || 'N/A'}</TableCell>
-        <TableCell className="text-right px-8 space-x-2">
-         <div className="flex items-center justify-end gap-2">
-          <Dialog>
-           <DialogTrigger asChild>
-            <button className="h-9 w-9 p-0 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center"><Eye size={18}/></button>
-           </DialogTrigger>
-           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-[48px] p-0 border-none shadow-2xl">
-            <DialogHeader className="sr-only">
-             <DialogTitle>Profile Detail: {student.first_name} {student.last_name}</DialogTitle>
-             <DialogDescription>Verification matrix for applicant {student.lrn}</DialogDescription>
-            </DialogHeader>
-            <StudentDossier 
-                student={student} 
-                onOpenFile={(url, label) => {
-                    setViewingFile({ url, label });
-                    setRotation(0);
-                    setViewerOpen(true);
-                }}
-            />
-           </DialogContent>
-          </Dialog>
-
-          {student.status !== 'Pending' && (
-           <Button onClick={() => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Pending')} variant="outline" className="h-9 px-4 rounded-xl border-amber-100 bg-amber-50 text-amber-600 font-black text-[9px] uppercase tracking-widest hover:bg-amber-600 hover:text-white transition-all">
-            <RotateCcw size={14} className="mr-2"/> Reset
-           </Button>
-          )}
-
-          {student.status === 'Pending' && (
-           <>
-            <Button onClick={() => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted')} className="h-9 px-4 rounded-xl bg-green-500 hover:bg-green-600 text-white font-black text-[9px] uppercase tracking-widest shadow-lg shadow-green-100">
-             Approve
-            </Button>
-            <Button 
-             onClick={() => {
-              setActiveDeclineStudent(student);
-              setDeclineModalOpen(true);
-             }} 
-             variant="ghost" 
-             className="h-9 px-4 rounded-xl text-red-500 hover:bg-red-50 font-black text-[9px] uppercase tracking-widest"
-            >
-             Decline
-            </Button>
-           </>
-          )}
-
-          <Button 
-           onClick={() => {
-            setActiveDeleteStudent(student);
-            setDeleteModalOpen(true);
-           }} 
-           variant="ghost" 
-           className="h-9 w-9 p-0 rounded-xl text-slate-200 hover:text-red-600 hover:bg-red-50 transition-all flex items-center justify-center"
-          >
-           <Trash2 size={16}/>
-          </Button>
-         </div>
-        </TableCell>
-       </TableRow>
-      ))}
-     </TableBody>
-    </Table>
-   </div>
-
-   {/* --- INTEGRATED HIGH-FIDELITY DOCUMENT VIEWER --- */}
-   <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
-    <DialogContent className="max-w-[95vw] w-full h-[95vh] p-0 rounded-[40px] overflow-hidden border-none shadow-2xl bg-slate-950/95 flex flex-col">
-     {/* HEADER BAR (Prevents title overlap) */}
-     <div className="p-6 bg-slate-900 border-b border-white/5 flex items-center justify-between shrink-0">
-      <div>
-       <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-1">Registrar Inspection Matrix</p>
-       <DialogTitle className="text-white font-black uppercase text-xl leading-none">
-        {viewingFile?.label}
-       </DialogTitle>
-       <DialogDescription className="hidden">High-resolution document view</DialogDescription>
-      </div>
-      <div className="flex gap-3">
-       {/* ROTATE & DOWNLOAD TOOLS */}
-       <Button variant="ghost" size="icon" onClick={() => setRotation(r => (r + 90) % 360)} className="rounded-full bg-white/10 hover:bg-white/20 text-white"><RotateCw size={20}/></Button>
-       <Button variant="ghost" size="icon" onClick={() => window.open(viewingFile?.url, '_blank')} className="rounded-full bg-white/10 hover:bg-white/20 text-white"><Download size={20}/></Button>
-       <Button variant="ghost" size="icon" onClick={() => setViewerOpen(false)} className="rounded-full bg-red-500 hover:bg-red-600 text-white"><X size={20}/></Button>
-      </div>
-     </div>
-
-     {/* INSPECTION AREA */}
-     <div className="flex-1 w-full flex items-center justify-center p-12 overflow-auto custom-scrollbar">
-      {viewingFile?.url.toLowerCase().endsWith('.pdf') ? (
-       <iframe src={viewingFile.url} className="w-full h-full rounded-2xl bg-white border-none" title="PDF Viewer" />
-      ) : (
-       <div className="relative group cursor-zoom-in transition-transform duration-300" style={{ transform: `rotate(${rotation}deg)` }}>
-        <img src={viewingFile?.url} alt="Inspection" className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-500" />
-       </div>
-      )}
-     </div>
-     
-     <div className="p-6 bg-slate-900/50 backdrop-blur-xl border-t border-white/5 flex items-center justify-center shrink-0">
-       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2 text-slate-400 uppercase font-black text-[9px] tracking-widest"><Maximize2 size={12}/> Document Render: Active</div>
-        <div className="w-[1px] h-4 bg-white/10" />
-        <p className="text-white/40 text-[9px] font-bold uppercase tracking-widest italic text-center">Rotate or Download for secondary inspection tools</p>
-       </div>
-     </div>
-    </DialogContent>
-   </Dialog>
-
-   {/* --- MODAL: DECLINE --- */}
-   <Dialog open={declineModalOpen} onOpenChange={setDeclineModalOpen}>
-    <DialogContent className="rounded-[32px] max-w-md p-0 overflow-hidden border-none shadow-2xl">
-     <div className="bg-red-600 p-8 flex items-center gap-4 text-white">
-      <div className="h-12 w-12 rounded-2xl bg-white/20 flex items-center justify-center"><AlertTriangle size={24} /></div>
-      <div><DialogTitle className="text-xl font-black uppercase tracking-tight leading-none">Admission Rejection</DialogTitle><DialogDescription className="text-white/60 text-xs mt-1 font-medium italic">Record why this student was declined.</DialogDescription></div>
-     </div>
-     <div className="p-8 space-y-6 bg-white">
-      <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-       <div className="h-10 w-10 rounded-xl bg-slate-200 overflow-hidden shrink-0"><img src={activeDeclineStudent?.two_by_two_url || activeDeclineStudent?.profile_2x2_url || activeDeclineStudent?.profile_picture} className="w-full h-full object-cover" /></div>
-       <div className="flex flex-col"><span className="text-xs font-black text-slate-900 uppercase leading-none">{activeDeclineStudent?.first_name} {activeDeclineStudent?.last_name}</span><span className="text-[10px] font-bold text-slate-400 mt-1">LRN: {activeDeclineStudent?.lrn}</span></div>
-      </div>
-      <div className="space-y-4">
-       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Quick Reasons</label>
-       <div className="flex flex-wrap gap-2">{QUICK_REASONS.map(reason => (<button key={reason} onClick={() => setDeclineReason(reason)} className="px-3 py-1.5 rounded-lg border border-slate-100 bg-slate-50 text-[9px] font-bold uppercase text-slate-500 hover:border-red-200 hover:text-red-600 transition-all">{reason}</button>))}</div>
-       <div className="pt-2"><label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Registrar Feedback</label><Textarea placeholder="Provide specific feedback..." className="min-h-[100px] mt-2 rounded-2xl border-slate-100 bg-slate-50 focus:ring-red-600 font-bold text-sm resize-none" value={declineReason} onChange={(e) => setDeclineReason(e.target.value)} /></div>
-      </div>
-      <DialogFooter className="flex-col gap-2 sm:flex-col"><Button onClick={() => handleStatusChange(activeDeclineStudent.id, `${activeDeclineStudent.first_name} ${activeDeclineStudent.last_name}`, 'Rejected', declineReason || "Incomplete requirements.")} className="w-full h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-red-100">Confirm Rejection</Button><Button variant="ghost" onClick={() => setDeclineModalOpen(false)} className="w-full h-12 rounded-2xl text-slate-400 font-black uppercase text-[10px]">Cancel</Button></DialogFooter>
-     </div>
-    </DialogContent>
-   </Dialog>
-
-   {/* --- MODAL: DELETE --- */}
-   <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-    <DialogContent className="rounded-[32px] max-w-md p-0 overflow-hidden border-none shadow-2xl">
-     <div className="bg-slate-950 p-8 flex items-center gap-4 text-white border-b border-white/5">
-      <div className="h-12 w-12 rounded-2xl bg-red-600 flex items-center justify-center shadow-lg shadow-red-900/20"><XCircle size={24} /></div>
-      <div><DialogTitle className="text-xl font-black uppercase tracking-tight leading-none">Record Deletion</DialogTitle><DialogDescription className="text-slate-500 text-xs mt-1 font-medium italic">This action is irreversible.</DialogDescription></div>
-     </div>
-     <div className="p-8 space-y-6 bg-white text-center">
-      <div className="p-6 bg-red-50 rounded-[32px] border border-red-100">
-       <p className="text-sm font-bold text-red-900 leading-relaxed text-center">Are you sure you want to permanently erase <br/><span className="underline decoration-2 underline-offset-4">{activeDeleteStudent?.first_name} {activeDeleteStudent?.last_name}</span>?</p>
-       <p className="text-[10px] font-black uppercase text-red-400 mt-2 tracking-widest leading-relaxed">This will purge all documents and database entries.</p>
-      </div>
-      <DialogFooter className="flex-col gap-2 sm:flex-col"><Button onClick={handleConfirmDelete} className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-red-600 text-white font-black uppercase text-[10px] tracking-widest shadow-xl transition-all">Delete Permanently</Button><Button variant="ghost" onClick={() => setDeleteModalOpen(false)} className="w-full h-12 rounded-2xl text-slate-400 font-black uppercase text-[10px]">Cancel</Button></DialogFooter>
-     </div>
-    </DialogContent>
-   </Dialog>
-
-   {/* FLOATING BULK ACTIONS BAR */}
-   {selectedIds.length > 0 && (
-    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-10 duration-500">
-     <div className="bg-slate-900 text-white px-8 py-4 rounded-[32px] shadow-2xl flex items-center gap-8 border border-white/10 backdrop-blur-xl">
-      <div className="flex flex-col"><span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Batch Matrix control</span><span className="text-sm font-black tracking-tight">{selectedIds.length} Selected</span></div>
-      <div className="h-8 w-[1px] bg-white/10" /><div className="flex items-center gap-2"><Button onClick={() => handleBulkAction('Accepted')} className="bg-green-500 hover:bg-green-600 text-white rounded-2xl font-black text-[10px] uppercase h-11 px-6"><CheckCircle2 size={16} className="mr-2"/> Mass Approve</Button><Button onClick={() => handleBulkAction('Pending')} className="bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-[10px] uppercase h-11 px-6"><ListRestart size={16} className="mr-2"/> Reset to Pending</Button><Button onClick={() => handleBulkAction('Rejected')} className="bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black text-[10px] uppercase h-11 px-6"><XCircle size={16} className="mr-2"/> Mass Reject</Button><Button onClick={() => setSelectedIds([])} variant="ghost" className="text-slate-400 hover:text-white font-black text-[10px] uppercase">Cancel</Button></div>
-     </div>
-    </div>
+     </DialogContent>
+    </Dialog>
    )}
+
+   <DocumentViewerModal 
+     viewerOpen={viewerOpen}
+     setViewerOpen={setViewerOpen}
+     viewingFile={viewingFile}
+     rotation={rotation}
+     setRotation={setRotation}
+   />
+
+   <ApplicantModals 
+     isDarkMode={isDarkMode}
+     declineModalOpen={declineModalOpen}
+     setDeclineModalOpen={setDeclineModalOpen}
+     activeDeclineStudent={activeDeclineStudent}
+     declineReason={declineReason}
+     setDeclineReason={setDeclineReason}
+     handleExit={handleExit}
+     handleStatusChange={handleStatusChange}
+     bulkDeclineModalOpen={bulkDeclineModalOpen}
+     setBulkDeclineModalOpen={setBulkDeclineModalOpen}
+     selectedIds={selectedIds}
+     students={students}
+     processBulkUpdate={processBulkUpdate}
+     deleteModalOpen={deleteModalOpen}
+     setDeleteModalOpen={setDeleteModalOpen}
+     activeDeleteStudent={activeDeleteStudent}
+     handleConfirmDelete={handleConfirmDelete}
+     bulkDeleteModalOpen={bulkDeleteModalOpen}
+     setBulkDeleteModalOpen={setBulkDeleteModalOpen}
+     processBulkDelete={processBulkDelete}
+   />
+
+   <BulkActionsFloatingBar 
+     selectedIds={selectedIds}
+     filter={filter}
+     handleBulkAction={handleBulkAction}
+     setBulkDeleteModalOpen={setBulkDeleteModalOpen}
+     setSelectedIds={setSelectedIds}
+   />
   </div>
  )
-}
-
-function StudentDossier({ student, onOpenFile }: { student: any, onOpenFile: (url: string, label: string) => void }) {
- const isJHS = student.student_category?.toLowerCase().includes("jhs") || student.student_category === "Standard";
- const isALS = student.student_category?.toLowerCase().includes("als");
-
- return (
-  <div className="flex flex-col bg-white">
-   <div className="bg-slate-900 p-10 flex flex-col items-center text-center relative overflow-hidden">
-    <div className="absolute top-0 right-0 p-8 flex flex-col gap-2 items-end">
-     <Badge className="bg-blue-600 text-[10px] font-black px-4 py-2 uppercase tracking-widest border-none">{student.student_category || "Standard"}</Badge>
-     <Badge variant="outline" className="text-slate-400 border-slate-700 text-[9px] uppercase font-bold">{student.school_year}</Badge>
-    </div>
-    <div className="relative z-10 mb-6">
-     <div className="w-44 h-44 bg-slate-800 rounded-3xl border-4 border-white/10 overflow-hidden shadow-2xl flex items-center justify-center cursor-zoom-in group" onClick={() => onOpenFile(student.two_by_two_url || student.profile_2x2_url || student.profile_picture, "Applicant 2x2 Image")}>
-      {student.two_by_two_url || student.profile_2x2_url || student.profile_picture ? (<img src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture} alt="2x2" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />) : (<div className="flex flex-col items-center text-slate-500"><User size={48} strokeWidth={1} /><p className="text-[8px] font-bold uppercase mt-2">No Photo Provided</p></div>)}
-     </div>
-    </div>
-    <h2 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">{student.first_name} {student.last_name}</h2>
-    <p className="text-blue-400 font-bold uppercase tracking-[0.3em] text-[10px] mt-3">LRN: {student.lrn}</p>
-    <StatusBadge status={student.status} />
-   </div>
-
-   <div className="p-10 space-y-12">
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 text-sm">
-     <div className="space-y-6">
-      <h3 className="flex items-center gap-2 font-black text-xs uppercase tracking-widest text-slate-400 border-b pb-3 border-slate-100"><User size={14} className="text-blue-500" /> Personal Identity</h3>
-      <div className="grid grid-cols-2 gap-y-6">
-       {/* SEPARATED NAMES AS REQUESTED */}
-       <InfoBlock label="First Name" value={student.first_name} />
-       <InfoBlock label="Middle Name" value={student.middle_name || "N/A"} />
-       <InfoBlock label="Last Name" value={student.last_name} />
-       <InfoBlock label="Full Name" value={`${student.first_name} ${student.middle_name || ''} ${student.last_name}`} />
-       
-       <InfoBlock label="Gender" value={student.gender} />
-       <InfoBlock label="Age" value={student.age?.toString()} />
-       <InfoBlock label="Birth Date" value={student.birth_date} />
-       <InfoBlock label="Civil Status" value={student.civil_status} />
-       <InfoBlock label="Religion" value={student.religion} />
-       <div className="col-span-2"><InfoBlock label="Home Address" value={student.address} icon={<MapPin size={10} />} /></div>
-      </div>
-     </div>
-     <div className="space-y-6">
-      <h3 className="flex items-center gap-2 font-black text-xs uppercase tracking-widest text-slate-400 border-b pb-3 border-slate-100"><Mail size={14} className="text-indigo-500" /> Communication</h3>
-      <div className="space-y-6"><InfoBlock label="Email Address" value={student.email} icon={<Mail size={10} />} /><InfoBlock label="Student Phone" value={student.phone || student.contact_no} icon={<Phone size={10} />} /><div className="p-4 bg-slate-50 rounded-2xl border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Database ID</p><p className="text-[10px] font-bold text-slate-900 truncate">{student.id}</p></div></div>
-     </div>
-    </div>
-
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 text-sm">
-     <div className="space-y-6">
-      <h3 className="flex items-center gap-2 font-black text-xs uppercase tracking-widest text-slate-400 border-b pb-3 border-slate-100"><ShieldCheck size={14} className="text-emerald-500" /> Guardian Matrix</h3>
-      <div className="space-y-4"><InfoBlock label="Full Guardian Name" value={`${student.guardian_first_name || student.guardian_name || ''} ${student.guardian_last_name || ''}`} /><InfoBlock label="Guardian Contact" value={student.guardian_phone || student.guardian_contact} icon={<Phone size={10} />} /></div>
-     </div>
-     <div className="space-y-6">
-      <h3 className="flex items-center gap-2 font-black text-xs uppercase tracking-widest text-slate-400 border-b pb-3 border-slate-100"><GraduationCap size={14} className="text-orange-500" /> Academic Standing</h3>
-      <div className="grid grid-cols-2 gap-4"><div className="col-span-2 bg-slate-50 p-4 rounded-2xl border border-slate-100"><p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Origin School</p><p className="font-black text-slate-900 uppercase text-xs">{student.last_school_attended || "Not Provided"}</p></div><div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 text-center"><p className="text-[9px] font-bold text-blue-400 uppercase mb-1">GWA Matrix</p><p className="text-2xl font-black text-blue-600">{student.gwa_grade_10 || "0.0"}</p></div><div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 text-center"><p className="text-[9px] font-bold text-orange-400 uppercase mb-1">Target Strand</p><p className="text-2xl font-black text-orange-600">{student.strand}</p></div></div>
-     </div>
-    </div>
-
-    <div className="space-y-6 pb-8">
-     <h3 className="flex items-center gap-2 font-black text-xs uppercase tracking-widest text-slate-400 border-b pb-3 border-slate-100"><ScrollText size={14} className="text-blue-500" /> Registrar Credential Check</h3>
-     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      {isJHS && (<><CredentialCard label="Form 138" url={student.form_138_url} onOpen={onOpenFile} /><CredentialCard label="Good Moral" url={student.good_moral_url} onOpen={onOpenFile} /></>)}
-      {isALS && (<><CredentialCard label="ALS COR Rating" url={student.cor_url} onOpen={onOpenFile} /><CredentialCard label="Diploma" url={student.diploma_url} onOpen={onOpenFile} /><CredentialCard label="AF5 Form" url={student.af5_url} onOpen={onOpenFile} /></>)}
-      {!isJHS && !isALS && (<div className="col-span-full p-6 bg-amber-50 border border-amber-100 rounded-3xl text-center"><p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Unknown Category: Manual Verification Required</p></div>)}
-     </div>
-    </div>
-   </div>
-  </div>
- )
-}
-
-function InfoBlock({ label, value, icon }: { label: string, value: string, icon?: React.ReactNode }) {
- return (<div><p className="text-slate-400 text-[9px] uppercase font-black tracking-[0.2em] mb-1">{label}</p><p className="text-slate-900 font-bold flex items-center gap-2 text-sm">{icon}{value || "NOT PROVIDED"}</p></div>)
-}
-
-function CredentialCard({ label, url, onOpen }: { label: string, url: string, onOpen: (url: string, label: string) => void }) {
- if (!url) return (<div className="bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center opacity-50 h-32"><FileText className="text-slate-300 mb-2" size={24} /><p className="text-[8px] font-black text-center uppercase text-slate-400 tracking-widest">{label}</p></div>);
- return (
-  <div onClick={() => onOpen(url, label)} className="cursor-pointer group">
-   <div className="bg-white p-2 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-xl transition-all h-full relative">
-    <div className="h-28 rounded-xl overflow-hidden bg-slate-100 relative">
-     {url.toLowerCase().endsWith('.pdf') ? (<div className="w-full h-full flex flex-col items-center justify-center bg-slate-200"><FileText size={32} className="text-slate-400" /><p className="text-[8px] font-black uppercase text-slate-500 mt-2">PDF Document</p></div>) : (<img src={url} alt={label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />)}
-     <div className="absolute inset-0 bg-blue-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><ZoomIn className="text-white" size={20} /></div>
-    </div>
-    <p className="text-[9px] font-black text-center mt-3 uppercase text-slate-900 tracking-widest leading-tight">{label}</p>
-   </div>
-  </div>
- )
-}
-
-function StatusBadge({ status }: { status: string }) {
- const styles: any = { Pending: "bg-amber-100/20 text-amber-500 border-amber-200/30", Accepted: "bg-green-100/20 text-green-500 border-green-200/30", Approved: "bg-green-100/20 text-green-500 border-green-200/30", Rejected: "bg-red-100/20 text-red-500 border-red-200/30" }
- return (<div className={`mt-6 px-6 py-2 rounded-full border text-[10px] font-black uppercase tracking-[0.3em] w-fit shadow-sm ${styles[status]}`}>{status === 'Approved' ? 'Accepted' : status}</div>)
 }

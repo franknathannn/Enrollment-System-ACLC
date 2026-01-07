@@ -1,8 +1,9 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: "class",
+  darkMode: 'class',
   content: [
+    './src/**/*.{js,ts,jsx,tsx,mdx}',
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
@@ -11,13 +12,15 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          blue: "#003399",
+          blue: "#2563eb",
           red: "#ED1C24",
           yellow: "#FFD200",
+          dark: "#0f172a",
+          darker: "#020617",
         },
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [],
 };
 export default config;

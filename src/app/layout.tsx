@@ -11,24 +11,28 @@ export const metadata: Metadata = {
   description: "Official Enrollment Portal for AMA ACLC Northbay",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// src/app/layout.tsx
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html 
+      lang="en" 
+      className="light" 
+      style={{ colorScheme: 'light' }} 
+      // This covers the html tag
+      suppressHydrationWarning
+    >
+      <body 
+        className={inter.className} 
+        // Add this to cover the body tag where extensions inject code
+        suppressHydrationWarning
+      >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
+          defaultTheme="light"
+          enableSystem={false} // Ensure it stays light as per your request
         >
-          <main className="min-h-screen">
-            {children}
-          </main>
-          <Toaster position="top-center" richColors />
+          {children}
         </ThemeProvider>
       </body>
     </html>

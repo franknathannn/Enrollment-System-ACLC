@@ -38,30 +38,25 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 300 IQ: Use getUser() for server-side security validation. 
-  // It fetches the user from the database, making it impossible to spoof via cookies.
   const { data: { user } } = await supabase.auth.getUser()
 
   const url = request.nextUrl.clone()
   const isLoginPage = url.pathname === '/admin/login'
   const isAdminRoute = url.pathname.startsWith('/admin')
 
-  // 1. SECURITY BOUNCER: If trying to access ANY /admin page but NOT logged in -> Redirect to Login
-  // This covers /admin, /admin/applicants, /admin/dashboard, etc.
+  // 1. If trying to access /admin routes WITHOUT being logged in -> Redirect to login WITH redirect param
   if (isAdminRoute && !isLoginPage && !user) {
-    url.pathname = '/admin/login'
-    return NextResponse.redirect(url)
+    const redirectUrl = new URL('/admin/login', request.url)
+    redirectUrl.searchParams.set('redirect', url.pathname)
+    return NextResponse.redirect(redirectUrl)
   }
 
-  // 2. AUTO-FORWARD: If already logged in and tries to access the Login page -> Send to Dashboard
-  if (isLoginPage && user) {
-    url.pathname = '/admin/applicants'
-    return NextResponse.redirect(url)
-  }
-
-  // 3. BASE REDIRECT: If someone types exactly "/admin" and is logged in -> Send to Dashboard
+  // 2. If already logged in and on login page -> redirect to applicants (remove this redirect loop)
+  // REMOVED: This was causing the infinite loop
+  
+  // 3. If accessing /admin root and logged in -> Send to applicants
   if (url.pathname === '/admin' && user) {
-    url.pathname = '/admin/applicants'
+    url.pathname = '/admin/dashboard'
     return NextResponse.redirect(url)
   }
 
@@ -69,6 +64,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // CRITICAL: Added '/admin' to the matcher to catch the root admin URL
   matcher: ['/admin', '/admin/:path*'],
 }

@@ -12,7 +12,6 @@ export async function getEnrollmentStatus() {
   try {
     const supabase = await createClient()
     
-    // 1. Fetch the single config row
     const { data: config, error } = await supabase
       .from('system_config')
       .select('*')
@@ -22,7 +21,6 @@ export async function getEnrollmentStatus() {
       return { isOpen: false, reason: "System Configuration Missing", capacity: 1000, schoolYear: "2025-2026" };
     }
 
-    // 2. Count current enrolled students
     const { count: approvedCount } = await supabase
       .from('students')
       .select('*', { count: 'exact', head: true })
@@ -32,16 +30,13 @@ export async function getEnrollmentStatus() {
     const start = config.enrollment_start ? new Date(config.enrollment_start) : null;
     const end = config.enrollment_end ? new Date(config.enrollment_end) : null;
 
-    // logic checks
     const isManualOpen = config.is_portal_active;
     const isPastStart = !start || now >= start;
     const isBeforeEnd = !end || now <= end;
     const isFull = (approvedCount || 0) >= config.capacity;
 
-    // The portal is open ONLY if all conditions are met
     const isOpen = isManualOpen && isPastStart && isBeforeEnd && !isFull;
 
-    // Determine reason for closing (for UI feedback)
     let reason = "Active";
     if (!isManualOpen) reason = "Manual Shutdown";
     else if (!isPastStart) reason = "Enrollment Not Yet Started";
@@ -65,8 +60,15 @@ export async function getEnrollmentStatus() {
 }
 
 /**
- * SYNC SECTION CAPACITIES
- * Distributes the global capacity across all existing sections.
+ * 🎯 STRICT SEQUENTIAL GENDER-BALANCED REDISTRIBUTION
+ * 
+ * RULES:
+ * 1. Fill ICT11-A completely BEFORE moving to ICT11-B
+ * 2. Maintain gender balance within each section:
+ *    - ODD capacity: Max 1-person imbalance (3M/2F ✅, 4M/1F ❌)
+ *    - EVEN capacity: Perfect balance (3M/3F ✅, 4M/2F ❌)
+ * 3. If a section can't be filled further without violating balance,
+ *    mark it as "complete" and move to next section
  */
 export async function syncSectionCapacities() {
   const supabase = await createClient()
@@ -80,10 +82,9 @@ export async function syncSectionCapacities() {
 
   const { data: sections } = await supabase
     .from('sections')
-    .select('id, section_name')
+    .select('id, section_name, strand')
     .order('section_name', { ascending: true })
-
-  // 1. SAFE CHECK: Ensure sections exists AND has items to avoid division by zero
+    
   if (!sections || sections.length === 0) {
     return { success: false, error: "No sections found to synchronize." }
   }
@@ -92,19 +93,131 @@ export async function syncSectionCapacities() {
   const baseCapacity = Math.floor(globalLimit / totalSections)
   const remainder = globalLimit % totalSections
 
-  // 2. MAPPING: Wrap the logic correctly inside the function scope
-  const updatePromises = sections.map((sec, index) => {
-    const finalCapacity = index < remainder ? baseCapacity + 1 : baseCapacity
-    return supabase
-      .from('sections')
-      .update({ capacity: finalCapacity })
-      .eq('id', sec.id)
-  })
+  const sectionCapacities = sections.map((sec, index) => ({
+    ...sec,
+    newCapacity: index < remainder ? baseCapacity + 1 : baseCapacity
+  }))
+
+  const updatePromises = sectionCapacities.map(sec => 
+    supabase.from('sections').update({ capacity: sec.newCapacity }).eq('id', sec.id)
+  )
 
   try {
     await Promise.all(updatePromises)
     
-    // 3. REVALIDATION: Must be inside the function brackets
+    const strands = ['ICT', 'GAS']
+    const allUpdates: any[] = []
+    
+    for (const strand of strands) {
+      const strandSections = sectionCapacities.filter(s => s.strand === strand)
+      if (strandSections.length === 0) continue
+
+      // Get all students for this strand, sorted alphabetically
+      const { data: students } = await supabase
+        .from('students')
+        .select('id, section_id, first_name, last_name, gender')
+        .eq('strand', strand)
+        .in('status', ['Accepted', 'Approved'])
+        .order('last_name', { ascending: true })
+        .order('first_name', { ascending: true })
+
+      if (!students || students.length === 0) continue
+
+      // FIX: Unassign all students in this strand first to handle shrinking
+      await supabase.from('students')
+        .update({ section_id: null, section: 'Unassigned' })
+        .eq('strand', strand)
+        .in('status', ['Accepted', 'Approved'])
+
+      // Separate by gender
+      const males = students.filter(s => s.gender === 'Male')
+      const females = students.filter(s => s.gender === 'Female')
+
+      let maleIndex = 0
+      let femaleIndex = 0
+      
+      // 🎯 STRICT SEQUENTIAL FILLING
+      for (let i = 0; i < strandSections.length; i++) {
+        const section = strandSections[i]
+        const capacity = section.newCapacity
+        
+        const studentsForSection: typeof students = []
+
+        // Calculate targets to avoid deadlock
+        const halfCap = Math.floor(capacity / 2)
+        const isOdd = capacity % 2 !== 0
+        
+        let maxM = halfCap
+        let maxF = halfCap
+        
+        if (isOdd) {
+            const malesLeft = males.length - maleIndex
+            const femalesLeft = females.length - femaleIndex
+            if (malesLeft >= femalesLeft) maxM++
+            else maxF++
+        }
+        
+        // Stop if no students left at all
+        if (maleIndex >= males.length && femaleIndex >= females.length) break
+        
+        // 🔥 FILL THIS SECTION TO CAPACITY
+        while (studentsForSection.length < capacity) {
+          const currentMales = studentsForSection.filter(s => s.gender === 'Male').length
+          const currentFemales = studentsForSection.filter(s => s.gender === 'Female').length
+          
+          const malesAvailable = maleIndex < males.length
+          const femalesAvailable = femaleIndex < females.length
+          
+          if (!malesAvailable && !femalesAvailable) break
+          
+          const canAddMale = malesAvailable && currentMales < maxM
+          const canAddFemale = femalesAvailable && currentFemales < maxF
+          
+          if (canAddMale && canAddFemale) {
+            if (currentMales <= currentFemales) {
+              studentsForSection.push(males[maleIndex++])
+            } else {
+              studentsForSection.push(females[femaleIndex++])
+            }
+          } else if (canAddMale) {
+            studentsForSection.push(males[maleIndex++])
+          } else if (canAddFemale) {
+            studentsForSection.push(females[femaleIndex++])
+          } else {
+            break
+          }
+        }
+
+        // Collect updates for batch processing
+        for (const student of studentsForSection) {
+          allUpdates.push({
+            id: student.id,
+            section_id: section.id,
+            section: section.section_name
+          })
+        }
+        
+        // Log for debugging
+        const mCount = studentsForSection.filter(s => s.gender === 'Male').length
+        const fCount = studentsForSection.filter(s => s.gender === 'Female').length
+        console.log(`✅ ${section.section_name}: ${mCount}M/${fCount}F (${studentsForSection.length}/${capacity})`)
+      }
+    }
+
+    // 🚀 BATCH UPDATE: Process in chunks to prevent timeouts and partial update errors
+    if (allUpdates.length > 0) {
+      const chunkSize = 50
+      for (let i = 0; i < allUpdates.length; i += chunkSize) {
+        const chunk = allUpdates.slice(i, i + chunkSize)
+        await Promise.all(chunk.map(u => 
+          supabase
+            .from('students')
+            .update({ section_id: u.section_id, section: u.section })
+            .eq('id', u.id)
+        ))
+      }
+    }
+
     revalidatePath("/admin/sections")
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/configuration")
@@ -145,11 +258,10 @@ export async function updateCapacity(newCapacity: number) {
       capacity: Math.abs(newCapacity),
       updated_at: new Date().toISOString() 
     })
-    .not('id', 'is', null) // Updates the existing row
+    .not('id', 'is', null)
 
   if (error) throw new Error(error.message);
 
-  // Trigger redistribution
   await syncSectionCapacities()
   
   revalidatePath("/enroll")

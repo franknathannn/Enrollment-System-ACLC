@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useCallback, useMemo, memo } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { 
   toggleEnrollment, 
@@ -17,8 +17,37 @@ import {
   Banknote, Landmark, Zap
 } from "lucide-react"
 import { toast } from "sonner"
+import { ThemedCard } from "@/components/ThemedCard"
+import { ThemedText } from "@/components/ThemedText"
+import { useTheme } from "@/hooks/useTheme"
+import { themeColors } from "@/lib/themeColors"
+
+// Optimized Background
+const StarConstellation = memo(function StarConstellation() {
+  const [stars, setStars] = useState<Array<{x: number, y: number, size: number}>>([])
+  useEffect(() => {
+    const newStars = Array.from({ length: 30 }, () => ({
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 2 + 1
+    }))
+    setStars(newStars)
+  }, [])
+
+  return (
+    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+      <svg className="w-full h-full opacity-20">
+        {stars.map((star, i) => (
+          <circle key={i} cx={`${star.x}%`} cy={`${star.y}%`} r={star.size} fill="rgb(59 130 246)" className="animate-pulse" style={{ animationDelay: `${i * 0.1}s` }} />
+        ))}
+      </svg>
+    </div>
+  )
+})
 
 export default function SettingsPage() {
+  const { isDarkMode: themeDarkMode } = useTheme()
+  const [isDarkMode, setIsDarkMode] = useState(themeDarkMode)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -67,9 +96,25 @@ export default function SettingsPage() {
 
   useEffect(() => { loadSettings() }, [loadSettings])
 
+  useEffect(() => {
+    setIsDarkMode(themeDarkMode)
+  }, [themeDarkMode])
+
+  useEffect(() => {
+    const handleThemeChange = (e: any) => {
+      setIsDarkMode(e.detail.mode === 'dark')
+    }
+    window.addEventListener('theme-change', handleThemeChange)
+    return () => window.removeEventListener('theme-change', handleThemeChange)
+  }, [])
+
   // --- LOGIC A: System Mode Toggle (STRICTLY RETAINED) ---
   const handleModeToggle = async (isManual: boolean) => {
     setUpdating(true)
+    // ⚡ Optimistic Update
+    const prevMode = config.controlMode;
+    setConfig(prev => ({ ...prev, controlMode: isManual ? 'manual' : 'automatic' }));
+
     const newMode = isManual ? 'manual' : 'automatic'
     try {
       let finalPortalStatus = config.isOpen
@@ -94,9 +139,11 @@ export default function SettingsPage() {
         })
         .eq('id', config.id)
       if (error) throw error
-      setConfig(prev => ({ ...prev, controlMode: newMode, isOpen: finalPortalStatus }))
+      // Confirm final state
+      setConfig(prev => ({ ...prev, isOpen: finalPortalStatus }))
       toast.success(`System logic synchronized to ${newMode.toUpperCase()}`)
     } catch (err) {
+      setConfig(prev => ({ ...prev, controlMode: prevMode })); // Revert
       toast.error("Protocol Sync Failed.")
     } finally {
       setUpdating(false)
@@ -106,11 +153,15 @@ export default function SettingsPage() {
   // --- LOGIC B: Manual Override (STRICTLY RETAINED) ---
   const handleManualOverride = async (checked: boolean) => {
     setUpdating(true)
+    // ⚡ Optimistic Update
+    const prevOpen = config.isOpen;
+    setConfig(prev => ({ ...prev, isOpen: checked }));
+
     try {
       await toggleEnrollment(checked)
-      setConfig(prev => ({ ...prev, isOpen: checked }))
       toast.success(`Override: Portal ${checked ? 'OPEN' : 'CLOSED'}`)
     } catch (err) {
+      setConfig(prev => ({ ...prev, isOpen: prevOpen })); // Revert
       toast.error("Manual Override Command Failed.")
     } finally {
       setUpdating(false)
@@ -192,7 +243,7 @@ export default function SettingsPage() {
       
       await updateCapacity(numericCapacity)
       setConfig(prev => ({ ...prev, isOpen: calculatedStatus }))
-      toast.success("Matrix Intelligence Synchronized")
+      toast.success("Configuration Committed Successfully")
     } catch (err: any) {
       console.error(err)
       toast.error("Schema Mismatch. Please refresh browser and try again.")
@@ -209,83 +260,126 @@ export default function SettingsPage() {
   }, [currentAccepted, config.capacity])
 
   return (
-    <div className="max-w-2xl mx-auto py-12 space-y-12 animate-in fade-in duration-700 pb-32">
+    <div className="relative min-h-screen transition-colors duration-500">
+      <StarConstellation />
+      <div className="relative z-10 max-w-4xl mx-auto p-4 md:p-8 space-y-12 animate-in fade-in duration-700 pb-32">
       
       <div className="text-center space-y-4">
         <div className="inline-flex p-6 bg-slate-900 text-white rounded-[32px] mb-2 shadow-2xl"><Settings2 size={40} /></div>
-        <h1 className="text-5xl font-black tracking-tighter text-slate-900 uppercase leading-none">Configuration</h1>
-        <p className="text-slate-400 font-medium italic tracking-wide">AMA ACLC Northbay Enrollment Parameters</p>
+        <ThemedText variant="h1" className="text-4xl font-bold tracking-tight" isDarkMode={isDarkMode}>Configuration</ThemedText>
+        <ThemedText variant="body" className="italic text-sm" isDarkMode={isDarkMode}>AMA ACLC Northbay Enrollment Customization</ThemedText>
       </div>
 
       <div className="space-y-6">
-        
         {/* SYSTEM LOGIC MODE */}
-        <Card className="p-8 rounded-[40px] border-none shadow-sm bg-white flex items-center justify-between group">
+        <ThemedCard 
+          className={`p-8 rounded-[40px] flex items-center justify-between group transition-all duration-500 ${config.controlMode === 'manual' ? 'border border-purple-500' : 'border border-blue-400'}`}
+          style={{
+            backgroundColor: isDarkMode ? themeColors.dark.surface : '#ffffff',
+            borderColor: config.controlMode === 'manual' ? undefined : (isDarkMode ? themeColors.dark.border : 'rgb(96 165 250)')
+          }}
+        >
           <div className="flex items-center gap-4">
-            <div className={`p-4 rounded-2xl transition-all duration-500 ${config.controlMode === 'automatic' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}><Cpu size={24} /></div>
+            <div className={`p-4 rounded-2xl transition-all duration-500 ${config.controlMode === 'automatic' ? 'bg-blue-400 text-white' : 'bg-purple-600 text-white'}`}><Cpu size={24} /></div>
             <div>
-              <h3 className="font-black uppercase text-xs tracking-widest text-slate-800">System Logic Mode</h3>
-              <p className="text-slate-400 text-[10px] italic font-medium">{config.controlMode === 'automatic' ? 'Schedule Automation' : 'Administrative Override'}</p>
+              <ThemedText variant="h3" className="font-bold uppercase tracking-wide" style={{ fontSize: '14px', lineHeight: '20px' }} isDarkMode={isDarkMode}>System Logic Mode</ThemedText>
+              <ThemedText variant="caption" className="italic font-medium text-[10px]" isDarkMode={isDarkMode}>{config.controlMode === 'automatic' ? 'Schedule Automation' : 'Administrative Override'}</ThemedText>
             </div>
           </div>
-          <Switch checked={config.controlMode === 'manual'} onCheckedChange={handleModeToggle} disabled={updating} className="data-[state=checked]:bg-purple-600 shadow-sm" />
-        </Card>
+          <Switch checked={config.controlMode === 'manual'} onCheckedChange={handleModeToggle} disabled={updating} className="data-[state=checked]:bg-purple-600 data-[state=unchecked]:bg-slate-400 dark:data-[state=unchecked]:bg-slate-600 shadow-sm border border-slate-200 dark:border-slate-700" />
+        </ThemedCard>
 
         {/* MANUAL OVERRIDE */}
-        <Card className={`p-8 rounded-[40px] border-none shadow-sm bg-white flex items-center justify-between transition-all duration-500 ${config.controlMode !== 'manual' ? 'opacity-30 grayscale pointer-events-none' : 'opacity-100'}`}>
+        <ThemedCard 
+          className={`p-8 rounded-[40px] flex items-center justify-between transition-all duration-500 border ${config.controlMode !== 'manual' ? 'opacity-30 grayscale pointer-events-none' : (config.isOpen ? 'opacity-100 border border-green-400' : 'opacity-100 border border-green-200')}`}
+          style={{
+            backgroundColor: isDarkMode ? themeColors.dark.surface : '#ffffff',
+            borderColor: (config.controlMode === 'manual' && config.isOpen) ? undefined : (isDarkMode ? themeColors.dark.border : 'rgb(226 232 240)')
+          }}
+        >
           <div className="flex items-center gap-4">
-            <div className={`p-4 rounded-2xl ${config.isOpen ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}><Globe size={24} /></div>
+            <div className={`p-4 rounded-2xl ${config.isOpen ? 'bg-green-500 text-white' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'}`}><Globe size={24} /></div>
             <div>
-              <h3 className="font-black uppercase text-xs tracking-widest text-slate-800">Manual Portal Override</h3>
-              <p className="text-slate-400 text-[10px] italic font-medium">Forced Bypass Control</p>
+              <ThemedText variant="h3" className="font-bold uppercase tracking-wide" style={{ fontSize: '14px', lineHeight: '20px' }} isDarkMode={isDarkMode}>Manual Portal Override</ThemedText>
+              <ThemedText variant="caption" className="italic font-medium text-[10px]" isDarkMode={isDarkMode}>Forced Bypass Control</ThemedText>
             </div>
           </div>
-          <Switch checked={config.isOpen} onCheckedChange={handleManualOverride} disabled={updating} className="data-[state=checked]:bg-green-500 shadow-sm" />
-        </Card>
+          <Switch checked={config.isOpen} onCheckedChange={handleManualOverride} disabled={updating} className="data-[state=checked]:bg-green-500 shadow-sm border border-slate-200 dark:border-slate-700" />
+        </ThemedCard>
 
         {/* ENROLLMENT MATRIX */}
-        <Card className={`p-10 rounded-[48px] border-none shadow-sm bg-white space-y-8 transition-all duration-500 ${config.controlMode !== 'automatic' ? 'opacity-30 grayscale pointer-events-none' : 'opacity-100'}`}>
-          <div className="flex items-center justify-between border-b border-slate-50 pb-6">
+        <ThemedCard 
+          className={`p-10 rounded-[48px] space-y-8 transition-all duration-500 border ${config.controlMode !== 'automatic' ? 'opacity-60 border-blue-900 pointer-events-none' : 'opacity-100 border-blue-400'}`}
+          style={{
+            backgroundColor: isDarkMode ? themeColors.dark.surface : '#ffffff',
+            borderColor: config.controlMode === 'automatic' ? 'rgb(96 165 250)' : (isDarkMode ? 'rgb(30 58 138)' : 'rgb(191 219 254)')
+          }}
+        >
+          <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-6">
             <div className="flex items-center gap-3">
-               <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><CalendarDays size={20} /></div>
-               <h2 className="font-black text-sm uppercase tracking-widest text-slate-800">Enrollment Matrix</h2>
+               <div className="p-2 bg-blue-500 text-white rounded-xl"><CalendarDays size={20} /></div>
+               <ThemedText variant="h3" className="text-xs font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>Enrollment Matrix</ThemedText>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setConfig({...config, schoolYear: "", startDate: "", endDate: ""})} className="text-[9px] font-black uppercase text-slate-400 hover:text-red-600 transition-colors"><Eraser size={14} className="mr-2"/> Clear Fields</Button>
+            <Button variant="ghost" size="sm" onClick={() => setConfig({...config, schoolYear: "", startDate: "", endDate: ""})} className="text-[9px] font-bold uppercase text-slate-400 hover:text-red-600 transition-colors"><Eraser size={14} className="mr-2"/> Clear Fields</Button>
           </div>
 
           <div className="space-y-6">
              <div className="space-y-2">
-               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target School Year</label>
-               <Input value={config.schoolYear} onChange={(e) => setConfig({...config, schoolYear: e.target.value})} className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-black text-lg uppercase focus-visible:ring-blue-500" placeholder="2025-2026" />
+               <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>Target School Year</ThemedText>
+               <Input 
+                 value={config.schoolYear} 
+                 onChange={(e) => setConfig({...config, schoolYear: e.target.value})} 
+                 className="h-14 rounded-2xl border-slate-200 dark:border-slate-800 font-bold text-base uppercase focus-visible:ring-blue-500 transition-all duration-500" 
+                 placeholder="2025-2026" 
+                 style={{ backgroundColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(241 245 249)', color: isDarkMode ? '#ffffff' : '#000000' }}
+               />
              </div>
              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400">Matrix Start</label>
-                  <Input type="date" value={config.startDate} onChange={(e) => setConfig({...config, startDate: e.target.value})} className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
+                  <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>Enrollment Launch</ThemedText>
+                  <Input 
+                    type="date" 
+                    value={config.startDate} 
+                    onChange={(e) => setConfig({...config, startDate: e.target.value})} 
+                    className="h-12 rounded-xl border-none font-bold text-xs transition-all duration-500" 
+                    style={{ backgroundColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(241 245 249)', color: isDarkMode ? '#ffffff' : '#000000' }}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400">Matrix End</label>
-                  <Input type="date" value={config.endDate} onChange={(e) => setConfig({...config, endDate: e.target.value})} className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
+                  <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>Enrollment Expiration</ThemedText>
+                  <Input 
+                    type="date" 
+                    value={config.endDate} 
+                    onChange={(e) => setConfig({...config, endDate: e.target.value})} 
+                    className="h-12 rounded-xl border-none font-bold text-xs transition-all duration-500" 
+                    style={{ backgroundColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(241 245 249)', color: isDarkMode ? '#ffffff' : '#000000' }}
+                  />
                 </div>
              </div>
           </div>
-        </Card>
+        </ThemedCard>
 
         {/* CAPACITY GUARDIAN */}
-        <Card className="p-10 rounded-[48px] border-none shadow-sm bg-white space-y-8">
-          <div className="flex items-center justify-between border-b border-slate-50 pb-6">
+        <ThemedCard 
+          className="p-10 rounded-[48px] space-y-8 border transition-all duration-500"
+          style={{
+            backgroundColor: isDarkMode ? themeColors.dark.surface : '#ffffff',
+            borderColor: isDarkMode ? themeColors.dark.border : 'rgb(226 232 240)'
+          }}
+        >
+          <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><Users size={20} /></div>
-              <h2 className="font-black text-sm uppercase tracking-widest text-slate-800">Capacity Guardian</h2>
+              <div className="p-2 rounded-xl" style={{ backgroundColor: '#9333ea', color: 'white' }}><Users size={20} /></div>
+              <ThemedText variant="h3" className="text-xs font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>School Student Capacity</ThemedText>
             </div>
-            <Button onClick={runCapacityGuardian} disabled={updating} variant="outline" className="rounded-full text-[9px] font-black uppercase border-red-100 text-red-600 hover:bg-red-50 shadow-sm transition-all active:scale-95">
+            <Button onClick={runCapacityGuardian} disabled={updating} variant="outline" className="rounded-full text-[9px] font-bold uppercase border-red-100 dark:border-red-900 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm transition-all active:scale-95">
                 <ShieldAlert size={14} className="mr-2" /> Integrity Scan
             </Button>
           </div>
 
           <div className="space-y-8">
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Institutional Capacity (MORE THAN 50)</label>
+              <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>Educational Capacity (MORE THAN 50)</ThemedText>
               {/* REACTIVE BLANK INPUT LOGIC */}
               <Input 
                 type="text" 
@@ -299,19 +393,20 @@ export default function SettingsPage() {
                     if (!isNaN(parsed)) setConfig({...config, capacity: parsed});
                   }
                 }} 
-                className="h-16 rounded-3xl bg-slate-50 border-none font-black text-3xl px-8 focus-visible:ring-indigo-500 shadow-inner" 
+                 className="h-16 rounded-3xl border-none font-bold text-2xl px-8 focus-visible:ring-indigo-500 shadow-inner transition-all duration-500" 
                 placeholder="50+"
+                style={{ backgroundColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(241 245 249)', color: isDarkMode ? '#ffffff' : '#000000' }}
               />
             </div>
 
-            <div className="w-full bg-slate-900 p-8 rounded-[36px] text-white relative overflow-hidden shadow-2xl">
+            <div className="w-full bg-blue-600 dark:bg-slate-900 p-8 rounded-[36px] text-white relative overflow-hidden shadow-2xl">
                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full -mr-10 -mt-10" />
                <div className="flex justify-between items-end mb-4 relative z-10">
                   <div>
-                    <span className="text-[10px] font-black uppercase text-blue-400 tracking-[0.3em]">Saturation Matrix</span>
-                    <p className="text-2xl font-black mt-1">{currentAccepted} <span className="text-slate-500 text-sm">/ {config.capacity || "—"} Seats</span></p>
+                    <span className="text-[10px] font-bold uppercase text-blue-400 tracking-wide">Current Capacity</span>
+                    <p className="text-2xl font-bold mt-1">{currentAccepted} <span className="text-slate-500 text-sm">/ {config.capacity || "—"} Seats</span></p>
                   </div>
-                  <span className="text-xl font-black text-white">{Math.round(capacityPercentage)}%</span>
+                  <span className="text-xl font-bold text-white">{Math.round(capacityPercentage)}%</span>
                </div>
                <div className="h-3 bg-white/10 rounded-full overflow-hidden shadow-inner relative z-10">
                   <div 
@@ -325,17 +420,23 @@ export default function SettingsPage() {
                </div>
             </div>
           </div>
-        </Card>
+        </ThemedCard>
 
         {/* FINANCIAL HUB (UPGRADED BLANK INPUT LOGIC) */}
-        <Card className="p-10 rounded-[48px] border-none shadow-sm bg-white space-y-8">
-           <div className="flex items-center gap-3 border-b border-slate-50 pb-6">
-              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><Banknote size={20} /></div>
-              <h2 className="font-black text-sm uppercase tracking-widest text-slate-800">Financial Hub</h2>
+        <ThemedCard 
+          className="p-10 rounded-[48px] space-y-8 border transition-all duration-500"
+          style={{
+            backgroundColor: isDarkMode ? themeColors.dark.surface : '#ffffff',
+            borderColor: isDarkMode ? themeColors.dark.border : 'rgb(226 232 240)'
+          }}
+        >
+           <div className="flex items-center gap-3 border-b border-slate-50 dark:border-slate-800 pb-6">
+              <div className="p-2 rounded-xl" style={{ backgroundColor: '#16a34a', color: 'white' }}><Banknote size={20} /></div>
+              <ThemedText variant="h3" className="text-xs font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>Financial Estimator</ThemedText>
            </div>
            <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Global Voucher Value (PHP)</label>
+                <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>Global Voucher Value (PHP)</ThemedText>
                 <div className="relative">
                   <Landmark className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                   {/* UPDATED: Handles blank state properly if deleted */}
@@ -351,26 +452,27 @@ export default function SettingsPage() {
                         if (!isNaN(parsed)) setConfig({...config, voucherValue: parsed});
                       }
                     }}
-                    className="h-14 rounded-2xl bg-slate-50 border-none font-black text-xl pl-12 focus-visible:ring-emerald-500" 
+                    className="h-14 rounded-2xl border-none font-bold text-lg pl-12 focus-visible:ring-emerald-500 transition-all duration-500" 
+                    style={{ backgroundColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(241 245 249)', color: isDarkMode ? '#ffffff' : '#000000' }}
                   />
                 </div>
                 <p className="text-[9px] text-slate-400 font-medium italic mt-2 px-2">Used for real-time revenue matrix calculations on the Dashboard.</p>
               </div>
            </div>
-        </Card>
+        </ThemedCard>
 
         <div className="pt-6 space-y-4">
-          <Button onClick={handleGlobalSave} disabled={isSaving} className="w-full h-20 rounded-[32px] bg-slate-900 hover:bg-black text-white font-black uppercase tracking-[0.4em] text-xs shadow-2xl transition-all hover:-translate-y-1 active:scale-95 shadow-indigo-200">
+          <Button onClick={handleGlobalSave} disabled={isSaving} className="w-full h-20 rounded-[32px] bg-blue-600 dark:bg-slate-900 hover:bg-blue-700 dark:hover:bg-black text-white font-bold uppercase tracking-widest text-xs shadow-2xl transition-all hover:-translate-y-1 active:scale-95 shadow-blue-500/20">
             {isSaving ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2" size={20} />} Commit Protocol Configuration
           </Button>
 
           <div className="flex justify-center">
-              <Button onClick={async () => { setIsSyncing(true); await forceSyncCapacities(); setIsSyncing(false); toast.success("Recalibrated Successfully."); }} disabled={isSyncing} variant="ghost" className="text-slate-400 hover:text-amber-600 text-[10px] font-black uppercase tracking-widest group">
+              <Button onClick={async () => { setIsSyncing(true); await forceSyncCapacities(); setIsSyncing(false); toast.success("Recalibrated Successfully."); }} disabled={isSyncing} variant="ghost" className="text-slate-400 hover:text-amber-600 text-[10px] font-bold uppercase tracking-widest group">
                   <Zap size={14} className="mr-2 group-hover:fill-amber-600 transition-all" /> {isSyncing ? "Calibrating..." : "Force Sync Capacities"}
               </Button>
           </div>
         </div>
-
+        </div>
       </div>
     </div>
   )
