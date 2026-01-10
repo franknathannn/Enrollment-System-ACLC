@@ -42,7 +42,6 @@ export function useTheme() {
     // Save to localStorage - force the value
     try {
       localStorage.setItem('theme', mode);
-      console.log('Theme saved to localStorage:', mode);
     } catch (e) {
       console.error('Failed to save theme:', e);
     }

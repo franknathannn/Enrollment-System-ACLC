@@ -1,6 +1,6 @@
 // src/app/admin/applicants/components/ApplicantsFilter.tsx
 import { memo } from "react"
-import { ArrowUpDown, ChevronDown, CheckCircle2 } from "lucide-react"
+import { ArrowUpDown, ChevronDown, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface ApplicantsFilterProps {
@@ -13,10 +13,13 @@ interface ApplicantsFilterProps {
   setSortBy: (sort: string) => void
   sortDropdownOpen: boolean
   setSortDropdownOpen: (open: boolean) => void
+  currentPage: number
+  totalPages: number
+  setCurrentPage: (page: number) => void
 }
 
 export const ApplicantsFilter = memo(({ 
-  isDarkMode, filter, setFilter, students, setSelectedIds, sortBy, setSortBy, sortDropdownOpen, setSortDropdownOpen 
+  isDarkMode, filter, setFilter, students, setSelectedIds, sortBy, setSortBy, sortDropdownOpen, setSortDropdownOpen, currentPage, totalPages, setCurrentPage
 }: ApplicantsFilterProps) => {
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full relative z-30">
@@ -40,6 +43,31 @@ export const ApplicantsFilter = memo(({
             </button>
           )
         })}
+      </div>
+
+      {/* PAGINATION CONTROLS */}
+      <div className={`flex items-center gap-2 p-1.5 rounded-[20px] border shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-100'}`}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 dark:text-slate-400"
+        >
+          <ChevronLeft size={16} />
+        </Button>
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 w-16 text-center">
+          Page {currentPage} / {Math.max(1, totalPages)}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages || totalPages === 0}
+          className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 dark:text-slate-400"
+        >
+          <ChevronRight size={16} />
+        </Button>
       </div>
 
       {/* SORTING DROPDOWN */}

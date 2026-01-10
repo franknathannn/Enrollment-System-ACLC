@@ -9,9 +9,13 @@ import { themeColors } from "@/lib/themeColors"
 
 export const QUICK_REASONS = [
   "Blurry 2x2 Photo",
+  "Blurry Birth Certificate",
+  "Blurry Report Card",
+  "Blurry Form 138",
+  "Blurry Certificate of Good Moral",
+  "Blurry ALS Diploma",
   "Invalid LRN / Not Found",
   "Missing Grade 10 Report Card",
-  "Incorrect Strand Selection",
   "Incomplete Guardian Details"
 ];
 
@@ -69,21 +73,31 @@ export const ApplicantModals = memo(({
             <div className="space-y-4">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Quick Reasons</label>
               <div className="flex flex-wrap gap-2">
-                {QUICK_REASONS.map(reason => (
-                  <button 
-                    key={reason} 
-                    onClick={() => setDeclineReason(reason)} 
-                    className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase transition-all ${
-                      declineReason === reason 
-                        ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-500/30' 
-                        : isDarkMode 
-                          ? 'bg-slate-800 border-slate-700 text-slate-400 hover:border-red-500/50 hover:text-red-400' 
-                          : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-red-200 hover:text-red-600'
-                    }`}
-                  >
-                    {reason}
-                  </button>
-                ))}
+                {QUICK_REASONS.map(reason => {
+                  const isSelected = declineReason?.split(/,\n|, /).includes(reason)
+                  return (
+                    <button 
+                      key={reason} 
+                      onClick={() => {
+                        const current = declineReason ? declineReason.split(/,\n|, /).filter(Boolean) : []
+                        if (current.includes(reason)) {
+                          setDeclineReason(current.filter(r => r !== reason).join(',\n'))
+                        } else {
+                          setDeclineReason([...current, reason].join(',\n'))
+                        }
+                      }} 
+                      className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase transition-all ${
+                        isSelected 
+                          ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-500/30' 
+                          : isDarkMode 
+                            ? 'bg-slate-800 border-slate-700 text-slate-400 hover:border-red-500/50 hover:text-red-400' 
+                            : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-red-200 hover:text-red-600'
+                      }`}
+                    >
+                      {reason}
+                    </button>
+                  )
+                })}
               </div>
               <div className="pt-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Registrar Feedback</label>
@@ -147,21 +161,31 @@ export const ApplicantModals = memo(({
               </div>
               
               <div className="flex flex-wrap gap-1.5 md:gap-2">
-                {QUICK_REASONS.map(reason => (
-                  <button 
-                    key={reason} 
-                    onClick={() => setDeclineReason(reason)} 
-                    className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl border text-[8px] md:text-[9px] font-bold uppercase tracking-wide transition-all ${
-                      declineReason === reason 
-                        ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-500/30 transform scale-105' 
-                        : isDarkMode 
-                          ? 'bg-slate-800 border-slate-700 text-slate-400 hover:border-red-500/50 hover:text-red-400' 
-                          : 'bg-white border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-600 hover:bg-red-50'
-                    }`}
-                  >
-                    {reason}
-                  </button>
-                ))}
+                {QUICK_REASONS.map(reason => {
+                  const isSelected = declineReason?.split(/,\n|, /).includes(reason)
+                  return (
+                    <button 
+                      key={reason} 
+                      onClick={() => {
+                        const parts = declineReason ? declineReason.split(/,\n|, /).filter(Boolean) : []
+                        if (parts.includes(reason)) {
+                          setDeclineReason(parts.filter(p => p !== reason).join(',\n'))
+                        } else {
+                          setDeclineReason([...parts, reason].join(',\n'))
+                        }
+                      }} 
+                      className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl border text-[8px] md:text-[9px] font-bold uppercase tracking-wide transition-all ${
+                        isSelected 
+                          ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-500/30 transform scale-105' 
+                          : isDarkMode 
+                            ? 'bg-slate-800 border-slate-700 text-slate-400 hover:border-red-500/50 hover:text-red-400' 
+                            : 'bg-white border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-600 hover:bg-red-50'
+                      }`}
+                    >
+                      {reason}
+                    </button>
+                  )
+                })}
               </div>
               
               <div className="pt-1 md:pt-2 relative">

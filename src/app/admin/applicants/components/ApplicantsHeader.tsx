@@ -1,6 +1,6 @@
 // src/app/admin/applicants/components/ApplicantsHeader.tsx
-import { memo } from "react"
-import { Search, RefreshCw, FileDown, Loader2 } from "lucide-react"
+import { memo, useState } from "react"
+import { Search, RefreshCw, FileDown, Loader2, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ThemedCard } from "@/components/ThemedCard"
@@ -13,15 +13,17 @@ interface ApplicantsHeaderProps {
   searchTerm: string
   setSearchTerm: (term: string) => void
   fetchStudents: (isBackground?: boolean) => void
-  exportToCSV: () => void
+  exportToCSV: (type: string) => void
 }
 
 export const ApplicantsHeader = memo(({ 
   isDarkMode, loading, config, searchTerm, setSearchTerm, fetchStudents, exportToCSV 
 }: ApplicantsHeaderProps) => {
+  const [exportOpen, setExportOpen] = useState(false)
+
   return (
     <ThemedCard 
-      className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 md:gap-6 p-6 md:p-8 rounded-[32px] backdrop-blur-sm transition-colors duration-500 border"
+      className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 md:gap-6 p-6 md:p-8 rounded-[32px] backdrop-blur-sm transition-colors duration-500 border relative z-40"
       style={{ 
         backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.8)' : '#ffffff',
         borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9'
@@ -53,13 +55,33 @@ export const ApplicantsHeader = memo(({
             style={{ backgroundColor: isDarkMode ? undefined : '#ffffff', color: isDarkMode ? undefined : '#000000', borderColor: isDarkMode ? 'rgba(51, 65, 85, 0.5)' : '#f1f5f9' }}
           />
         </div>
-        <Button 
-          onClick={exportToCSV} 
-          className="h-10 md:h-12 px-3 md:px-6 rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 text-white font-black uppercase text-[10px] tracking-widest hover:from-blue-600 hover:to-blue-700 transition-all shadow-xl shadow-blue-500/20 shrink-0 transform hover:scale-105 flex items-center justify-center gap-2 border border-slate-700/50"
-        >
-          <FileDown size={16} />
-          <span className="hidden sm:inline">Export CSV</span>
-        </Button>
+        
+        <div className="relative">
+          <Button 
+            onClick={() => setExportOpen(!exportOpen)}
+            className="h-10 md:h-12 px-3 md:px-6 rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 text-white font-black uppercase text-[10px] tracking-widest hover:from-blue-600 hover:to-blue-700 transition-all shadow-xl shadow-blue-500/20 shrink-0 transform hover:scale-105 flex items-center justify-center gap-2 border border-slate-700/50"
+          >
+            <FileDown size={16} />
+            <span className="hidden sm:inline">Export Excel</span>
+            <ChevronDown size={12} className={`transition-transform duration-300 ${exportOpen ? 'rotate-180' : ''}`} />
+          </Button>
+
+          {exportOpen && (
+            <div className={`absolute top-full right-0 mt-2 w-48 rounded-2xl shadow-2xl border overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+              <div className="p-1.5 space-y-1">
+                {['All', 'Pending', 'Accepted', 'Rejected'].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => { exportToCSV(type); setExportOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors ${isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                  >
+                    Export {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </ThemedCard>
   )

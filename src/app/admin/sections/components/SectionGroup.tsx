@@ -101,26 +101,26 @@ export const SectionGroup = memo(function SectionGroup({
                   className="relative group animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-700 fill-mode-backwards" 
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                   <div className="absolute top-4 right-6 z-20">
+                    <div className="absolute top-4 right-6 z-20">
                       <button 
                         onClick={(e) => { e.stopPropagation(); onToggleSelect(sec.id); }} 
                         className="text-slate-400 hover:text-blue-600 transition-colors p-2 -m-2"
                       >
-                         {selection.has(sec.id) ? (
-                           <CheckSquare size={14} className="text-blue-600 fill-blue-50" />
-                         ) : (
-                           <Square size={14} />
-                         )}
+                          {selection.has(sec.id) ? (
+                            <CheckSquare size={14} className="text-blue-600 fill-blue-50" />
+                          ) : (
+                            <Square size={14} />
+                          )}
                       </button>
-                   </div>
-                   <div onClick={() => onSelect(sec.section_name)} className="cursor-pointer h-full w-full">
+                    </div>
+                    <div onClick={() => onSelect(sec.section_name)} className="cursor-pointer h-full w-full">
                       <SectionCard 
                         section={sec} 
                         isSelected={selection.has(sec.id)} 
                         isDarkMode={isDarkMode} 
                         config={config}
                       />
-                   </div>
+                    </div>
                 </div>
               ))}
             </div>
@@ -132,11 +132,11 @@ export const SectionGroup = memo(function SectionGroup({
                   <TableRow className="border-none hover:bg-transparent mb-4">
                     <TableHead className="w-16 pl-8">
                       <button onClick={(e) => { e.stopPropagation(); onSelectAll(allIds); }} className="hover:scale-110 transition-transform">
-                         {isAllSelected ? (
-                           <CheckSquare size={18} className={color === 'blue' ? "text-blue-600" : "text-orange-600"} />
-                         ) : (
-                           <Square size={18} className="text-slate-300" />
-                         )}
+                          {isAllSelected ? (
+                            <CheckSquare size={18} className={color === 'blue' ? "text-blue-600" : "text-orange-600"} />
+                          ) : (
+                            <Square size={18} className="text-slate-300" />
+                          )}
                       </button>
                     </TableHead>
                     <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Section Identity</TableHead>
@@ -162,12 +162,12 @@ export const SectionGroup = memo(function SectionGroup({
                     const isSelected = selection.has(sec.id)
                     const isICT = sec.strand === 'ICT'
                     
-                    // Balancing Line Logic (Dynamic Follow)
-                    let linePosition = 50
-                    if (capacity > 0) {
-                      if (mCount > fCount) linePosition = mP
-                      else if (fCount > mCount) linePosition = 100 - fP
-                      else linePosition = 50
+                    // --- DYNAMIC EQUILIBRIUM LOGIC (RETAINED) ---
+                    let linePosition = '50%';
+                    if (mP > 50) {
+                        linePosition = `${mP}%`;       // Follows Blue (Left)
+                    } else if (fP > 50) {
+                        linePosition = `${100 - fP}%`; // Follows Pink (Right)
                     }
 
                     const isFull = fillPercent >= 100
@@ -222,9 +222,19 @@ export const SectionGroup = memo(function SectionGroup({
                           </div>
                         </TableCell>
                         <TableCell className="py-4 w-[30%]">
-                          <div className={`p-4 rounded-2xl border relative overflow-hidden group/progress transition-all duration-500 ${isFull ? 'shadow-[0_0_15px_rgba(59,130,246,0.15)] dark:shadow-[0_0_15px_rgba(59,130,246,0.3)]' : ''} ${isDarkMode ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
+                          <div className={`p-4 rounded-2xl border relative overflow-hidden group/progress transition-all duration-500 
+                            ${isFull 
+                              ? (isICT 
+                                  ? 'shadow-[0_0_15px_rgba(59,130,246,0.15)] dark:shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
+                                  : 'shadow-[0_0_15px_rgba(249,115,22,0.15)] dark:shadow-[0_0_15px_rgba(249,115,22,0.3)]') 
+                              : ''} 
+                            ${isDarkMode ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
+                            
                             {/* Blur/Glow Effect */}
-                            <div className={`absolute inset-0 opacity-0 group-hover/progress:opacity-100 transition-opacity duration-500 ${isFull ? 'opacity-100 bg-blue-500/10' : (isICT ? 'bg-blue-500/5' : 'bg-orange-500/5')}`} />
+                            <div className={`absolute inset-0 opacity-0 group-hover/progress:opacity-100 transition-opacity duration-500 
+                              ${isFull 
+                                ? (isICT ? 'opacity-100 bg-blue-500/10' : 'opacity-100 bg-orange-500/10') 
+                                : (isICT ? 'bg-blue-500/5' : 'bg-orange-500/5')}`} />
                             
                             <div className="flex justify-between items-end mb-2 relative z-10">
                                <span className="text-[10px] font-black text-blue-500 uppercase">{Math.round(mP)}% Male</span>
@@ -232,13 +242,32 @@ export const SectionGroup = memo(function SectionGroup({
                                <span className="text-[10px] font-black text-pink-500 uppercase">{Math.round(fP)}% Female</span>
                             </div>
 
-                            <div className={`relative h-3 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-800 shadow-inner ${isFull ? 'shadow-[0_0_10px_rgba(59,130,246,0.4)]' : ''}`}>
-                                {/* Split Progress Bar (Meeting in Middle) */}
-                                <div style={{ width: `${mP}%` }} className="absolute left-0 top-0 bottom-0 h-full bg-blue-500 transition-all duration-1000" />
-                                <div style={{ width: `${fP}%` }} className="absolute right-0 top-0 bottom-0 h-full bg-pink-500 transition-all duration-1000" />
+                            {/* --- CHANGED: GLOWING BAR ONLY (NO PLUMPING) --- */}
+                            <div className={`relative h-3 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-800 shadow-inner isolate transition-all duration-500 ease-in-out
+                                ${isFull 
+                                    ? (isICT 
+                                        ? 'shadow-[0_0_20px_rgba(59,130,246,0.4)]' 
+                                        : 'shadow-[0_0_20px_rgba(249,115,22,0.4)]')
+                                    : 'shadow-none' 
+                                }`}
+                            >
+                                {/* Male Bar with Strong Glow */}
+                                <div 
+                                    style={{ width: `${mP}%` }} 
+                                    className="absolute left-0 top-0 bottom-0 h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(59,130,246,0.8)]" 
+                                />
+                                
+                                {/* Female Bar with Strong Glow */}
+                                <div 
+                                    style={{ width: `${fP}%` }} 
+                                    className="absolute right-0 top-0 bottom-0 h-full bg-gradient-to-l from-pink-600 to-pink-400 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(236,72,153,0.8)]" 
+                                />
                                 
                                 {/* Balancing Line Indicator */}
-                                <div className="absolute top-0 bottom-0 w-0.5 bg-white/80 z-20 transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,1)]" style={{ left: `${linePosition}%` }} />
+                                <div 
+                                    className="absolute top-0 bottom-0 w-[2px] bg-white z-20 transition-all duration-1000 ease-in-out shadow-[0_0_8px_white]" 
+                                    style={{ left: linePosition }} 
+                                />
                             </div>
                             
                             <div className="flex justify-between mt-2 relative z-10">

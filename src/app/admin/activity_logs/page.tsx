@@ -1,3 +1,5 @@
+// c:\Users\Nath\Documents\Enrollment System\enrollment-system\src\app\admin\activity_logs\page.tsx
+
 "use client"
 
 import { useEffect, useState, useCallback, memo } from "react"
@@ -18,6 +20,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/hooks/useTheme"
 import { themeColors } from "@/lib/themeColors"
+import { updateApplicantStatus } from "@/lib/actions/applicants"
 
 // Optimized Background
 const StarConstellation = memo(function StarConstellation() {
@@ -63,7 +66,7 @@ export default function ActivityLogsPage() {
         .from('activity_logs')
         .select('*, students(lrn, gender)')
         .order('created_at', { ascending: false })
-        .limit(30)
+        .limit(50)
       if (error) throw error
       setLogs(data || [])
     } catch (err) {
@@ -91,22 +94,6 @@ export default function ActivityLogsPage() {
     return () => window.removeEventListener('theme-change', handleThemeChange)
   }, [])
 
-  // --- CLEANUP: Maintain only 50 records ---
-  useEffect(() => {
-    const cleanupLogs = async () => {
-      const { data } = await supabase
-        .from('activity_logs')
-        .select('id')
-        .order('created_at', { ascending: false })
-        .range(30, 1000)
-      
-      if (data && data.length > 0) {
-        await supabase.from('activity_logs').delete().in('id', data.map(l => l.id))
-      }
-    }
-    if (logs.length >= 30) cleanupLogs()
-  }, [logs])
-
   useEffect(() => {
     checkUser()
     fetchLogs()
@@ -133,23 +120,39 @@ export default function ActivityLogsPage() {
       return
     }
 
-    if (activeLog.action_type === 'DELETED' && !activeLog.student_id) {
+    if (activeLog.action_type === 'DELETED') {
        toast.error("Cannot revert: Record was permanently deleted.")
        setUndoOpen(false)
        return
     }
 
-    if (!activeLog.student_id) return
+    if (!activeLog.student_id) {
+      toast.error("Cannot revert: Missing student reference.")
+      setUndoOpen(false)
+      return
+    }
+
+    // Verify student still exists
+    const { data: studentExists } = await supabase
+      .from('students')
+      .select('id')
+      .eq('id', activeLog.student_id)
+      .single()
+
+    if (!studentExists) {
+      toast.error("Cannot revert: Student record no longer exists.")
+      setUndoOpen(false)
+      return
+    }
 
     const toastId = toast.loading("Reverting status...")
     try {
-      const { error } = await supabase
-        .from('students')
-        .update({ status: 'Pending', registrar_feedback: null })
-        .eq('id', activeLog.student_id)
+      // Use server action to ensure section unassignment and proper status update
+      const result = await updateApplicantStatus(activeLog.student_id, 'Pending')
+      
+      if (!result.success) throw new Error("Failed to update student status")
 
-      if (error) throw error
-
+      // Log the undo action
       await supabase.from('activity_logs').insert([{
         admin_id: user?.id,
         admin_name: user?.user_metadata?.full_name || 'Admin',
@@ -158,6 +161,7 @@ export default function ActivityLogsPage() {
         details: `Reverted ${activeLog.action_type} command.`
       }])
 
+      // Delete the original log entry to clean up history
       await supabase.from('activity_logs').delete().eq('id', activeLog.id)
       
       toast.success("Action Reverted", { id: toastId })
@@ -203,7 +207,14 @@ export default function ActivityLogsPage() {
       if (!error) {
         setLogs(prev => prev.filter(l => l.id !== id))
         toast.success("Log Erased")
-      } else toast.error("Failed to delete log")
+      } else {
+        toast.error("Failed to delete log")
+        setExitingIds(prev => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+      }
     }, 500)
   }
 

@@ -68,7 +68,35 @@ export default function SettingsPage() {
 
   const loadSettings = useCallback(async () => {
     try {
-      const { data: configData } = await supabase.from('system_config').select('*').single()
+      // Use maybeSingle() to avoid crashing if table is empty or RLS blocks it
+      let { data: configData, error: configError } = await supabase.from('system_config').select('*').maybeSingle()
+      
+      if (configError) {
+        console.error("Error fetching system_config:", configError)
+        toast.error("Failed to load settings. Check console for details.")
+      }
+
+      // Self-healing: If no config exists, create a default one automatically
+      if (!configData && !configError) {
+        const { data: newConfig, error: insertError } = await supabase
+          .from('system_config')
+          .insert({ 
+            school_year: '2025-2026', 
+            capacity: 1000,
+            voucher_value: 22500,
+            control_mode: 'automatic',
+            is_portal_active: false
+          })
+          .select()
+          .single()
+          
+        if (!insertError) {
+          configData = newConfig
+        } else {
+          console.error("Auto-init failed:", insertError)
+          toast.error("Failed to initialize settings. Check database permissions.")
+        }
+      }
       
       const { count } = await supabase.from('students')
         .select('*', { count: 'exact', head: true })

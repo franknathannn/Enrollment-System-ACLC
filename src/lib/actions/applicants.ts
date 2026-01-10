@@ -20,7 +20,7 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS') {
 
     if (sectionsError) throw sectionsError
     if (!sections || sections.length === 0) {
-      throw new Error(`No sections found for ${strand}`)
+      throw new Error(`No sections found for `)
     }
 
     console.log(`📦 Found ${sections.length} sections:`, sections.map(s => `${s.section_name}(${s.capacity})`).join(', '))
@@ -40,7 +40,7 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS') {
 
     const maleCount = students.filter(s => s.gender === 'Male').length
     const femaleCount = students.filter(s => s.gender === 'Female').length
-    console.log(`👥 Found ${students.length} students: ${maleCount}M, ${femaleCount}F`)
+    console.log(`👥 Found ${students.length} students: M, F`)
 
     console.log('🗑️ Unassigning all students...')
     const { error: unassignError } = await supabase
@@ -120,7 +120,7 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS') {
           tracker.total++
           maleIdx++
           added = true
-          console.log(`  ➕ ${tracker.section.section_name}: Added Male (${tracker.males}M/${tracker.females}F = ${tracker.total}/${capacity})`)
+          console.log(`  ➕ ${tracker.section.section_name}: Added Male (${tracker.males}M/${tracker.females}F = ${tracker.total}/)`)
         }
         else if (femaleIdx < females.length && tracker.females < maxF) {
           plan.push({ student: females[femaleIdx], section: tracker.section })
@@ -128,7 +128,7 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS') {
           tracker.total++
           femaleIdx++
           added = true
-          console.log(`  ➕ ${tracker.section.section_name}: Added Female (${tracker.males}M/${tracker.females}F = ${tracker.total}/${capacity})`)
+          console.log(`  ➕ ${tracker.section.section_name}: Added Female (${tracker.males}M/${tracker.females}F = ${tracker.total}/)`)
         }
         
         if (added) {
@@ -178,7 +178,7 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS') {
 
     return { 
       success: true, 
-      message: `Redistributed ${plan.length}/${students.length} students${unassigned > 0 ? ` (${unassigned} unassigned - need more capacity)` : ''} | ${summary}`
+      message: `Redistributed ${plan.length}/${students.length} students${unassigned > 0 ? ` ( unassigned - need more capacity)` : ''} | `
     }
 
   } catch (error: any) {
@@ -279,24 +279,43 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
       .single()
 
     if (student) {
-      const { data: sections } = await supabase
-        .from('sections')
-        .select('id, section_name, capacity')
-        .eq('strand', student.strand)
-        .order('section_name', { ascending: true })
+      // 1. Fetch sections and ALL students in this strand in parallel
+      const [sectionsRes, studentsRes] = await Promise.all([
+        supabase
+          .from('sections')
+          .select('id, section_name, capacity')
+          .eq('strand', student.strand)
+          .order('section_name', { ascending: true }),
+        supabase
+          .from('students')
+          .select('section_id, gender')
+          .eq('strand', student.strand)
+          .eq('status', 'Approved')
+          .not('section_id', 'is', null)
+      ])
 
-      if (sections && sections.length > 0) {
+      const sections = sectionsRes.data || []
+      const allStrandStudents = studentsRes.data || []
+
+      if (sections.length > 0) {
+        // 2. Build occupancy map in memory
+        const occupancy: Record<string, { male: number, female: number }> = {}
+        sections.forEach(s => occupancy[s.id] = { male: 0, female: 0 })
+        
+        allStrandStudents.forEach(s => {
+          if (occupancy[s.section_id]) {
+            if (s.gender === 'Male') occupancy[s.section_id].male++
+            else occupancy[s.section_id].female++
+          }
+        })
+
+        // 3. Find best section using in-memory data
         for (const sec of sections) {
           if (!sec.capacity || sec.capacity <= 0) continue
 
-          const { data: currentStudents } = await supabase
-            .from('students')
-            .select('gender')
-            .eq('section_id', sec.id)
-            .eq('status', 'Approved')
-
-          const currentMale = currentStudents?.filter(s => s.gender === 'Male').length || 0
-          const currentFemale = currentStudents?.filter(s => s.gender === 'Female').length || 0
+          const counts = occupancy[sec.id]
+          const currentMale = counts.male
+          const currentFemale = counts.female
           const totalInSection = currentMale + currentFemale
 
           if (totalInSection >= sec.capacity) continue
@@ -362,19 +381,6 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
 
   if (error) throw error
 
-  let assignedSectionName = 'Unassigned'
-  if (sectionIdToAssign) {
-    const { data: sectionData } = await supabase
-      .from('sections')
-      .select('section_name')
-      .eq('id', sectionIdToAssign)
-      .single()
-    
-    if (sectionData) {
-      assignedSectionName = sectionData.section_name
-    }
-  }
-
   revalidatePath("/admin/applicants")
   revalidatePath("/admin/dashboard")
   revalidatePath("/admin/sections") 
@@ -383,7 +389,7 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
   return { 
     success: true,
     assignedSectionId: sectionIdToAssign,
-    assignedSection: assignedSectionName
+    assignedSection: sectionNameToAssign
   }
 }
 
@@ -402,7 +408,7 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
       .in('id', ids)
     
     if (fetchError) throw fetchError
-    if (!studentsToUpdate) return { success: false, results: [] }
+    if (!studentsToUpdate || studentsToUpdate.length === 0) return { success: false, results: [] }
 
     // Group by strand for efficient section lookup
     const strandGroups: Record<string, typeof studentsToUpdate> = {}
@@ -411,69 +417,53 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
       strandGroups[s.strand].push(s)
     })
 
-    const results = []
+    const results: any[] = []
+    const updatesBySection: Record<string, string[]> = {}
+    const sectionNames: Record<string, string> = { 'null': 'Unassigned', 'Unassigned': 'Unassigned' }
 
     for (const [strand, students] of Object.entries(strandGroups)) {
-      // Fetch sections for this strand
-      const { data: sections } = await supabase
-        .from('sections')
-        .select('id, section_name, capacity')
-        .eq('strand', strand)
-        .order('section_name', { ascending: true })
+      // Fetch sections and existing students for this strand in parallel
+      const [sectionsRes, existingStudentsRes] = await Promise.all([
+        supabase
+          .from('sections')
+          .select('id, section_name, capacity')
+          .eq('strand', strand)
+          .order('section_name', { ascending: true }),
+        supabase
+          .from('students')
+          .select('section_id, gender')
+          .eq('strand', strand)
+          .eq('status', 'Approved')
+          .not('section_id', 'is', null)
+      ])
 
-      if (!sections || sections.length === 0) {
-        // No sections - update without assignment
-        for (const student of students) {
-          const { error } = await supabase
-            .from('students')
-            .update({ 
-              status: dbStatus,
-              section_id: null,
-              section: 'Unassigned',
-              registrar_feedback: dbStatus === "Approved" ? null : (feedback || null)
-            })
-            .eq('id', student.id)
-          
-          results.push({
-            id: student.id,
-            success: !error,
-            assignedSectionId: null,
-            assignedSection: 'Unassigned'
-          })
+      const sections = sectionsRes.data || []
+      const existingStudents = existingStudentsRes.data || []
+
+      // Build occupancy map
+      const occupancy: Record<string, { male: number, female: number, total: number }> = {}
+      sections.forEach(s => {
+        occupancy[s.id] = { male: 0, female: 0, total: 0 }
+        sectionNames[s.id] = s.section_name
+      })
+      
+      existingStudents.forEach(s => {
+        if (occupancy[s.section_id]) {
+          if (s.gender === 'Male') occupancy[s.section_id].male++
+          else occupancy[s.section_id].female++
+          occupancy[s.section_id].total++
         }
-        continue
-      }
-
-      // Get current section occupancy
-      const sectionData = await Promise.all(
-        sections.map(async (sec) => {
-          const { data: currentStudents } = await supabase
-            .from('students')
-            .select('gender')
-            .eq('section_id', sec.id)
-            .eq('status', 'Approved')
-
-          const currentMale = currentStudents?.filter(s => s.gender === 'Male').length || 0
-          const currentFemale = currentStudents?.filter(s => s.gender === 'Female').length || 0
-
-          return {
-            ...sec,
-            currentMale,
-            currentFemale,
-            total: currentMale + currentFemale
-          }
-        })
-      )
+      })
 
       // Assign students to sections
       for (const student of students) {
-        let sectionIdToAssign: string | null = null
-        let sectionNameToAssign = 'Unassigned'
+        let assignedId = 'null' // Represents unassigned/null in DB
 
-        if (dbStatus === "Approved") {
+        if (dbStatus === "Approved" && sections.length > 0) {
           // Find best section
-          for (const sec of sectionData) {
-            if (sec.total >= sec.capacity) continue
+          for (const sec of sections) {
+            const occ = occupancy[sec.id]
+            if (occ.total >= sec.capacity) continue
 
             const halfCapacity = Math.floor(sec.capacity / 2)
             const isEven = sec.capacity % 2 === 0
@@ -484,7 +474,7 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
               maxMale = halfCapacity
               maxFemale = halfCapacity
             } else {
-              if (sec.currentMale === 0 && sec.currentFemale === 0) {
+              if (occ.male === 0 && occ.female === 0) {
                 if (student.gender === 'Male') {
                   maxMale = halfCapacity + 1
                   maxFemale = halfCapacity
@@ -492,10 +482,10 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
                   maxMale = halfCapacity
                   maxFemale = halfCapacity + 1
                 }
-              } else if (sec.currentMale > sec.currentFemale) {
+              } else if (occ.male > occ.female) {
                 maxMale = halfCapacity + 1
                 maxFemale = halfCapacity
-              } else if (sec.currentFemale > sec.currentMale) {
+              } else if (occ.female > occ.male) {
                 maxMale = halfCapacity
                 maxFemale = halfCapacity + 1
               } else {
@@ -509,45 +499,57 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
               }
             }
 
-            const currentGenderCount = student.gender === 'Male' ? sec.currentMale : sec.currentFemale
+            const currentGenderCount = student.gender === 'Male' ? occ.male : occ.female
             const maxForGender = student.gender === 'Male' ? maxMale : maxFemale
 
             if (currentGenderCount < maxForGender) {
-              sectionIdToAssign = sec.id
-              sectionNameToAssign = sec.section_name
+              assignedId = sec.id
               
-              // Update local tracking
-              if (student.gender === 'Male') {
-                sec.currentMale++
-              } else {
-                sec.currentFemale++
-              }
-              sec.total++
+              // Update local tracking immediately
+              if (student.gender === 'Male') occ.male++
+              else occ.female++
+              occ.total++
               
               break
             }
           }
         }
 
-        // Update student
-        const { error } = await supabase
-          .from('students')
-          .update({ 
-            status: dbStatus,
-            section_id: sectionIdToAssign,
-            section: sectionNameToAssign,
-            registrar_feedback: dbStatus === "Approved" ? null : (feedback || null)
-          })
-          .eq('id', student.id)
+        // Group the update instead of executing it immediately
+        if (!updatesBySection[assignedId]) updatesBySection[assignedId] = []
+        updatesBySection[assignedId].push(student.id)
 
         results.push({
           id: student.id,
-          success: !error,
-          assignedSectionId: sectionIdToAssign,
-          assignedSection: sectionNameToAssign
+          success: true,
+          assignedSectionId: assignedId === 'null' ? null : assignedId,
+          assignedSection: sectionNames[assignedId]
         })
       }
     }
+
+    // Execute batched updates (One query per section group)
+    const updatePromises = Object.entries(updatesBySection).map(([secId, studentIds]) => {
+      const payload: any = {
+        status: dbStatus,
+        registrar_feedback: dbStatus === "Approved" ? null : (feedback || null)
+      }
+      
+      if (secId === 'null' || secId === 'Unassigned') {
+        payload.section_id = null
+        payload.section = 'Unassigned'
+      } else {
+        payload.section_id = secId
+        payload.section = sectionNames[secId]
+      }
+
+      return supabase
+        .from('students')
+        .update(payload)
+        .in('id', studentIds)
+    })
+
+    await Promise.all(updatePromises)
 
     revalidatePath("/admin/applicants")
     revalidatePath("/admin/dashboard")

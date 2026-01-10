@@ -91,7 +91,7 @@ export const StudentDossier = memo(function StudentDossier({
   onClose
 }: { 
   student: any, 
-  onOpenFile: (url: string, label: string) => void, 
+  onOpenFile: (url: string, label: string, allDocs?: {url: string, label: string}[]) => void, 
   isDarkMode: boolean,
   onClose?: () => void
 }) {
@@ -100,22 +100,47 @@ export const StudentDossier = memo(function StudentDossier({
   const isALS = student.student_category?.toLowerCase().includes("als")
   const badgeColor = isALS ? "bg-orange-500" : "bg-blue-600"
 
-  const handleCopyInfo = () => {
+  const handleCopyInfo = async () => {
     const infoText = `
-REGISTRY RECORD
-Name: ${student.first_name} ${student.middle_name || ''} ${student.last_name}
+STUDENT RECORD:
+
+Name: ${student.last_name}, ${student.first_name}${student.middle_name ? `, ${student.middle_name[0]}.` : ''}
 LRN: ${student.lrn}
+Age: ${student.age || ''}
 Gender: ${student.gender}
+Section: ${student.section || ''}
 Email: ${student.email}
-Phone: ${student.phone || student.contact_no}
+Phone Number: ${student.phone || student.contact_no}
 Strand: ${student.strand}
 Address: ${student.address}
     `.trim();
 
-    navigator.clipboard.writeText(infoText);
-    setCopied(true);
-    toast.success("Identity profile copied to clipboard");
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(infoText);
+      setCopied(true);
+      toast.success("Student Information Copied", {
+        style: { fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em' }
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error("Failed to copy information");
+    }
+  };
+
+  const getAllDocs = () => {
+    const docs: {url: string, label: string}[] = [];
+    const imgUrl = student.profile_picture || student.two_by_two_url || student.profile_2x2_url;
+    if (imgUrl) docs.push({ url: imgUrl, label: `${student.last_name}_2X2_PICTURE`.toUpperCase() });
+
+    if (isJHS) {
+      if (student.form_138_url) docs.push({ url: student.form_138_url, label: `${student.last_name}_FORM_138`.toUpperCase() });
+      if (student.good_moral_url) docs.push({ url: student.good_moral_url, label: `${student.last_name}_GOOD_MORAL`.toUpperCase() });
+    } else {
+      if (student.cor_url) docs.push({ url: student.cor_url, label: `${student.last_name}_ALS_RATING`.toUpperCase() });
+      if (student.diploma_url) docs.push({ url: student.diploma_url, label: `${student.last_name}_DIPLOMA`.toUpperCase() });
+      if (student.af5_url) docs.push({ url: student.af5_url, label: `${student.last_name}_AF5`.toUpperCase() });
+    }
+    return docs;
   };
   
   return (
@@ -145,6 +170,7 @@ Address: ${student.address}
             variant="ghost" 
             size="icon" 
             onClick={handleCopyInfo} 
+            title="Copy Student Information"
             className={`rounded-full transition-all active:scale-90 ${isDarkMode ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-white/20 hover:bg-white/40 text-slate-900'}`}
           >
             {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
@@ -166,7 +192,7 @@ Address: ${student.address}
             onClick={(e) => { 
               e.stopPropagation(); 
               const imgUrl = student.profile_picture || student.two_by_two_url || student.profile_2x2_url;
-              if (imgUrl) onOpenFile(imgUrl, "Registry Identity Matrix 2x2"); 
+              if (imgUrl) onOpenFile(imgUrl, `${student.last_name}_2X2_PICTURE`.toUpperCase(), getAllDocs()); 
             }}
           >
             {student.profile_picture || student.two_by_two_url || student.profile_2x2_url ? (
@@ -290,14 +316,14 @@ Address: ${student.address}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {isJHS ? (
               <>
-                <CredentialCard label="Form 138" url={student.form_138_url} onOpen={onOpenFile} isDarkMode={isDarkMode} />
-                <CredentialCard label="Good Moral" url={student.good_moral_url} onOpen={onOpenFile} isDarkMode={isDarkMode} />
+                <CredentialCard label="Form 138" url={student.form_138_url} onOpen={(url) => onOpenFile(url, `${student.last_name}_FORM_138`.toUpperCase(), getAllDocs())} isDarkMode={isDarkMode} />
+                <CredentialCard label="Good Moral" url={student.good_moral_url} onOpen={(url) => onOpenFile(url, `${student.last_name}_GOOD_MORAL`.toUpperCase(), getAllDocs())} isDarkMode={isDarkMode} />
               </>
             ) : (
               <>
-                <CredentialCard label="ALS Rating" url={student.cor_url} onOpen={onOpenFile} isDarkMode={isDarkMode} />
-                <CredentialCard label="Diploma" url={student.diploma_url} onOpen={onOpenFile} isDarkMode={isDarkMode} />
-                <CredentialCard label="AF5 Form" url={student.af5_url} onOpen={onOpenFile} isDarkMode={isDarkMode} />
+                <CredentialCard label="ALS Rating" url={student.cor_url} onOpen={(url) => onOpenFile(url, `${student.last_name}_ALS_RATING`.toUpperCase(), getAllDocs())} isDarkMode={isDarkMode} />
+                <CredentialCard label="Diploma" url={student.diploma_url} onOpen={(url) => onOpenFile(url, `${student.last_name}_DIPLOMA`.toUpperCase(), getAllDocs())} isDarkMode={isDarkMode} />
+                <CredentialCard label="AF5 Form" url={student.af5_url} onOpen={(url) => onOpenFile(url, `${student.last_name}_AF5`.toUpperCase(), getAllDocs())} isDarkMode={isDarkMode} />
               </>
             )}
           </div>

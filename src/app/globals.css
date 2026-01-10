@@ -21,7 +21,21 @@
   --radius-xl: 0.75rem;
 }
 
+/* Prevent layout shift during image load */
+img {
+  content-visibility: auto;
+}
 
+/* Hardware acceleration for images */
+.object-cover {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Smooth transitions */
+.transition-opacity {
+  transition: opacity 0.3s ease-in-out;
+}
 
 @layer base {
   :root {

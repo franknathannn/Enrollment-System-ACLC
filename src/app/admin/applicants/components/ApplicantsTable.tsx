@@ -1,12 +1,14 @@
 // src/app/admin/applicants/components/ApplicantsTable.tsx
-import { memo, useRef, useState, useEffect } from "react"
-import { CheckSquare, Square, Eye, RotateCcw, Trash2 } from "lucide-react"
+import { memo } from "react"
+import { CheckSquare, Square, Eye, RotateCcw, Trash2, ChevronLeft, ChevronRight, Copy, Shield } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ThemedCard } from "@/components/ThemedCard"
 import { ThemedText } from "@/components/ThemedText"
 import { themeColors } from "@/lib/themeColors"
+import { OptimizedImage } from "./OptimizedImage"
 
 interface ApplicantsTableProps {
   isDarkMode: boolean
@@ -25,6 +27,10 @@ interface ApplicantsTableProps {
   setActiveDeleteStudent: (student: any) => void
   setDeleteModalOpen: (open: boolean) => void
   strandStats?: Record<string, boolean>
+  totalFilteredCount: number
+  currentPage: number
+  totalPages: number
+  setCurrentPage: (page: number) => void
 }
 
 interface ApplicantRowProps {
@@ -44,6 +50,14 @@ interface ApplicantRowProps {
   setActiveDeleteStudent: (student: any) => void
   setDeleteModalOpen: (open: boolean) => void
 }
+
+const handleCopyLRN = (e: React.MouseEvent, lrn: string) => {
+  e.stopPropagation();
+  navigator.clipboard.writeText(lrn);
+  toast.success("LRN Has been Copied", {
+    style: { fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em' }
+  });
+};
 
 const MobileApplicantRow = memo(({ 
   student, isSelected, isHidden, isExiting, isAnimatingIn, isStrandFull, isDarkMode,
@@ -75,11 +89,11 @@ const MobileApplicantRow = memo(({
             <div className="flex items-center gap-3">
               <div className="relative shrink-0">
                 <div className={`w-12 h-12 rounded-2xl overflow-hidden ${isMale ? 'bg-blue-100' : 'bg-pink-100'}`}>
-                  <img 
+                  <OptimizedImage 
                     src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
                     alt="Avatar" 
-                    className="w-full h-full object-cover" 
-                    loading="lazy"
+                    className="w-full h-full object-cover"
+                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
                   />
                 </div>
                 <div className={`absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-md text-[6px] font-black uppercase tracking-widest text-white shadow-sm z-10 ${
@@ -92,9 +106,18 @@ const MobileApplicantRow = memo(({
               </div>
               <div>
                 <h3 className={`font-black text-sm uppercase leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {student.last_name}, {student.first_name}
+                  {student.last_name}, {student.first_name} <span className="text-[10px] opacity-40 font-black italic">{student.middle_name?.[0]}.</span>
                 </h3>
-                <p className="text-[10px] font-bold text-slate-400 mt-1 tracking-wider">LRN: {student.lrn}</p>
+                <div className="flex items-center gap-1.5 mt-1">
+                   <p className="text-[10px] font-bold text-slate-400 tracking-wider">LRN: {student.lrn}</p>
+                   <button 
+                     onClick={(e) => handleCopyLRN(e, student.lrn)}
+                     title="Copy LRN"
+                     className={`p-1 rounded-md transition-all active:scale-90 ${isDarkMode ? 'bg-slate-800 text-slate-400 hover:text-white' : 'bg-slate-100 text-slate-500 hover:text-slate-900'}`}
+                   >
+                      <Copy size={10} />
+                   </button>
+                </div>
               </div>
             </div>
           </div>
@@ -195,11 +218,11 @@ const DesktopApplicantRow = memo(({
                 ? 'ring-blue-400/60 group-hover/name:ring-blue-500' 
                 : 'ring-pink-400/40 group-hover/name:ring-pink-500'
             }`}>
-              <img 
+              <OptimizedImage 
                 src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
                 alt="Avatar" 
-                className="w-full h-full object-cover" 
-                loading="lazy"
+                className="w-full h-full object-cover"
+                fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
               />
             </div>
             <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[6px] md:text-[7px] font-black uppercase tracking-widest text-white shadow-sm z-10 whitespace-nowrap ${
@@ -211,8 +234,24 @@ const DesktopApplicantRow = memo(({
             </div>
           </div>
           <div className="min-w-0">
-            <ThemedText variant="h3" className="text-sm md:text-base leading-none group-hover/name:text-blue-600 dark:group-hover/name:text-blue-400 transition-colors" isDarkMode={isDarkMode} style={{ color: isDarkMode ? '#ffffff' : 'black' }}>{student.first_name} {student.last_name}</ThemedText>
-            <ThemedText variant="label" className="mt-1 text-slate-500 dark:text-slate-400" isDarkMode={isDarkMode}>LRN: {student.lrn}</ThemedText>
+            <div className={`font-black text-sm md:text-base uppercase leading-none tracking-tight transition-colors duration-500 ${isDarkMode ? 'text-white group-hover/name:text-blue-400' : 'text-slate-900 group-hover/name:text-blue-600'}`}>
+              {student.last_name}, {student.first_name} <span className="text-[10px] opacity-40 font-black italic">{student.middle_name?.[0]}.</span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+               <Shield size={10} className="text-slate-400" />
+               <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">LRN:{student.lrn}</p>
+               <button 
+                 onClick={(e) => handleCopyLRN(e, student.lrn)}
+                 title="Copy LRN"
+                 className={`p-1 rounded-md transition-all active:scale-90 shadow-sm ${
+                   isDarkMode 
+                   ? 'bg-slate-800 text-slate-400 hover:text-white' 
+                   : 'bg-slate-100 text-slate-500 hover:text-slate-900'
+                 }`}
+               >
+                  <Copy size={10} />
+               </button>
+            </div>
           </div>
         </div>
       </TableCell>
@@ -338,65 +377,11 @@ const DesktopApplicantRow = memo(({
 })
 DesktopApplicantRow.displayName = "DesktopApplicantRow"
 
-const useVirtualizer = (itemCount: number, itemHeight: number, containerRef: React.RefObject<HTMLDivElement | null>) => {
-  const [scrollTop, setScrollTop] = useState(0)
-  const [viewportHeight, setViewportHeight] = useState(600)
-
-  useEffect(() => {
-    const element = containerRef.current
-    if (!element) return
-
-    const update = () => {
-      setScrollTop(element.scrollTop)
-      setViewportHeight(element.clientHeight || 600)
-    }
-
-    update()
-
-    const handleScroll = () => requestAnimationFrame(update)
-    const handleResize = () => requestAnimationFrame(update)
-
-    element.addEventListener('scroll', handleScroll)
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      element.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [containerRef])
-
-  const overscan = 3
-  const visibleCount = Math.ceil(viewportHeight / itemHeight)
-  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan)
-  const endIndex = Math.min(itemCount - 1, startIndex + visibleCount + (overscan * 2))
-
-  const virtualItems = []
-  for (let i = startIndex; i <= endIndex; i++) {
-    virtualItems.push(i)
-  }
-
-  const paddingTop = startIndex * itemHeight
-  const paddingBottom = Math.max(0, (itemCount - 1 - endIndex) * itemHeight)
-
-  return { virtualItems, paddingTop, paddingBottom }
-}
-
 export const ApplicantsTable = memo(({
   isDarkMode, filteredStudents, selectedIds, toggleSelect, toggleSelectAll, hiddenRows, exitingRows, animatingIds,
-  setOpenStudentDialog, handleExit, handleStatusChange, setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen, strandStats
+  setOpenStudentDialog, handleExit, handleStatusChange, setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen, strandStats,
+  totalFilteredCount, currentPage, totalPages, setCurrentPage
 }: ApplicantsTableProps) => {
-  const mobileContainerRef = useRef<HTMLDivElement>(null)
-  const desktopContainerRef = useRef<HTMLDivElement>(null)
-  
-  const MOBILE_ROW_HEIGHT = 280
-  const DESKTOP_ROW_HEIGHT = 89
-
-  const { virtualItems: mobileItems, paddingTop: mobilePT, paddingBottom: mobilePB } = 
-    useVirtualizer(filteredStudents.length, MOBILE_ROW_HEIGHT, mobileContainerRef)
-
-  const { virtualItems: desktopItems, paddingTop: desktopPT, paddingBottom: desktopPB } = 
-    useVirtualizer(filteredStudents.length, DESKTOP_ROW_HEIGHT, desktopContainerRef)
-
   return (
     <>
       <style jsx global>{`
@@ -431,25 +416,23 @@ export const ApplicantsTable = memo(({
         }}
       >
         {/* MOBILE CARD VIEW */}
-        <div ref={mobileContainerRef} className="md:hidden p-4 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="md:hidden p-4 space-y-4">
           <div className="flex items-center justify-between px-2 pb-2">
             <button onClick={toggleSelectAll} className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500">
-              {selectedIds.length === filteredStudents.length && filteredStudents.length > 0 
+              {selectedIds.length === totalFilteredCount && totalFilteredCount > 0 
                 ? <CheckSquare className="text-blue-600" size={16} /> 
                 : <Square className={isDarkMode ? "text-slate-500" : "text-slate-400"} size={16} />
               }
               <span>Select All</span>
             </button>
-            <span className="text-[10px] font-bold text-slate-400">{filteredStudents.length} Records</span>
+            <span className="text-[10px] font-bold text-slate-400">{totalFilteredCount} Records</span>
           </div>
 
           {filteredStudents.length === 0 ? (
             <div className="py-20 text-center text-slate-400 italic">No applicants match this criteria.</div>
           ) : (
             <>
-              <div style={{ height: mobilePT }} />
-              {mobileItems.map((index) => {
-                const student = filteredStudents[index]
+              {filteredStudents.map((student) => {
             return (
               <MobileApplicantRow 
                 key={student.id}
@@ -471,19 +454,33 @@ export const ApplicantsTable = memo(({
               />
             )
               })}
-              <div style={{ height: mobilePB }} />
             </>
+          )}
+
+          {/* Mobile Pagination */}
+          {totalPages > 1 && (
+            <div className={`flex items-center justify-center gap-4 pt-4 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0 rounded-lg">
+                <ChevronLeft size={16} />
+              </Button>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="h-8 w-8 p-0 rounded-lg">
+                <ChevronRight size={16} />
+              </Button>
+            </div>
           )}
         </div>
 
         {/* DESKTOP TABLE VIEW */}
-        <div ref={desktopContainerRef} className="hidden md:block max-h-[70vh] overflow-y-auto custom-scrollbar relative">
+        <div className="hidden md:block relative">
           <Table className="min-w-full table-fixed">
-            <TableHeader className={`sticky top-0 z-20 ${isDarkMode ? 'bg-slate-900' : 'bg-white'} shadow-sm`}>
+            <TableHeader className={`${isDarkMode ? 'bg-slate-900' : 'bg-white'} shadow-sm`}>
               <TableRow className="border-none hover:bg-transparent">
                 <TableHead className="w-12 min-w-[48px] max-w-[48px] pl-4 md:pl-8" style={{ color: 'grey' }}>
                   <button onClick={toggleSelectAll}>
-                    {selectedIds.length === filteredStudents.length && filteredStudents.length > 0 
+                    {selectedIds.length === totalFilteredCount && totalFilteredCount > 0 
                       ? <CheckSquare className="text-blue-600" size={18} /> 
                       : <Square className={isDarkMode ? "text-slate-500" : "text-slate-400"} size={18} />
                     }
@@ -502,9 +499,7 @@ export const ApplicantsTable = memo(({
                 <TableRow><TableCell colSpan={7} className="py-32 text-center text-slate-400 italic">No applicants match this criteria.</TableCell></TableRow>
               ) : (
                 <>
-                  {desktopPT > 0 && <tr style={{ height: desktopPT }} />}
-                  {desktopItems.map((index) => {
-                    const student = filteredStudents[index]
+                  {filteredStudents.map((student) => {
                 return (
                   <DesktopApplicantRow 
                     key={student.id}
@@ -526,11 +521,30 @@ export const ApplicantsTable = memo(({
                   />
                 )
                   })}
-                  {desktopPB > 0 && <tr style={{ height: desktopPB }} />}
                 </>
               )}
             </TableBody>
           </Table>
+
+          {/* Desktop Pagination */}
+          {totalPages > 1 && (
+            <div className={`flex items-center justify-between px-6 py-4 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Showing {filteredStudents.length} of {totalFilteredCount}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <ChevronLeft size={14} />
+                </Button>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mx-2">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button variant="ghost" size="sm" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <ChevronRight size={14} />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </ThemedCard>
     </>
