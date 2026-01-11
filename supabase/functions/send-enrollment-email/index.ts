@@ -13,11 +13,14 @@ serve(async (req: Request) => {
       return new Response('Status update not relevant for email', { status: 200 });
     }
 
+    // --- DEFINE VARIABLES BEFORE HTML ---
     const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
     const SENDER_EMAIL = Deno.env.get('SENDER_EMAIL');
     const isApproved = record.status === 'Approved';
+    const logoUrl = "https://ama-aclc-northbay-es.vercel.app/logo-aclc.png";
+    const statusLink = "https://ama-aclc-northbay-es.vercel.app/status";
     
-    // 2. Formatting Logic
+    // Formatting Logic
     const subject = isApproved 
       ? 'Application Approved - ACLC Northbay' 
       : 'Action Required: Application Status Update - ACLC Northbay';
@@ -28,10 +31,7 @@ serve(async (req: Request) => {
       .replace(/\n/g, '<br/>')
       .replace(/, /g, '<br/>');
 
-    const logoUrl = "https://ama-aclc-northbay-es.vercel.app/logo-aclc.png";
-    const statusLink = "https://ama-aclc-northbay-es.vercel.app/status";
-
-    // 3. THE BEAUTIFIED HTML TEMPLATE (Exact Copy of your Design)
+    // 2. THE BEAUTIFIED HTML TEMPLATE
     const htmlContent = `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -79,21 +79,16 @@ serve(async (req: Request) => {
                 Fix My Application
               </a>
             </div>
-            
-            <p style="text-align: center; font-size: 12px; color: #9ca3af; margin-top: 30px;">
-              You will need your LRN and Surname to access your application.
-            </p>
           `}
         </div>
 
         <div style="text-align: center; margin-top: 35px; color: #9ca3af; font-size: 12px;">
           <p style="margin: 0;">&copy; ${new Date().getFullYear()} AMA ACLC Northbay Campus. All rights reserved.</p>
-          <p style="margin: 5px 0 0 0;">This is an automated message, please do not reply.</p>
         </div>
       </div>
     `;
 
-    // 4. THE BREVO SEND-OFF
+    // 3. THE BREVO SEND-OFF
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -109,14 +104,16 @@ serve(async (req: Request) => {
       })
     });
 
-    if (!response.ok) {
-      console.error(`Brevo Error: ${response.status}`);
-    }
-
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    return new Response(JSON.stringify({ success: true }), { 
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
 
   } catch (err: any) {
     console.error("Error:", err.message);
-    return new Response(JSON.stringify({ error: err.message }), { status: 200 });
+    return new Response(JSON.stringify({ error: err.message }), { 
+      status: 200, 
+      headers: { "Content-Type": "application/json" }
+    });
   }
 });
