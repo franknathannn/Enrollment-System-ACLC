@@ -98,3 +98,4 @@ The middleware now:
 - **Admin routes** (`/admin/*`) require authentication via middleware
 - **All routes** should return 200 OK, not 404
 
+

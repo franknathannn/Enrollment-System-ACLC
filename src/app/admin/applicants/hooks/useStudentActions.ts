@@ -48,10 +48,21 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
         const student = students.find(s => s.id === studentId);
         const assignedSectionId = result.assignedSectionId;
         const assignedSectionName = result.assignedSection || 'Unassigned';
-        let description = `Manual status transition to `;
-        if (status === 'Accepted') description = "Student Accepted";
-        else if (status === 'Rejected') description = feedback ? `Student Rejected: ` : "Student Rejected";
-        else if (status === 'Pending') description = "Student Returned to Pending";
+        const previousStatus = student?.status || 'Unknown';
+        let description = "";
+        if (status === 'Accepted' || status === 'Approved') {
+          description = assignedSectionName !== 'Unassigned' 
+            ? `Moved ${name} to ${status} status and assigned to ${assignedSectionName}` 
+            : `Moved ${name} to ${status} status`;
+        } else if (status === 'Rejected') {
+          description = feedback 
+            ? `Moved ${name} to Rejected status: ${feedback}` 
+            : `Moved ${name} to Rejected status`;
+        } else if (status === 'Pending') {
+          description = `Moved ${name} back to Pending status from ${previousStatus}`;
+        } else {
+          description = `Changed ${name} status from ${previousStatus} to ${status}`;
+        }
         await supabase.from('activity_logs').insert([{
           admin_id: user?.id,
           admin_name: user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Authorized Admin',
@@ -61,7 +72,9 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
           student_image: student?.two_by_two_url || student?.profile_2x2_url || student?.profile_picture,
           details: description
         }]);
-        const successMsg = assignedSectionId ? `✨  → ` : `✓  updated to `;
+        const successMsg = assignedSectionId 
+          ? `Moved ${name} to ${status}${assignedSectionName !== 'Unassigned' ? ` → ${assignedSectionName}` : ''}` 
+          : `Updated ${name} to ${status}`;
         toast.success(successMsg, { id: toastId })
         setStudents(prev => prev.map(s => s.id === studentId ? { ...s, status: status, section_id: assignedSectionId, section: assignedSectionName } : s))
         modals.setDeclineModalOpen(false); modals.setDeclineReason(""); modals.setActiveDeclineStudent(null)
@@ -94,9 +107,11 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
           admin_name: user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Authorized Admin',
           action_type: 'DELETED',
           student_name: name,
-          details: "Deleted from the list"
+          student_id: studentId,
+          student_image: activeDeleteStudent?.two_by_two_url || activeDeleteStudent?.profile_2x2_url || activeDeleteStudent?.profile_picture,
+          details: `Permanently deleted ${name} from the enrollment system`
         }]);
-        toast.success(`✓ Record Erased: `, { id: toastId });
+        toast.success(`Deleted ${name} from the system`, { id: toastId });
         modals.setDeleteModalOpen(false); modals.setActiveDeleteStudent(null);
       }
     } catch (err: any) {
@@ -120,23 +135,46 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
       if (result.success) {
         const { data: { user } } = await supabase.auth.getUser();
         const selectedStudents = students.filter(s => selectedIds.includes(s.id));
-        const logEntries = selectedStudents.map(s => ({
-          admin_id: user?.id,
-          admin_name: user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Authorized Admin',
-          action_type: newStatus.toUpperCase(),
-          student_name: `${s.first_name} ${s.last_name}`,
-          student_id: s.id,
-          student_image: s.two_by_two_url || s.profile_2x2_url,
-          details: newStatus === 'Accepted' ? "Student Accepted" : (newStatus === 'Pending' ? "Student Returned to Pending" : `Batch update to ${feedback ? `: ` : ''}`)
-        }));
-        await supabase.from('activity_logs').insert(logEntries);
         const successfulUpdates = result.results.filter(r => r.success);
+        const logEntries = selectedStudents.map(s => {
+          const update = successfulUpdates.find(u => u.id === s.id);
+          const studentName = `${s.first_name} ${s.last_name}`;
+          const assignedSection = update?.assignedSection || 'Unassigned';
+          let details = "";
+          if (newStatus === 'Accepted' || newStatus === 'Approved') {
+            details = assignedSection !== 'Unassigned' 
+              ? `Bulk moved ${studentName} to ${newStatus} and assigned to ${assignedSection}` 
+              : `Bulk moved ${studentName} to ${newStatus} status`;
+          } else if (newStatus === 'Pending') {
+            details = `Bulk moved ${studentName} back to Pending status`;
+          } else if (newStatus === 'Rejected') {
+            details = feedback 
+              ? `Bulk moved ${studentName} to Rejected: ${feedback}` 
+              : `Bulk moved ${studentName} to Rejected status`;
+          } else {
+            details = `Bulk updated ${studentName} to ${newStatus}`;
+          }
+          return {
+            admin_id: user?.id,
+            admin_name: user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Authorized Admin',
+            action_type: newStatus.toUpperCase(),
+            student_name: studentName,
+            student_id: s.id,
+            student_image: s.two_by_two_url || s.profile_2x2_url,
+            details: details
+          };
+        });
+        await supabase.from('activity_logs').insert(logEntries);
         setStudents(prev => prev.map(s => {
           const update = successfulUpdates.find(u => u.id === s.id);
           if (update) return { ...s, status: targetStatus, section_id: update.assignedSectionId || null, section: update.assignedSection || 'Unassigned' };
           return s;
         }));
-        toast.success(`✨  students → `, { id: toastId })
+        const count = successfulUpdates.length;
+        const sectionInfo = successfulUpdates.some(u => u.assignedSection && u.assignedSection !== 'Unassigned') 
+          ? ` → ${successfulUpdates.filter(u => u.assignedSection && u.assignedSection !== 'Unassigned').length} assigned to sections` 
+          : '';
+        toast.success(`${count} student${count !== 1 ? 's' : ''} moved to ${newStatus}${sectionInfo}`, { id: toastId })
         modals.setBulkDeclineModalOpen(false); modals.setDeclineReason("")
       }
     } catch (err: any) {
@@ -162,11 +200,13 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
         admin_name: user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Authorized Admin',
         action_type: 'DELETED',
         student_name: `${s.first_name} ${s.last_name}`,
-        details: "Batch deletion from database"
+        student_id: s.id,
+        student_image: s.two_by_two_url || s.profile_2x2_url,
+        details: `Bulk deleted ${s.first_name} ${s.last_name} from the enrollment system`
       }));
       await Promise.all([bulkDeleteApplicants(selectedIds), supabase.from('activity_logs').insert(logEntries)])
       setStudents(prev => prev.filter(s => !selectedIds.includes(s.id)))
-      toast.success(`✓  records deleted`, { id: toastId })
+      toast.success(`${selectedStudents.length} student${selectedStudents.length !== 1 ? 's' : ''} permanently deleted`, { id: toastId })
       modals.setBulkDeleteModalOpen(false)
     } catch (err: any) {
       toast.error("❌ Bulk deletion failed", { id: toastId })

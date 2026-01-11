@@ -19,7 +19,7 @@ export async function downloadApplicantsExcel(filter: string) {
     let query = supabase.from('students').select('*').order('last_name', { ascending: true });
     
     if (filter !== 'All') {
-      if (filter === 'Accepted') query = query.in('status', ['Accepted', 'Approved', 'Enrolled']);
+      if (filter === 'Accepted') query = query.in('status', ['Accepted', 'Approved']);
       else query = query.eq('status', filter);
     }
 
@@ -82,7 +82,7 @@ export async function downloadApplicantsExcel(filter: string) {
       statusCell.value(status);
       
       // Styling
-      if (status === 'Accepted' || status === 'Enrolled') statusCell.style("fill", "E2EFDA");
+      if (status === 'Accepted' || status === 'Approved') statusCell.style("fill", "E2EFDA");
       else if (status === 'Rejected') statusCell.style("fill", "FFC7CE");
       else if (status === 'Pending') statusCell.style("fill", "FFEB9C");
     }

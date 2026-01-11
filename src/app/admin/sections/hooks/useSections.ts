@@ -326,8 +326,17 @@ export function useSections() {
       await updateApplicantStatus(id, 'Pending')
       const { data: { user } } = await supabase.auth.getUser()
       const student = sections.flatMap(s => s.students).find((s: any) => s.id === id)
-      await supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'PENDING', student_name: name, student_id: id, student_image: student?.two_by_two_url || student?.profile_2x2_url, details: "Student Returned to Pending" }])
-      toast.success(`${name} returned to Pending queue.`); fetchSections()
+      const previousStatus = student?.status || 'Unknown';
+      await supabase.from('activity_logs').insert([{ 
+        admin_id: user?.id, 
+        admin_name: user?.user_metadata?.username || 'Admin', 
+        action_type: 'PENDING', 
+        student_name: name, 
+        student_id: id, 
+        student_image: student?.two_by_two_url || student?.profile_2x2_url, 
+        details: `Moved ${name} back to Pending status from ${previousStatus}` 
+      }])
+      toast.success(`Moved ${name} back to Pending queue`); fetchSections()
     } catch (err) { toast.error("Action failed") }
   }, [sections, fetchSections])
 
@@ -340,8 +349,17 @@ export function useSections() {
         const result = await deleteApplicant(activeUnenrollStudent.id)
         if (result.success) {
           const { data: { user } } = await supabase.auth.getUser()
-          await supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'DELETED', student_name: `${activeUnenrollStudent.first_name} ${activeUnenrollStudent.last_name}`, student_id: null, student_image: activeUnenrollStudent.two_by_two_url || activeUnenrollStudent.profile_2x2_url, details: "Deleted from the list" }])
-          toast.success(`Record Erased Successfully`, { id: toastId }); setActiveUnenrollStudent(null); fetchSections()
+          const unenrollName = `${activeUnenrollStudent.first_name} ${activeUnenrollStudent.last_name}`;
+          await supabase.from('activity_logs').insert([{ 
+            admin_id: user?.id, 
+            admin_name: user?.user_metadata?.username || 'Admin', 
+            action_type: 'DELETED', 
+            student_name: unenrollName, 
+            student_id: activeUnenrollStudent.id, 
+            student_image: activeUnenrollStudent.two_by_two_url || activeUnenrollStudent.profile_2x2_url, 
+            details: `Permanently deleted ${unenrollName} from section ${currentSection?.section_name || 'Unknown'}` 
+          }])
+          toast.success(`Deleted ${unenrollName} from the system`, { id: toastId }); setActiveUnenrollStudent(null); fetchSections()
         }
       } catch (err) { toast.error("Database purge failed") }
     })
@@ -354,8 +372,18 @@ export function useSections() {
       await updateStudentSection(id, targetSec.id)
       const { data: { user } } = await supabase.auth.getUser()
       const student = sections.flatMap(s => s.students).find((s: any) => s.id === id)
-      await supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'SWITCHED', student_name: student ? `${student.first_name} ${student.last_name}` : 'Unknown Student', student_id: id, student_image: student?.two_by_two_url || student?.profile_2x2_url, details: `Transferred to matrix ${newSectionName}` }])
-      toast.success(`Moved to ${newSectionName}`); fetchSections()
+      const studentName = student ? `${student.first_name} ${student.last_name}` : 'Unknown Student';
+      const previousSection = student?.section || 'Unassigned';
+      await supabase.from('activity_logs').insert([{ 
+        admin_id: user?.id, 
+        admin_name: user?.user_metadata?.username || 'Admin', 
+        action_type: 'SWITCHED', 
+        student_name: studentName, 
+        student_id: id, 
+        student_image: student?.two_by_two_url || student?.profile_2x2_url, 
+        details: `Transferred ${studentName} from ${previousSection} to ${newSectionName}` 
+      }])
+      toast.success(`Moved ${studentName} to ${newSectionName}`); fetchSections()
     } catch (err) { toast.error("Transfer failed") }
   }, [sections, fetchSections])
 
