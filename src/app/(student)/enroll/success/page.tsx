@@ -9,8 +9,6 @@ import {
   Sparkles, Building2, ShieldCheck, BadgeCheck, Loader2, Orbit
 } from "lucide-react"
 import Link from "next/link"
-import React from "react"
-import { cn } from "@/lib/utils"
 
 // --- 1. CONTENT COMPONENT (Interactive Nova Constellation) ---
 function SuccessContent() {

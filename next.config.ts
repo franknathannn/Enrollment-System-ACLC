@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // We remove the turbopack aliases because they are 
+  // actually causing the Edge Runtime (middleware) to crash.
   reactCompiler: true,
 };
 

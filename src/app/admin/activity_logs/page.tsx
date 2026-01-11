@@ -93,7 +93,7 @@ export default function ActivityLogsPage() {
     window.addEventListener('theme-change', handleThemeChange)
     return () => window.removeEventListener('theme-change', handleThemeChange)
   }, [])
-
+  
   useEffect(() => {
     checkUser()
     fetchLogs()

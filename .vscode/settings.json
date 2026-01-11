@@ -1,8 +1,0 @@
-{
-  "deno.enable": true,
-  "deno.enablePaths": [
-    "supabase/functions" // Correct: Isolates Deno to this folder
-  ],
-  "deno.unstable": true, // Correct: Required for many Supabase APIs
-  "deno.lint": true
-}

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import Script from "next/script"; // <--- Import this
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -11,28 +12,19 @@ export const metadata: Metadata = {
   description: "Official Enrollment Portal for AMA ACLC Northbay",
 };
 
-// src/app/layout.tsx
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html 
-      lang="en" 
-      className="light" 
-      style={{ colorScheme: 'light' }} 
-      // This covers the html tag
-      suppressHydrationWarning
-    >
-      <body 
-        className={inter.className} 
-        // Add this to cover the body tag where extensions inject code
-        suppressHydrationWarning
-      >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false} // Ensure it stays light as per your request
-        >
+    <html lang="en" className="light" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
+        {/* Load XlsxPopulate via CDN to bypass Turbopack 'fs' error */}
+        <Script 
+          src="https://cdnjs.cloudflare.com/ajax/libs/xlsx-populate/1.21.0/xlsx-populate.min.js"
+          strategy="beforeInteractive"
+        />
+        
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
