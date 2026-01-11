@@ -75,6 +75,7 @@ export const config = {
     /*
      * Only run middleware on /admin routes
      * This prevents middleware from interfering with other routes like /, /enroll, /status
+     * Using proper Next.js matcher pattern - matches all paths starting with /admin
      */
     '/admin/:path*',
   ],
