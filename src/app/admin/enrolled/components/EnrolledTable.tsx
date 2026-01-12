@@ -8,6 +8,7 @@ import { Eye, Copy, Shield, RotateCcw } from "lucide-react"
 import { ThemedCard } from "@/components/ThemedCard"
 import { OptimizedImage } from "./OptimizedImage"
 import { toast } from "sonner"
+import { AnimatedText } from "../../dashboard/components/primitives"
 
 interface EnrolledTableProps {
   students: any[]
@@ -113,7 +114,7 @@ export const EnrolledTable = memo(({ students, isDarkMode, onView, onReset, anim
                                 onClick={() => onView(s)}
                                 className={`font-black text-base uppercase leading-none tracking-tight cursor-pointer hover:underline transition-colors duration-500 ${isDarkMode ? 'text-white group-hover:text-blue-400' : 'text-slate-900 group-hover:text-blue-600'}`}
                              >
-                               {s.last_name}, {s.first_name} <span className="text-[10px] opacity-40 font-black italic">{s.middle_name?.[0]}.</span>
+                               <AnimatedText text={`${s.last_name}, ${s.first_name}`} /> <span className="text-[10px] opacity-40 font-black italic">{s.middle_name?.[0]}.</span>
                              </p>
                              <div className="flex items-center gap-2 mt-1.5">
                                 <Shield size={10} className="text-slate-400" />

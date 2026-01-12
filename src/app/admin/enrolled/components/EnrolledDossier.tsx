@@ -13,7 +13,7 @@ import {
 import { toast } from "sonner"
 import { OptimizedImage } from "./OptimizedImage"
 import { ThemedText } from "@/components/ThemedText"
-import { AnimatedNumber } from "../../dashboard/components/primitives"
+import { AnimatedNumber, AnimatedText } from "../../dashboard/components/primitives"
 
 // ===== STATUS BADGE =====
 const StatusBadge = memo(function StatusBadge({ status, isDarkMode }: { status: string, isDarkMode: boolean }) {
@@ -32,14 +32,14 @@ const StatusBadge = memo(function StatusBadge({ status, isDarkMode }: { status: 
 })
 
 // ===== INFO BLOCK =====
-const InfoBlock = memo(function InfoBlock({ label, value, icon, isDarkMode }: { label: string, value: string, icon?: React.ReactNode, isDarkMode: boolean }) {
+const InfoBlock = memo(function InfoBlock({ label, value, icon, isDarkMode, animate = true }: { label: string, value: string, icon?: React.ReactNode, isDarkMode: boolean, animate?: boolean }) {
   return (
     <div className="group transition-all duration-300">
       <p className={`text-[9px] md:text-[10px] uppercase font-black tracking-[0.2em] mb-1.5 transition-colors ${isDarkMode ? 'text-slate-500 group-hover:text-blue-400' : 'text-slate-400 group-hover:text-blue-700'}`}>{label}</p>
       <div className="flex items-center gap-2.5">
         {icon && <span className={`shrink-0 ${isDarkMode ? 'text-blue-400/30' : 'text-blue-500/40'}`}>{icon}</span>}
         <p className={`font-bold text-sm md:text-base break-words leading-tight transition-colors duration-500 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-          {value || "—"}
+          {animate ? <AnimatedText text={value || "—"} /> : (value || "—")}
         </p>
       </div>
     </div>
@@ -302,7 +302,7 @@ Address: ${student.address}
         </div>
 
         <h2 className={`relative z-10 text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none italic transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          {formData.first_name} {formData.last_name}
+          <AnimatedText text={`${formData.first_name} ${formData.last_name}`} />
         </h2>
         
         <div className="flex flex-col items-center gap-2 mt-4 md:mt-6 relative z-10">
@@ -337,7 +337,7 @@ Address: ${student.address}
                         className={inputClass}
                       />
                     </>
-                  ) : (
+                  ) : (field === 'gender' ? <InfoBlock label={field.replace('_', ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} animate={false} /> :
                     <InfoBlock label={field.replace('_', ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} />
                   )}
                 </div>

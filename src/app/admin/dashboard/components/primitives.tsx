@@ -2,7 +2,7 @@
 
 "use client"
 
-import { memo, useEffect, useState } from "react"
+import { memo, useEffect, useState, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { ArrowUpRight } from "lucide-react"
 import { ThemedText } from "@/components/ThemedText"
@@ -49,6 +49,27 @@ export const AnimatedNumber = memo(({ value, duration = 800 }: { value: number, 
   )
 })
 AnimatedNumber.displayName = "AnimatedNumber"
+
+export const AnimatedText = memo(({ text, className }: { text: string | number | null | undefined, className?: string }) => {
+  const [isAnimating, setIsAnimating] = useState(false)
+  const prevText = useRef(text)
+
+  useEffect(() => {
+    if (prevText.current !== text) {
+      setIsAnimating(true)
+      const timer = setTimeout(() => setIsAnimating(false), 800)
+      prevText.current = text
+      return () => clearTimeout(timer)
+    }
+  }, [text])
+
+  return (
+    <span className={`transition-all duration-500 inline-block ${isAnimating ? 'text-purple-600 dark:text-purple-400 scale-105 font-black' : ''} ${className || ''}`}>
+      {text || "—"}
+    </span>
+  )
+})
+AnimatedText.displayName = "AnimatedText"
 
 export const MetricCard = memo(({ label, value, colorLight, colorDark, icon, isDarkMode, textColor = "text-white" }: any) => {
   return (

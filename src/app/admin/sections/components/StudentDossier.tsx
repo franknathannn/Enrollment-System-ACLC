@@ -8,6 +8,7 @@ import {
   Copy, Check
 } from "lucide-react"
 import { toast } from "sonner"
+import { AnimatedText, AnimatedNumber } from "../../dashboard/components/primitives"
 
 // ===== STATUS BADGE =====
 const StatusBadge = memo(function StatusBadge({ status, isDarkMode }: { status: string, isDarkMode: boolean }) {
@@ -26,14 +27,14 @@ const StatusBadge = memo(function StatusBadge({ status, isDarkMode }: { status: 
 })
 
 // ===== INFO BLOCK =====
-const InfoBlock = memo(function InfoBlock({ label, value, icon, isDarkMode }: { label: string, value: string, icon?: React.ReactNode, isDarkMode: boolean }) {
+const InfoBlock = memo(function InfoBlock({ label, value, icon, isDarkMode, animate = true }: { label: string, value: string, icon?: React.ReactNode, isDarkMode: boolean, animate?: boolean }) {
   return (
     <div className="group transition-all duration-300">
       <p className={`text-[9px] md:text-[10px] uppercase font-black tracking-[0.2em] mb-1.5 transition-colors ${isDarkMode ? 'text-slate-500 group-hover:text-blue-400' : 'text-slate-400 group-hover:text-blue-600'}`}>{label}</p>
       <div className="flex items-center gap-2.5">
         {icon && <span className={`shrink-0 ${isDarkMode ? 'text-blue-400/30' : 'text-blue-500/40'}`}>{icon}</span>}
         <p className={`font-bold text-sm md:text-base break-words leading-tight transition-colors duration-500 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-          {value || "—"}
+          {animate ? <AnimatedText text={value || "—"} /> : (value || "—")}
         </p>
       </div>
     </div>
@@ -211,7 +212,7 @@ Address: ${student.address}
         </div>
 
         <h2 className={`relative z-10 text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none italic transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          {student.first_name} {student.last_name}
+          <AnimatedText text={`${student.first_name} ${student.last_name}`} />
         </h2>
         
         <div className="flex flex-col items-center gap-2 mt-4 md:mt-6 relative z-10">
@@ -235,7 +236,7 @@ Address: ${student.address}
               <InfoBlock label="Given Name" value={student.first_name} isDarkMode={isDarkMode} />
               <InfoBlock label="Middle Initial" value={student.middle_name?.[0] ? `${student.middle_name[0]}.` : "N/A"} isDarkMode={isDarkMode} />
               <InfoBlock label="Surname" value={student.last_name} isDarkMode={isDarkMode} />
-              <InfoBlock label="Gender Identity" value={student.gender} isDarkMode={isDarkMode} />
+              <InfoBlock label="Gender Identity" value={student.gender} isDarkMode={isDarkMode} animate={false} />
               <InfoBlock label="Religion" value={student.religion} isDarkMode={isDarkMode} />
               <InfoBlock label="Civil Status" value={student.civil_status} isDarkMode={isDarkMode} />
               <InfoBlock label="Nationality" value={student.nationality || "Filipino"} icon={<Globe size={12}/>} isDarkMode={isDarkMode} />
@@ -294,7 +295,7 @@ Address: ${student.address}
               </div>
               <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-blue-900/10 border-blue-900/40' : 'bg-blue-50 border-blue-200'}`}>
                 <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>GWA Index</p>
-                <p className={`text-3xl font-black italic leading-none transition-colors duration-500 ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>{student.gwa_grade_10 || "0.00"}</p>
+                <p className={`text-3xl font-black italic leading-none transition-colors duration-500 ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>{student.gwa_grade_10 ? <AnimatedNumber value={parseFloat(student.gwa_grade_10)} /> : "0.00"}</p>
               </div>
               <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-orange-900/10 border-orange-900/40' : 'bg-orange-50 border-orange-200'}`}>
                 <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>Program Strand</p>

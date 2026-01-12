@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Undo2, Eye, UserX, Fingerprint, Shield, Copy, User, MoreVertical, Star, Activity, Lock, Unlock } from "lucide-react"
 import { SwitchDialog } from "./SwitchDialog"
-import { AnimatedNumber } from "../../dashboard/components/primitives"
+import { AnimatedNumber, AnimatedText } from "../../dashboard/components/primitives"
 import { toast } from "sonner"
 
 export const StudentTable = memo(function StudentTable({ 
@@ -89,7 +89,7 @@ export const StudentTable = memo(function StudentTable({
                     
                     <div className="flex-1 min-w-0">
                       <h3 className={`font-black text-lg uppercase leading-none tracking-tighter truncate ${theme.textMain}`}>
-                        {s.last_name}, {s.first_name}
+                        <AnimatedText text={`${s.last_name}, ${s.first_name}`} />
                       </h3>
                       <div className="flex items-center gap-2 mt-2">
                          <Badge className={`text-[8px] font-black uppercase px-2 py-0 border-none rounded-md ${isMale ? 'bg-blue-500/20 text-blue-500' : 'bg-pink-500/20 text-pink-500'}`}>
@@ -252,7 +252,7 @@ export const StudentTable = memo(function StudentTable({
                       </div>
                       <div>
                         <div className={`font-black text-lg uppercase leading-none tracking-tight transition-colors duration-500 ${isDarkMode ? 'text-white group-hover:text-blue-400' : 'text-slate-900 group-hover:text-blue-600'}`}>
-                          {s.last_name}, {s.first_name} <span className="text-[10px] opacity-40 font-black italic">{s.middle_name?.[0]}.</span>
+                          <AnimatedText text={`${s.last_name}, ${s.first_name}`} /> <span className="text-[10px] opacity-40 font-black italic">{s.middle_name?.[0]}.</span>
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                            <Shield size={10} className="text-slate-400" />

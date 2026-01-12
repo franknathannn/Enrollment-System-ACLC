@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ThemedCard } from "@/components/ThemedCard"
 import { ThemedText } from "@/components/ThemedText"
 import { themeColors } from "@/lib/themeColors"
-import { AnimatedNumber } from "../../dashboard/components/primitives"
+import { AnimatedNumber, AnimatedText } from "../../dashboard/components/primitives"
 import { OptimizedImage } from "./OptimizedImage"
 
 interface ApplicantsTableProps {
@@ -107,7 +107,7 @@ const MobileApplicantRow = memo(({
               </div>
               <div>
                 <h3 className={`font-black text-sm uppercase leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {student.last_name}, {student.first_name} <span className="text-[10px] opacity-40 font-black italic">{student.middle_name?.[0]}.</span>
+                  <AnimatedText text={`${student.last_name}, ${student.first_name}`} /> <span className="text-[10px] opacity-40 font-black italic">{student.middle_name?.[0]}.</span>
                 </h3>
                 <div className="flex items-center gap-1.5 mt-1">
                    <p className="text-[10px] font-bold text-slate-400 tracking-wider">LRN: {student.lrn}</p>
@@ -238,7 +238,7 @@ const DesktopApplicantRow = memo(({
           </div>
           <div className="min-w-0">
             <div className={`font-black text-sm md:text-base uppercase leading-none tracking-tight transition-colors duration-500 ${isDarkMode ? 'text-white group-hover/name:text-blue-400' : 'text-slate-900 group-hover/name:text-blue-600'}`}>
-              {student.last_name}, {student.first_name} <span className="text-[10px] opacity-40 font-black italic">{student.middle_name?.[0]}.</span>
+              <AnimatedText text={`${student.last_name}, ${student.first_name}`} /> <span className="text-[10px] opacity-40 font-black italic">{student.middle_name?.[0]}.</span>
             </div>
             <div className="flex items-center gap-2 mt-2">
                <Shield size={10} className="text-slate-400" />
