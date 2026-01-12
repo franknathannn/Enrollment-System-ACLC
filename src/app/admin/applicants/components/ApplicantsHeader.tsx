@@ -59,7 +59,11 @@ export const ApplicantsHeader = memo(({
         <div className="relative">
           <Button 
             onClick={() => setExportOpen(!exportOpen)}
-            className="h-10 md:h-12 px-3 md:px-6 rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 text-white font-black uppercase text-[10px] tracking-widest hover:from-blue-600 hover:to-blue-700 transition-all shadow-xl shadow-blue-500/20 shrink-0 transform hover:scale-105 flex items-center justify-center gap-2 border border-slate-700/50"
+            className={`h-10 md:h-12 px-3 md:px-6 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shrink-0 transform hover:scale-105 flex items-center justify-center gap-2 border ${
+              isDarkMode 
+                ? 'bg-white text-black hover:bg-slate-200 border-white/50' 
+                : 'bg-slate-900 text-white hover:bg-slate-800 border-slate-700/50'
+            }`}
           >
             <FileDown size={16} />
             <span className="hidden sm:inline">Export Excel</span>

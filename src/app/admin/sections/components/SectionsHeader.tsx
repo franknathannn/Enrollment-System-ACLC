@@ -5,7 +5,7 @@ import { ThemedCard } from "@/components/ThemedCard"
 import { ThemedText } from "@/components/ThemedText"
 import { FilterButton } from "./FilterButton"
 import { Button } from "@/components/ui/button"
-import { Trash, Plus, Layers, Cpu, BookOpen } from "lucide-react"
+import { Trash, Plus, Layers, Cpu, BookOpen, Scale } from "lucide-react"
 import { DeleteManagementDialog } from "./DeleteManagementDialog"
 
 interface SectionsHeaderProps {
@@ -18,12 +18,13 @@ interface SectionsHeaderProps {
   handleDeleteSection: (id: string, name: string, strand: "ICT" | "GAS") => void
   handleClearAllStudents: () => void
   initiateAdd: (strand: "ICT" | "GAS") => void
+  onBalance: (strand: "ICT" | "GAS" | "ALL") => void
   isProcessing: boolean
 }
 
 export const SectionsHeader = memo(({
   isDarkMode, strandFilter, setStrandFilter, sectionSelection, setConfirmDeleteSelect,
-  sections, handleDeleteSection, handleClearAllStudents, initiateAdd, isProcessing
+  sections, handleDeleteSection, handleClearAllStudents, initiateAdd, onBalance, isProcessing
 }: SectionsHeaderProps) => {
 
   // 🧪 PROP-BASED THEME ENGINE (Ignoring Tailwind dark: for state sync)
@@ -114,10 +115,18 @@ export const SectionsHeader = memo(({
 
         <div className="h-8 w-px bg-slate-500/10 mx-1 hidden md:block" />
 
+        <Button
+          onClick={() => onBalance(strandFilter)}
+          disabled={isProcessing}
+          className="rounded-[18px] bg-purple-600 hover:bg-purple-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-purple-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed text-white"
+        >
+          <Scale className="mr-2" size={16}/> Balance {strandFilter}
+        </Button>
+
         <Button 
           onClick={() => initiateAdd('ICT')} 
           disabled={isProcessing} 
-          className="rounded-[18px] bg-blue-600 hover:bg-blue-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-blue-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none"
+          className="rounded-[18px] bg-blue-600 hover:bg-blue-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-blue-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none text-white"
         >
           <Plus className="mr-2" size={16}/> Add ICT
         </Button>
@@ -125,7 +134,7 @@ export const SectionsHeader = memo(({
         <Button 
           onClick={() => initiateAdd('GAS')} 
           disabled={isProcessing} 
-          className="rounded-[18px] bg-orange-600 hover:bg-orange-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-orange-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none"
+          className="rounded-[18px] bg-orange-600 hover:bg-orange-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-orange-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none text-white"
         >
           <Plus className="mr-2" size={16}/> Add GAS
         </Button>

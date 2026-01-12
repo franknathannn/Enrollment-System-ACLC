@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { OptimizedImage } from "./../components/OptimizedImage"
+import { AnimatedNumber } from "../../dashboard/components/primitives"
 
 // ===== STATUS BADGE =====
 const StatusBadge = memo(function StatusBadge({ status, isDarkMode }: { status: string, isDarkMode: boolean }) {
@@ -223,6 +224,16 @@ Address: ${student.address}
               MATRIX ID: {student.lrn}
             </p>
             <StatusBadge status={student.status} isDarkMode={isDarkMode} />
+            
+            {/* REJECTION REASON BOX */}
+            {student.status === 'Rejected' && (
+              <div className="mt-4 w-full max-w-md animate-in fade-in slide-in-from-top-2 duration-500">
+                <div className={`p-4 rounded-2xl border text-left ${isDarkMode ? 'bg-red-950/30 border-red-900/50 text-red-200' : 'bg-red-50 border-red-100 text-red-800'}`}>
+                  <p className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-70">Rejection Notice</p>
+                  <p className="text-xs font-bold leading-relaxed">{student.registrar_feedback || student.decline_reason || "No specific reason provided."}</p>
+                </div>
+              </div>
+            )}
         </div>
       </div>
       
@@ -298,7 +309,9 @@ Address: ${student.address}
               </div>
               <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-blue-900/10 border-blue-900/40' : 'bg-blue-50 border-blue-200'}`}>
                 <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>GWA Index</p>
-                <p className={`text-3xl font-black italic leading-none transition-colors duration-500 ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>{student.gwa_grade_10 || "0.00"}</p>
+                <p className={`text-3xl font-black italic leading-none transition-colors duration-500 ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>
+                  {student.gwa_grade_10 ? <AnimatedNumber value={parseFloat(student.gwa_grade_10)} /> : "0.00"}
+                </p>
               </div>
               <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-orange-900/10 border-orange-900/40' : 'bg-orange-50 border-orange-200'}`}>
                 <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>Program Strand</p>

@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import {
   GraduationCap, LayoutDashboard, Users, Settings,
   LogOut, BookOpen, User as UserIcon, Loader2, ShieldCheck, 
-  Camera, Sparkles, MessageSquare, ChevronLeft, ChevronRight, Menu, Activity, Sun, Moon
+  Camera, Sparkles, MessageSquare, ChevronLeft, ChevronRight, Menu, Activity, Sun, Moon, UserCheck
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -122,10 +122,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navigationItems = [
     { href: "/admin/dashboard", icon: <LayoutDashboard size={18} />, label: "Overview" },
     { href: "/admin/applicants", icon: <Users size={18} />, label: "Applicants" },
+    { href: "/admin/enrolled", icon: <UserCheck size={18} />, label: "Enrolled" },
     { href: "/admin/sections", icon: <BookOpen size={18} />, label: "Sections" },
     { href: "/admin/settings", icon: <Settings size={18} />, label: "Configuration" },
-    { href: "/admin/activity_logs", icon: <Activity size={18} />, label: "Matrix Logs" },
-    { href: "/admin/communication", icon: <MessageSquare size={18} />, label: "Comms Hub" },
+    { href: "/admin/activity_logs", icon: <Activity size={18} />, label: "Activity Logs" },
+    { href: "/admin/communication", icon: <MessageSquare size={18} />, label: "Messenger" },
+
   ];
 
   if (pathname === "/admin/login") return <>{children}</>;

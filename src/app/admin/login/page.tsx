@@ -126,6 +126,29 @@ function LoginContent() {
   const searchParams = useSearchParams()
 
   const redirectTo = searchParams.get('redirect') || '/admin/dashboard'
+  
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+    document.documentElement.style.height = '100%'
+    document.body.style.height = '100%'
+    
+    const style = document.createElement('style')
+    style.textContent = `
+      ::-webkit-scrollbar {
+        display: none;
+      }
+    `
+    document.head.appendChild(style)
+
+    return () => {
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+      document.documentElement.style.height = ''
+      document.body.style.height = ''
+      document.head.removeChild(style)
+    }
+  }, [])
 
   const AUTHORIZED_EMAILS = new Set([
     "adminaclc@edu.ph",
@@ -195,16 +218,6 @@ function LoginContent() {
 
   return (
     <div className="h-screen w-full bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-500">
-      <style jsx global>{`
-        body, html {
-          overflow: hidden !important;
-          height: 100%;
-        }
-        ::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
-
       <LoginConstellation />
       
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-100/50 dark:bg-blue-900/10 rounded-full blur-[100px] pointer-events-none" />

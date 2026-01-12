@@ -36,7 +36,8 @@ export const SectionDetailView = memo(function SectionDetailView({
   exitingRows,
   hiddenRows,
   handleExit,
-  animatingIds
+  animatingIds,
+  onToggleLock
 }: any) {
   
   const isICT = currentSection?.strand === 'ICT';
@@ -83,7 +84,11 @@ export const SectionDetailView = memo(function SectionDetailView({
             </Button>
             <Button 
               onClick={() => onExport(sectionName, sortedStudents)} 
-              className="rounded-full bg-slate-950 text-white h-10 w-10 p-0 md:w-auto md:px-8 shadow-2xl flex items-center justify-center"
+              className={`rounded-full h-10 w-10 p-0 md:w-auto md:px-8 shadow-2xl flex items-center justify-center ${
+                isDarkMode 
+                  ? 'bg-white text-black hover:bg-slate-200' 
+                  : 'bg-slate-950 text-white hover:bg-slate-800'
+              }`}
             >
               <FileDown size={16} className="md:mr-3" /> 
               <span className="hidden md:inline font-black uppercase text-[9px] tracking-[0.2em]">Masterlist</span>
@@ -121,7 +126,11 @@ export const SectionDetailView = memo(function SectionDetailView({
           <div className="hidden md:block">
             <Button 
               onClick={() => onExport(sectionName, sortedStudents)} 
-              className="rounded-full bg-slate-950 text-white font-black uppercase text-[9px] tracking-[0.2em] h-11 px-8 hover:bg-white hover:text-black transition-all active:scale-95 shadow-2xl"
+              className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 px-8 transition-all active:scale-95 shadow-2xl flex items-center justify-center ${
+                isDarkMode 
+                  ? 'bg-white text-black hover:bg-slate-200' 
+                  : 'bg-slate-950 text-white hover:bg-slate-800'
+              }`}
             >
               <FileDown size={14} className="mr-3" /> Get Masterlist
             </Button>
@@ -263,6 +272,7 @@ export const SectionDetailView = memo(function SectionDetailView({
                   hiddenRows={hiddenRows}
                   handleExit={handleExit}
                   animatingIds={animatingIds}
+                  onToggleLock={onToggleLock}
                 />
             </div>
           </TabsContent>

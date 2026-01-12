@@ -111,6 +111,20 @@ export default function ActivityLogsPage() {
     return () => { supabase.removeChannel(channel) }
   }, [fetchLogs, checkUser])
 
+  const getRevertStatus = useCallback((log: any) => {
+    if (!log) return 'Pending'
+    
+    if (log.action_type === 'PENDING') {
+      const details = log.details?.toLowerCase() || ''
+      if (details.includes('from accepted') || details.includes('from approved')) {
+        return 'Approved'
+      } else if (details.includes('from rejected')) {
+        return 'Rejected'
+      }
+    }
+    return 'Pending'
+  }, [])
+
   const handleUndo = async () => {
     if (!activeLog) return
     
@@ -145,10 +159,12 @@ export default function ActivityLogsPage() {
       return
     }
 
+    const targetStatus = getRevertStatus(activeLog)
+
     const toastId = toast.loading("Reverting status...")
     try {
       // Use server action to ensure section unassignment and proper status update
-      const result = await updateApplicantStatus(activeLog.student_id, 'Pending')
+      const result = await updateApplicantStatus(activeLog.student_id, targetStatus, targetStatus === 'Rejected' ? 'Reverted from logs' : undefined)
       
       if (!result.success) throw new Error("Failed to update student status")
 
@@ -156,9 +172,11 @@ export default function ActivityLogsPage() {
       await supabase.from('activity_logs').insert([{
         admin_id: user?.id,
         admin_name: user?.user_metadata?.full_name || 'Admin',
-        action_type: 'UNDO',
+        action_type: targetStatus.toUpperCase(),
         student_name: activeLog.student_name,
-        details: `Reverted ${activeLog.action_type} command.`
+        student_id: activeLog.student_id,
+        student_image: activeLog.student_image,
+        details: `Reverted ${activeLog.action_type} command. Status set to ${targetStatus}.`
       }])
 
       // Delete the original log entry to clean up history
@@ -217,6 +235,36 @@ export default function ActivityLogsPage() {
       }
     }, 500)
   }
+
+  const revertStatus = activeLog ? getRevertStatus(activeLog) : 'Pending'
+  
+  const getModalStyles = (status: string) => {
+    switch (status) {
+      case 'Approved':
+        return {
+          header: 'bg-green-600 border-green-400',
+          subtext: 'text-green-100',
+          highlight: 'text-green-600 dark:text-green-400 underline underline-offset-4',
+          button: 'bg-green-600 hover:bg-green-700 shadow-green-500/20'
+        }
+      case 'Rejected':
+        return {
+          header: 'bg-red-600 border-red-800',
+          subtext: 'text-red-100',
+          highlight: 'text-red-600 dark:text-red-400 underline underline-offset-4',
+          button: 'bg-red-600 hover:bg-red-700 shadow-red-500/20'
+        }
+      default:
+        return {
+          header: 'bg-amber-500 border-amber-300',
+          subtext: 'text-amber-100',
+          highlight: 'text-amber-500 underline underline-offset-4',
+          button: 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'
+        }
+    }
+  }
+  
+  const modalStyles = getModalStyles(revertStatus)
 
   return (
     <div 
@@ -290,17 +338,17 @@ export default function ActivityLogsPage() {
           className="w-[95vw] max-w-sm rounded-[32px] p-0 overflow-hidden border-none shadow-2xl z-[100] max-h-[90vh] flex flex-col transition-colors duration-500"
           style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface }}
         >
-          <div className="bg-blue-600 p-8 text-white border-b-4 border-blue-400">
+          <div className={`${modalStyles.header} p-8 text-white border-b-4`}>
             <DialogTitle className="text-xl font-black uppercase italic tracking-tighter">Confirm Reversal</DialogTitle>
-            <DialogDescription className="text-blue-100 text-[10px] font-bold uppercase tracking-widest mt-1">Undo Action Node</DialogDescription>
+            <DialogDescription className={`${modalStyles.subtext} text-[10px] font-bold uppercase tracking-widest mt-1`}>Undo Action Node</DialogDescription>
           </div>
           <div className="p-8 space-y-4">
             <p className="text-sm font-bold text-slate-600 dark:text-slate-300 italic">
-              This will revert <span className="text-blue-600 dark:text-blue-400">{activeLog?.student_name}</span> back to <span className="text-amber-500 underline underline-offset-4">PENDING</span> status.
+              This will revert <span className="text-blue-600 dark:text-blue-400">{activeLog?.student_name}</span> back to <span className={modalStyles.highlight}>{revertStatus.toUpperCase()}</span> status.
             </p>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:gap-0">
               <Button variant="ghost" onClick={() => setUndoOpen(false)} className="w-full sm:w-auto rounded-xl font-black uppercase text-[10px] hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">Abort</Button>
-              <Button onClick={handleUndo} className="w-full sm:w-auto rounded-xl bg-blue-600 text-white font-black uppercase text-[10px] tracking-widest hover:scale-[1.02] transition-transform active:scale-95 shadow-xl shadow-blue-500/20">Revert Matrix</Button>
+              <Button onClick={handleUndo} className={`w-full sm:w-auto rounded-xl text-white font-black uppercase text-[10px] tracking-widest hover:scale-[1.02] transition-transform active:scale-95 shadow-xl ${modalStyles.button}`}>Revert Matrix</Button>
             </DialogFooter>
           </div>
         </DialogContent>

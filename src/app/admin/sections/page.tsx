@@ -22,9 +22,9 @@ export default function SectionsPage() {
     gasExpanded, setGasExpanded, exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
     viewingFile, rotation, setRotation, unenrollOpen, setUnenrollOpen, activeUnenrollStudent, profileOpen, setProfileOpen,
     activeProfile, realtimeStatus, lastUpdate, ictSections, gasSections, ictLoad, gasLoad, currentSection, activeStudents,
-    currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, toggleSelection,
+    currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
-    handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections
+    handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections, handleToggleLock
   } = useSections()
 
   if (loading && sections.length === 0) return (
@@ -77,6 +77,7 @@ export default function SectionsPage() {
             hiddenRows={hiddenRows}
             handleExit={handleExit}
             animatingIds={animatingIds}
+            onToggleLock={handleToggleLock}
           />
         )
       })() : (
@@ -91,6 +92,7 @@ export default function SectionsPage() {
             handleDeleteSection={handleDeleteSection}
             handleClearAllStudents={handleClearAllStudents}
             initiateAdd={initiateAdd}
+            onBalance={handleBalance}
             isProcessing={isProcessing}
           />
           

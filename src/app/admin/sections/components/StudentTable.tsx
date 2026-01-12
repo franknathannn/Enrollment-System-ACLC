@@ -4,8 +4,9 @@ import { memo } from "react"
 import { Table, TableBody, TableCell, TableRow, TableHeader, TableHead } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Undo2, Eye, UserX, Fingerprint, Shield, Copy, User, MoreVertical, Star, Activity } from "lucide-react"
+import { Undo2, Eye, UserX, Fingerprint, Shield, Copy, User, MoreVertical, Star, Activity, Lock, Unlock } from "lucide-react"
 import { SwitchDialog } from "./SwitchDialog"
+import { AnimatedNumber } from "../../dashboard/components/primitives"
 import { toast } from "sonner"
 
 export const StudentTable = memo(function StudentTable({ 
@@ -20,7 +21,8 @@ export const StudentTable = memo(function StudentTable({
   exitingRows, 
   hiddenRows, 
   handleExit, 
-  animatingIds 
+  animatingIds,
+  onToggleLock 
 }: any) {
 
   const handleCopyLRN = (e: React.MouseEvent, lrn: string) => {
@@ -116,12 +118,23 @@ export const StudentTable = memo(function StudentTable({
                     <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
                       <Star size={12} className="text-blue-500 opacity-50" />
                       <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">GWA Index</p>
-                      <p className={`text-[12px] font-black italic text-blue-500`}>{s.gwa_grade_10 || "0.00"}</p>
+                      <p className={`text-[12px] font-black italic text-blue-500`}>
+                        {s.gwa_grade_10 ? <AnimatedNumber value={parseFloat(s.gwa_grade_10)} /> : "0.00"}
+                      </p>
                     </div>
                 </div>
 
                 {/* 🎮 Crystalline Action Dock */}
                 <div className={`p-2 flex items-center gap-2 border-t ${theme.dockBg} ${theme.border}`}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {e.stopPropagation(); onToggleLock(s.id, !s.is_locked)}}
+                      className={`h-12 w-12 p-0 rounded-2xl transition-all transform-gpu active:scale-95 ${s.is_locked ? 'text-red-500 hover:bg-red-500 hover:text-white' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                    >
+                        {s.is_locked ? <Lock size={18} /> : <Unlock size={18} className="dark:text-slate-400" />}
+                    </Button>
+
                     <Button 
                       size="sm" 
                       variant="ghost"
@@ -278,6 +291,21 @@ export const StudentTable = memo(function StudentTable({
 
                   <TableCell className="text-right px-10">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={(e) => {e.stopPropagation(); onToggleLock(s.id, !s.is_locked)}}
+                        className={`h-9 w-9 p-0 rounded-xl transition-all inline-flex items-center justify-center bg-transparent border-0 ${s.is_locked ? 'text-red-500' : 'text-slate-400'}`}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = s.is_locked ? 'rgb(239 68 68)' : (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgb(15 23 42)')
+                          e.currentTarget.style.color = 'white'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = ''
+                          e.currentTarget.style.color = ''
+                        }}
+                      >
+                        {s.is_locked ? <Lock size={16} /> : <Unlock size={16} />}
+                      </button>
+
                       <button
                         onClick={(e) => {e.stopPropagation(); handleExit(s.id, () => onReturn(s.id, s.first_name))}}
                         className="h-9 px-4 rounded-xl text-orange-500 font-black text-[9px] uppercase tracking-[0.2em] transition-all inline-flex items-center justify-center bg-transparent border-0"

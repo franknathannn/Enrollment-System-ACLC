@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ThemedCard } from "@/components/ThemedCard"
 import { ThemedText } from "@/components/ThemedText"
 import { themeColors } from "@/lib/themeColors"
+import { AnimatedNumber } from "../../dashboard/components/primitives"
 import { OptimizedImage } from "./OptimizedImage"
 
 interface ApplicantsTableProps {
@@ -131,13 +132,15 @@ const MobileApplicantRow = memo(({
               <p className="text-[8px] font-black uppercase tracking-widest opacity-70">Strand</p>
               <p className="text-[10px] font-black uppercase mt-0.5">{student.strand}</p>
             </div>
-            <div className={`px-2 py-1.5 rounded-xl text-center border ${isDarkMode ? 'bg-slate-700/30 border-slate-600 text-slate-300' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
-              <p className="text-[8px] font-black uppercase tracking-widest opacity-70">Section</p>
-              <p className="text-[10px] font-black uppercase mt-0.5 truncate">{student.section || 'Unassigned'}</p>
+            <div className={`px-2 py-1.5 rounded-xl text-center border ${isDarkMode ? 'bg-slate-700/30 border-slate-600' : 'bg-slate-50 border-slate-100'}`}>
+              <p className={`text-[8px] font-black uppercase tracking-widest opacity-70 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Section</p>
+              <p className={`text-[10px] font-black uppercase mt-0.5 truncate ${!student.section || student.section === 'Unassigned' ? 'text-red-500' : (isDarkMode ? 'text-slate-300' : 'text-slate-600')}`}>{student.section || 'Unassigned'}</p>
             </div>
             <div className={`px-2 py-1.5 rounded-xl text-center border ${isDarkMode ? 'bg-slate-700/30 border-slate-600 text-slate-300' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
               <p className="text-[8px] font-black uppercase tracking-widest opacity-70">GWA</p>
-              <p className="text-[10px] font-black uppercase mt-0.5">{student.gwa_grade_10 || 'N/A'}</p>
+              <p className="text-[10px] font-black uppercase mt-0.5">
+                {student.gwa_grade_10 ? <AnimatedNumber value={parseFloat(student.gwa_grade_10)} /> : 'N/A'}
+              </p>
             </div>
           </div>
         </div>
@@ -264,11 +267,19 @@ const DesktopApplicantRow = memo(({
         </Badge>
       </TableCell>
       <TableCell className="text-center">
-        <span className={`text-[10px] font-black uppercase ${student.section && student.section !== 'Unassigned' ? (isDarkMode ? 'text-white' : 'text-slate-900') : 'text-slate-400 italic'}`}>
+        <span className={`text-[10px] font-black uppercase ${
+          student.section && student.section !== 'Unassigned' 
+            ? (student.strand === 'ICT' ? 'text-blue-500' : student.strand === 'GAS' ? 'text-orange-500' : (isDarkMode ? 'text-white' : 'text-slate-900')) 
+            : 'text-red-500'
+        }`}>
           {student.section || 'Unassigned'}
         </span>
       </TableCell>
-      <TableCell className="text-center"><ThemedText variant="body" className="font-black" isDarkMode={isDarkMode} style={{ color: isDarkMode ? undefined : 'black' }}>{student.gwa_grade_10 || 'N/A'}</ThemedText></TableCell>
+      <TableCell className="text-center">
+        <ThemedText variant="body" className="font-black" isDarkMode={isDarkMode} style={{ color: isDarkMode ? '#ffffff' : 'black' }}>
+          {student.gwa_grade_10 ? <AnimatedNumber value={parseFloat(student.gwa_grade_10)} /> : 'N/A'}
+        </ThemedText>
+      </TableCell>
       <TableCell className="text-right px-4 md:px-8">
         <div className="flex items-center justify-end gap-1.5 md:gap-2 flex-nowrap">
           <Button 

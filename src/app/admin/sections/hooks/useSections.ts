@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react"
 import { supabase } from "@/lib/supabase/client"
-import { addSection, deleteAndCollapseSection } from "@/lib/actions/sections"
+import { addSection, deleteAndCollapseSection, balanceGenderAcrossSections } from "@/lib/actions/sections"
 import { updateApplicantStatus, deleteApplicant, updateStudentSection } from "@/lib/actions/applicants"
 import { toast } from "sonner"
 import { useTheme } from "@/hooks/useTheme"
 import { downloadSectionRecord } from "../api/exportSectionRecord"
+import { toggleStudentLock } from "@/lib/actions/enrolled"
 
 export function useSections() {
   const [config, setConfig] = useState<any>(null)
@@ -154,7 +155,7 @@ export function useSections() {
         if (status === 'SUBSCRIBED') { setRealtimeStatus('🟢 Live'); setLastUpdate(new Date().toLocaleTimeString()) }
         else if (status === 'CHANNEL_ERROR') { setRealtimeStatus('🔴 Error'); setTimeout(() => fetchSections(true), 2000) }
         else if (status === 'TIMED_OUT') { setRealtimeStatus('⏱️ Timeout'); setTimeout(() => fetchSections(true), 2000) }
-        else { setRealtimeStatus(`⚠️ ${status}`) }
+        else { setRealtimeStatus(`⚠️ `) }
       })
     return () => { supabase.removeChannel(channel) }
   }, [fetchConfig, fetchSections])
@@ -291,7 +292,7 @@ export function useSections() {
   }, [sectionSelection, sections, fetchSections])
 
   const handleDeleteSection = useCallback(async (id: string, name: string, strand: "ICT" | "GAS") => {
-    if (!confirm(`WARNING: Deleting ${name} shifts matrix sequence. Proceed?`)) return
+    if (!confirm(`WARNING: Deleting  shifts matrix sequence. Proceed?`)) return
     
     // Optimistic update
     setSections(prev => prev.filter(s => s.id !== id))
@@ -299,11 +300,21 @@ export function useSections() {
     try {
       await deleteAndCollapseSection(id, strand)
       const { data: { user } } = await supabase.auth.getUser()
-      supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'DELETED', student_name: 'N/A', details: `Deleted section matrix: ${name} (${strand})` }]).then()
+      supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'DELETED', student_name: 'N/A', details: `Deleted section matrix:  ()` }]).then()
       toast.success(`Matrix Sequence Updated.`); 
       fetchSections(true)
     } catch (err: any) { toast.error(err.message); fetchSections() }
   }, [fetchSections])
+
+  const handleBalance = useCallback(async (strand: "ICT" | "GAS" | "ALL") => {
+    const toastId = toast.loading(`Balancing ${strand} sections...`);
+    try {
+      await balanceGenderAcrossSections(strand);
+      toast.success(`${strand} sections have been re-balanced.`, { id: toastId });
+    } catch (error: any) {
+      toast.error(`Failed to balance ${strand}: ${error.message}`, { id: toastId });
+    }
+  }, []);
 
   const handleClearAllStudents = useCallback(async () => {
     const confirmName = prompt("Type 'DELETE ALL' to PERMANENTLY wipe the student database.")
@@ -334,9 +345,9 @@ export function useSections() {
         student_name: name, 
         student_id: id, 
         student_image: student?.two_by_two_url || student?.profile_2x2_url, 
-        details: `Moved ${name} back to Pending status from ${previousStatus}` 
+        details: `Moved  back to Pending status from ` 
       }])
-      toast.success(`Moved ${name} back to Pending queue`); fetchSections()
+      toast.success(`Moved  back to Pending queue`); fetchSections()
     } catch (err) { toast.error("Action failed") }
   }, [sections, fetchSections])
 
@@ -357,9 +368,9 @@ export function useSections() {
             student_name: unenrollName, 
             student_id: activeUnenrollStudent.id, 
             student_image: activeUnenrollStudent.two_by_two_url || activeUnenrollStudent.profile_2x2_url, 
-            details: `Permanently deleted ${unenrollName} from section ${currentSection?.section_name || 'Unknown'}` 
+            details: `Permanently deleted  from section ${currentSection?.section_name || 'Unknown'}` 
           }])
-          toast.success(`Deleted ${unenrollName} from the system`, { id: toastId }); setActiveUnenrollStudent(null); fetchSections()
+          toast.success(`Deleted  from the system`, { id: toastId }); setActiveUnenrollStudent(null); fetchSections()
         }
       } catch (err) { toast.error("Database purge failed") }
     })
@@ -381,9 +392,9 @@ export function useSections() {
         student_name: studentName, 
         student_id: id, 
         student_image: student?.two_by_two_url || student?.profile_2x2_url, 
-        details: `Transferred ${studentName} from ${previousSection} to ${newSectionName}` 
+        details: `Transferred  from  to ` 
       }])
-      toast.success(`Moved ${studentName} to ${newSectionName}`); fetchSections()
+      toast.success(`Moved  to `); fetchSections()
     } catch (err) { toast.error("Transfer failed") }
   }, [sections, fetchSections])
 
@@ -391,6 +402,18 @@ export function useSections() {
     downloadSectionRecord(sectionName, students, config?.school_year)
   }, [config])
   
+  const handleToggleLock = useCallback(async (id: string, isLocked: boolean) => {
+    try {
+      // Optimistic update
+      setSections(prev => prev.map(sec => ({
+        ...sec,
+        students: sec.students?.map((s: any) => s.id === id ? { ...s, is_locked: isLocked } : s)
+      })))
+      await toggleStudentLock(id, isLocked)
+      toast.success(isLocked ? "Student locked to section" : "Student unlocked")
+    } catch (err) { toast.error("Failed to update lock status"); fetchSections() }
+  }, [fetchSections])
+
   return {
     config, isDarkMode, sections, loading, isProcessing, selectedSectionName, setSelectedSectionName,
     searchTerm, setSearchTerm, debouncedSearch, strandFilter, setStrandFilter, sectionSelection,
@@ -398,9 +421,9 @@ export function useSections() {
     gasExpanded, setGasExpanded, exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
     viewingFile, rotation, setRotation, unenrollOpen, setUnenrollOpen, activeUnenrollStudent, profileOpen, setProfileOpen,
     activeProfile, realtimeStatus, lastUpdate, ictSections, gasSections, ictLoad, gasLoad, currentSection, activeStudents,
-    currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, toggleSelection,
+    currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
-    handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections,
+    handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections, handleToggleLock,
     navigateDocument, canNavigatePrev, canNavigateNext
   }
 }

@@ -26,7 +26,7 @@ export async function addSection(strand: "ICT" | "GAS") {
     nextLetter = String.fromCharCode(lastLetter.charCodeAt(0) + 1)
   }
 
-  const newName = `${strand}11-${nextLetter}`
+  const newName = `${strand}11-`
 
   // 2. Create the section (Capacity starts at 0, sync will fix it)
   const { error } = await supabase
@@ -98,6 +98,107 @@ export async function deleteAndCollapseSection(sectionId: string, strand: "ICT" 
   revalidatePath("/admin/sections")
   revalidatePath("/admin/dashboard")
   return { success: true }
+}
+
+/**
+ * GENDER BALANCE (Strict Sequential Logic)
+ * Re-balances students across existing sections of a strand to maintain gender balance.
+ * Prioritizes keeping students in their current sections by processing recently updated students last.
+ */
+export async function balanceGenderAcrossSections(strand: 'ICT' | 'GAS' | 'ALL') {
+  if (strand === 'ALL') {
+    await balanceGenderAcrossSections('ICT')
+    await balanceGenderAcrossSections('GAS')
+    return { success: true, message: "Re-balanced ALL sections." }
+  }
+
+  const supabase = await createClient()
+
+  try {
+    console.log(`⚖️ Starting gender balancing for ${strand}`)
+
+    const { data: sections, error: sectionsError } = await supabase
+      .from('sections')
+      .select('id, section_name, capacity')
+      .eq('strand', strand)
+      .order('section_name', { ascending: true })
+
+    if (sectionsError) throw sectionsError
+    if (!sections || sections.length === 0) {
+      console.log(`No sections for ${strand} to balance.`)
+      return { success: true, message: `No sections for ${strand} to balance.` }
+    }
+
+    const { data: students, error: studentsError } = await supabase
+      .from('students')
+      .select('id, gender, first_name, last_name, section_id, is_locked')
+      .eq('strand', strand)
+      .in('status', ['Accepted', 'Approved'])
+      // Sort by updated_at ASC so recently modified students (switched) are at the end
+      .order('updated_at', { ascending: true }) 
+
+    if (studentsError) throw studentsError
+    if (!students || students.length === 0) {
+      console.log('✅ No students to balance.')
+      return { success: true, message: 'No students to balance.' }
+    }
+
+    // Separate locked and unlocked students
+    const lockedStudents = students.filter(s => s.is_locked && s.section_id)
+    const unlockedStudents = students.filter(s => !s.is_locked || !s.section_id)
+
+    console.log('🗑️ Unassigning unlocked students for re-balancing...')
+    await supabase
+      .from('students')
+      .update({ section_id: null, section: 'Unassigned' })
+      .eq('strand', strand)
+      .in('status', ['Accepted', 'Approved'])
+      .eq('is_locked', false) // Only unassign unlocked students
+
+    const males = unlockedStudents.filter(s => s.gender === 'Male')
+    const females = unlockedStudents.filter(s => s.gender === 'Female')
+    let maleIndex = 0
+    let femaleIndex = 0
+
+    const updates: { id: string; section_id: string; section: string }[] = []
+
+    for (const section of sections) {
+      const capacity = section.capacity
+      
+      // Count locked students already in this section
+      const lockedInThisSection = lockedStudents.filter(s => s.section_id === section.id)
+      let sectionMales = lockedInThisSection.filter(s => s.gender === 'Male').length
+      let sectionFemales = lockedInThisSection.filter(s => s.gender === 'Female').length
+
+      while (sectionMales + sectionFemales < capacity) {
+        const maleTarget = Math.ceil((sectionMales + sectionFemales + 1) / 2)
+        const femaleTarget = Math.floor((sectionMales + sectionFemales + 1) / 2)
+
+        if (maleIndex < males.length && (sectionMales < maleTarget || femaleIndex >= females.length)) {
+          updates.push({ id: males[maleIndex].id, section_id: section.id, section: section.section_name })
+          sectionMales++
+          maleIndex++
+        } else if (femaleIndex < females.length && (sectionFemales < femaleTarget || maleIndex >= males.length)) {
+          updates.push({ id: females[femaleIndex].id, section_id: section.id, section: section.section_name })
+          sectionFemales++
+          femaleIndex++
+        } else {
+          break // No more students can be added
+        }
+      }
+    }
+
+    // Batch update students
+    for (const update of updates) {
+      await supabase.from('students').update({ section_id: update.section_id, section: update.section }).eq('id', update.id)
+    }
+
+    revalidatePath("/admin/sections")
+    return { success: true, message: `Re-balanced  sections.` }
+  } catch (error: any) {
+    console.error(`🔥 GENDER BALANCE FAILED for ${strand}:`, error)
+    throw error
+  }
 }
 
 /**

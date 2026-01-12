@@ -20,14 +20,14 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS') {
 
     if (sectionsError) throw sectionsError
     if (!sections || sections.length === 0) {
-      throw new Error(`No sections found for `)
+      throw new Error(`No sections found for ${strand}`)
     }
 
     console.log(`📦 Found ${sections.length} sections:`, sections.map(s => `${s.section_name}(${s.capacity})`).join(', '))
 
     const { data: students, error: studentsError } = await supabase
       .from('students')
-      .select('id, gender, first_name, last_name')
+      .select('id, gender, first_name, last_name, is_locked, section_id')
       .eq('strand', strand)
       .in('status', ['Accepted', 'Approved'])
       .order('created_at', { ascending: true })
@@ -38,33 +38,44 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS') {
       return { success: true, message: 'No students to redistribute' }
     }
 
-    const maleCount = students.filter(s => s.gender === 'Male').length
-    const femaleCount = students.filter(s => s.gender === 'Female').length
-    console.log(`👥 Found ${students.length} students: M, F`)
+    // Separate locked and unlocked students
+    const lockedStudents = students.filter(s => s.is_locked && s.section_id)
+    const unlockedStudents = students.filter(s => !s.is_locked || !s.section_id)
 
-    console.log('🗑️ Unassigning all students...')
+    console.log(`👥 Found ${students.length} students. Locked: ${lockedStudents.length}, Unlocked: ${unlockedStudents.length}`)
+
+    console.log('🗑️ Unassigning unlocked students...')
     const { error: unassignError } = await supabase
       .from('students')
       .update({ section_id: null, section: 'Unassigned' })
       .eq('strand', strand)
       .in('status', ['Accepted', 'Approved'])
+      .eq('is_locked', false) // Only unassign unlocked students
 
     if (unassignError) throw unassignError
     console.log('✅ All students unassigned')
 
     const plan: Array<{ student: typeof students[0], section: typeof sections[0] }> = []
     
-    const males = students.filter(s => s.gender === 'Male')
-    const females = students.filter(s => s.gender === 'Female')
+    const males = unlockedStudents.filter(s => s.gender === 'Male')
+    const females = unlockedStudents.filter(s => s.gender === 'Female')
     
     console.log(`📋 Males: ${males.length}, Females: ${females.length}`)
 
-    const sectionTracker = sections.map(s => ({
-      section: s,
-      males: 0,
-      females: 0,
-      total: 0
-    }))
+    // Initialize tracker with locked students pre-filled
+    const sectionTracker = sections.map(s => {
+      const lockedInThisSection = lockedStudents.filter(ls => ls.section_id === s.id)
+      const lockedMales = lockedInThisSection.filter(ls => ls.gender === 'Male').length
+      const lockedFemales = lockedInThisSection.filter(ls => ls.gender === 'Female').length
+      
+      return {
+        section: s,
+        males: lockedMales,
+        females: lockedFemales,
+        total: lockedMales + lockedFemales,
+        lockedCount: lockedInThisSection.length
+      }
+    })
 
     let maleIdx = 0
     let femaleIdx = 0
@@ -236,7 +247,11 @@ export async function updateStudentSection(id: string, sectionId: string) {
   
   const { error } = await supabase
     .from('students')
-    .update({ section_id: sectionId, section: section?.section_name })
+    .update({ 
+      section_id: sectionId, 
+      section: section?.section_name,
+      updated_at: new Date().toISOString() // Critical: Marks student as recently modified for balancing priority
+    })
     .eq('id', id)
 
   if (error) throw error

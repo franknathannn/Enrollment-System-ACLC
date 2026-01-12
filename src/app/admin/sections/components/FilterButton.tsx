@@ -11,7 +11,7 @@ export const FilterButton = memo(function FilterButton({ label, active, onClick,
     ? 'bg-blue-600 !text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]' 
     : isGAS 
     ? 'bg-orange-600 !text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' 
-    : 'bg-slate-900 !text-white';
+    : 'bg-slate-900 !text-white border border-slate-500 dark:border-slate-400';
 
   const hoverClass = isICT 
     ? 'hover:bg-blue-500/10 hover:!text-blue-500' 

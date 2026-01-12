@@ -115,7 +115,7 @@ export async function syncSectionCapacities() {
       // Get all students for this strand, sorted alphabetically
       const { data: students } = await supabase
         .from('students')
-        .select('id, section_id, first_name, last_name, gender')
+        .select('id, section_id, first_name, last_name, gender, is_locked')
         .eq('strand', strand)
         .in('status', ['Accepted', 'Approved'])
         .order('last_name', { ascending: true })
@@ -123,15 +123,20 @@ export async function syncSectionCapacities() {
 
       if (!students || students.length === 0) continue
 
-      // FIX: Unassign all students in this strand first to handle shrinking
+      // Separate locked and unlocked students
+      const lockedStudents = students.filter(s => s.is_locked && s.section_id)
+      const unlockedStudents = students.filter(s => !s.is_locked || !s.section_id)
+
+      // FIX: Unassign unlocked students in this strand first to handle shrinking
       await supabase.from('students')
         .update({ section_id: null, section: 'Unassigned' })
         .eq('strand', strand)
         .in('status', ['Accepted', 'Approved'])
+        .eq('is_locked', false)
 
       // Separate by gender
-      const males = students.filter(s => s.gender === 'Male')
-      const females = students.filter(s => s.gender === 'Female')
+      const males = unlockedStudents.filter(s => s.gender === 'Male')
+      const females = unlockedStudents.filter(s => s.gender === 'Female')
 
       let maleIndex = 0
       let femaleIndex = 0
@@ -141,7 +146,9 @@ export async function syncSectionCapacities() {
         const section = strandSections[i]
         const capacity = section.newCapacity
         
-        const studentsForSection: typeof students = []
+        // Start with locked students for this section
+        const lockedInThisSection = lockedStudents.filter(s => s.section_id === section.id)
+        const studentsForSection: typeof students = [...lockedInThisSection]
 
         // Calculate targets to avoid deadlock
         const halfCap = Math.floor(capacity / 2)
@@ -190,6 +197,7 @@ export async function syncSectionCapacities() {
 
         // Collect updates for batch processing
         for (const student of studentsForSection) {
+          if (student.is_locked) continue; // Skip update for locked students as they are already set
           allUpdates.push({
             id: student.id,
             section_id: section.id,
