@@ -17,20 +17,22 @@ interface EnrolledHeaderProps {
 export const EnrolledHeader = memo(({ isDarkMode, loading, fetchStudents, searchTerm, setSearchTerm, onExport }: EnrolledHeaderProps) => {
   return (
     <ThemedCard 
-      className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 p-6 md:p-8 rounded-[32px] border relative z-40 transition-colors duration-500"
+      className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4 p-4 md:p-8 rounded-[32px] border relative z-40 transition-colors duration-500 overflow-hidden"
       style={{ 
         backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.8)' : '#ffffff',
-        borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9'
+        borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9',
+        width: '100%',
+        maxWidth: '100%'
       }}
     >
-      <div className="w-full md:w-auto">
+      <div className="w-full md:w-auto text-center md:text-left">
         <ThemedText variant="h1" className={`text-3xl md:text-5xl ${isDarkMode ? 'text-white' : 'text-slate-900'}`} isDarkMode={isDarkMode}>Enrolled Students</ThemedText>
         <p className={`text-xs md:text-sm italic mt-2 font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
           Official Registry of Admitted Students
         </p>
       </div>
       
-      <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto flex-nowrap">
+      <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto flex-wrap justify-center md:justify-end">
         <Button 
           onClick={() => fetchStudents(false)} 
           variant="ghost" 
@@ -40,7 +42,7 @@ export const EnrolledHeader = memo(({ isDarkMode, loading, fetchStudents, search
            <RefreshCw className={loading ? "animate-spin" : ""} />
         </Button>
 
-        <div className="relative flex-1 min-w-[200px] md:min-w-[300px]">
+        <div className="relative flex-1 w-full md:w-auto md:min-w-[300px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
           <Input 
             placeholder="Search LRN or Name..." 

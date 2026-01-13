@@ -73,7 +73,7 @@ export default function EnrolledPage() {
     
        <StarConstellation />
 
-       <div className="relative z-10 space-y-6 md:space-y-8 p-4 md:p-8 animate-in fade-in duration-700 pb-32">
+       <div className="relative z-10 space-y-6 md:space-y-8 p-[0.1rem] md:p-8 animate-in fade-in duration-700 pb-32">
           
           <EnrolledHeader 
             isDarkMode={isDarkMode}

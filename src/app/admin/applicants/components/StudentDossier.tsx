@@ -1,13 +1,14 @@
 // src/app/admin/applicants/components/StudentDossier.tsx
 
-import { memo, useState } from "react"
+import { memo, useState, useRef, useEffect, useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { 
   User, Mail, Phone, MapPin, ShieldCheck, 
   GraduationCap, ScrollText, FileText, ZoomIn, 
   X, Globe, Heart, Calendar, Fingerprint,
-  Copy, Check
+  Copy, Check, Save, Edit2, Camera, Undo2, ChevronDown
 } from "lucide-react"
 import { toast } from "sonner"
 import { OptimizedImage } from "./../components/OptimizedImage"
@@ -23,7 +24,7 @@ const StatusBadge = memo(function StatusBadge({ status, isDarkMode }: { status: 
   }
   
   return (
-    <div className={`mt-4 md:mt-6 px-4 md:px-6 py-2 rounded-full border text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] w-fit shadow-sm transition-all duration-500 ${styles[status]}`}>
+    <div className={`px-4 md:px-6 py-2 rounded-full border text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] w-fit shadow-sm transition-all duration-500 ${styles[status]}`}>
       {status === 'Approved' ? 'Accepted' : status}
     </div>
   )
@@ -92,17 +93,116 @@ export const StudentDossier = memo(function StudentDossier({
   student, 
   onOpenFile, 
   isDarkMode,
-  onClose
+  onClose,
+  onUpdate,
+  sections = []
 }: { 
   student: any, 
   onOpenFile: (url: string, label: string, allDocs?: {url: string, label: string}[]) => void, 
   isDarkMode: boolean,
-  onClose?: () => void
+  onClose?: () => void,
+  onUpdate?: (id: string, data: any) => Promise<void | boolean>,
+  sections?: any[]
 }) {
+  useEffect(() => {
+    setFormData(student);
+  }, [student]);
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false)
+  const [formData, setFormData] = useState(student)
+  const [isSaving, setIsSaving] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [genderDropdownOpen, setGenderDropdownOpen] = useState(false)
+  const [strandDropdownOpen, setStrandDropdownOpen] = useState(false)
+  const [sectionDropdownOpen, setSectionDropdownOpen] = useState(false)
+
   const isJHS = student.student_category?.toLowerCase().includes("jhs") || student.student_category === "Standard" || student.student_category === "JHS Graduate"
   const isALS = student.student_category?.toLowerCase().includes("als")
   const badgeColor = isALS ? "bg-orange-500" : "bg-blue-600"
+
+  const hasChanges = useMemo(() => {
+    if (!student || !formData) return false;
+    if (formData._file) return true;
+
+    const fieldsToCompare = [
+        'first_name', 'middle_name', 'last_name', 'gender', 'religion', 
+        'civil_status', 'age', 'birth_date', 'email', 'phone', 'address',
+        'guardian_first_name', 'guardian_last_name', 'guardian_phone',
+        'last_school_attended', 'gwa_grade_10', 'strand', 'section'
+    ];
+
+    for (const field of fieldsToCompare) {
+        const originalValue = student[field] ?? '';
+        const currentValue = formData[field] ?? '';
+        if (originalValue !== currentValue) {
+            return true;
+        }
+    }
+
+    return false;
+  }, [formData, student]);
+
+  const isValid = useMemo(() => {
+    if (!formData) return false;
+    if (!formData.first_name?.trim() || !formData.last_name?.trim()) return false;
+    if (!formData.gender || !formData.strand) return false;
+    if (!formData.profile_picture && !formData.two_by_two_url && !formData.profile_2x2_url && !formData._file) return false;
+    return true;
+  }, [formData]);
+
+  const handleSave = async () => {
+    if (!onUpdate) return
+    setIsSaving(true)
+    try {
+      await onUpdate(student.id, formData)
+      setIsEditing(false)
+      toast.success("Profile Updated Successfully")
+    } catch (error) {
+      toast.error("Failed to update profile")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleChange = (field: string, value: string) => {
+    setFormData((prev: any) => {
+      const newData = { ...prev, [field]: value }
+      
+      if (field === 'strand') {
+        if (value !== student.strand) {
+          newData.section = "Unassigned"
+          newData.section_id = null
+        } else {
+          newData.section = student.section
+          newData.section_id = student.section_id
+        }
+      }
+      return newData
+    })
+  }
+
+  const handleImageClick = () => {
+    if (isEditing && fileInputRef.current) {
+      fileInputRef.current.click()
+    } else {
+      const imgUrl = student.profile_picture || student.two_by_two_url || student.profile_2x2_url;
+      if (imgUrl) onOpenFile(imgUrl, `${student.last_name}_2X2_PICTURE`.toUpperCase(), getAllDocs());
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const previewUrl = URL.createObjectURL(file)
+      setFormData((prev: any) => ({ ...prev, profile_picture: previewUrl, _file: file }))
+      toast.info("Image selected. Save to apply changes.")
+    }
+  }
+
+  const filteredSections = useMemo(() => {
+    if (!formData.strand || !sections) return []
+    return sections.filter((sec: any) => sec.strand === formData.strand)
+  }, [formData.strand, sections])
 
   const handleCopyInfo = async () => {
     const infoText = `
@@ -147,9 +247,13 @@ Address: ${student.address}
     return docs;
   };
   
+  const inputClass = `h-9 text-sm font-bold transition-all ${isDarkMode ? 'bg-slate-900 border-slate-700 text-white focus:border-blue-500' : 'bg-white border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10'}`;
+  const labelClass = `text-[9px] uppercase font-black tracking-[0.2em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`;
+
   return (
     <div className={`flex flex-col h-full transition-colors duration-500 ${isDarkMode ? 'bg-slate-950' : 'bg-white'}`}>
-      
+      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+
       {/* 🟢 HEADER SECTION: Darker Greyish Theme */}
       <div className={`p-6 md:p-12 flex flex-col items-center text-center relative overflow-hidden shrink-0 transition-all duration-500 ${
           isDarkMode 
@@ -181,27 +285,55 @@ Address: ${student.address}
           </Button>
         </div>
 
-        <div className="absolute top-4 right-4 md:top-6 md:right-6 z-20">
+        {/* EDIT BUTTON */}
+        <div className="absolute top-4 right-4 z-30 flex gap-2">
+           {onUpdate && (
+             <>
+               {isEditing ? (
+                 <>
+                   <Button 
+                     onClick={() => { setIsEditing(false); setFormData(student); }}
+                     className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-red-500 hover:bg-red-600 text-white`}
+                     disabled={isSaving}
+                   >
+                     <Undo2 size={14} className="mr-2" /> Cancel
+                   </Button>
+                   {hasChanges && (
+                     <Button 
+                       onClick={handleSave}
+                       className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-400 disabled:cursor-not-allowed`}
+                       disabled={isSaving || !isValid}
+                     >
+                       <Save size={14} className="mr-2" /> {isSaving ? 'Saving...' : 'Save Changes'}
+                     </Button>
+                   )}
+                 </>
+                 ) : (
+                   <Button onClick={() => setIsEditing(true)} className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
+                     <Edit2 size={14} className="mr-2" /> Edit Profile
+                   </Button>
+                 )}
+             </>
+           )}
+        </div>
+
+        <div className="absolute top-16 right-4 z-20">
           <Badge className={`${badgeColor} backdrop-blur-md text-white text-[9px] md:text-[10px] font-black px-3 md:px-5 py-2 md:py-2.5 uppercase tracking-widest border-none shadow-xl transition-all`}>
             {student.student_category || "Regular"}
           </Badge>
         </div>
 
         {/* 🟢 PROFILE IMAGE */}
-        <div className="relative z-10 mb-4 md:mb-8 scale-90 md:scale-100">
+        <div className="relative z-10 mb-4 md:mb-8 scale-90 md:scale-100 mt-8">
           <div 
             className={`w-36 h-36 md:w-48 md:h-48 rounded-[40px] md:rounded-[56px] border-[6px] overflow-hidden shadow-2xl flex items-center justify-center cursor-zoom-in group transition-all duration-500 hover:rotate-2 ${
                 isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-300 border-white'
             }`}
-            onClick={(e) => { 
-              e.stopPropagation(); 
-              const imgUrl = student.profile_picture || student.two_by_two_url || student.profile_2x2_url;
-              if (imgUrl) onOpenFile(imgUrl, `${student.last_name}_2X2_PICTURE`.toUpperCase(), getAllDocs()); 
-            }}
+            onClick={handleImageClick}
           >
-            {student.profile_picture || student.two_by_two_url || student.profile_2x2_url ? (
+            {formData.profile_picture || student.profile_picture || student.two_by_two_url || student.profile_2x2_url ? (
               <OptimizedImage
-                src={student.profile_picture || student.two_by_two_url || student.profile_2x2_url}
+                src={formData.profile_picture || student.profile_picture || student.two_by_two_url || student.profile_2x2_url}
                 alt={`${student.last_name}, ${student.first_name}`}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
@@ -212,14 +344,19 @@ Address: ${student.address}
                 <p className="text-[10px] font-black uppercase mt-3">Identity Missing</p>
               </div>
             )}
+            {isEditing && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="text-white" size={32} />
+              </div>
+            )}
           </div>
         </div>
 
         <h2 className={`relative z-10 text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none italic transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          <AnimatedText text={`${student.first_name} ${student.last_name}`} />
+          <AnimatedText text={`${formData.first_name} ${formData.last_name}`} />
         </h2>
         
-        <div className="flex flex-col items-center gap-2 mt-4 md:mt-6 relative z-10">
+        <div className="flex flex-col items-center gap-4 mt-4 md:mt-6 relative z-10">
             <p className={`font-bold uppercase tracking-[0.4em] text-[10px] md:text-[11px] px-4 py-1.5 rounded-full border backdrop-blur-sm transition-all duration-500 ${isDarkMode ? 'text-slate-300 bg-white/5 border-white/5' : 'text-slate-700 bg-black/5 border-black/10'}`}>
               MATRIX ID: {student.lrn}
             </p>
@@ -247,17 +384,56 @@ Address: ${student.address}
               <User size={16} /> I. Identity Matrix
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-6">
-              <InfoBlock label="Given Name" value={student.first_name} isDarkMode={isDarkMode} />
-              <InfoBlock label="Middle Initial" value={student.middle_name?.[0] ? `${student.middle_name[0]}.` : "N/A"} isDarkMode={isDarkMode} />
-              <InfoBlock label="Surname" value={student.last_name} isDarkMode={isDarkMode} />
-              <InfoBlock label="Gender Identity" value={student.gender} isDarkMode={isDarkMode} animate={false} />
-              <InfoBlock label="Religion" value={student.religion} isDarkMode={isDarkMode} />
-              <InfoBlock label="Civil Status" value={student.civil_status} isDarkMode={isDarkMode} />
-              <InfoBlock label="Nationality" value={student.nationality || "Filipino"} icon={<Globe size={12}/>} isDarkMode={isDarkMode} />
-              <InfoBlock label="Current Age" value={student.age?.toString()} icon={<Heart size={12}/>} isDarkMode={isDarkMode} />
-              <InfoBlock label="Birth Date" value={student.birth_date} icon={<Calendar size={12}/>} isDarkMode={isDarkMode} />
+              {['first_name', 'middle_name', 'last_name', 'gender', 'religion', 'civil_status', 'age', 'birth_date'].map(field => (
+                <div key={field} className="space-y-1.5">
+                  {isEditing ? (
+                    <>
+                      <p className={labelClass}>{field.replace('_', ' ')}</p>
+                      {field === 'gender' ? (
+                        <div className="relative">
+                          <Button
+                            onClick={() => setGenderDropdownOpen(!genderDropdownOpen)}
+                            className={`w-full justify-between ${inputClass} px-3`}
+                            variant="ghost"
+                          >
+                            {formData.gender || "Select Gender"}
+                            <ChevronDown size={14} className={`transition-transform duration-300 ${genderDropdownOpen ? 'rotate-180' : ''}`} />
+                          </Button>
+                          {genderDropdownOpen && (
+                            <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                              <div className="p-1 space-y-1">
+                                {['Male', 'Female'].map((opt) => (
+                                  <button
+                                    key={opt}
+                                    onClick={() => { handleChange('gender', opt); setGenderDropdownOpen(false); }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.gender === opt ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
+                                  >
+                                    {opt}
+                                    {formData.gender === opt && <Check size={12} />}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <Input 
+                          value={formData[field] || ""} 
+                          onChange={(e) => {
+                            const newFormData = { ...formData, [field]: e.target.value };
+                            setFormData(newFormData);
+                          }}
+                          className={inputClass}
+                        />
+                      )}
+                    </>
+                  ) : (field === 'gender' ? <InfoBlock label={field.replace('_', ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} animate={false} /> :
+                    <InfoBlock label={field.replace('_', ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} />
+                  )}
+                </div>
+              ))}
               <div className="sm:col-span-2">
-                <InfoBlock label="Full Legal Registry Name" value={`${student.first_name} ${student.middle_name || ''} ${student.last_name}`} isDarkMode={isDarkMode} />
+                <InfoBlock label="Full Legal Registry Name" value={`${formData.first_name} ${formData.middle_name || ''} ${formData.last_name}`} isDarkMode={isDarkMode} />
               </div>
             </div>
           </div>
@@ -268,10 +444,30 @@ Address: ${student.address}
               <Mail size={16} /> II. Connectivity Matrix
             </h3>
             <div className="space-y-8">
-              <InfoBlock label="Digital Address" value={student.email} icon={<Mail size={12} />} isDarkMode={isDarkMode} />
-              <InfoBlock label="Primary Contact" value={student.phone || student.contact_no} icon={<Phone size={12} />} isDarkMode={isDarkMode} />
+              {['email', 'phone'].map(field => (
+                <div key={field} className="space-y-1.5">
+                  {isEditing ? (
+                    <>
+                      <p className={labelClass}>{field === 'phone' ? 'Primary Contact' : 'Digital Address'}</p>
+                      <Input value={formData[field] || ""} onChange={(e) => {
+                          const newFormData = { ...formData, [field]: e.target.value };
+                          setFormData(newFormData);
+                        }} className={inputClass} />
+                    </>
+                  ) : (
+                    <InfoBlock label={field === 'phone' ? 'Primary Contact' : 'Digital Address'} value={formData[field] || '—'} icon={field === 'email' ? <Mail size={12}/> : <Phone size={12}/>} isDarkMode={isDarkMode} />
+                  )}
+                </div>
+              ))}
               <div className="sm:col-span-2">
-                <InfoBlock label="Home Residency" value={student.address} icon={<MapPin size={12} />} isDarkMode={isDarkMode} />
+                {isEditing ? (
+                  <div className="space-y-1.5"><p className={labelClass}>Home Residency</p><Input value={formData.address || ""} onChange={(e) => {
+                    const newFormData = { ...formData, address: e.target.value };
+                    setFormData(newFormData);
+                  }} className={inputClass} /></div>
+                ) : (
+                  <InfoBlock label="Home Residency" value={formData.address || '—'} icon={<MapPin size={12} />} isDarkMode={isDarkMode} />
+                )}
               </div>
               <div className={`p-5 rounded-[24px] border shadow-inner transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center gap-2 mb-1.5">
@@ -291,8 +487,16 @@ Address: ${student.address}
                <ShieldCheck size={16} /> III. Guardian Matrix
              </h3>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-               <InfoBlock label="Legal Guardian Name" value={`${student.guardian_first_name || student.guardian_name || ''} ${student.guardian_last_name || ''}`} isDarkMode={isDarkMode} />
-               <InfoBlock label="Emergency Contact" value={student.guardian_phone || student.guardian_contact} icon={<Phone size={12} />} isDarkMode={isDarkMode} />
+               {['guardian_first_name', 'guardian_last_name', 'guardian_phone'].map(field => (
+                 <div key={field} className="space-y-1.5">
+                   {isEditing ? (
+                     <><p className={labelClass}>{field.replace(/_/g, ' ')}</p><Input value={formData[field] || ""} onChange={(e) => {
+                      const newFormData = { ...formData, [field]: e.target.value };
+                      setFormData(newFormData);
+                    }} className={inputClass} /></>
+                   ) : <InfoBlock label={field.replace(/_/g, ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} />}
+                 </div>
+               ))}
              </div>
            </div>
            
@@ -303,23 +507,114 @@ Address: ${student.address}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className={`col-span-1 sm:col-span-2 p-6 rounded-[32px] border shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                 <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 italic ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Origin Institution</p>
-                <p className={`font-black uppercase text-sm md:text-base leading-tight truncate transition-colors duration-500 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                  {student.last_school_attended || "Not Disclosed"}
-                </p>
+                {isEditing ? (
+                   <Input 
+                    value={formData.last_school_attended || ""} 
+                    onChange={(e) => {
+                      const newFormData = { ...formData, last_school_attended: e.target.value };
+                      setFormData(newFormData);
+                    }}
+                    className={inputClass}
+                  />
+                ) : (
+                  <p className={`font-black uppercase text-sm md:text-base leading-tight truncate transition-colors duration-500 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                    {formData.last_school_attended || "Not Disclosed"}
+                  </p>
+                )}
               </div>
               <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-blue-900/10 border-blue-900/40' : 'bg-blue-50 border-blue-200'}`}>
                 <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>GWA Index</p>
-                <p className={`text-3xl font-black italic leading-none transition-colors duration-500 ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>
-                  {student.gwa_grade_10 ? <AnimatedNumber value={parseFloat(student.gwa_grade_10)} /> : "0.00"}
-                </p>
+                {isEditing ? (
+                   <Input 
+                    value={formData.gwa_grade_10 || ""} 
+                    onChange={(e) => {
+                      const newFormData = { ...formData, gwa_grade_10: e.target.value };
+                      setFormData(newFormData);
+                    }}
+                    className={`${inputClass} text-center`}
+                  />
+                ) : (
+                  <p className={`text-3xl font-black italic leading-none transition-colors duration-500 ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>{formData.gwa_grade_10 ? <AnimatedNumber value={parseFloat(formData.gwa_grade_10)} /> : "0.00"}</p>
+                )}
               </div>
               <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-orange-900/10 border-orange-900/40' : 'bg-orange-50 border-orange-200'}`}>
                 <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>Program Strand</p>
-                <p className={`text-2xl md:text-3xl font-black leading-none transition-colors duration-500 ${isDarkMode ? 'text-orange-400' : 'text-orange-700'}`}>{student.strand}</p>
+                {isEditing ? (
+                   <div className="relative">
+                     <Button
+                       onClick={() => setStrandDropdownOpen(!strandDropdownOpen)}
+                       className={`w-full justify-between ${inputClass} px-3`}
+                       variant="ghost"
+                     >
+                       {formData.strand || "Select Strand"}
+                       <ChevronDown size={14} className={`transition-transform duration-300 ${strandDropdownOpen ? 'rotate-180' : ''}`} />
+                     </Button>
+                     {strandDropdownOpen && (
+                       <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                         <div className="p-1 space-y-1">
+                           {['ICT', 'GAS'].map((opt) => (
+                             <button
+                               key={opt}
+                               onClick={() => { handleChange('strand', opt); setStrandDropdownOpen(false); }}
+                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.strand === opt ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
+                             >
+                               {opt}
+                               {formData.strand === opt && <Check size={12} />}
+                             </button>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                ) : (
+                  <p className={`text-2xl md:text-3xl font-black leading-none transition-colors duration-500 ${isDarkMode ? 'text-orange-400' : 'text-orange-700'}`}>{formData.strand}</p>
+                )}
               </div>
               <div className={`col-span-1 sm:col-span-2 p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-purple-900/10 border-purple-900/40' : 'bg-purple-50 border-purple-200'}`}>
                 <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>Assigned Section</p>
-                <p className={`text-xl md:text-2xl font-black leading-none transition-colors duration-500 ${isDarkMode ? 'text-purple-400' : 'text-purple-700'}`}>{student.section || "Unassigned"}</p>
+                {isEditing && (student.status === 'Accepted' || student.status === 'Approved') ? (
+                   <div className="relative">
+                     <Button
+                       onClick={() => setSectionDropdownOpen(!sectionDropdownOpen)}
+                       className={`w-full justify-between ${inputClass} px-3`}
+                       variant="ghost"
+                     >
+                       {formData.section || "Unassigned"}
+                       <ChevronDown size={14} className={`transition-transform duration-300 ${sectionDropdownOpen ? 'rotate-180' : ''}`} />
+                     </Button>
+                     {sectionDropdownOpen && (
+                       <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 max-h-[200px] overflow-y-auto custom-scrollbar ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                         <div className="p-1 space-y-1">
+                           <button
+                               onClick={() => {
+                                   setFormData((prev: any) => ({ ...prev, section: "Unassigned", section_id: null }));
+                                   setSectionDropdownOpen(false);
+                               }}
+                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.section === "Unassigned" || !formData.section ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
+                           >
+                               Unassigned
+                               {(formData.section === "Unassigned" || !formData.section) && <Check size={12} />}
+                           </button>
+                           {filteredSections.map((sec: any) => (
+                             <button
+                               key={sec.id}
+                               onClick={() => {
+                                   setFormData((prev: any) => ({ ...prev, section: sec.section_name, section_id: sec.id }));
+                                   setSectionDropdownOpen(false);
+                               }}
+                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.section === sec.section_name ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
+                             >
+                               {sec.section_name}
+                               {formData.section === sec.section_name && <Check size={12} />}
+                             </button>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                ) : (
+                  <p className={`text-xl md:text-2xl font-black leading-none transition-colors duration-500 ${isDarkMode ? 'text-purple-400' : 'text-purple-700'}`}>{formData.section || "Unassigned"}</p>
+                )}
               </div>
             </div>
           </div>

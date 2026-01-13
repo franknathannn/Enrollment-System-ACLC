@@ -44,7 +44,9 @@ export default function ApplicantsPage() {
    bulkDeclineModalOpen, setBulkDeclineModalOpen,
    processBulkUpdate, deleteModalOpen, activeDeleteStudent, handleConfirmDelete,
    bulkDeleteModalOpen, setBulkDeleteModalOpen, processBulkDelete, handleBulkAction,
-   openDocumentViewer, navigateDocument, canNavigatePrev, canNavigateNext
+   openDocumentViewer, navigateDocument, canNavigatePrev, canNavigateNext,
+   updateStudentProfile,
+   sections
  } = useApplicants()
 
  if (loading && students.length === 0) return (
@@ -55,7 +57,7 @@ export default function ApplicantsPage() {
  )
 
  return (
-  <div className="relative min-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-colors duration-500">
+  <div className="relative min-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-colors duration-500 overflow-x-hidden">
    <style jsx global>{`
      body { overflow-y: auto; }
      ::-webkit-scrollbar { display: none; }
@@ -64,7 +66,7 @@ export default function ApplicantsPage() {
 
    <StarConstellation />
    
-   <div className="relative z-10 space-y-6 md:space-y-8 p-4 md:p-8 animate-in fade-in duration-700 pb-32">
+   <div className="relative z-10 space-y-6 md:space-y-8 p-[0.1rem] md:p-8 animate-in fade-in duration-700 pb-32">
     <CapacityAlert strandStats={strandStats} />
     <ApplicantsHeader 
       isDarkMode={isDarkMode}
@@ -121,6 +123,8 @@ export default function ApplicantsPage() {
      student={selectedStudentForDialog}
      onOpenFile={openDocumentViewer}
      isDarkMode={isDarkMode}
+     onUpdate={updateStudentProfile}
+     sections={sections}
    />
 
    <DocumentViewerModal 

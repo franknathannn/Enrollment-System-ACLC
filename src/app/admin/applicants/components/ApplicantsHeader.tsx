@@ -23,13 +23,15 @@ export const ApplicantsHeader = memo(({
 
   return (
     <ThemedCard 
-      className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 md:gap-6 p-6 md:p-8 rounded-[32px] backdrop-blur-sm transition-colors duration-500 border relative z-40"
+      className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4 md:gap-6 p-4 md:p-8 rounded-[32px] backdrop-blur-sm transition-colors duration-500 border relative z-40 overflow-hidden"
       style={{ 
         backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.8)' : '#ffffff',
-        borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9'
+        borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9',
+        width: '100%',
+        maxWidth: '100%'
       }}
     >
-      <div className="w-full md:w-auto">
+      <div className="w-full md:w-auto text-center md:text-left">
         <ThemedText variant="h1" className={`text-3xl md:text-5xl animate-in slide-in-from-left duration-500 ${isDarkMode ? 'text-white' : 'text-slate-900'}`} isDarkMode={isDarkMode}>Admissions</ThemedText>
         <ThemedText variant="body" className="italic mt-2 text-xs md:text-sm lg:text-base flex items-center gap-2" isDarkMode={isDarkMode}>
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
@@ -37,7 +39,7 @@ export const ApplicantsHeader = memo(({
         </ThemedText>
       </div>
       
-      <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto flex-wrap">
+      <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto flex-wrap justify-center md:justify-end">
         <Button 
           onClick={() => fetchStudents(false)} 
           variant="ghost" 
@@ -45,7 +47,7 @@ export const ApplicantsHeader = memo(({
         >
           <RefreshCw className={loading ? "animate-spin" : ""} size={18} />
         </Button>
-        <div className="relative flex-1 min-w-[200px] md:min-w-[300px]">
+        <div className="relative flex-1 w-full md:w-auto md:min-w-[300px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
           <Input 
             placeholder="Search LRN or Name..." 

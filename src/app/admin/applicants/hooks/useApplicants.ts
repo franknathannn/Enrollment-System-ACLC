@@ -9,7 +9,7 @@ import { useStudentActions } from "./useStudentActions"
 
 export function useApplicants() {
   // 1. Data Layer
-  const { students, setStudents, config, loading, fetchStudents, strandStats, fetchStrandStats } = useStudentData()
+  const { students, setStudents, config, loading, fetchStudents, strandStats, fetchStrandStats, sections } = useStudentData()
 
   // 2. Actions Layer (Needs to be initialized early for processingIds)
   // We'll pass the full dependencies later, but we need the refs/state now
@@ -170,7 +170,7 @@ export function useApplicants() {
 
   const { 
     processingIds, processingIdsRef, exitingRows, setExitingRows, hiddenRows, setHiddenRows,
-    handleStatusChange, handleConfirmDelete, processBulkUpdate, processBulkDelete, handleExit 
+    handleStatusChange, handleConfirmDelete, processBulkUpdate, processBulkDelete, handleExit, updateStudentProfile
   } = useStudentActions({ students, setStudents, modals })
 
   const { 
@@ -238,6 +238,8 @@ export function useApplicants() {
     bulkDeclineModalOpen, setBulkDeclineModalOpen,
     processBulkUpdate: handleBulkUpdateWrapper, deleteModalOpen, activeDeleteStudent, handleConfirmDelete: handleConfirmDeleteWrapper,
     bulkDeleteModalOpen, setBulkDeleteModalOpen, processBulkDelete: handleBulkDeleteWrapper, handleBulkAction,
-    openDocumentViewer, navigateDocument, canNavigatePrev, canNavigateNext
+    openDocumentViewer, navigateDocument, canNavigatePrev, canNavigateNext,
+    updateStudentProfile
+    , sections
   }
 }

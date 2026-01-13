@@ -36,9 +36,9 @@ export const EnrolledFilter = memo(({
 }: EnrolledFilterProps) => {
   
   return (
-    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full relative z-30">
+    <div className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-between gap-4 w-full relative z-30" style={{ maxWidth: '100%' }}>
       
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center justify-center md:justify-start gap-3 flex-wrap w-full md:w-auto">
         <div 
           className="flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors duration-500"
           style={{
@@ -117,7 +117,7 @@ export const EnrolledFilter = memo(({
         </span>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap justify-start md:justify-end w-full md:w-auto">
+      <div className="flex items-center gap-3 flex-wrap justify-center md:justify-end w-full md:w-auto">
         {/* Pagination */}
         <div 
           className="flex items-center gap-2 p-1.5 rounded-[20px] border shadow-sm transition-colors duration-500"

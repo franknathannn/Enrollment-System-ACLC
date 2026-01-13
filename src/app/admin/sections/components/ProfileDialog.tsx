@@ -4,7 +4,7 @@ import { memo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { StudentDossier } from "./StudentDossier"
 
-export const ProfileDialog = memo(function ProfileDialog({ open, onOpenChange, student, onOpenFile, isDarkMode }: any) {
+export const ProfileDialog = memo(function ProfileDialog({ open, onOpenChange, student, onOpenFile, isDarkMode, onUpdate, sections }: any) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
@@ -21,7 +21,9 @@ export const ProfileDialog = memo(function ProfileDialog({ open, onOpenChange, s
             onOpenFile={onOpenFile} 
             isDarkMode={isDarkMode} 
             // 🟢 FIX 2: Connect the X button to the Dialog's state
-            onClose={() => onOpenChange(false)} 
+            onClose={() => onOpenChange(false)}
+            onUpdate={onUpdate}
+            sections={sections}
           />
         )}
       </DialogContent>

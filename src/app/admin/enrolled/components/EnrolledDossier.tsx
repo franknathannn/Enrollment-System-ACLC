@@ -8,7 +8,7 @@ import {
   User, Mail, Phone, MapPin, ShieldCheck, 
   GraduationCap, ScrollText, FileText, ZoomIn, Upload,
   X, Globe, Heart, Calendar, Fingerprint, Undo2,
-  Copy, Check, Save, Edit2, Camera
+  Copy, Check, Save, Edit2, Camera, ChevronDown
 } from "lucide-react"
 import { toast } from "sonner"
 import { OptimizedImage } from "./OptimizedImage"
@@ -102,7 +102,7 @@ export const EnrolledDossier = memo(function EnrolledDossier({
   onOpenFile: (url: string, label: string, allDocs?: {url: string, label: string}[]) => void, 
   isDarkMode: boolean,
   onClose?: () => void,
-  onUpdate?: (id: string, data: any) => Promise<void>,
+  onUpdate?: (id: string, data: any) => Promise<void | boolean>,
   sections?: any[]
 }) {
   // This effect ensures that when the student prop changes (i.e., you open a new dossier),
@@ -115,6 +115,40 @@ export const EnrolledDossier = memo(function EnrolledDossier({
   const [formData, setFormData] = useState(student)
   const [isSaving, setIsSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [strandDropdownOpen, setStrandDropdownOpen] = useState(false)
+  const [sectionDropdownOpen, setSectionDropdownOpen] = useState(false)
+  const [genderDropdownOpen, setGenderDropdownOpen] = useState(false)
+
+  const hasChanges = useMemo(() => {
+    if (!student || !formData) return false;
+    if (formData._file) return true; // A new file was selected
+
+    const fieldsToCompare = [
+        'first_name', 'middle_name', 'last_name', 'gender', 'religion', 
+        'civil_status', 'age', 'birth_date', 'email', 'phone', 'address',
+        'guardian_first_name', 'guardian_last_name', 'guardian_phone',
+        'last_school_attended', 'gwa_grade_10', 'strand', 'section', 'section_id'
+    ];
+
+    for (const field of fieldsToCompare) {
+        const originalValue = student[field] ?? '';
+        const currentValue = formData[field] ?? '';
+        if (originalValue !== currentValue) {
+            return true;
+        }
+    }
+
+    return false;
+  }, [formData, student]);
+
+  const isValid = useMemo(() => {
+    if (!formData) return false;
+    if (!formData.first_name?.trim() || !formData.last_name?.trim()) return false;
+    if (!formData.gender || !formData.strand) return false;
+    // Photo check: either an existing URL or a new file must be present.
+    if (!formData.profile_picture && !formData.two_by_two_url && !formData.profile_2x2_url && !formData._file) return false;
+    return true;
+  }, [formData]);
 
   const isJHS = student.student_category?.toLowerCase().includes("jhs") || student.student_category === "Standard" || student.student_category === "JHS Graduate"
   const isALS = student.student_category?.toLowerCase().includes("als")
@@ -140,7 +174,20 @@ export const EnrolledDossier = memo(function EnrolledDossier({
   }
 
   const handleChange = (field: string, value: string) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }))
+    setFormData((prev: any) => {
+      const newData = { ...prev, [field]: value }
+      
+      if (field === 'strand') {
+        if (value !== student.strand) {
+          newData.section = "Unassigned"
+          newData.section_id = null
+        } else {
+          newData.section = student.section
+          newData.section_id = student.section_id
+        }
+      }
+      return newData
+    })
   }
 
   const handleImageClick = () => {
@@ -248,26 +295,30 @@ Address: ${student.address}
         <div className="absolute top-4 right-4 z-30 flex gap-2">
            {onUpdate && (
              <>
-               {isEditing && (
-                 <Button 
-                   onClick={() => { setIsEditing(false); setFormData(student); }}
-                   className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-red-500 hover:bg-red-600 text-white`}
-                   disabled={isSaving}
-                 >
-                   <Undo2 size={14} className="mr-2" /> Cancel
-                 </Button>
-               )}
-               <Button 
-                 onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                 className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg ${isEditing ? 'bg-green-600 hover:bg-green-700 text-white' : (isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white')}`}
-                 disabled={isSaving}
-               >
-                 {isEditing ? (
-                   <><Save size={14} className="mr-2" /> {isSaving ? 'Saving...' : 'Save Changes'}</>
+               {isEditing ? (
+                 <>
+                   <Button 
+                     onClick={() => { setIsEditing(false); setFormData(student); }}
+                     className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-red-500 hover:bg-red-600 text-white`}
+                     disabled={isSaving}
+                   >
+                     <Undo2 size={14} className="mr-2" /> Cancel
+                   </Button>
+                   {hasChanges && (
+                     <Button 
+                       onClick={handleSave}
+                       className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-400 disabled:cursor-not-allowed`}
+                       disabled={isSaving || !isValid}
+                     >
+                       <Save size={14} className="mr-2" /> {isSaving ? 'Saving...' : 'Save Changes'}
+                     </Button>
+                   )}
+                 </>
                  ) : (
-                   <><Edit2 size={14} className="mr-2" /> Edit Profile</>
+                   <Button onClick={() => setIsEditing(true)} className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
+                     <Edit2 size={14} className="mr-2" /> Edit Profile
+                   </Button>
                  )}
-               </Button>
              </>
            )}
         </div>
@@ -328,14 +379,43 @@ Address: ${student.address}
                   {isEditing ? (
                     <>
                       <p className={labelClass}>{field.replace('_', ' ')}</p>
-                      <Input 
-                        value={formData[field] || ""} 
-                        onChange={(e) => {
-                          const newFormData = { ...formData, [field]: e.target.value };
-                          setFormData(newFormData);
-                        }}
-                        className={inputClass}
-                      />
+                      {field === 'gender' ? (
+                        <div className="relative">
+                          <Button
+                            onClick={() => setGenderDropdownOpen(!genderDropdownOpen)}
+                            className={`w-full justify-between ${inputClass} px-3`}
+                            variant="ghost"
+                          >
+                            {formData.gender || "Select Gender"}
+                            <ChevronDown size={14} className={`transition-transform duration-300 ${genderDropdownOpen ? 'rotate-180' : ''}`} />
+                          </Button>
+                          {genderDropdownOpen && (
+                            <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                              <div className="p-1 space-y-1">
+                                {['Male', 'Female'].map((opt) => (
+                                  <button
+                                    key={opt}
+                                    onClick={() => { handleChange('gender', opt); setGenderDropdownOpen(false); }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.gender === opt ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
+                                  >
+                                    {opt}
+                                    {formData.gender === opt && <Check size={12} />}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <Input 
+                          value={formData[field] || ""} 
+                          onChange={(e) => {
+                            const newFormData = { ...formData, [field]: e.target.value };
+                            setFormData(newFormData);
+                          }}
+                          className={inputClass}
+                        />
+                      )}
                     </>
                   ) : (field === 'gender' ? <InfoBlock label={field.replace('_', ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} animate={false} /> :
                     <InfoBlock label={field.replace('_', ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} />
@@ -450,17 +530,32 @@ Address: ${student.address}
               <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-orange-900/10 border-orange-900/40' : 'bg-white border-slate-200'}`}>
                 <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>Program Strand</p>
                 {isEditing ? (
-                   <select
-                     value={formData.strand || ""}
-                     onChange={(e) => {
-                      const newFormData = { ...formData, strand: e.target.value };
-                      setFormData(newFormData);
-                    }}
-                     className={`${selectClass} text-center w-full`}
-                   >
-                     <option value="ICT">ICT</option>
-                     <option value="GAS">GAS</option>
-                   </select>
+                   <div className="relative">
+                     <Button
+                       onClick={() => setStrandDropdownOpen(!strandDropdownOpen)}
+                       className={`w-full justify-between ${inputClass} px-3`}
+                       variant="ghost"
+                     >
+                       {formData.strand || "Select Strand"}
+                       <ChevronDown size={14} className={`transition-transform duration-300 ${strandDropdownOpen ? 'rotate-180' : ''}`} />
+                     </Button>
+                     {strandDropdownOpen && (
+                       <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                         <div className="p-1 space-y-1">
+                           {['ICT', 'GAS'].map((opt) => (
+                             <button
+                               key={opt}
+                               onClick={() => { handleChange('strand', opt); setStrandDropdownOpen(false); }}
+                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.strand === opt ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
+                             >
+                               {opt}
+                               {formData.strand === opt && <Check size={12} />}
+                             </button>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+                   </div>
                 ) : (
                   <p className={`text-2xl md:text-3xl font-black leading-none transition-colors duration-500 ${isDarkMode ? 'text-orange-400' : 'text-orange-700'}`}>{formData.strand}</p>
                 )}
@@ -468,24 +563,45 @@ Address: ${student.address}
               <div className={`col-span-1 sm:col-span-2 p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-purple-900/10 border-purple-900/40' : 'bg-white border-slate-200'}`}>
                 <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>Assigned Section</p>
                 {isEditing ? (
-                   <select
-                     value={formData.section || "Unassigned"}
-                     onChange={(e) => {
-                        const selectedName = e.target.value;
-                        const selectedSec = sections.find((s: any) => s.section_name === selectedName);
-                        setFormData((prev: any) => ({ 
-                            ...prev, 
-                            section: selectedName,
-                            section_id: selectedSec ? selectedSec.id : null 
-                        }));
-                     }}
-                     className={`${selectClass} text-center w-full`}
-                   >
-                     <option value="Unassigned">Unassigned</option>
-                     {filteredSections.map((sec: any) => (
-                       <option key={sec.id} value={sec.section_name}>{sec.section_name}</option>
-                     ))}
-                   </select>
+                   <div className="relative">
+                     <Button
+                       onClick={() => setSectionDropdownOpen(!sectionDropdownOpen)}
+                       className={`w-full justify-between ${inputClass} px-3`}
+                       variant="ghost"
+                     >
+                       {formData.section || "Unassigned"}
+                       <ChevronDown size={14} className={`transition-transform duration-300 ${sectionDropdownOpen ? 'rotate-180' : ''}`} />
+                     </Button>
+                     {sectionDropdownOpen && (
+                       <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 max-h-[200px] overflow-y-auto custom-scrollbar ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                         <div className="p-1 space-y-1">
+                           <button
+                               onClick={() => {
+                                   setFormData((prev: any) => ({ ...prev, section: "Unassigned", section_id: null }));
+                                   setSectionDropdownOpen(false);
+                               }}
+                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.section === "Unassigned" || !formData.section ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
+                           >
+                               Unassigned
+                               {(formData.section === "Unassigned" || !formData.section) && <Check size={12} />}
+                           </button>
+                           {filteredSections.map((sec: any) => (
+                             <button
+                               key={sec.id}
+                               onClick={() => {
+                                   setFormData((prev: any) => ({ ...prev, section: sec.section_name, section_id: sec.id }));
+                                   setSectionDropdownOpen(false);
+                               }}
+                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.section === sec.section_name ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
+                             >
+                               {sec.section_name}
+                               {formData.section === sec.section_name && <Check size={12} />}
+                             </button>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+                   </div>
                 ) : (
                   <p className={`text-xl md:text-2xl font-black leading-none transition-colors duration-500 ${isDarkMode ? 'text-purple-400' : 'text-purple-700'}`}>{formData.section || "Unassigned"}</p>
                 )}

@@ -1,6 +1,6 @@
 // src/app/admin/applicants/components/ApplicantsTable.tsx
 import { memo } from "react"
-import { CheckSquare, Square, Eye, RotateCcw, Trash2, ChevronLeft, ChevronRight, Copy, Shield } from "lucide-react"
+import { CheckSquare, Square, Eye, RotateCcw, Trash2, ChevronLeft, ChevronRight, Copy, Shield, Activity, Star } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -67,101 +67,224 @@ const MobileApplicantRow = memo(({
 }: ApplicantRowProps) => {
   if (isHidden) return null
   const isMale = student.gender !== 'Female'
+
+  // 🧪 PROP-BASED THEME ENGINE (Matches StudentTable)
+  const theme = {
+    cardBg: isDarkMode ? 'bg-slate-900/60' : 'bg-white',
+    textMain: isDarkMode ? 'text-white' : 'text-slate-900',
+    textSub: isDarkMode ? 'text-slate-400' : 'text-slate-500',
+    border: isDarkMode ? 'border-white/10' : 'border-slate-200',
+    innerBg: isDarkMode ? 'bg-black/40' : 'bg-slate-50',
+    dockBg: isDarkMode ? 'bg-slate-950/80' : 'bg-slate-100/80',
+    shadow: isDarkMode ? 'shadow-[0_15px_30px_-10px_rgba(0,0,0,0.6)]' : 'shadow-lg shadow-slate-200/50'
+  };
   
   return (
     <div 
-      className={`rounded-3xl p-5 border relative transition-all ${
-        isSelected 
-          ? (isMale ? 'bg-blue-50/90 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800' : 'bg-pink-50/90 border-pink-200 dark:bg-pink-900/30 dark:border-pink-800')
-          : (isDarkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-white border-slate-100')
-      } ${isExiting ? 'animate-[slideOutRight_0.3s_ease-in-out_forwards]' : ''} ${isAnimatingIn ? 'animate-[slideInRight_0.5s_ease-out_backwards]' : ''}`}
+      className={`
+        rounded-[32px] overflow-hidden border transition-all duration-500 transform-gpu relative isolate bg-clip-padding outline outline-1 outline-transparent
+        ${theme.cardBg} ${theme.border} ${theme.shadow} w-full
+        ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900' : ''}
+        ${isExiting ? 'animate-[slideOutRight_0.3s_ease-in-out_forwards]' : ''} 
+        ${isAnimatingIn ? 'animate-[slideInRight_0.5s_ease-out_backwards]' : ''}
+      `}
       onClick={() => setOpenStudentDialog(student.id)}
       style={{
-        animationFillMode: isExiting ? 'forwards' : isAnimatingIn ? 'backwards' : 'none'
+        animationFillMode: isExiting ? 'forwards' : isAnimatingIn ? 'backwards' : 'none',
+        WebkitTapHighlightColor: 'transparent',
+        touchAction: 'manipulation',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box'
       }}
     >
-      <div className="flex items-start gap-4">
-        <button onClick={(e) => { e.stopPropagation(); toggleSelect(student.id); }} className="mt-1">
-          {isSelected ? <CheckSquare className="text-blue-600" size={20} /> : <Square className="text-slate-300" size={20} />}
-        </button>
+      {/* 🌈 Lively Bio-Header */}
+      <div className="p-4 sm:p-5 flex items-center gap-3 sm:gap-5 relative">
+        {/* Gender Logic Accent Bar */}
+        <div className={`absolute left-0 top-6 bottom-6 w-1.5 rounded-r-full shadow-[0_0_15px_rgba(var(--accent),0.5)] ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
         
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-3">
-              <div className="relative shrink-0">
-                <div className={`w-12 h-12 rounded-2xl overflow-hidden ${isMale ? 'bg-blue-100' : 'bg-pink-100'}`}>
-                  <OptimizedImage 
-                    src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
-                    alt="Avatar" 
-                    className="w-full h-full object-cover"
-                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
-                  />
-                </div>
-                <div className={`absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-md text-[6px] font-black uppercase tracking-widest text-white shadow-sm z-10 ${
-                  student.student_category?.toLowerCase().includes('als') 
-                    ? 'bg-orange-500' 
-                    : 'bg-blue-500'
-                }`}>
-                  {student.student_category?.toLowerCase().includes('als') ? 'ALS' : 'JHS'}
-                </div>
-              </div>
-              <div>
-                <h3 className={`font-black text-sm uppercase leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  <AnimatedText text={`${student.last_name}, ${student.first_name}`} /> <span className="text-[10px] opacity-40 font-black italic">{student.middle_name?.[0]}.</span>
-                </h3>
-                <div className="flex items-center gap-1.5 mt-1">
-                   <p className="text-[10px] font-bold text-slate-400 tracking-wider">LRN: {student.lrn}</p>
-                   <button 
-                     onClick={(e) => handleCopyLRN(e, student.lrn)}
-                     title="Copy LRN"
-                     className={`p-1 rounded-md transition-all active:scale-90 ${isDarkMode ? 'bg-slate-800 text-slate-400 hover:text-white' : 'bg-slate-100 text-slate-500 hover:text-slate-900'}`}
-                   >
-                      <Copy size={10} />
-                   </button>
-                </div>
-              </div>
+        {/* Animated Profile Well */}
+        <div className="relative shrink-0">
+            <div className={`absolute inset-0 blur-xl opacity-20 ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
+            <div className={`w-16 h-16 rounded-2xl p-1 border-2 relative z-10 ${isMale ? 'border-blue-500/30' : 'border-pink-500/30'}`}>
+                <OptimizedImage 
+                  src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover rounded-xl"
+                  fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
+                />
             </div>
+        </div>
+        
+        <div className="flex-1 min-w-0 text-left">
+          <h3 className={`font-black text-lg uppercase leading-none tracking-tighter truncate ${theme.textMain}`}>
+            <AnimatedText text={`${student.last_name}, ${student.first_name}`} />
+          </h3>
+          <div className="flex items-center gap-2 mt-2">
+              <Badge className={`text-[8px] font-black uppercase px-2 py-0 border-none rounded-md ${isMale ? 'bg-blue-500/20 text-blue-500' : 'bg-pink-500/20 text-pink-500'}`}>
+                {student.gender}
+              </Badge>
+              <div className="flex items-center gap-1.5 opacity-60">
+                <span className={`text-[9px] font-mono font-bold tracking-widest ${theme.textSub}`}>LRN:{student.lrn}</span>
+                <button 
+                    onClick={(e) => handleCopyLRN(e, student.lrn)}
+                    className={`p-1 rounded-md transition-all active:scale-90 ${theme.innerBg}`}
+                >
+                    <Copy size={10} className={theme.textSub} />
+                </button>
+              </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            <div className={`px-2 py-1.5 rounded-xl text-center border ${isMale ? 'bg-blue-50/50 border-blue-100 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400' : 'bg-pink-50/50 border-pink-100 text-pink-600 dark:bg-pink-900/20 dark:border-pink-800 dark:text-pink-400'}`}>
-              <p className="text-[8px] font-black uppercase tracking-widest opacity-70">Gender</p>
-              <p className="text-[10px] font-black uppercase mt-0.5">{student.gender}</p>
-            </div>
-            <div className={`px-2 py-1.5 rounded-xl text-center border ${student.strand === 'ICT' ? 'bg-indigo-50/50 border-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-400' : 'bg-orange-50/50 border-orange-100 text-orange-600 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400'}`}>
-              <p className="text-[8px] font-black uppercase tracking-widest opacity-70">Strand</p>
-              <p className="text-[10px] font-black uppercase mt-0.5">{student.strand}</p>
-            </div>
-            <div className={`px-2 py-1.5 rounded-xl text-center border ${isDarkMode ? 'bg-slate-700/30 border-slate-600' : 'bg-slate-50 border-slate-100'}`}>
-              <p className={`text-[8px] font-black uppercase tracking-widest opacity-70 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Section</p>
-              <p className={`text-[10px] font-black uppercase mt-0.5 truncate ${!student.section || student.section === 'Unassigned' ? 'text-red-500' : (isDarkMode ? 'text-slate-300' : 'text-slate-600')}`}>{student.section || 'Unassigned'}</p>
-            </div>
-            <div className={`px-2 py-1.5 rounded-xl text-center border ${isDarkMode ? 'bg-slate-700/30 border-slate-600 text-slate-300' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
-              <p className="text-[8px] font-black uppercase tracking-widest opacity-70">GWA</p>
-              <p className="text-[10px] font-black uppercase mt-0.5">
-                {student.gwa_grade_10 ? <AnimatedNumber value={parseFloat(student.gwa_grade_10)} /> : 'N/A'}
-              </p>
-            </div>
-          </div>
+        {/* Checkbox - Top Right */}
+        <button 
+          onClick={(e) => { e.stopPropagation(); toggleSelect(student.id); }} 
+          className="absolute top-4 right-4 p-1 touch-manipulation"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+        >
+          {isSelected 
+            ? <CheckSquare className="text-blue-600" size={22} /> 
+            : <Square className="text-slate-300" size={22} />
+          }
+        </button>
+      </div>
+
+      {/* 📊 Hardware Data Grid */}
+      <div className="px-4 sm:px-5 pb-4 sm:pb-5 grid grid-cols-2 gap-2 sm:gap-3">
+        <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
+          <Activity size={12} className="text-slate-500 opacity-40" />
+          <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">Category</p>
+          <p className={`text-[10px] font-black uppercase truncate max-w-full ${theme.textMain}`}>{student.student_category || "Standard"}</p>
+        </div>
+        <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
+          <Star size={12} className="text-blue-500 opacity-50" />
+          <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">GWA Index</p>
+          <p className={`text-[12px] font-black italic text-blue-500`}>
+            {student.gwa_grade_10 ? <AnimatedNumber value={parseFloat(student.gwa_grade_10)} /> : "0.00"}
+          </p>
+        </div>
+        <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
+          <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">Strand</p>
+          <p className={`text-[10px] font-black uppercase ${student.strand === 'ICT' ? 'text-blue-500' : 'text-orange-500'}`}>{student.strand}</p>
+        </div>
+        <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
+          <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">Section</p>
+          <p className={`text-[10px] font-black uppercase truncate max-w-full ${!student.section || student.section === 'Unassigned' ? 'text-red-500' : theme.textMain}`}>
+            {student.section || 'Unassigned'}
+          </p>
         </div>
       </div>
 
-      <div className={`mt-4 pt-3 border-t flex items-center justify-between gap-2 ${isDarkMode ? 'border-slate-700' : 'border-slate-100'}`}>
-        <Button onClick={(e) => { e.stopPropagation(); setOpenStudentDialog(student.id); }} variant="ghost" size="sm" className="flex-1 h-9 rounded-xl text-slate-500 font-black text-[9px] uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-slate-800"><Eye size={14} className="mr-1.5"/> View</Button>
+      {/* 🎮 Crystalline Action Dock */}
+      <div className={`p-2 flex items-center gap-2 border-t ${theme.dockBg} ${theme.border}`}>
+        {/* View Button - Always visible */}
+        <Button 
+          onClick={(e) => { e.stopPropagation(); setOpenStudentDialog(student.id); }} 
+          variant="ghost" 
+          size="sm" 
+          className="
+            h-12 w-12 p-0 rounded-2xl transition-all transform-gpu active:scale-95 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800
+          "
+        >
+          <Eye size={18} />
+        </Button>
 
+        {/* Pending Status Actions */}
         {student.status === 'Pending' && (
           <>
-            <Button onClick={(e) => { e.stopPropagation(); handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted')); }} variant="ghost" size="sm" disabled={isStrandFull} className={`flex-1 h-9 rounded-xl font-black text-[9px] uppercase tracking-widest ${isStrandFull ? 'text-slate-300 cursor-not-allowed' : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'}`}>{isStrandFull ? 'FULL' : 'Approve'}</Button>
-            <Button onClick={(e) => { e.stopPropagation(); setActiveDeclineStudent(student); setDeclineModalOpen(true); }} variant="ghost" size="sm" className="flex-1 h-9 rounded-xl text-red-600 font-black text-[9px] uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/20">Decline</Button>
+            <Button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted')); 
+              }} 
+              variant="ghost" 
+              size="sm" 
+              disabled={isStrandFull} 
+              className={`
+                flex-1 h-12
+                rounded-2xl 
+                font-black 
+                text-[9px] 
+                uppercase tracking-widest 
+                transition-all transform-gpu active:scale-95
+                ${isStrandFull 
+                  ? 'text-slate-300 cursor-not-allowed' 
+                  : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+                }
+              `}
+            >
+              {isStrandFull ? 'FULL' : 'Approve'}
+            </Button>
+            
+            <Button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setActiveDeclineStudent(student); 
+                setDeclineModalOpen(true); 
+              }} 
+              variant="ghost" 
+              size="sm" 
+              className="
+                flex-1 h-12
+                rounded-2xl 
+                text-red-600 
+                font-black 
+                text-[9px] 
+                uppercase tracking-widest 
+                transition-all transform-gpu active:scale-95
+                hover:bg-red-50 dark:hover:bg-red-900/20
+              "
+            >
+              Decline
+            </Button>
           </>
         )}
 
+        {/* Reset for Accepted/Approved/Rejected */}
         {(student.status === 'Accepted' || student.status === 'Approved' || student.status === 'Rejected') && (
-          <Button onClick={(e) => { e.stopPropagation(); handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Pending')); }} variant="ghost" size="sm" className="flex-1 h-9 rounded-xl text-amber-600 font-black text-[9px] uppercase tracking-widest hover:bg-amber-50 dark:hover:bg-amber-900/20"><RotateCcw size={12} className="mr-1.5"/> Reset</Button>
+          <Button 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Pending')); 
+            }} 
+            variant="ghost" 
+            size="sm" 
+            className="
+              flex-1 h-12
+              rounded-2xl 
+              text-amber-600 
+              font-black 
+              text-[9px] 
+              uppercase tracking-widest 
+              transition-all transform-gpu active:scale-95
+              hover:bg-amber-50 dark:hover:bg-amber-900/20
+            "
+          >
+            <RotateCcw size={14} className="mr-1.5"/> Reset
+          </Button>
         )}
 
+        {/* Delete Button */}
         {(student.status === 'Pending' || student.status === 'Rejected') && (
-          <Button onClick={(e) => { e.stopPropagation(); setActiveDeleteStudent(student); setDeleteModalOpen(true); }} variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 size={14}/></Button>
+          <Button 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setActiveDeleteStudent(student); 
+              setDeleteModalOpen(true); 
+            }} 
+            variant="ghost" 
+            size="sm" 
+            className="
+              h-12 w-12
+              p-0 
+              rounded-2xl 
+              text-red-400 
+              transition-all transform-gpu active:scale-95
+              hover:bg-red-50 dark:hover:bg-red-900/20
+            "
+          >
+            <Trash2 size={18}/>
+          </Button>
         )}
       </div>
     </div>
@@ -420,27 +543,40 @@ export const ApplicantsTable = memo(({
       `}</style>
       
       <ThemedCard 
-        className="rounded-[32px] md:rounded-[48px] shadow-2xl shadow-slate-200/50 dark:shadow-blue-500/10 overflow-hidden transition-colors duration-500 border"
+        className="rounded-2xl sm:rounded-3xl md:rounded-[48px] shadow-lg sm:shadow-2xl shadow-slate-200/50 dark:shadow-blue-500/10 overflow-hidden transition-colors duration-500 border w-full"
         style={{    
           backgroundColor: isDarkMode ? themeColors.dark.surface : '#ffffff',
-          borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9'
+          borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9',
+          width: '100%',
+          maxWidth: '100%'
         }}
       >
         {/* MOBILE CARD VIEW */}
-        <div className="md:hidden p-4 space-y-4">
-          <div className="flex items-center justify-between px-2 pb-2">
-            <button onClick={toggleSelectAll} className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500">
+        <div className="md:hidden p-2 sm:p-4 space-y-3 sm:space-y-4">
+          {/* Mobile Header */}
+          <div className="flex items-center justify-center gap-4 px-2 pb-2">
+            <button 
+              onClick={toggleSelectAll} 
+              className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500 touch-manipulation"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
               {selectedIds.length === totalFilteredCount && totalFilteredCount > 0 
-                ? <CheckSquare className="text-blue-600" size={16} /> 
-                : <Square className={isDarkMode ? "text-slate-500" : "text-slate-400"} size={16} />
+                ? <CheckSquare className="text-blue-600" size={18} /> 
+                : <Square className={isDarkMode ? "text-slate-500" : "text-slate-400"} size={18} />
               }
-              <span>Select All</span>
+              <span className="hidden xs:inline">Select All</span>
+              <span className="xs:hidden">All</span>
             </button>
-            <span className="text-[10px] font-bold text-slate-400">{totalFilteredCount} Records</span>
+            <span className="text-[11px] sm:text-[12px] font-bold text-slate-400">
+              {totalFilteredCount} Record{totalFilteredCount !== 1 ? 's' : ''}
+            </span>
           </div>
 
+          {/* Mobile Cards */}
           {filteredStudents.length === 0 ? (
-            <div className="py-20 text-center text-slate-400 italic">No applicants match this criteria.</div>
+            <div className="py-16 sm:py-20 text-center text-slate-400 italic text-sm">
+              No applicants match this criteria.
+            </div>
           ) : (
             <>
               {filteredStudents.map((student) => {
@@ -470,15 +606,34 @@ export const ApplicantsTable = memo(({
 
           {/* Mobile Pagination */}
           {totalPages > 1 && (
-            <div className={`flex items-center justify-center gap-4 pt-4 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-              <Button variant="ghost" size="sm" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0 rounded-lg">
-                <ChevronLeft size={16} />
+            <div className={`
+              flex items-center justify-center gap-3 sm:gap-4 
+              pt-3 sm:pt-4 
+              border-t 
+              ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}
+            `}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} 
+                disabled={currentPage === 1} 
+                className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-xl active:scale-95"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <ChevronLeft size={18} />
               </Button>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-widest text-slate-500 min-w-[100px] text-center">
                 Page {currentPage} of {totalPages}
               </span>
-              <Button variant="ghost" size="sm" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="h-8 w-8 p-0 rounded-lg">
-                <ChevronRight size={16} />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} 
+                disabled={currentPage === totalPages} 
+                className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-xl active:scale-95"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <ChevronRight size={18} />
               </Button>
             </div>
           )}

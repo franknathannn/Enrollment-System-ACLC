@@ -217,6 +217,57 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
     }
   }, [students, modals, setStudents])
 
+  const updateStudentProfile = useCallback(async (id: string, updates: any) => {
+    try {
+      const { 
+        id: _id, 
+        created_at, 
+        updated_at, 
+        profile_picture, 
+        two_by_two_url,
+        profile_2x2_url,
+        _file, 
+        ...cleanUpdates 
+      } = updates
+
+      let finalProfileUrl = profile_picture || two_by_two_url || profile_2x2_url;
+
+      if (_file) {
+        const fileExt = _file.name.split('.').pop();
+        const fileName = `${id}-${Math.random()}.${fileExt}`;
+        const filePath = `profiles/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, _file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+        finalProfileUrl = publicUrl;
+        
+        (cleanUpdates as any).profile_picture = finalProfileUrl;
+        (cleanUpdates as any).two_by_two_url = finalProfileUrl;
+      }
+
+      const { error } = await supabase
+        .from('students')
+        .update(cleanUpdates)
+        .eq('id', id)
+
+      if (error) throw error
+
+      setStudents(prev => prev.map(s => s.id === id ? { ...s, ...cleanUpdates, profile_picture: finalProfileUrl, two_by_two_url: finalProfileUrl } : s))
+      return true
+    } catch (error: any) {
+      console.error("Update error:", error.message || error)
+      throw error
+    }
+  }, [setStudents])
+
   return {
     processingIds, processingIdsRef,
     exitingRows, setExitingRows,
@@ -225,6 +276,7 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
     handleConfirmDelete,
     processBulkUpdate,
     processBulkDelete,
-    handleExit
+    handleExit,
+    updateStudentProfile
   }
 }

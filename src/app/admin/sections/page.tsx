@@ -24,7 +24,7 @@ export default function SectionsPage() {
     activeProfile, realtimeStatus, lastUpdate, ictSections, gasSections, ictLoad, gasLoad, currentSection, activeStudents,
     currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
-    handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections, handleToggleLock
+    handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections, handleToggleLock, updateStudentProfile
   } = useSections()
 
   if (loading && sections.length === 0) return (
@@ -140,6 +140,8 @@ export default function SectionsPage() {
         student={activeProfile} 
         onOpenFile={handleOpenFile} 
         isDarkMode={isDarkMode} 
+        onUpdate={updateStudentProfile}
+        sections={sections}
       />
       <AddSectionDialog 
         open={confirmAdd.isOpen} 

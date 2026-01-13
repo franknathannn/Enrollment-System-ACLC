@@ -4,11 +4,11 @@ import { memo } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Eye, Copy, Shield, RotateCcw } from "lucide-react"
+import { Eye, Copy, Shield, RotateCcw, Activity, Star } from "lucide-react"
 import { ThemedCard } from "@/components/ThemedCard"
 import { OptimizedImage } from "./OptimizedImage"
 import { toast } from "sonner"
-import { AnimatedText } from "../../dashboard/components/primitives"
+import { AnimatedText, AnimatedNumber } from "../../dashboard/components/primitives"
 
 interface EnrolledTableProps {
   students: any[]
@@ -35,6 +35,17 @@ export const EnrolledTable = memo(({ students, isDarkMode, onView, onReset, anim
     )
   }
 
+  // 🧪 PROP-BASED THEME ENGINE (Matches StudentTable)
+  const theme = {
+    cardBg: isDarkMode ? 'bg-slate-900/60' : 'bg-white',
+    textMain: isDarkMode ? 'text-white' : 'text-slate-900',
+    textSub: isDarkMode ? 'text-slate-400' : 'text-slate-500',
+    border: isDarkMode ? 'border-white/10' : 'border-slate-200',
+    innerBg: isDarkMode ? 'bg-black/40' : 'bg-slate-50',
+    dockBg: isDarkMode ? 'bg-slate-950/80' : 'bg-slate-100/80',
+    shadow: isDarkMode ? 'shadow-[0_15px_30px_-10px_rgba(0,0,0,0.6)]' : 'shadow-lg shadow-slate-200/50'
+  };
+
   return (
     <>
       <style jsx global>{`
@@ -44,12 +55,111 @@ export const EnrolledTable = memo(({ students, isDarkMode, onView, onReset, anim
         }
       `}</style>
       <ThemedCard 
-        className="rounded-[32px] overflow-hidden border shadow-xl transition-colors duration-500"
+        className="rounded-[32px] overflow-hidden border shadow-xl transition-colors duration-500 w-full"
         style={{ 
           backgroundColor: isDarkMode ? 'rgb(2 6 23)' : '#ffffff', 
-          borderColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(241 245 249)' 
+          borderColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(241 245 249)',
+          width: '100%',
+          maxWidth: '100%'
         }}
       >
+        {/* 📱 MOBILE MODULE VIEW (Sections Style) */}
+        <div className="md:hidden space-y-6 px-3 pb-10 pt-4">
+          {students.map((s: any) => {
+            const isAnimatingIn = animatingIds?.has(s.id)
+            const isMale = s.gender !== 'Female'
+            
+            return (
+              <div 
+                key={s.id}
+                onClick={() => onView(s)}
+                className={`
+                  rounded-[32px] overflow-hidden border transition-all duration-500 transform-gpu relative isolate bg-clip-padding outline outline-1 outline-transparent w-full
+                  ${theme.cardBg} ${theme.border} ${theme.shadow}
+                  ${isAnimatingIn ? 'animate-in fade-in zoom-in-95 slide-in-from-right-10 duration-700' : ''}
+                `}
+                style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
+              >
+                {/* 🌈 Lively Bio-Header */}
+                <div className="p-5 flex items-center gap-5 relative">
+                    {/* Gender Logic Accent Bar */}
+                    <div className={`absolute left-0 top-6 bottom-6 w-1.5 rounded-r-full shadow-[0_0_15px_rgba(var(--accent),0.5)] ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
+                    
+                    {/* Animated Profile Well */}
+                    <div className="relative shrink-0">
+                        <div className={`absolute inset-0 blur-xl opacity-20 ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
+                        <div className={`w-16 h-16 rounded-2xl p-1 border-2 relative z-10 ${isMale ? 'border-blue-500/30' : 'border-pink-500/30'}`}>
+                            <OptimizedImage 
+                                src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
+                                className="w-full h-full object-cover rounded-xl" 
+                                alt="Student" 
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`font-black text-lg uppercase leading-none tracking-tighter truncate ${theme.textMain}`}>
+                        <AnimatedText text={`${s.last_name}, ${s.first_name}`} />
+                      </h3>
+                      <div className="flex items-center gap-2 mt-2">
+                         <Badge className={`text-[8px] font-black uppercase px-2 py-0 border-none rounded-md ${isMale ? 'bg-blue-500/20 text-blue-500' : 'bg-pink-500/20 text-pink-500'}`}>
+                            {s.gender}
+                         </Badge>
+                         <div className="flex items-center gap-1.5 opacity-60">
+                            <span className={`text-[9px] font-mono font-bold tracking-widest ${theme.textSub}`}>LRN:{s.lrn}</span>
+                            <button 
+                               onClick={(e) => handleCopyLRN(e, s.lrn)}
+                               className={`p-1 rounded-md transition-all active:scale-90 ${theme.innerBg}`}
+                            >
+                               <Copy size={10} className={theme.textSub} />
+                            </button>
+                         </div>
+                      </div>
+                    </div>
+                </div>
+
+                {/* 📊 Hardware Data Grid */}
+                <div className="px-5 pb-5 grid grid-cols-2 gap-3">
+                    <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
+                      <Activity size={12} className="text-slate-500 opacity-40" />
+                      <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">Category</p>
+                      <p className={`text-[10px] font-black uppercase ${theme.textMain}`}>{s.student_category || "Standard"}</p>
+                    </div>
+                    <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
+                      <Star size={12} className="text-blue-500 opacity-50" />
+                      <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">GWA Index</p>
+                      <p className={`text-[12px] font-black italic text-blue-500`}>
+                        {s.gwa_grade_10 ? <AnimatedNumber value={parseFloat(s.gwa_grade_10)} /> : "0.00"}
+                      </p>
+                    </div>
+                    <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
+                      <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">Strand</p>
+                      <p className={`text-[10px] font-black uppercase ${s.strand === 'ICT' ? 'text-blue-500' : 'text-orange-500'}`}>{s.strand}</p>
+                    </div>
+                    <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
+                      <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">Section</p>
+                      <p className={`text-[10px] font-black uppercase truncate max-w-full ${!s.section || s.section === 'Unassigned' ? 'text-red-500' : theme.textMain}`}>
+                        {s.section || 'Unassigned'}
+                      </p>
+                    </div>
+                </div>
+
+                {/* 🎮 Crystalline Action Dock */}
+                <div className={`p-2 flex items-center gap-2 border-t ${theme.dockBg} ${theme.border}`}>
+                    <Button size="sm" variant="ghost" onClick={(e) => {e.stopPropagation(); onView(s)}} className={`flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all transform-gpu active:scale-95 ${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>
+                      <Eye size={16} className="mr-2"/> View Profile
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={(e) => {e.stopPropagation(); onReset(s)}} className="flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all transform-gpu active:scale-95">
+                      <RotateCcw size={16} className="mr-2"/> Reset
+                    </Button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* DESKTOP TABLE VIEW */}
+        <div className="hidden md:block">
         <Table className="border-separate border-spacing-0">
           <TableHeader 
             className="transition-colors duration-500"
@@ -186,6 +296,7 @@ export const EnrolledTable = memo(({ students, isDarkMode, onView, onReset, anim
              })}
           </TableBody>
         </Table>
+        </div>
       </ThemedCard>
     </>
   )

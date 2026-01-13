@@ -65,7 +65,7 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
         label="TOTAL MALE ENROLLEE" 
         value={<AnimatedNumber value={totalMaleEnrollees} />}
         colorLight="linear-gradient(135deg, rgb(30, 58, 138), rgb(15, 23, 42))" 
-        colorDark="linear-gradient(135deg, rgb(15, 23, 42), rgb(2, 6, 23))"
+        colorDark="linear-gradient(135deg, rgb(30, 58, 138), rgb(15, 23, 42))"
         icon={<User size={48} className="text-blue-200 opacity-50"/>}
         isDarkMode={isDarkMode}
       />

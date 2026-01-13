@@ -391,7 +391,7 @@ export default function AdminDashboard() {
               {isCapturing ? <Loader2 className="animate-spin"/> : <History />} Record Year
             </Button>
 
-            <ArchivesManager history={history} onDelete={handleDeleteSnapshot} />
+            <ArchivesManager history={history} onDelete={handleDeleteSnapshot} isDarkMode={isDarkMode} />
 
             <Button onClick={() => window.print()} variant="outline" className="inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 bg-white text-black border-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900">
                <FileDown /> Print Report

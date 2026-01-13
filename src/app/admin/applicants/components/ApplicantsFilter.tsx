@@ -22,8 +22,8 @@ export const ApplicantsFilter = memo(({
   isDarkMode, filter, setFilter, students, setSelectedIds, sortBy, setSortBy, sortDropdownOpen, setSortDropdownOpen, currentPage, totalPages, setCurrentPage
 }: ApplicantsFilterProps) => {
   return (
-    <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full relative z-30">
-      <div className={`flex items-center gap-1 p-1.5 rounded-[20px] w-full md:w-fit overflow-x-auto transition-all duration-500 border ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 w-full relative z-30" style={{ maxWidth: '100%' }}>
+      <div className={`flex items-center gap-1 p-1.5 rounded-[20px] w-fit max-w-full mx-auto md:mx-0 overflow-x-auto transition-all duration-500 border ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
         {(["Pending", "Accepted", "Rejected"] as const).map((tab) => {
           const isActive = filter === tab
           return (
@@ -46,7 +46,7 @@ export const ApplicantsFilter = memo(({
       </div>
 
       {/* PAGINATION CONTROLS */}
-      <div className={`flex items-center gap-2 p-1.5 rounded-[20px] border shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-100'}`}>
+      <div className={`flex items-center justify-center gap-2 p-1.5 rounded-[20px] border shadow-sm transition-colors duration-500 w-fit mx-auto md:mx-0 ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-100'}`}>
         <Button
           variant="ghost"
           size="icon"
@@ -71,7 +71,7 @@ export const ApplicantsFilter = memo(({
       </div>
 
       {/* SORTING DROPDOWN */}
-      <div className="relative">
+      <div className="relative w-full md:w-auto flex justify-center md:block">
         <Button 
           onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
           className={`h-12 px-5 rounded-[20px] font-black uppercase text-[10px] tracking-widest border transition-all flex items-center gap-2 shadow-lg ${isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}

@@ -427,7 +427,7 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="w-full bg-blue-600 dark:bg-slate-900 p-8 rounded-[36px] text-white relative overflow-hidden shadow-2xl">
+            <div className="w-full bg-slate-950 p-8 rounded-[36px] text-white relative overflow-hidden shadow-2xl border border-slate-700">
                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full -mr-10 -mt-10" />
                <div className="flex justify-between items-end mb-4 relative z-10">
                   <div>

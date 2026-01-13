@@ -7,9 +7,11 @@ interface StudentProfileModalProps {
   student: any
   onOpenFile: (url: string, label: string) => void
   isDarkMode: boolean
+  onUpdate?: (id: string, data: any) => Promise<void | boolean>
+  sections?: any[]
 }
 
-export function StudentProfileModal({ isOpen, onClose, student, onOpenFile, isDarkMode }: StudentProfileModalProps) {
+export function StudentProfileModal({ isOpen, onClose, student, onOpenFile, isDarkMode, onUpdate, sections }: StudentProfileModalProps) {
   if (!student) return null
 
   return (
@@ -24,6 +26,8 @@ export function StudentProfileModal({ isOpen, onClose, student, onOpenFile, isDa
        onOpenFile={onOpenFile}
        isDarkMode={isDarkMode}
        onClose={onClose}
+       onUpdate={onUpdate}
+       sections={sections}
       />
      </DialogContent>
     </Dialog>
