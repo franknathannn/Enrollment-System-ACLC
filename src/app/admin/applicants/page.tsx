@@ -52,7 +52,7 @@ export default function ApplicantsPage() {
  if (loading && students.length === 0) return (
   <div className="h-screen flex flex-col items-center justify-center gap-4 text-slate-400">
    <Loader2 className="animate-spin text-blue-600 w-10 h-10" />
-   <p className="text-[10px] font-black uppercase tracking-widest text-center animate-pulse">⚡ Syncing Admissions Matrix...</p>
+   <p className="text-[10px] font-black uppercase tracking-widest text-center animate-pulse">Connecting to Database...</p>
   </div>
  )
 

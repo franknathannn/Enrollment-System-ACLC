@@ -258,16 +258,19 @@ export function useSections() {
     setIsProcessing(true)
     try {
       const result = await addSection(confirmAdd.strand)
-      toast.success(`Generated ${result.name}`)
+      toast.success(`Generated ${result.data.section_name}`)
       
       // Optimistic update
       setSections(prev => {
-        const newSection = { ...result, section_name: result.name, students: [] }
+        const newSection = { ...result.data, students: [] }
+        // Prevent duplicates if it already exists (e.g. from realtime)
+        if (prev.some(s => s.id === newSection.id)) return prev;
+        
         return [...prev, newSection].sort((a, b) => (a.section_name || '').localeCompare(b.section_name || ''))
       })
 
       const { data: { user } } = await supabase.auth.getUser()
-      supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'APPROVED', student_name: 'N/A', details: `Created new ${confirmAdd.strand} section: ${result.name}` }]).then()
+      supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'APPROVED', student_name: 'N/A', details: `Created new ${confirmAdd.strand} section: ${result.data.section_name}` }]).then()
       
       setConfirmAdd({ isOpen: false, strand: null }); 
       fetchSections(true)

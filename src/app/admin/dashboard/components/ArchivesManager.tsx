@@ -41,7 +41,7 @@ export function ArchivesManager({ history, onDelete, isDarkMode }: { history: an
         >
           <DialogHeader className="p-10 text-white bg-slate-900">
             <DialogTitle className="text-3xl font-black uppercase">Institutional Archives</DialogTitle>
-            <DialogDescription className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-2">Historical Snapshots & Baseline Matrix</DialogDescription>
+            <DialogDescription className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-2">Historical Record Archives</DialogDescription>
           </DialogHeader>
           <div className="p-4 md:p-10 max-h-[60vh] overflow-y-auto custom-scrollbar">
             <Table className="border-separate border-spacing-y-2">

@@ -28,7 +28,7 @@ export const EnrolledHeader = memo(({ isDarkMode, loading, fetchStudents, search
       <div className="w-full md:w-auto text-center md:text-left">
         <ThemedText variant="h1" className={`text-3xl md:text-5xl ${isDarkMode ? 'text-white' : 'text-slate-900'}`} isDarkMode={isDarkMode}>Enrolled Students</ThemedText>
         <p className={`text-xs md:text-sm italic mt-2 font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-          Official Registry of Admitted Students
+          Official List of Enrolled Students
         </p>
       </div>
       

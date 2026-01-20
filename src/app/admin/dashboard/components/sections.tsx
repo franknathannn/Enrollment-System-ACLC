@@ -18,10 +18,10 @@ import { AnimatedNumber, MetricCard, StatCard, VelocityChart, StrandPieChart } f
 export function OverviewGrid({ stats, isDarkMode }: { stats: any, isDarkMode: boolean }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-      <StatCard title="Students Enrolled" value={<AnimatedNumber value={stats.totalAccepted} />} icon={<CheckCircle2 />} color="text-emerald-600 dark:text-emerald-400" bg="bg-emerald-50" trend="Registry Sync" isDarkMode={isDarkMode} />
-      <StatCard title="ICT Enrolled" value={<AnimatedNumber value={stats.ictAccepted} />} icon={<Cpu />} color="text-indigo-600 dark:text-indigo-400" bg="bg-indigo-50" trend="Active Matrix" isDarkMode={isDarkMode} />
-      <StatCard title="GAS Enrolled" value={<AnimatedNumber value={stats.gasAccepted} />} icon={<BookText />} color="text-orange-600 dark:text-orange-400" bg="bg-orange-50" trend="Active Matrix" isDarkMode={isDarkMode} />
-      <StatCard title="Pending Applicants" value={<AnimatedNumber value={stats.pending} />} icon={<Clock />} color="text-amber-600 dark:text-amber-400" bg="bg-amber-50" trend="Live Intake" isDarkMode={isDarkMode} />
+      <StatCard title="Students Enrolled" value={<AnimatedNumber value={stats.totalAccepted} />} icon={<CheckCircle2 />} color="text-emerald-600 dark:text-emerald-400" bg="bg-emerald-50" trend="View Enrolled" isDarkMode={isDarkMode} />
+      <StatCard title="ICT Enrolled" value={<AnimatedNumber value={stats.ictAccepted} />} icon={<Cpu />} color="text-indigo-600 dark:text-indigo-400" bg="bg-indigo-50" trend="View Applicants" isDarkMode={isDarkMode} />
+      <StatCard title="GAS Enrolled" value={<AnimatedNumber value={stats.gasAccepted} />} icon={<BookText />} color="text-orange-600 dark:text-orange-400" bg="bg-orange-50" trend="View Applicants" isDarkMode={isDarkMode} />
+      <StatCard title="Pending Applicants" value={<AnimatedNumber value={stats.pending} />} icon={<Clock />} color="text-amber-600 dark:text-amber-400" bg="bg-amber-50" trend="View Applicants" isDarkMode={isDarkMode} />
     </div>
   )
 }
@@ -147,7 +147,7 @@ export function SpikeAnalyticsSection({ spikeAnalysis, stats, system, isDarkMode
             ) : (
               <TrendingDown size={16} className="text-red-500 dark:text-red-400" />
             )}
-            <ThemedText variant="label" isDarkMode={isDarkMode}>Weekly Trend</ThemedText>
+            <ThemedText variant="label" isDarkMode={isDarkMode}>Weekly Change</ThemedText>
           </div>
           <div className="flex items-baseline gap-2">
             <ThemedText variant="h2" className="text-2xl md:text-3xl" isDarkMode={isDarkMode}>
@@ -210,7 +210,7 @@ export function SpikeAnalyticsSection({ spikeAnalysis, stats, system, isDarkMode
 
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <ThemedText variant="label" isDarkMode={isDarkMode}>Capacity Utilization</ThemedText>
+          <ThemedText variant="label" isDarkMode={isDarkMode}>Capacity Bar</ThemedText>
           <span className={`text-xl font-black ${
             spikeAnalysis.alertLevel === 'critical' 
               ? 'text-red-600 dark:text-red-400' 
@@ -269,9 +269,9 @@ export function RevenueSection({ revenueMatrix, prediction, comparison, isDarkMo
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                  <div>
                     <ThemedText variant="h3" className="flex items-center gap-3 md:text-2xl" isDarkMode={isDarkMode}>
-                      <Landmark className="text-emerald-500 dark:text-emerald-400" /> Revenue Matrix
+                      <Landmark className="text-emerald-500 dark:text-emerald-400" /> Graduates Revenue
                     </ThemedText>
-                    <ThemedText variant="label" className="mt-1" isDarkMode={isDarkMode}>Registrar Monitoring (₱{revenueMatrix.voucherLabel.toLocaleString()} / Alumni)</ThemedText>
+                    <ThemedText variant="label" className="mt-1" isDarkMode={isDarkMode}>Registrar Monitoring (₱{revenueMatrix.voucherLabel.toLocaleString()} / Graduate)</ThemedText>
                  </div>
                  <div className="text-left sm:text-right">
                     <p className="text-3xl md:text-5xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter">₱{revenueMatrix.currentRevenue.toLocaleString()}</p>
@@ -280,7 +280,7 @@ export function RevenueSection({ revenueMatrix, prediction, comparison, isDarkMo
               </div>
               <div className="space-y-4">
                  <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                    <span>Liquidity Progress</span>
+                    <span>Revenue Progress</span>
                     <span className="hidden sm:inline">Target: ₱{(revenueMatrix.totalPotential / 1000000).toFixed(1)}M (Campus Cap)</span>
                  </div>
                  <div className="h-5 w-full rounded-2xl overflow-hidden p-1 shadow-inner border border-emerald-100 dark:border-none" style={{ backgroundColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(226 232 240)' }}>
@@ -316,7 +316,7 @@ export function RevenueSection({ revenueMatrix, prediction, comparison, isDarkMo
            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full -mr-10 -mt-10" />
            <div className="relative z-10 space-y-8">
               <h3 className={`text-lg font-black uppercase tracking-widest flex items-center gap-2 ${isDarkMode ? 'text-blue-300' : 'text-white'}`}>
-                <Timer size={20} className={isDarkMode ? "text-blue-400" : "text-white"} /> Saturation Forecast
+                <Timer size={20} className={isDarkMode ? "text-blue-400" : "text-white"} /> Daily Applicants Forecast
               </h3>
               <div>
                  <p className={`text-5xl md:text-7xl font-black tracking-tighter leading-none ${isDarkMode ? 'text-white' : 'text-white'}`}>
@@ -392,7 +392,7 @@ export function CapacitySection({ capacityPercentage, stats, system, topJHSLeade
                  </div>
                  <div>
                    <ThemedText variant="h3" className="text-lg md:text-xl" isDarkMode={isDarkMode}>Academic Leaders</ThemedText>
-                   <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isDarkMode ? 'text-slate-400' : 'text-black'}`}>JHS Excellence Board</p>
+                   <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isDarkMode ? 'text-slate-400' : 'text-black'}`}>JHS With Highest GWA</p>
                  </div>
               </div>
               <Badge className="bg-slate-900 dark:bg-slate-700 text-white border-none font-black text-[9px] uppercase px-4 py-2">Top 10</Badge>

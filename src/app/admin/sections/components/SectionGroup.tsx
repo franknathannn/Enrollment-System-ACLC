@@ -32,6 +32,16 @@ export const SectionGroup = memo(function SectionGroup({
 
   const allIds = useMemo(() => sections.map((s: any) => s.id), [sections])
   const isAllSelected = sections.length > 0 && sections.every((s: any) => selection.has(s.id))
+
+  // Deduplicate sections to prevent "same key" errors
+  const uniqueSections = useMemo(() => {
+    const seen = new Set();
+    return sections.filter((s: any) => {
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    });
+  }, [sections]);
   
   return (
     <section className="space-y-6 overflow-hidden w-full">
@@ -52,7 +62,7 @@ export const SectionGroup = memo(function SectionGroup({
             <span className="inline md:hidden">{mobileTitle || title}</span>
           </h2>
           <Badge className={`${color === 'blue' ? 'bg-blue-600' : 'bg-orange-600'} text-white rounded-full px-4 py-1.5 font-black text-[10px] whitespace-nowrap flex-shrink-0`}>
-            {sections.length}
+            {uniqueSections.length}
           </Badge>
         </div>
         <div 
@@ -87,7 +97,7 @@ export const SectionGroup = memo(function SectionGroup({
       <div className={`transition-all duration-300 ease-out ${
         isExpanded ? "opacity-100 max-h-[5000px] visible translate-y-0" : "opacity-0 max-h-0 invisible -translate-y-4 overflow-hidden"
       }`}>
-        {sections.length === 0 ? (
+        {uniqueSections.length === 0 ? (
           <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-100 rounded-[40px] text-slate-300 font-bold uppercase text-xs tracking-widest">
             No Active Matrices Found
           </div>
@@ -95,7 +105,7 @@ export const SectionGroup = memo(function SectionGroup({
           <>
             {/* MOBILE: Cards */}
             <div className="md:hidden grid grid-cols-1 gap-4 px-4">
-              {sections.map((sec: any, index: number) => (
+              {uniqueSections.map((sec: any, index: number) => (
                 <div 
                   key={sec.id} 
                   className="relative group animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-700 fill-mode-backwards" 
@@ -140,7 +150,7 @@ export const SectionGroup = memo(function SectionGroup({
                       </button>
                     </TableHead>
                     <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Section Identity</TableHead>
-                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Capacity Analytics</TableHead>
+                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Capacity Statistics</TableHead>
                     <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 text-center">Male</TableHead>
                     <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 text-center">Female</TableHead>
                     <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 text-center">JHS</TableHead>
@@ -149,7 +159,7 @@ export const SectionGroup = memo(function SectionGroup({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sections.map((sec: any, idx: number) => {
+                  {uniqueSections.map((sec: any, idx: number) => {
                     const activeStudents = sec.students?.filter((s: any) => s.status === 'Accepted' || s.status === 'Approved') || []
                     const mCount = activeStudents.filter((s: any) => s.gender === 'Male').length
                     const fCount = activeStudents.filter((s: any) => s.gender === 'Female').length

@@ -139,7 +139,7 @@ export default function SettingsPage() {
   // --- LOGIC A: System Mode Toggle (STRICTLY RETAINED) ---
   const handleModeToggle = async (isManual: boolean) => {
     setUpdating(true)
-    // ⚡ Optimistic Update
+    // Optimistic Update
     const prevMode = config.controlMode;
     setConfig(prev => ({ ...prev, controlMode: isManual ? 'manual' : 'automatic' }));
 
@@ -181,7 +181,7 @@ export default function SettingsPage() {
   // --- LOGIC B: Manual Override (STRICTLY RETAINED) ---
   const handleManualOverride = async (checked: boolean) => {
     setUpdating(true)
-    // ⚡ Optimistic Update
+    // Optimistic Update
     const prevOpen = config.isOpen;
     setConfig(prev => ({ ...prev, isOpen: checked }));
 

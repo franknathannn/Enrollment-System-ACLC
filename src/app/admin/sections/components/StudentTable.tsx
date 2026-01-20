@@ -184,7 +184,7 @@ export const StudentTable = memo(function StudentTable({
         >
            <TableRow className="border-none hover:bg-transparent">
               <TableHead className="px-10 py-8 font-black uppercase text-[10px] tracking-[0.3em] text-slate-500">
-                Registry Subject Identity
+                Student Identity
               </TableHead>
               <TableHead className="px-6 py-8 font-black uppercase text-[10px] tracking-[0.3em] text-center text-slate-500">
                 Gender
@@ -193,7 +193,7 @@ export const StudentTable = memo(function StudentTable({
                 Status
               </TableHead>
               <TableHead className="text-right px-10 py-8 font-black uppercase text-[10px] tracking-[0.3em] text-slate-500">
-                Matrix Control
+                Actions
               </TableHead>
            </TableRow>
         </TableHeader>

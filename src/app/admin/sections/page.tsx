@@ -30,7 +30,7 @@ export default function SectionsPage() {
   if (loading && sections.length === 0) return (
     <div className="h-screen flex flex-col items-center justify-center gap-4 text-slate-400">
       <Loader2 className="animate-spin text-blue-600 w-10 h-10" />
-      <p className="text-[10px] font-black uppercase tracking-widest text-center">Syncing Class Matrices...</p>
+      <p className="text-[10px] font-black uppercase tracking-widest text-center">Syncing School Sections & Students...</p>
     </div>
   )
 

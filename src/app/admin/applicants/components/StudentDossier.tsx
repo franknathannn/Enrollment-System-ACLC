@@ -358,7 +358,7 @@ Address: ${student.address}
         
         <div className="flex flex-col items-center gap-4 mt-4 md:mt-6 relative z-10">
             <p className={`font-bold uppercase tracking-[0.4em] text-[10px] md:text-[11px] px-4 py-1.5 rounded-full border backdrop-blur-sm transition-all duration-500 ${isDarkMode ? 'text-slate-300 bg-white/5 border-white/5' : 'text-slate-700 bg-black/5 border-black/10'}`}>
-              MATRIX ID: {student.lrn}
+              Student LRN ID: {student.lrn}
             </p>
             <StatusBadge status={student.status} isDarkMode={isDarkMode} />
             
@@ -381,7 +381,7 @@ Address: ${student.address}
           {/* I. PERSONAL IDENTITY */}
           <div className="space-y-8 md:space-y-10">
             <h3 className={`flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.3em] border-b pb-4 transition-colors duration-500 ${isDarkMode ? 'text-blue-400 border-slate-800' : 'text-blue-600 border-slate-200'}`}>
-              <User size={16} /> I. Identity Matrix
+              <User size={16} /> I. Student Information
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-6">
               {['first_name', 'middle_name', 'last_name', 'gender', 'religion', 'civil_status', 'age', 'birth_date'].map(field => (
@@ -433,7 +433,7 @@ Address: ${student.address}
                 </div>
               ))}
               <div className="sm:col-span-2">
-                <InfoBlock label="Full Legal Registry Name" value={`${formData.first_name} ${formData.middle_name || ''} ${formData.last_name}`} isDarkMode={isDarkMode} />
+                <InfoBlock label="Full Legal Name" value={`${formData.first_name} ${formData.middle_name || ''} ${formData.last_name}`} isDarkMode={isDarkMode} />
               </div>
             </div>
           </div>
@@ -441,38 +441,38 @@ Address: ${student.address}
           {/* II. CONNECTIVITY MATRIX */}
           <div className="space-y-8 md:space-y-10">
             <h3 className={`flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.3em] border-b pb-4 transition-colors duration-500 ${isDarkMode ? 'text-indigo-400 border-slate-800' : 'text-indigo-600 border-slate-200'}`}>
-              <Mail size={16} /> II. Connectivity Matrix
+              <Mail size={16} /> II. Student Hotlines
             </h3>
             <div className="space-y-8">
               {['email', 'phone'].map(field => (
                 <div key={field} className="space-y-1.5">
                   {isEditing ? (
                     <>
-                      <p className={labelClass}>{field === 'phone' ? 'Primary Contact' : 'Digital Address'}</p>
+                      <p className={labelClass}>{field === 'phone' ? 'Contact Number' : 'Student Email'}</p>
                       <Input value={formData[field] || ""} onChange={(e) => {
                           const newFormData = { ...formData, [field]: e.target.value };
                           setFormData(newFormData);
                         }} className={inputClass} />
                     </>
                   ) : (
-                    <InfoBlock label={field === 'phone' ? 'Primary Contact' : 'Digital Address'} value={formData[field] || '—'} icon={field === 'email' ? <Mail size={12}/> : <Phone size={12}/>} isDarkMode={isDarkMode} />
+                    <InfoBlock label={field === 'phone' ? 'Contact Number' : 'Student Email'} value={formData[field] || '—'} icon={field === 'email' ? <Mail size={12}/> : <Phone size={12}/>} isDarkMode={isDarkMode} />
                   )}
                 </div>
               ))}
               <div className="sm:col-span-2">
                 {isEditing ? (
-                  <div className="space-y-1.5"><p className={labelClass}>Home Residency</p><Input value={formData.address || ""} onChange={(e) => {
+                  <div className="space-y-1.5"><p className={labelClass}>Home Address</p><Input value={formData.address || ""} onChange={(e) => {
                     const newFormData = { ...formData, address: e.target.value };
                     setFormData(newFormData);
                   }} className={inputClass} /></div>
                 ) : (
-                  <InfoBlock label="Home Residency" value={formData.address || '—'} icon={<MapPin size={12} />} isDarkMode={isDarkMode} />
+                  <InfoBlock label="Home Address" value={formData.address || '—'} icon={<MapPin size={12} />} isDarkMode={isDarkMode} />
                 )}
               </div>
               <div className={`p-5 rounded-[24px] border shadow-inner transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center gap-2 mb-1.5">
                    <Fingerprint size={12} className={isDarkMode ? 'text-slate-500' : 'text-slate-400'} />
-                   <p className={`text-[9px] font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Registry Node ID</p>
+                   <p className={`text-[9px] font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Database ID</p>
                 </div>
                 <p className={`text-[11px] font-bold truncate transition-colors duration-500 ${isDarkMode ? 'text-slate-300' : 'text-slate-900'}`}>{student.id}</p>
               </div>
@@ -484,17 +484,17 @@ Address: ${student.address}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-20">
            <div className="space-y-8 md:space-y-10">
              <h3 className={`flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.3em] border-b pb-4 transition-colors duration-500 ${isDarkMode ? 'text-emerald-400 border-slate-800' : 'text-emerald-600 border-slate-200'}`}>
-               <ShieldCheck size={16} /> III. Guardian Matrix
+               <ShieldCheck size={16} /> III. Guardian Information
              </h3>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                {['guardian_first_name', 'guardian_last_name', 'guardian_phone'].map(field => (
                  <div key={field} className="space-y-1.5">
                    {isEditing ? (
-                     <><p className={labelClass}>{field.replace(/_/g, ' ')}</p><Input value={formData[field] || ""} onChange={(e) => {
+                     <><p className={labelClass}>{field === 'guardian_phone' ? 'Guardian Contact Number' : field.replace(/_/g, ' ')}</p><Input value={formData[field] || ""} onChange={(e) => {
                       const newFormData = { ...formData, [field]: e.target.value };
                       setFormData(newFormData);
                     }} className={inputClass} /></>
-                   ) : <InfoBlock label={field.replace(/_/g, ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} />}
+                   ) : <InfoBlock label={field === 'guardian_phone' ? 'Guardian Contact Number' : field.replace(/_/g, ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} />}
                  </div>
                ))}
              </div>
@@ -502,11 +502,11 @@ Address: ${student.address}
            
           <div className="space-y-8 md:space-y-10">
             <h3 className={`flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.3em] border-b pb-4 transition-colors duration-500 ${isDarkMode ? 'text-orange-400 border-slate-800' : 'text-orange-600 border-slate-200'}`}>
-              <GraduationCap size={16} /> IV. Academic Standing
+              <GraduationCap size={16} /> IV. Academic Background
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className={`col-span-1 sm:col-span-2 p-6 rounded-[32px] border shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 italic ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Origin Institution</p>
+                <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 italic ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Previous School</p>
                 {isEditing ? (
                    <Input 
                     value={formData.last_school_attended || ""} 
@@ -523,7 +523,7 @@ Address: ${student.address}
                 )}
               </div>
               <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-blue-900/10 border-blue-900/40' : 'bg-blue-50 border-blue-200'}`}>
-                <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>GWA Index</p>
+                <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>GWA</p>
                 {isEditing ? (
                    <Input 
                     value={formData.gwa_grade_10 || ""} 
@@ -538,7 +538,7 @@ Address: ${student.address}
                 )}
               </div>
               <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-orange-900/10 border-orange-900/40' : 'bg-orange-50 border-orange-200'}`}>
-                <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>Program Strand</p>
+                <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>Strand</p>
                 {isEditing ? (
                    <div className="relative">
                      <Button
@@ -623,7 +623,7 @@ Address: ${student.address}
         {/* V. CREDENTIAL VAULT */}
         <div className="space-y-8 pb-12">
           <h3 className={`flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.3em] border-b pb-4 transition-colors duration-500 ${isDarkMode ? 'text-slate-400 border-slate-800' : 'text-slate-500 border-slate-200'}`}>
-            <ScrollText size={16} /> V. Registrar Vault
+            <ScrollText size={16} /> V. Student Documents
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {isJHS ? (
@@ -639,7 +639,7 @@ Address: ${student.address}
               </>
             )}
           </div>
-          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 text-center italic mt-6 opacity-60">Institutional Matrix Verification System v2.0</p>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 text-center italic mt-6 opacity-60">Educational Verification System.</p>
         </div>
       </div>
     </div>

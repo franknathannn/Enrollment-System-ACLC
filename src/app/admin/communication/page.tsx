@@ -190,7 +190,7 @@ export default function CommunicationPage() {
   if (loading || !currentUser) return (
     <div className="h-[70vh] flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-[48px] border border-slate-100 dark:border-white/5 shadow-2xl">
       <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
-      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Synchronizing Logs Link...</p>
+      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Retrieving Chats...</p>
     </div>
   );
 

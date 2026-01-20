@@ -72,7 +72,7 @@ export const SectionDetailView = memo(function SectionDetailView({
             onClick={onBack} 
             className={`rounded-full font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-500/10 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
           >
-            <ArrowLeft className="mr-3" size={14} strokeWidth={3}/> Section Node
+            <ArrowLeft className="mr-3" size={14} strokeWidth={3}/> Return to Sections
           </Button>
 
           <div className="flex items-center gap-2 md:hidden">
@@ -165,7 +165,7 @@ export const SectionDetailView = memo(function SectionDetailView({
                     <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{config?.school_year || "S.Y. 2025"}</span>
                  </div>
                  <div className="w-1 h-1 bg-white rounded-full" />
-                 <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Registry Node</p>
+                 <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Student Record</p>
               </div>
            </div>
 
@@ -176,7 +176,7 @@ export const SectionDetailView = memo(function SectionDetailView({
               <div className="relative backdrop-blur-[80px] bg-slate-950/50 p-6 md:p-12 rounded-[30px] md:rounded-[50px] border border-white/5 shadow-xl overflow-hidden transform-gpu bg-clip-padding outline outline-1 outline-transparent">
                 <div className="flex justify-between items-start mb-6 md:mb-10">
                     <div>
-                      <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-white/20 mb-2 md:mb-4">Node Saturation</p>
+                      <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-white/20 mb-2 md:mb-4">Gender Saturation</p>
                       <div className="flex items-baseline gap-3">
                          <span className="text-4xl md:text-7xl font-black tracking-tighter tabular-nums">{activeStudents.length}</span>
                          <span className="text-white/20 font-black text-sm md:text-xl tracking-tighter uppercase">/ {capacity}</span>
@@ -191,7 +191,7 @@ export const SectionDetailView = memo(function SectionDetailView({
 
                 <div className="space-y-3 md:space-y-5">
                   <div className="flex justify-between items-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em]">
-                     <span className="opacity-30">Registry Flow</span>
+                     <span className="opacity-30">Gender Bar</span>
                      <span className={isICT ? 'text-blue-400' : 'text-orange-400'}>{Math.round(fillPercent)}% Complete</span>
                   </div>
                   

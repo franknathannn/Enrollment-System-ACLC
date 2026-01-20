@@ -232,7 +232,7 @@ export default function HomePage() {
                    
                    <div className="p-6 bg-blue-700/80 rounded-[32px] text-white flex items-center justify-between border border-white/20 shadow-inner">
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-80 mb-1 text-white uppercase">Global Vacancies</p>
+                        <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-80 mb-1 text-white uppercase">Enrollment Vacancies</p>
                         <p className="text-5xl font-black tracking-tighter text-white leading-none">
                           {stats.totalMax - stats.totalCount}
                         </p>
@@ -248,7 +248,7 @@ export default function HomePage() {
                       {isManual ? <Zap size={22} /> : <Calendar size={22} />}
                    </div>
                    <div>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Application Window</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Application Status</p>
                       <p className={`text-sm font-black uppercase tracking-tighter ${isPortalActive ? 'text-white' : 'text-red-500'}`}>
                         {getEnrollmentStatusText()}
                       </p>

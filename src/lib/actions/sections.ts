@@ -11,39 +11,78 @@ import { syncSectionCapacities } from "./settings"
 export async function addSection(strand: "ICT" | "GAS") {
   const supabase = await createClient()
 
-  // 1. Find the last section for this strand to get the next letter
-  const { data: existing } = await supabase
+  // 1. Fetch ALL sections to determine the next letter accurately (Robust against gaps/sorting issues)
+  const { data: sections } = await supabase
     .from('sections')
     .select('section_name')
     .eq('strand', strand)
-    .order('section_name', { ascending: false })
-    .limit(1)
 
-  let nextLetter = "A"
-  if (existing && existing.length > 0) {
-    // Extracts the last character (e.g., 'E' from 'ICT11-E') and increments it
-    const lastLetter = existing[0].section_name.split('-').pop()
-    nextLetter = String.fromCharCode(lastLetter.charCodeAt(0) + 1)
+  // Extract existing suffixes (e.g., 'A', 'B')
+  const existingSuffixes = new Set<string>()
+  if (sections) {
+    sections.forEach(sec => {
+      // Assuming format "STRAND11-X"
+      const parts = sec.section_name.split('-')
+      if (parts.length > 1) {
+        const suffix = parts[parts.length - 1]
+        // Only consider single uppercase letters to avoid confusion with other formats
+        if (suffix.length === 1 && /[A-Z]/.test(suffix)) {
+          existingSuffixes.add(suffix)
+        }
+      }
+    })
   }
 
-  const newName = `${strand}11-`
+  let nextChar = 'A'
+  if (existingSuffixes.size > 0) {
+    // Find the max char code used
+    const maxCode = Array.from(existingSuffixes)
+      .map(s => s.charCodeAt(0))
+      .reduce((a, b) => Math.max(a, b), 0)
+    
+    nextChar = String.fromCharCode(maxCode + 1)
+  }
 
-  // 2. Create the section (Capacity starts at 0, sync will fix it)
-  const { error } = await supabase
+  // 2. Collision detection loop (Safety net against race conditions or manual DB edits)
+  let newName = `${strand}11-${nextChar}`
+  let attempts = 0
+  
+  while (attempts < 10) {
+    const { count } = await supabase
+      .from('sections')
+      .select('*', { count: 'exact', head: true })
+      .eq('section_name', newName)
+    
+    if (count === 0) break // Unique name found
+
+    // Increment char if collision
+    nextChar = String.fromCharCode(nextChar.charCodeAt(0) + 1)
+    newName = `${strand}11-${nextChar}`
+    attempts++
+  }
+
+  if (attempts >= 10) {
+    throw new Error("Failed to generate a unique section name after multiple attempts.")
+  }
+
+  // 3. Create the section
+  const { data, error } = await supabase
     .from('sections')
     .insert([{
       section_name: newName,
       strand: strand,
       capacity: 0 
     }])
+    .select()
+    .single()
 
   if (error) throw new Error(error.message)
 
-  // 3. Mathematical redistribution of slots
+  // 4. Sync capacities
   await syncSectionCapacities()
   
   revalidatePath("/admin/sections")
-  return { success: true, name: newName }
+  return { success: true, data }
 }
 
 /**

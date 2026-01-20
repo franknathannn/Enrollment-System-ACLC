@@ -6,7 +6,7 @@ import { recordYearlySnapshot, deleteSnapshot } from "@/lib/actions/history"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { 
-  TrendingUp, Loader2, TrendingDown, History, FileDown, Users
+  TrendingUp, Loader2, TrendingDown, History, FileDown, Users, LineChart
 } from "lucide-react"
 import { toast } from "sonner"
 import { format, subDays, isSameDay, parseISO } from "date-fns"
@@ -387,6 +387,11 @@ export default function AdminDashboard() {
         </div>
         
         <div className="flex flex-wrap gap-3 w-full md:w-auto">
+             {/* NEW BUTTON ADDED HERE */}
+            <Button onClick={() => router.push('/admin/predictive-analytics')} variant="outline" className="inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 bg-white text-black border-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900">
+              <LineChart /> Predictive Analysis
+            </Button>
+
             <Button onClick={handleCaptureSnapshot} disabled={isCapturing} variant="outline" className="inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 bg-white text-black border-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900">
               {isCapturing ? <Loader2 className="animate-spin"/> : <History />} Record Year
             </Button>

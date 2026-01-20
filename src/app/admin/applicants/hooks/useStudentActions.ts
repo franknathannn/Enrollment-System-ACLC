@@ -37,7 +37,7 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
 
   const handleStatusChange = useCallback(async (studentId: string, name: string, status: any, feedback?: string) => {
     setProcessingIds(prev => { const next = new Set(prev); next.add(studentId); return next })
-    const toastId = toast.loading(`⚡ Processing ...`)
+    const toastId = toast.loading(`Processing ...`)
     try {
       setExitingRows(prev => ({ ...prev, [studentId]: true }))
       await new Promise(resolve => setTimeout(resolve, 280))
@@ -125,7 +125,7 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
 
   const processBulkUpdate = useCallback(async (selectedIds: string[], setSelectedIds: (ids: string[]) => void, newStatus: string, feedback?: string) => {
     setProcessingIds(prev => { const next = new Set(prev); selectedIds.forEach(id => next.add(id)); return next })
-    const toastId = toast.loading(`⚡ Processing  students...`)
+    const toastId = toast.loading(`Processing  students...`)
     try {
       setExitingRows(prev => { const next = { ...prev }; selectedIds.forEach(id => { next[id] = true }); return next })
       await new Promise(resolve => setTimeout(resolve, 280))

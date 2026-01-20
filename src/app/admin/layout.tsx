@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import {
   GraduationCap, LayoutDashboard, Users, Settings,
   LogOut, BookOpen, User as UserIcon, Loader2, ShieldCheck, 
-  Camera, Sparkles, MessageSquare, ChevronLeft, ChevronRight, Menu, Activity, Sun, Moon, UserCheck
+  Camera, Sparkles, MessageSquare, ChevronLeft, ChevronRight, Menu, Activity, Sun, Moon, UserCheck, ChartColumnBig
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -121,6 +121,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navigationItems = [
     { href: "/admin/dashboard", icon: <LayoutDashboard size={18} />, label: "Overview" },
+    { href: "/admin/predictive-analytics", icon: <ChartColumnBig size={18} />, label: "Analysis" },
     { href: "/admin/applicants", icon: <Users size={18} />, label: "Applicants" },
     { href: "/admin/enrolled", icon: <UserCheck size={18} />, label: "Enrolled" },
     { href: "/admin/sections", icon: <BookOpen size={18} />, label: "Sections" },
