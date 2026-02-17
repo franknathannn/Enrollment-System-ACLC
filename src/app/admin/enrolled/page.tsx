@@ -15,6 +15,7 @@ import { useEnrolledFiltering } from "./hooks/useEnrolledFiltering"
 import { useEnrolledActions } from "./hooks/useEnrolledActions"
 import { useStudentUI } from "../applicants/hooks/useStudentUI" // Reusing UI hook for viewer
 import { downloadEnrolledExcel } from "./api/exportEnrolled"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 export default function EnrolledPage() {
   const { isDarkMode: themeDarkMode } = useTheme()
@@ -64,6 +65,7 @@ export default function EnrolledPage() {
   useEffect(() => { fetchStudents() }, [fetchStudents])
 
   return (
+    <TooltipProvider delayDuration={100}>
     <div className="relative min-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-colors duration-500">
        <style jsx global>{`
          body { overflow-y: auto; }
@@ -134,5 +136,6 @@ export default function EnrolledPage() {
          canNavigateNext={canNavigateNext}
        />
     </div>
+    </TooltipProvider>
   )
 }

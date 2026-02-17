@@ -16,6 +16,7 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface Props {
   historyData: any[] 
@@ -64,13 +65,18 @@ export function HistoryEditor({ historyData, isDarkMode }: Props) {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" className={`gap-2 shadow-sm transition-all hover:scale-105 active:scale-95 border ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200'}`}>
-           <Database className={`w-4 h-4 ${isDarkMode ? 'text-slate-400' : 'text-indigo-500'}`} /> 
-           <span className="hidden sm:inline font-bold">Manage Database</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto p-0 gap-0 bg-slate-950 border border-slate-800">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DialogTrigger asChild>
+            <Button variant="outline" className={`gap-2 shadow-sm transition-all hover:scale-105 active:scale-95 border ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200'}`}>
+               <Database className={`w-4 h-4 ${isDarkMode ? 'text-slate-400' : 'text-indigo-500'}`} /> 
+               <span className="hidden sm:inline font-bold">Manage Database</span>
+            </Button>
+          </DialogTrigger>
+        </TooltipTrigger>
+        <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View and edit historical enrollment data points</p></TooltipContent>
+      </Tooltip>
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto p-0 gap-0 bg-slate-950 border border-slate-800" onOpenAutoFocus={(e) => e.preventDefault()}>
         
         {/* HEADER */}
         <div className="p-6 border-b sticky top-0 z-10 bg-slate-900 border-slate-800">
@@ -117,8 +123,18 @@ export function HistoryEditor({ historyData, isDarkMode }: Props) {
                         <TableCell><Input type="number" value={editValues.others_count} onChange={e => setEditValues({...editValues, others_count: e.target.value})} className="h-9 w-28 font-bold text-emerald-400 border-emerald-800 bg-emerald-950/30 focus-visible:ring-emerald-500" /></TableCell>
                         <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                            <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 text-white shadow-md transition-all hover:scale-105"><Save className="w-4 h-4" /></Button>
-                            <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="h-8 w-8 p-0 border-slate-700 hover:bg-slate-800 bg-transparent"><X className="w-4 h-4 text-slate-400" /></Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 text-white shadow-md transition-all hover:scale-105"><Save className="w-4 h-4" /></Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Save changes</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="h-8 w-8 p-0 border-slate-700 hover:bg-slate-800 bg-transparent"><X className="w-4 h-4 text-slate-400" /></Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Cancel editing</p></TooltipContent>
+                            </Tooltip>
                             </div>
                         </TableCell>
                         </>
@@ -143,8 +159,18 @@ export function HistoryEditor({ historyData, isDarkMode }: Props) {
                         </TableCell>
                         <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                            <Button size="icon" variant="ghost" onClick={() => handleEdit(record)} className="h-8 w-8 hover:bg-blue-900/30 hover:text-blue-400 text-slate-400"><Pencil className="w-3.5 h-3.5" /></Button>
-                            <Button size="icon" variant="ghost" onClick={() => handleDelete(record.id)} className="h-8 w-8 hover:bg-red-900/30 hover:text-red-400 text-slate-400"><Trash2 className="w-3.5 h-3.5" /></Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="icon" variant="ghost" onClick={() => handleEdit(record)} className="h-8 w-8 hover:bg-blue-900/30 hover:text-blue-400 text-slate-400"><Pencil className="w-3.5 h-3.5" /></Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Edit record</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="icon" variant="ghost" onClick={() => handleDelete(record.id)} className="h-8 w-8 hover:bg-red-900/30 hover:text-red-400 text-slate-400"><Trash2 className="w-3.5 h-3.5" /></Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Delete record</p></TooltipContent>
+                            </Tooltip>
                             </div>
                         </TableCell>
                         </>

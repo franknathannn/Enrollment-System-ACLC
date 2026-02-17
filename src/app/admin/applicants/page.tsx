@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Loader2 } from "lucide-react"
 import { useTheme } from "@/hooks/useTheme"
 import { StarConstellation } from "./components/StarConstellation"
@@ -13,6 +13,7 @@ import { DocumentViewerModal } from "./components/DocumentViewerModal"
 import { CapacityAlert } from "./components/CapacityAlert"
 import { StudentProfileModal } from "./components/StudentProfileModal"
 import { useApplicants } from "./hooks/useApplicants"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 export default function ApplicantsPage() {
  const { isDarkMode: themeDarkMode } = useTheme()
@@ -49,6 +50,16 @@ export default function ApplicantsPage() {
    sections
  } = useApplicants()
 
+ // Calculate visible students for the current page (for the filter component)
+ const visibleStudentsForFilter = useMemo(() => {
+   if (paginatedStudents.length > 10 || (paginatedStudents.length === filteredStudents.length && filteredStudents.length > 10)) {
+     const startIndex = (currentPage - 1) * 10
+     const endIndex = startIndex + 10
+     return filteredStudents.slice(startIndex, endIndex)
+   }
+   return paginatedStudents
+ }, [paginatedStudents, filteredStudents, currentPage])
+
  if (loading && students.length === 0) return (
   <div className="h-screen flex flex-col items-center justify-center gap-4 text-slate-400">
    <Loader2 className="animate-spin text-blue-600 w-10 h-10" />
@@ -57,6 +68,7 @@ export default function ApplicantsPage() {
  )
 
  return (
+  <TooltipProvider delayDuration={100}>
   <div className="relative min-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-colors duration-500 overflow-x-hidden">
    <style jsx global>{`
      body { overflow-y: auto; }
@@ -83,6 +95,8 @@ export default function ApplicantsPage() {
       filter={filter}
       setFilter={setFilter}
       students={students}
+      filteredStudents={visibleStudentsForFilter}
+      allFilteredStudents={filteredStudents}
       setSelectedIds={setSelectedIds}
       sortBy={sortBy}
       setSortBy={setSortBy}
@@ -169,5 +183,6 @@ export default function ApplicantsPage() {
      setSelectedIds={setSelectedIds}
    />
   </div>
+  </TooltipProvider>
  )
 }

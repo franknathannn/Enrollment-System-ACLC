@@ -12,6 +12,7 @@ import { ProfileDialog } from "./components/ProfileDialog"
 import { SectionDetailView } from "./components/SectionDetailView"
 import { SectionsHeader } from "./components/SectionsHeader"
 import { useSections } from "./hooks/useSections"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 // ===== MAIN COMPONENT =====
 export default function SectionsPage() {
@@ -35,6 +36,7 @@ export default function SectionsPage() {
   )
 
   return (
+    <TooltipProvider delayDuration={100}>
     <div className="relative min-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-colors duration-500 overflow-x-hidden max-w-[100vw]">
       <style jsx global>{`
         body { overflow-y: auto; }
@@ -161,5 +163,6 @@ export default function SectionsPage() {
       {isProcessing && <ProcessingOverlay />}
     </div>
     </div>
+    </TooltipProvider>
   )
 }

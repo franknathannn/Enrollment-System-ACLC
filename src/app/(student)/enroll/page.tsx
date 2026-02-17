@@ -187,7 +187,7 @@ export default function EnrollmentPage() {
   if (loading) return (
     <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center gap-4">
       <Loader2 className="animate-spin text-blue-500 w-10 h-10" />
-      <p className="text-blue-400 font-black text-[10px] uppercase tracking-[0.4em]">Initializing Admission Matrix...</p>
+      <p className="text-blue-400 font-black text-[10px] uppercase tracking-[0.4em]">Loading Application...</p>
     </div>
   )
 

@@ -8,9 +8,10 @@ import { ArrowUpRight } from "lucide-react"
 import { ThemedText } from "@/components/ThemedText"
 import { themeColors } from "@/lib/themeColors"
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
   PieChart, Pie, Cell 
 } from "recharts"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export const AnimatedNumber = memo(({ value, duration = 800 }: { value: number, duration?: number }) => {
   const [displayValue, setDisplayValue] = useState(value)
@@ -71,31 +72,46 @@ export const AnimatedText = memo(({ text, className }: { text: string | number |
 })
 AnimatedText.displayName = "AnimatedText"
 
-export const MetricCard = memo(({ label, value, colorLight, colorDark, icon, isDarkMode, textColor = "text-white" }: any) => {
-  return (
+export const MetricCard = memo(({ label, value, colorLight, colorDark, icon, isDarkMode, textColor = "text-white", tooltip }: any) => {
+  const content = (
     <Card 
-      className={`p-6 md:p-10 rounded-[32px] md:rounded-[56px] ${textColor} flex justify-between items-center shadow-2xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-500 border-none`}
-      style={{
-        background: isDarkMode ? colorDark : colorLight
-      }}
-    >
-      <div className="absolute top-0 right-0 w-32 md:w-48 h-32 md:h-48 bg-white/5 blur-[80px] rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
-      <div className="relative z-10">
-        <p className="text-[9px] md:text-[11px] font-black uppercase opacity-60 tracking-[0.3em] mb-2">{label}</p>
-        <h3 className="text-4xl md:text-7xl font-black tracking-tighter leading-none">
-          {typeof value === 'number' ? value.toLocaleString() : value}
-        </h3>
-      </div>
-      <div className="w-16 md:w-24 h-16 md:h-24 bg-white/10 rounded-[24px] md:rounded-[40px] flex items-center justify-center group-hover:scale-110 transition-transform relative z-10 shadow-lg backdrop-blur-md border border-white/10">{icon}</div>
-    </Card>
-  )
+        className={`p-6 md:p-10 rounded-[32px] md:rounded-[56px] ${textColor} flex justify-between items-center shadow-2xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-500 border-none`}
+        style={{
+          background: isDarkMode ? colorDark : colorLight
+        }}
+      >
+        <div className="absolute top-0 right-0 w-32 md:w-48 h-32 md:h-48 bg-white/5 blur-[80px] rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
+        <div className="relative z-10">
+          <p className="text-[9px] md:text-[11px] font-black uppercase opacity-60 tracking-[0.3em] mb-2">{label}</p>
+          <h3 className="text-4xl md:text-7xl font-black tracking-tighter leading-none">
+            {typeof value === 'number' ? value.toLocaleString() : value}
+          </h3>
+        </div>
+        <div className="w-16 md:w-24 h-16 md:h-24 bg-white/10 rounded-[24px] md:rounded-[40px] flex items-center justify-center group-hover:scale-110 transition-transform relative z-10 shadow-lg backdrop-blur-md border border-white/10">{icon}</div>
+      </Card>
+  );
+
+  if (tooltip) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {content}
+        </TooltipTrigger>
+        <TooltipContent className="bg-slate-900 text-white border-slate-800">
+          <p className="font-medium text-xs">{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return content;
 })
 MetricCard.displayName = "MetricCard"
 
-export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode, highlightColor }: any) => {
+export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode, highlightColor, tooltip }: any) => {
   const isHighlighted = !isDarkMode && highlightColor;
 
-  return (
+  const content = (
     <Card 
       className="p-6 md:p-10 rounded-[32px] md:rounded-[48px] flex flex-col justify-between hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 h-full group min-h-[180px]"
       style={{
@@ -117,7 +133,22 @@ export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode
          <ArrowUpRight size={14} className={`${isHighlighted ? 'text-white/80' : 'text-slate-200 dark:text-slate-600'} group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors`} />
       </div>
     </Card>
-  )
+  );
+
+  if (tooltip) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {content}
+        </TooltipTrigger>
+        <TooltipContent className="bg-slate-900 text-white border-slate-800">
+          <p className="font-medium text-xs">{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return content;
 })
 StatCard.displayName = "StatCard"
 
@@ -148,7 +179,7 @@ export const VelocityChart = memo(({ data, isDarkMode }: { data: any[], isDarkMo
           tickLine={false} 
           tick={{ fontSize: 10, fontWeight: 900, fill: isDarkMode ? '#94a3b8' : '#475569' }} 
         />
-        <Tooltip 
+        <RechartsTooltip 
           contentStyle={{ 
             borderRadius: '24px', 
             border: 'none', 
@@ -182,7 +213,7 @@ export const StrandPieChart = memo(({ data, total, isDarkMode }: { data: any[], 
         <Pie data={data} cx="50%" cy="50%" innerRadius={70} outerRadius={95} paddingAngle={10} dataKey="value" animationDuration={1500}>
           {data.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />)}
         </Pie>
-        <Tooltip 
+        <RechartsTooltip 
           contentStyle={{ 
             borderRadius: '24px', 
             border: 'none', 

@@ -9,6 +9,7 @@ import { ThemedCard } from "@/components/ThemedCard"
 import { OptimizedImage } from "./OptimizedImage"
 import { toast } from "sonner"
 import { AnimatedText, AnimatedNumber } from "../../dashboard/components/primitives"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface EnrolledTableProps {
   students: any[]
@@ -87,14 +88,32 @@ export const EnrolledTable = memo(({ students, isDarkMode, onView, onReset, anim
                     
                     {/* Animated Profile Well */}
                     <div className="relative shrink-0">
-                        <div className={`absolute inset-0 blur-xl opacity-20 ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
-                        <div className={`w-16 h-16 rounded-2xl p-1 border-2 relative z-10 ${isMale ? 'border-blue-500/30' : 'border-pink-500/30'}`}>
-                            <OptimizedImage 
-                                src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
-                                className="w-full h-full object-cover rounded-xl" 
-                                alt="Student" 
-                            />
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" onClick={(e) => { e.stopPropagation(); onView(s); }} className="cursor-pointer relative p-0 bg-transparent border-none">
+                              <div className={`absolute inset-0 blur-xl opacity-20 ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
+                              <div className={`w-16 h-16 rounded-2xl p-1 border-2 relative z-10 ${isMale ? 'border-blue-500/30' : 'border-pink-500/30'}`}>
+                                  <OptimizedImage 
+                                      src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
+                                      className="w-full h-full object-cover rounded-xl" 
+                                      alt="Student" 
+                                  />
+                              </div>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
+                              <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
+                                  <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
+                                      <OptimizedImage src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} alt="Avatar" className="w-full h-full object-cover" />
+                                  </div>
+                                  <div className="min-w-0">
+                                      <p className="font-black uppercase text-sm truncate">{s.last_name}, {s.first_name}</p>
+                                      <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {s.lrn}</p>
+                                      <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{s.strand} - {s.student_category || 'Regular'}</Badge>
+                                  </div>
+                              </div>
+                          </TooltipContent>
+                        </Tooltip>
                     </div>
                     
                     <div className="flex-1 min-w-0">
@@ -146,12 +165,22 @@ export const EnrolledTable = memo(({ students, isDarkMode, onView, onReset, anim
 
                 {/* 🎮 Crystalline Action Dock */}
                 <div className={`p-2 flex items-center gap-2 border-t ${theme.dockBg} ${theme.border}`}>
-                    <Button size="sm" variant="ghost" onClick={(e) => {e.stopPropagation(); onView(s)}} className={`flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all transform-gpu active:scale-95 ${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>
-                      <Eye size={16} className="mr-2"/> View Profile
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={(e) => {e.stopPropagation(); onReset(s)}} className="flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all transform-gpu active:scale-95">
-                      <RotateCcw size={16} className="mr-2"/> Reset
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" onClick={(e) => {e.stopPropagation(); onView(s)}} className={`flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all transform-gpu active:scale-95 ${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>
+                          <Eye size={16} className="mr-2"/> View Profile
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View Student Profile</p></TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" onClick={(e) => {e.stopPropagation(); onReset(s)}} className="flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all transform-gpu active:scale-95">
+                          <RotateCcw size={16} className="mr-2"/> Reset
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-amber-900 text-amber-100 border-amber-800"><p>Reset to Pending</p></TooltipContent>
+                    </Tooltip>
                 </div>
               </div>
             )
@@ -199,18 +228,34 @@ export const EnrolledTable = memo(({ students, isDarkMode, onView, onReset, anim
                     <TableCell className="pl-8 py-6 relative">
                        <div className="flex items-center gap-4">
                           <div className="relative">
-                            <div className={`w-14 h-14 rounded-full overflow-hidden border-2 transition-all group-hover:scale-105 ${
-                              isMale 
-                                ? 'border-blue-300/40 group-hover:border-blue-500 group-hover:shadow-[0_0_25px_rgba(59,130,246,0.6)]' 
-                                : 'border-pink-300/40 group-hover:border-pink-500 group-hover:shadow-[0_0_25px_rgba(236,72,153,0.6)]'
-                            }`}>
-                               <OptimizedImage 
-                                  src={s.profile_picture || s.two_by_two_url || s.profile_2x2_url} 
-                                  alt="Avatar" 
-                                  className="w-full h-full object-cover" 
-                                  fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`}
-                               />
-                            </div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); onView(s); }} className={`w-14 h-14 rounded-full overflow-hidden border-2 transition-all group-hover:scale-105 cursor-pointer p-0 ${
+                                  isMale 
+                                    ? 'border-blue-300/40 group-hover:border-blue-500 group-hover:shadow-[0_0_25px_rgba(59,130,246,0.6)]' 
+                                    : 'border-pink-300/40 group-hover:border-pink-500 group-hover:shadow-[0_0_25px_rgba(236,72,153,0.6)]'
+                                }`}>
+                                   <OptimizedImage 
+                                      src={s.profile_picture || s.two_by_two_url || s.profile_2x2_url} 
+                                      alt="Avatar" 
+                                      className="w-full h-full object-cover" 
+                                      fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`}
+                                   />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
+                                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
+                                      <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
+                                          <OptimizedImage src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} alt="Avatar" className="w-full h-full object-cover" />
+                                      </div>
+                                      <div className="min-w-0">
+                                          <p className="font-black uppercase text-sm truncate">{s.last_name}, {s.first_name}</p>
+                                          <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {s.lrn}</p>
+                                          <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{s.strand} - {s.student_category || 'Regular'}</Badge>
+                                      </div>
+                                  </div>
+                              </TooltipContent>
+                            </Tooltip>
                             <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[6px] font-black uppercase tracking-widest text-white shadow-sm z-10 whitespace-nowrap ${
                               s.student_category?.toLowerCase().includes('als') 
                                 ? 'bg-gradient-to-r from-orange-500 to-red-500 shadow-orange-500/30' 
@@ -263,32 +308,42 @@ export const EnrolledTable = memo(({ students, isDarkMode, onView, onReset, anim
                     </TableCell>
                     <TableCell className="text-right pr-8">
                        <div className="flex items-center justify-end gap-1.5">
-                         <Button 
-                           size="sm" 
-                           variant="ghost" 
-                           onClick={() => onView(s)}
-                           className="h-9 px-3 rounded-xl text-slate-500 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 flex items-center justify-center"
-                           onMouseEnter={(e) => {
-                             e.currentTarget.style.backgroundColor = 'rgb(71 85 105)'
-                             e.currentTarget.style.color = 'white'
-                           }}
-                           onMouseLeave={(e) => {
-                             e.currentTarget.style.backgroundColor = ''
-                             e.currentTarget.style.color = 'rgb(100 116 139)'
-                           }}
-                         >
-                            <Eye size={14} className="mr-2" /> View
-                         </Button>
-                         <Button 
-                           size="sm" 
-                           variant="ghost" 
-                           onClick={() => onReset(s)}
-                           className="h-9 px-3 rounded-xl text-amber-600 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 flex items-center justify-center"
-                           onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgb(245 158 11)'; e.currentTarget.style.color = 'white'; }}
-                           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = 'rgb(217 119 6)'; }}
-                         >
-                           <RotateCcw size={12} className="mr-2" /> Reset
-                         </Button>
+                         <Tooltip>
+                           <TooltipTrigger asChild>
+                             <Button 
+                               size="sm" 
+                               variant="ghost" 
+                               onClick={() => onView(s)}
+                               className="h-9 px-3 rounded-xl text-slate-500 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 flex items-center justify-center"
+                               onMouseEnter={(e) => {
+                                 e.currentTarget.style.backgroundColor = 'rgb(71 85 105)'
+                                 e.currentTarget.style.color = 'white'
+                               }}
+                               onMouseLeave={(e) => {
+                                 e.currentTarget.style.backgroundColor = ''
+                                 e.currentTarget.style.color = 'rgb(100 116 139)'
+                               }}
+                             >
+                                <Eye size={14} className="mr-2" /> View
+                             </Button>
+                           </TooltipTrigger>
+                           <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View Profile</p></TooltipContent>
+                         </Tooltip>
+                         <Tooltip>
+                           <TooltipTrigger asChild>
+                             <Button 
+                               size="sm" 
+                               variant="ghost" 
+                               onClick={() => onReset(s)}
+                               className="h-9 px-3 rounded-xl text-amber-600 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 flex items-center justify-center"
+                               onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgb(245 158 11)'; e.currentTarget.style.color = 'white'; }}
+                               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = 'rgb(217 119 6)'; }}
+                             >
+                               <RotateCcw size={12} className="mr-2" /> Reset
+                             </Button>
+                           </TooltipTrigger>
+                           <TooltipContent className="bg-amber-900 text-amber-100 border-amber-800"><p>Reset to Pending</p></TooltipContent>
+                         </Tooltip>
                        </div>
                     </TableCell>
                  </TableRow>

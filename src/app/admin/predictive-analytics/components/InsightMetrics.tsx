@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TrendingDown, TrendingUp } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface Props {
   projectedGrowth: string
@@ -16,6 +17,8 @@ export function InsightMetrics({ projectedGrowth, nextYearTotal, lowestPossible,
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* CARD 1: GROWTH RATE */}
+      <Tooltip>
+      <TooltipTrigger asChild>
       <Card className={`border shadow-sm relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-blue-100'}`}>
         <div className={`absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none`} />
         <CardHeader className="pb-2">
@@ -32,8 +35,13 @@ export function InsightMetrics({ projectedGrowth, nextYearTotal, lowestPossible,
           </div>
         </CardContent>
       </Card>
+      </TooltipTrigger>
+      <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Percentage growth vs previous year</p></TooltipContent>
+      </Tooltip>
 
       {/* CARD 2: NEXT YEAR TOTAL */}
+      <Tooltip>
+      <TooltipTrigger asChild>
       <Card className={`border shadow-sm relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-purple-100'}`}>
         <div className={`absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none`} />
         <CardHeader className="pb-2">
@@ -50,8 +58,13 @@ export function InsightMetrics({ projectedGrowth, nextYearTotal, lowestPossible,
           </div>
         </CardContent>
       </Card>
+      </TooltipTrigger>
+      <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Predicted total for the next academic year</p></TooltipContent>
+      </Tooltip>
 
       {/* CARD 3: PREDICTION INTERVALS (LOW/HIGH) */}
+      <Tooltip>
+      <TooltipTrigger asChild>
       <Card className={`border shadow-sm relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-emerald-100'}`}>
         <div className={`absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none`} />
         <CardHeader className="pb-2">
@@ -87,6 +100,9 @@ export function InsightMetrics({ projectedGrowth, nextYearTotal, lowestPossible,
           </div>
         </CardContent>
       </Card>
+      </TooltipTrigger>
+      <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Statistical confidence range (Low to High)</p></TooltipContent>
+      </Tooltip>
     </div>
   )
 }

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTheme } from "@/hooks/useTheme"
 import { toast } from "sonner"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Components
 import { EnrollmentTrendChart } from "./components/EnrollmentTrendChart"
@@ -290,14 +291,20 @@ export default function PredictiveAnalytics() {
   )
 
   return (
+    <TooltipProvider delayDuration={100}>
     <div className="space-y-8 p-4 md:p-8 pb-20 transition-colors animate-in fade-in duration-700">
         
         {/* HEADER */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
             <div className="space-y-1">
-                <Button variant="ghost" onClick={() => router.back()} className="pl-0 hover:bg-transparent hover:text-blue-600">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" onClick={() => router.back()} className="pl-0 hover:bg-transparent hover:text-blue-600">
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Return to main dashboard</p></TooltipContent>
+                </Tooltip>
                 
                 <div className="flex flex-wrap items-center gap-3">
                   <h2 className={`text-3xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r ${isDarkMode ? 'from-blue-400 via-purple-400 to-pink-400' : 'from-blue-600 via-purple-600 to-pink-600'}`}>Predictive Analysis</h2>
@@ -347,10 +354,15 @@ export default function PredictiveAnalytics() {
         {/* CHART */}
         <Card className={`border shadow-sm transition-all duration-300 hover:shadow-md ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
             <CardHeader>
-                <CardTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                    <span className="w-2 h-6 rounded-full bg-gradient-to-b from-blue-500 to-purple-500"></span>
-                    Enrollment Graph
-                </CardTitle>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <CardTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-900'} cursor-help w-fit`}>
+                            <span className="w-2 h-6 rounded-full bg-gradient-to-b from-blue-500 to-purple-500"></span>
+                            Enrollment Graph
+                        </CardTitle>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Visualizes historical data and future predictions</p></TooltipContent>
+                </Tooltip>
                 <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
                    {mode === 'simulation' ? "Simulating future outcomes..." : "LIVE"}
                 </CardDescription>
@@ -364,10 +376,15 @@ export default function PredictiveAnalytics() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <Card className={`border shadow-sm transition-all duration-300 hover:shadow-md ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                 <CardHeader>
-                    <CardTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                        <span className="w-2 h-6 rounded-full bg-gradient-to-b from-emerald-500 to-teal-500"></span>
-                        External Source (NCR)
-                    </CardTitle>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <CardTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-900'} cursor-help w-fit`}>
+                                <span className="w-2 h-6 rounded-full bg-gradient-to-b from-emerald-500 to-teal-500"></span>
+                                External Source (NCR)
+                            </CardTitle>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Market potential based on regional graduates</p></TooltipContent>
+                    </Tooltip>
                     <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
                         Total Graduates (JHS) vs Passers (ALS) in the Region.
                     </CardDescription>
@@ -398,30 +415,50 @@ export default function PredictiveAnalytics() {
                                     </p>
                                 </div>
                              </div>
-                             <Button size="sm" variant={useAIAutofill ? "default" : "outline"} onClick={() => setUseAIAutofill(!useAIAutofill)} className={useAIAutofill ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-none shadow-md" : `border ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-700 hover:bg-slate-100'}`}>
-                                {useAIAutofill ? "Active" : "Disabled"}
-                             </Button>
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                     <Button size="sm" variant={useAIAutofill ? "default" : "outline"} onClick={() => setUseAIAutofill(!useAIAutofill)} className={useAIAutofill ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-none shadow-md" : `border ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-700 hover:bg-slate-100'}`}>
+                                        {useAIAutofill ? "Active" : "Disabled"}
+                                     </Button>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Toggle AI-based automatic data prediction</p></TooltipContent>
+                             </Tooltip>
                         </div>
 
                         {!useAIAutofill && (
                             <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                                 <div className="space-y-2">
                                     <Label className={`text-[10px] uppercase font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>JHS Graduates</Label>
-                                    <Input type="number" min="50000" value={manualMarketData.jhs} onChange={(e) => setManualMarketData({...manualMarketData, jhs: Math.max(0, parseInt(e.target.value) || 0)})} className={`font-bold ${isDarkMode ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`} />
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Input type="number" min="50000" value={manualMarketData.jhs} onChange={(e) => setManualMarketData({...manualMarketData, jhs: Math.max(0, parseInt(e.target.value) || 0)})} className={`font-bold ${isDarkMode ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`} />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Manual input for Junior High School graduates</p></TooltipContent>
+                                    </Tooltip>
                                 </div>
                                 <div className="space-y-2">
                                     <Label className={`text-[10px] uppercase font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>ALS Passers</Label>
-                                    <Input type="number" min="1000" value={manualMarketData.als} onChange={(e) => setManualMarketData({...manualMarketData, als: Math.max(0, parseInt(e.target.value) || 0)})} className={`font-bold ${isDarkMode ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`} />
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Input type="number" min="1000" value={manualMarketData.als} onChange={(e) => setManualMarketData({...manualMarketData, als: Math.max(0, parseInt(e.target.value) || 0)})} className={`font-bold ${isDarkMode ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`} />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Manual input for ALS passers</p></TooltipContent>
+                                    </Tooltip>
                                 </div>
                                 <div className="space-y-2 col-span-2">
                                     <Label className={`text-[10px] uppercase font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Payees / Others</Label>
-                                    <Input 
-                                        type="number" 
-                                        min="0"
-                                        value={manualMarketData.others} 
-                                        onChange={(e) => setManualMarketData({...manualMarketData, others: Math.max(0, parseInt(e.target.value) || 0)})}
-                                        className={`font-bold ${isDarkMode ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
-                                    />
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Input 
+                                                type="number" 
+                                                min="0"
+                                                value={manualMarketData.others} 
+                                                onChange={(e) => setManualMarketData({...manualMarketData, others: Math.max(0, parseInt(e.target.value) || 0)})}
+                                                className={`font-bold ${isDarkMode ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+                                            />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Additional enrollees (Transferees, Payees)</p></TooltipContent>
+                                    </Tooltip>
                                     <p className="text-[10px] text-slate-400 text-right">Added to total count</p>
                                 </div>
                             </div>
@@ -446,5 +483,6 @@ export default function PredictiveAnalytics() {
             </Card>
         </div>
     </div>
+    </TooltipProvider>
   )
 }

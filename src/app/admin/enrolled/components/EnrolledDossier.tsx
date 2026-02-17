@@ -14,6 +14,8 @@ import { toast } from "sonner"
 import { OptimizedImage } from "./OptimizedImage"
 import { ThemedText } from "@/components/ThemedText"
 import { AnimatedNumber, AnimatedText } from "../../dashboard/components/primitives"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { supabase } from "@/lib/supabase/client"
 
 // ===== STATUS BADGE =====
 const StatusBadge = memo(function StatusBadge({ status, isDarkMode }: { status: string, isDarkMode: boolean }) {
@@ -38,8 +40,8 @@ const InfoBlock = memo(function InfoBlock({ label, value, icon, isDarkMode, anim
       <p className={`text-[9px] md:text-[10px] uppercase font-black tracking-[0.2em] mb-1.5 transition-colors ${isDarkMode ? 'text-slate-500 group-hover:text-blue-400' : 'text-slate-400 group-hover:text-blue-700'}`}>{label}</p>
       <div className="flex items-center gap-2.5">
         {icon && <span className={`shrink-0 ${isDarkMode ? 'text-blue-400/30' : 'text-blue-500/40'}`}>{icon}</span>}
-        <p className={`font-bold text-sm md:text-base break-words leading-tight transition-colors duration-500 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-          {animate ? <AnimatedText text={value || "—"} /> : (value || "—")}
+        <p className={`font-bold text-sm md:text-base break-words leading-tight transition-colors duration-500 whitespace-pre-line ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+          {animate ? <AnimatedText text={value || "—"} className="whitespace-pre-line" /> : (value || "—")}
         </p>
       </div>
     </div>
@@ -47,7 +49,7 @@ const InfoBlock = memo(function InfoBlock({ label, value, icon, isDarkMode, anim
 })
 
 // ===== CREDENTIAL CARD =====
-const CredentialCard = memo(function CredentialCard({ label, url, onOpen, isDarkMode }: { label: string, url: string, onOpen?: (url: string, label: string) => void, isDarkMode: boolean }) {
+const CredentialCard = memo(function CredentialCard({ label, url, onOpen, isDarkMode, isEditing }: { label: string, url: string, onOpen?: (url: string, label: string) => void, isDarkMode: boolean, isEditing?: boolean }) {
   if (!url) return (
     <div 
       className={`p-4 md:p-6 rounded-[24px] border border-dashed opacity-40 flex flex-col items-center justify-center text-slate-400 h-32 md:h-40 transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
@@ -81,6 +83,11 @@ const CredentialCard = memo(function CredentialCard({ label, url, onOpen, isDark
           <div className="absolute inset-0 bg-blue-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[2px]">
             <ZoomIn className="text-white drop-shadow-md" size={24} />
           </div>
+          {isEditing && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
+              <Camera className="text-white" size={32} />
+            </div>
+          )}
         </div>
         <p className={`text-[10px] font-black text-center mt-3 uppercase tracking-widest leading-tight px-1 truncate transition-colors duration-500 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
           {label}
@@ -115,6 +122,8 @@ export const EnrolledDossier = memo(function EnrolledDossier({
   const [formData, setFormData] = useState(student)
   const [isSaving, setIsSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const docInputRef = useRef<HTMLInputElement>(null)
+  const [activeDocField, setActiveDocField] = useState<string | null>(null)
   const [strandDropdownOpen, setStrandDropdownOpen] = useState(false)
   const [sectionDropdownOpen, setSectionDropdownOpen] = useState(false)
   const [genderDropdownOpen, setGenderDropdownOpen] = useState(false)
@@ -124,7 +133,7 @@ export const EnrolledDossier = memo(function EnrolledDossier({
     if (formData._file) return true; // A new file was selected
 
     const fieldsToCompare = [
-        'first_name', 'middle_name', 'last_name', 'gender', 'religion', 
+        'first_name', 'middle_name', 'last_name', 'gender', 'religion', 'nationality', 'school_year',
         'civil_status', 'age', 'birth_date', 'email', 'phone', 'address',
         'guardian_first_name', 'guardian_last_name', 'guardian_phone',
         'last_school_attended', 'gwa_grade_10', 'strand', 'section', 'section_id'
@@ -209,6 +218,37 @@ export const EnrolledDossier = memo(function EnrolledDossier({
     }
   }
 
+  const handleDocClick = (field: string) => {
+    if (isEditing && docInputRef.current) {
+      setActiveDocField(field)
+      docInputRef.current.click()
+    }
+  }
+
+  const handleDocChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file && activeDocField) {
+      const toastId = toast.loading("Uploading document...")
+      try {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${student.lrn}_${activeDocField}_${Date.now()}.${fileExt}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from('enrollment-docs')
+          .upload(fileName, file)
+        
+        if (uploadError) throw uploadError
+
+        const { data: { publicUrl } } = supabase.storage.from('enrollment-docs').getPublicUrl(fileName)
+        
+        setFormData((prev: any) => ({ ...prev, [activeDocField]: publicUrl }))
+        toast.success("Document updated. Save to apply.", { id: toastId })
+      } catch (error: any) {
+        toast.error("Upload failed: " + error.message, { id: toastId })
+      }
+    }
+  }
+
   const handleCopyInfo = async () => {
     const infoText = `
 STUDENT RECORD:
@@ -240,6 +280,7 @@ Address: ${student.address}
     const docs: {url: string, label: string}[] = [];
     const imgUrl = student.profile_picture || student.two_by_two_url || student.profile_2x2_url;
     if (imgUrl) docs.push({ url: imgUrl, label: `${student.last_name}_2X2_PICTURE`.toUpperCase() });
+    if (student.birth_certificate_url) docs.push({ url: student.birth_certificate_url, label: `${student.last_name}_BIRTH_CERT`.toUpperCase() });
 
     if (isJHS) {
       if (student.form_138_url) docs.push({ url: student.form_138_url, label: `${student.last_name}_FORM_138`.toUpperCase() });
@@ -259,6 +300,7 @@ Address: ${student.address}
   return (
     <div className={`flex flex-col h-full transition-colors duration-500 ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+      <input type="file" ref={docInputRef} className="hidden" accept="image/*,application/pdf" onChange={handleDocChange} />
       
       {/* 🟢 HEADER SECTION: Darker Greyish Theme */}
       <div className={`p-6 md:p-12 flex flex-col items-center text-center relative overflow-hidden shrink-0 transition-all duration-500 ${
@@ -272,23 +314,32 @@ Address: ${student.address}
 
         {/* ❌ EXIT & COPY BUTTONS */}
         <div className="absolute top-4 left-4 z-30 flex gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onClose} 
-            className={`rounded-full transition-all active:scale-90 ${isDarkMode ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
-          >
-            <X size={20} />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleCopyInfo} 
-            title="Copy Student Information"
-            className={`rounded-full transition-all active:scale-90 ${isDarkMode ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
-          >
-            {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onClose} 
+                className={`rounded-full transition-all active:scale-90 ${isDarkMode ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+              >
+                <X size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Close Dossier</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleCopyInfo} 
+                className={`rounded-full transition-all active:scale-90 ${isDarkMode ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+              >
+                {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Copy Student Info</p></TooltipContent>
+          </Tooltip>
         </div>
 
         {/* EDIT BUTTON */}
@@ -297,27 +348,42 @@ Address: ${student.address}
              <>
                {isEditing ? (
                  <>
-                   <Button 
-                     onClick={() => { setIsEditing(false); setFormData(student); }}
-                     className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-red-500 hover:bg-red-600 text-white`}
-                     disabled={isSaving}
-                   >
-                     <Undo2 size={14} className="mr-2" /> Cancel
-                   </Button>
+                   <Tooltip>
+                     <TooltipTrigger asChild>
+                       <Button 
+                         onClick={() => { setIsEditing(false); setFormData(student); }}
+                         className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-red-500 hover:bg-red-600 text-white`}
+                         disabled={isSaving}
+                       >
+                         <Undo2 size={14} className="mr-2" /> Cancel
+                       </Button>
+                     </TooltipTrigger>
+                     <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Discard Changes</p></TooltipContent>
+                   </Tooltip>
                    {hasChanges && (
-                     <Button 
-                       onClick={handleSave}
-                       className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-400 disabled:cursor-not-allowed`}
-                       disabled={isSaving || !isValid}
-                     >
-                       <Save size={14} className="mr-2" /> {isSaving ? 'Saving...' : 'Save Changes'}
-                     </Button>
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                         <Button 
+                           onClick={handleSave}
+                           className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-400 disabled:cursor-not-allowed`}
+                           disabled={isSaving || !isValid}
+                         >
+                           <Save size={14} className="mr-2" /> {isSaving ? 'Saving...' : 'Save Changes'}
+                         </Button>
+                       </TooltipTrigger>
+                       <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Save Profile Updates</p></TooltipContent>
+                     </Tooltip>
                    )}
                  </>
                  ) : (
-                   <Button onClick={() => setIsEditing(true)} className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
-                     <Edit2 size={14} className="mr-2" /> Edit Profile
-                   </Button>
+                   <Tooltip>
+                     <TooltipTrigger asChild>
+                       <Button onClick={() => setIsEditing(true)} className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
+                         <Edit2 size={14} className="mr-2" /> Edit Profile
+                       </Button>
+                     </TooltipTrigger>
+                     <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Modify Student Data</p></TooltipContent>
+                   </Tooltip>
                  )}
              </>
            )}
@@ -374,7 +440,7 @@ Address: ${student.address}
               <User size={16} /> I. Student Information
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-6">
-              {['first_name', 'middle_name', 'last_name', 'gender', 'religion', 'civil_status', 'age', 'birth_date'].map(field => (
+              {['first_name', 'middle_name', 'last_name', 'gender', 'religion', 'nationality', 'civil_status', 'age', 'birth_date', 'school_year'].map(field => (
                 <div key={field} className="space-y-1.5">
                   {isEditing ? (
                     <>
@@ -417,8 +483,17 @@ Address: ${student.address}
                         />
                       )}
                     </>
-                  ) : (field === 'gender' ? <InfoBlock label={field.replace('_', ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} animate={false} /> :
-                    <InfoBlock label={field.replace('_', ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} />
+                  ) : (
+                    <InfoBlock 
+                      label={field.replace('_', ' ')} 
+                      value={
+                        field === 'birth_date' && formData[field] 
+                          ? `${formData[field]}\n${new Date(formData[field]).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                          : formData[field] || '—'
+                      } 
+                      isDarkMode={isDarkMode} 
+                      animate={field !== 'gender'} 
+                    />
                   )}
                 </div>
               ))}
@@ -616,16 +691,53 @@ Address: ${student.address}
             <ScrollText size={16} /> V. Student Documents
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <CredentialCard 
+              label="Birth Certificate" 
+              url={formData.birth_certificate_url} 
+              onOpen={(url) => isEditing ? handleDocClick('birth_certificate_url') : onOpenFile(url, `${student.last_name}_BIRTH_CERT`.toUpperCase(), getAllDocs())} 
+              isDarkMode={isDarkMode} 
+              isEditing={isEditing}
+            />
             {isJHS ? (
               <>
-                <CredentialCard label="Form 138" url={student.form_138_url} onOpen={(url) => onOpenFile(url, `${student.last_name}_FORM_138`.toUpperCase(), getAllDocs())} isDarkMode={isDarkMode} />
-                <CredentialCard label="Good Moral" url={student.good_moral_url} onOpen={(url) => onOpenFile(url, `${student.last_name}_GOOD_MORAL`.toUpperCase(), getAllDocs())} isDarkMode={isDarkMode} />
+                <CredentialCard 
+                  label="Form 138" 
+                  url={formData.form_138_url} 
+                  onOpen={(url) => isEditing ? handleDocClick('form_138_url') : onOpenFile(url, `${student.last_name}_FORM_138`.toUpperCase(), getAllDocs())} 
+                  isDarkMode={isDarkMode} 
+                  isEditing={isEditing}
+                />
+                <CredentialCard 
+                  label="Good Moral" 
+                  url={formData.good_moral_url} 
+                  onOpen={(url) => isEditing ? handleDocClick('good_moral_url') : onOpenFile(url, `${student.last_name}_GOOD_MORAL`.toUpperCase(), getAllDocs())} 
+                  isDarkMode={isDarkMode} 
+                  isEditing={isEditing}
+                />
               </>
             ) : (
               <>
-                <CredentialCard label="ALS Rating" url={student.cor_url} onOpen={(url) => onOpenFile(url, `${student.last_name}_ALS_RATING`.toUpperCase(), getAllDocs())} isDarkMode={isDarkMode} />
-                <CredentialCard label="Diploma" url={student.diploma_url} onOpen={(url) => onOpenFile(url, `${student.last_name}_DIPLOMA`.toUpperCase(), getAllDocs())} isDarkMode={isDarkMode} />
-                <CredentialCard label="AF5 Form" url={student.af5_url} onOpen={(url) => onOpenFile(url, `${student.last_name}_AF5`.toUpperCase(), getAllDocs())} isDarkMode={isDarkMode} />
+                <CredentialCard 
+                  label="ALS Rating" 
+                  url={formData.cor_url} 
+                  onOpen={(url) => isEditing ? handleDocClick('cor_url') : onOpenFile(url, `${student.last_name}_ALS_RATING`.toUpperCase(), getAllDocs())} 
+                  isDarkMode={isDarkMode} 
+                  isEditing={isEditing}
+                />
+                <CredentialCard 
+                  label="Diploma" 
+                  url={formData.diploma_url} 
+                  onOpen={(url) => isEditing ? handleDocClick('diploma_url') : onOpenFile(url, `${student.last_name}_DIPLOMA`.toUpperCase(), getAllDocs())} 
+                  isDarkMode={isDarkMode} 
+                  isEditing={isEditing}
+                />
+                <CredentialCard 
+                  label="AF5 Form" 
+                  url={formData.af5_url} 
+                  onOpen={(url) => isEditing ? handleDocClick('af5_url') : onOpenFile(url, `${student.last_name}_AF5`.toUpperCase(), getAllDocs())} 
+                  isDarkMode={isDarkMode} 
+                  isEditing={isEditing}
+                />
               </>
             )}
           </div>

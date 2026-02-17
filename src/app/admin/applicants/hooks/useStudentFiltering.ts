@@ -51,7 +51,14 @@ export function useStudentFiltering({ students, processingIds, processingIdsRef,
   const filteredStudents = useMemo(() => {
     const filtered = students.filter(s => {
       const matchesStatus = s.status === filter || (filter === 'Accepted' && s.status === 'Approved');
-      const matchesSearch = `${s.first_name} ${s.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) || s.lrn.includes(searchTerm);
+      
+      // --- UPDATED SEARCH LOGIC HERE ---
+      const term = searchTerm.toLowerCase();
+      const matchesSearch = 
+        `${s.first_name} ${s.last_name}`.toLowerCase().includes(term) || 
+        (s.lrn && s.lrn.includes(term)) || 
+        (s.id && s.id.toLowerCase().includes(term)); // This covers the UUID (and Short ID)
+      
       return matchesStatus && matchesSearch;
     })
 

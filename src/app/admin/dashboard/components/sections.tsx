@@ -14,14 +14,15 @@ import { ThemedText } from "@/components/ThemedText"
 import { themeColors } from "@/lib/themeColors"
 import Link from "next/link"
 import { AnimatedNumber, MetricCard, StatCard, VelocityChart, StrandPieChart } from "./primitives"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function OverviewGrid({ stats, isDarkMode }: { stats: any, isDarkMode: boolean }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-      <StatCard title="Students Enrolled" value={<AnimatedNumber value={stats.totalAccepted} />} icon={<CheckCircle2 />} color="text-emerald-600 dark:text-emerald-400" bg="bg-emerald-50" trend="View Enrolled" isDarkMode={isDarkMode} />
-      <StatCard title="ICT Enrolled" value={<AnimatedNumber value={stats.ictAccepted} />} icon={<Cpu />} color="text-indigo-600 dark:text-indigo-400" bg="bg-indigo-50" trend="View Applicants" isDarkMode={isDarkMode} />
-      <StatCard title="GAS Enrolled" value={<AnimatedNumber value={stats.gasAccepted} />} icon={<BookText />} color="text-orange-600 dark:text-orange-400" bg="bg-orange-50" trend="View Applicants" isDarkMode={isDarkMode} />
-      <StatCard title="Pending Applicants" value={<AnimatedNumber value={stats.pending} />} icon={<Clock />} color="text-amber-600 dark:text-amber-400" bg="bg-amber-50" trend="View Applicants" isDarkMode={isDarkMode} />
+      <StatCard title="Students Enrolled" value={<AnimatedNumber value={stats.totalAccepted} />} icon={<CheckCircle2 />} color="text-emerald-600 dark:text-emerald-400" bg="bg-emerald-50" trend="View Enrolled" isDarkMode={isDarkMode} tooltip="Total number of students officially enrolled" />
+      <StatCard title="ICT Enrolled" value={<AnimatedNumber value={stats.ictAccepted} />} icon={<Cpu />} color="text-indigo-600 dark:text-indigo-400" bg="bg-indigo-50" trend="View Applicants" isDarkMode={isDarkMode} tooltip="Students enrolled in Information and Communications Technology" />
+      <StatCard title="GAS Enrolled" value={<AnimatedNumber value={stats.gasAccepted} />} icon={<BookText />} color="text-orange-600 dark:text-orange-400" bg="bg-orange-50" trend="View Applicants" isDarkMode={isDarkMode} tooltip="Students enrolled in General Academic Strand" />
+      <StatCard title="Pending Applicants" value={<AnimatedNumber value={stats.pending} />} icon={<Clock />} color="text-amber-600 dark:text-amber-400" bg="bg-amber-50" trend="View Applicants" isDarkMode={isDarkMode} tooltip="Applications awaiting review or approval" />
     </div>
   )
 }
@@ -36,6 +37,7 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
         colorDark="linear-gradient(135deg, rgb(59, 130, 246), rgb(29, 78, 216))"
         icon={<User size={48}/>}
         isDarkMode={isDarkMode}
+        tooltip="Total male students currently enrolled"
       />
       <MetricCard 
         label="Female Student Enrolled" 
@@ -44,6 +46,7 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
         colorDark="linear-gradient(135deg, rgb(244, 114, 182), rgb(236, 72, 153))"
         icon={<UserCircle2 size={48}/>}
         isDarkMode={isDarkMode}
+        tooltip="Total female students currently enrolled"
       />
       <MetricCard 
         label="Current Male Enrollee" 
@@ -52,6 +55,7 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
         colorDark="linear-gradient(135deg, rgba(30, 58, 138, 0.7), rgba(23, 37, 84, 0.7))"
         icon={<User size={48} className="opacity-70"/>}
         isDarkMode={isDarkMode}
+        tooltip="Male applicants pending approval"
       />
       <MetricCard 
         label="Current Female Enrollee" 
@@ -60,6 +64,7 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
         colorDark="linear-gradient(135deg, rgba(157, 23, 77, 0.7), rgba(131, 24, 67, 0.7))"
         icon={<UserCircle2 size={48} className="opacity-70"/>}
         isDarkMode={isDarkMode}
+        tooltip="Female applicants pending approval"
       />
       <MetricCard 
         label="TOTAL MALE ENROLLEE" 
@@ -68,6 +73,7 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
         colorDark="linear-gradient(135deg, rgb(30, 58, 138), rgb(15, 23, 42))"
         icon={<User size={48} className="text-blue-200 opacity-50"/>}
         isDarkMode={isDarkMode}
+        tooltip="Combined count of enrolled and pending male students"
       />
       <MetricCard 
         label="TOTAL FEMALE ENROLLEE" 
@@ -76,6 +82,7 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
         colorDark="linear-gradient(135deg, rgb(80, 7, 36), rgb(60, 5, 25))"
         icon={<UserCircle2 size={48} className="text-pink-200 opacity-50"/>}
         isDarkMode={isDarkMode}
+        tooltip="Combined count of enrolled and pending female students"
       />
     </div>
   )
@@ -97,7 +104,12 @@ export function VelocitySection({ trendData, isDarkMode }: any) {
              </ThemedText>
              <ThemedText variant="label" className="mt-1" isDarkMode={isDarkMode}>30-Day Registration Analytics</ThemedText>
           </div>
-          <Badge className="bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 border-none font-black text-[9px] uppercase px-4 py-2">LIVE DATA FEED</Badge>
+          <Tooltip>
+            <TooltipTrigger>
+              <Badge className="bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 border-none font-black text-[9px] uppercase px-4 py-2 cursor-help">LIVE DATA FEED</Badge>
+            </TooltipTrigger>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Real-time updates from registrar database</p></TooltipContent>
+          </Tooltip>
        </div>
        <VelocityChart data={trendData} isDarkMode={isDarkMode} />
     </Card>
@@ -120,6 +132,8 @@ export function SpikeAnalyticsSection({ spikeAnalysis, stats, system, isDarkMode
           </ThemedText>
           <ThemedText variant="label" className="mt-1" isDarkMode={isDarkMode}>Capacity Monitoring Analytics</ThemedText>
         </div>
+        <Tooltip>
+        <TooltipTrigger>
         <Badge 
           className={`px-4 py-2 rounded-xl font-black text-[9px] uppercase border-none ${
             spikeAnalysis.alertLevel === 'critical' 
@@ -131,6 +145,9 @@ export function SpikeAnalyticsSection({ spikeAnalysis, stats, system, isDarkMode
         >
           {spikeAnalysis.alertMessage}
         </Badge>
+        </TooltipTrigger>
+        <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Current status of campus capacity limits</p></TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -274,7 +291,12 @@ export function RevenueSection({ revenueMatrix, prediction, comparison, isDarkMo
                     <ThemedText variant="label" className="mt-1" isDarkMode={isDarkMode}>Registrar Monitoring (₱{revenueMatrix.voucherLabel.toLocaleString()} / Graduate)</ThemedText>
                  </div>
                  <div className="text-left sm:text-right">
-                    <p className="text-3xl md:text-5xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter">₱{revenueMatrix.currentRevenue.toLocaleString()}</p>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <p className="text-3xl md:text-5xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter cursor-help">₱{revenueMatrix.currentRevenue.toLocaleString()}</p>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Estimated revenue from currently enrolled students</p></TooltipContent>
+                    </Tooltip>
                     <ThemedText variant="label" className="mt-1" isDarkMode={isDarkMode}>Total Active Funding</ThemedText>
                  </div>
               </div>
@@ -353,9 +375,14 @@ export function CapacitySection({ capacityPercentage, stats, system, topJHSLeade
                 <ThemedText variant="label" className="tracking-[0.4em]" isDarkMode={isDarkMode}>Campus Capacity Status</ThemedText>
                 <ThemedText variant="h2" className="text-3xl md:text-5xl leading-none" isDarkMode={isDarkMode}>Saturation: {capacityPercentage.toFixed(1)}%</ThemedText>
               </div>
-              <Badge className={`px-4 py-2 rounded-full font-black text-[10px] uppercase shadow-lg border-none ${capacityPercentage > 90 ? 'bg-red-500 text-white' : 'bg-blue-600 dark:bg-blue-500 text-white'}`}>
-                {capacityPercentage > 90 ? 'Critical' : 'Operational'}
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Badge className={`px-4 py-2 rounded-full font-black text-[10px] uppercase shadow-lg border-none cursor-help ${capacityPercentage > 90 ? 'bg-red-500 text-white' : 'bg-blue-600 dark:bg-blue-500 text-white'}`}>
+                    {capacityPercentage > 90 ? 'Critical' : 'Operational'}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Operational status based on max capacity</p></TooltipContent>
+              </Tooltip>
             </div>
             <div className="space-y-6">
               <div className="h-6 w-full rounded-3xl overflow-hidden p-1.5 shadow-inner" style={{ backgroundColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(226 232 240)' }}>

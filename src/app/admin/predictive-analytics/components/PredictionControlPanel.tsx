@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { CheckCircle2, FlaskConical } from "lucide-react"
 import { SimulationMode } from "../types"
 import { toast } from "sonner"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface Props {
   mode: SimulationMode
@@ -42,9 +43,14 @@ export function PredictionControlPanel({ mode, setMode, simulationValue, setSimu
       <div className="space-y-2">
         <Label className={`text-[10px] uppercase font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Analysis Mode</Label>
         <Select value={mode} onValueChange={(v: any) => setMode(v)}>
-          <SelectTrigger className={`w-[200px] font-semibold ${isDarkMode ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
-            <SelectValue />
-          </SelectTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SelectTrigger className={`w-[200px] font-semibold ${isDarkMode ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+                <SelectValue />
+              </SelectTrigger>
+            </TooltipTrigger>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Choose between live data or simulation mode</p></TooltipContent>
+          </Tooltip>
           <SelectContent className={isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'}>
             <SelectItem value="ongoing" className={`cursor-pointer ${isDarkMode ? 'focus:bg-slate-800 text-white' : 'focus:bg-slate-100 text-slate-900'}`}>
               <div className="flex items-center gap-2">
@@ -75,15 +81,20 @@ export function PredictionControlPanel({ mode, setMode, simulationValue, setSimu
         <div className="space-y-2 animate-in fade-in slide-in-from-left-4 duration-300">
            <Label className="text-[10px] uppercase font-bold text-purple-500">Simulate Total Enrollees</Label>
            <div className="flex items-center gap-2">
-             <Input 
-                type="number" 
-                // Fix: Show empty string if 0 so user doesn't see "01000"
-                value={simulationValue === 0 ? '' : simulationValue}
-                onChange={handleInputChange}
-                onBlur={handleBlur}
-                placeholder="Enter value..."
-                className={`w-32 font-bold focus-visible:ring-purple-500 ${isDarkMode ? 'text-purple-400 border-purple-900/50 bg-slate-950 placeholder:text-purple-700' : 'text-purple-600 border-purple-200 bg-white placeholder:text-purple-300'}`}
-             />
+             <Tooltip>
+                <TooltipTrigger asChild>
+                   <Input 
+                      type="number" 
+                      // Fix: Show empty string if 0 so user doesn't see "01000"
+                      value={simulationValue === 0 ? '' : simulationValue}
+                      onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      placeholder="Enter value..."
+                      className={`w-32 font-bold focus-visible:ring-purple-500 ${isDarkMode ? 'text-purple-400 border-purple-900/50 bg-slate-950 placeholder:text-purple-700' : 'text-purple-600 border-purple-200 bg-white placeholder:text-purple-300'}`}
+                   />
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Enter a hypothetical enrollment number</p></TooltipContent>
+             </Tooltip>
              <span className={`text-xs whitespace-nowrap ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 (Real: {currentRealValue})
              </span>

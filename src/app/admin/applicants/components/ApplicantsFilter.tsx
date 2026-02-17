@@ -1,6 +1,6 @@
 // src/app/admin/applicants/components/ApplicantsFilter.tsx
-import { memo } from "react"
-import { ArrowUpDown, ChevronDown, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react"
+import { memo, useState, useMemo } from "react"
+import { ArrowUpDown, ChevronDown, CheckCircle2, ChevronLeft, ChevronRight, MousePointer2, Layers, Cpu, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface ApplicantsFilterProps {
@@ -8,6 +8,8 @@ interface ApplicantsFilterProps {
   filter: "Pending" | "Accepted" | "Rejected"
   setFilter: (filter: "Pending" | "Accepted" | "Rejected") => void
   students: any[]
+  filteredStudents?: any[]
+  allFilteredStudents?: any[]  // ✅ ADD THIS LINE
   setSelectedIds: (ids: string[]) => void
   sortBy: string
   setSortBy: (sort: string) => void
@@ -19,8 +21,50 @@ interface ApplicantsFilterProps {
 }
 
 export const ApplicantsFilter = memo(({ 
-  isDarkMode, filter, setFilter, students, setSelectedIds, sortBy, setSortBy, sortDropdownOpen, setSortDropdownOpen, currentPage, totalPages, setCurrentPage
+  isDarkMode, 
+  filter, 
+  setFilter, 
+  students, 
+  filteredStudents = [], 
+  allFilteredStudents = [],  // ✅ ADD THIS LINE
+  setSelectedIds, 
+  sortBy, 
+  setSortBy, 
+  sortDropdownOpen, 
+  setSortDropdownOpen, 
+  currentPage, 
+  totalPages, 
+  setCurrentPage
 }: ApplicantsFilterProps) => {
+  const [selectionOpen, setSelectionOpen] = useState(false)
+
+  const currentTabStudents = useMemo(() => {
+    return students.filter(s => {
+       if (filter === 'Accepted') return s.status === 'Accepted' || s.status === 'Approved';
+       return s.status === filter;
+    })
+  }, [students, filter])
+
+  const handleSelection = (type: 'page' | 'all' | 'ict' | 'gas') => {
+    let ids: string[] = []
+    switch(type) {
+      case 'page':
+        ids = filteredStudents.map(s => s.id)  // ✅ Now selects only current page
+        break;
+      case 'all':
+        ids = allFilteredStudents.map(s => s.id)  // ✅ Updated to use allFilteredStudents
+        break;
+      case 'ict':
+        ids = currentTabStudents.filter(s => s.strand === 'ICT').map(s => s.id)
+        break;
+      case 'gas':
+        ids = currentTabStudents.filter(s => s.strand === 'GAS').map(s => s.id)
+        break;
+    }
+    setSelectedIds(ids)
+    setSelectionOpen(false)
+  }
+
   return (
     <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 w-full relative z-30" style={{ maxWidth: '100%' }}>
       <div className={`flex items-center gap-1 p-1.5 rounded-[20px] w-fit max-w-full mx-auto md:mx-0 overflow-x-auto transition-all duration-500 border ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
@@ -72,6 +116,37 @@ export const ApplicantsFilter = memo(({
 
       {/* SORTING DROPDOWN */}
       <div className="relative w-full md:w-auto flex justify-center md:block">
+        <div className="flex gap-2">
+        <div className="relative">
+        <Button 
+          onClick={() => setSelectionOpen(!selectionOpen)}
+          className={`h-12 px-5 rounded-[20px] font-black uppercase text-[10px] tracking-widest border transition-all flex items-center gap-2 shadow-lg ${isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+        >
+          <MousePointer2 size={14} className="text-purple-500" />
+          <span className="hidden sm:inline">Selection</span>
+          <ChevronDown size={14} className={`transition-transform duration-300 ${selectionOpen ? 'rotate-180' : ''}`} />
+        </Button>
+
+        {selectionOpen && (
+          <div className={`absolute top-full left-0 mt-2 w-56 rounded-2xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+            <div className="p-1.5 space-y-1">
+               <button onClick={() => handleSelection('page')} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors text-left ${isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
+                  <MousePointer2 size={14} className="text-purple-500" /> Select Page ({filteredStudents.length})
+               </button>
+               <button onClick={() => handleSelection('all')} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors text-left ${isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
+                  <Layers size={14} className="text-blue-500" /> Select All ({allFilteredStudents.length})
+               </button>
+               <button onClick={() => handleSelection('ict')} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors text-left ${isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
+                  <Cpu size={14} className="text-cyan-500" /> Select All ICT
+               </button>
+               <button onClick={() => handleSelection('gas')} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors text-left ${isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
+                  <BookOpen size={14} className="text-orange-500" /> Select All GAS
+               </button>
+            </div>
+          </div>
+        )}
+        </div>
+
         <Button 
           onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
           className={`h-12 px-5 rounded-[20px] font-black uppercase text-[10px] tracking-widest border transition-all flex items-center gap-2 shadow-lg ${isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
@@ -118,6 +193,7 @@ export const ApplicantsFilter = memo(({
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   )

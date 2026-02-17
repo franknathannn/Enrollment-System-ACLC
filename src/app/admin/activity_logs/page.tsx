@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils"
 import { useTheme } from "@/hooks/useTheme"
 import { themeColors } from "@/lib/themeColors"
 import { updateApplicantStatus } from "@/lib/actions/applicants"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Optimized Background
 const StarConstellation = memo(function StarConstellation() {
@@ -267,6 +268,7 @@ export default function ActivityLogsPage() {
   const modalStyles = getModalStyles(revertStatus)
 
   return (
+    <TooltipProvider delayDuration={100}>
     <div 
       className="relative min-h-screen transition-colors duration-500"
     >
@@ -290,8 +292,18 @@ export default function ActivityLogsPage() {
             </p>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
-             <Button onClick={() => setClearAllOpen(true)} variant="ghost" className="h-12 px-4 rounded-2xl text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-all font-black uppercase text-[10px] tracking-widest shrink-0">Clear Logs</Button>
-             <Button onClick={() => fetchLogs(false)} variant="ghost" className="h-12 w-12 rounded-2xl text-slate-400 hover:text-blue-600 transition-transform hover:scale-110 active:scale-95"><RefreshCw className={loading ? "animate-spin" : ""} size={20}/></Button>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <Button onClick={() => setClearAllOpen(true)} variant="ghost" className="h-12 px-4 rounded-2xl text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-all font-black uppercase text-[10px] tracking-widest shrink-0">Clear Logs</Button>
+               </TooltipTrigger>
+               <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Permanently delete all activity logs</p></TooltipContent>
+             </Tooltip>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <Button onClick={() => fetchLogs(false)} variant="ghost" className="h-12 w-12 rounded-2xl text-slate-400 hover:text-blue-600 transition-transform hover:scale-110 active:scale-95"><RefreshCw className={loading ? "animate-spin" : ""} size={20}/></Button>
+               </TooltipTrigger>
+               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Reload activity logs</p></TooltipContent>
+             </Tooltip>
              <div className="relative flex-1 md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input 
@@ -398,6 +410,7 @@ export default function ActivityLogsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   )
 }
 
@@ -470,27 +483,37 @@ const LogItem = memo(function LogItem({ log, onUndo, onDelete, isExiting, isDark
       {/* COMMAND CONTROL */}
       <div className="w-full md:w-auto flex flex-col gap-2 items-end relative z-20">
         {isUndoable && (
-          <Button 
-            onClick={(e) => { e.stopPropagation(); onUndo(); }} 
-            size="sm" 
-            variant="ghost" 
-            className="rounded-lg h-9 px-4 text-[9px] font-black uppercase tracking-widest text-blue-500 dark:text-blue-400 transition-colors w-28 hover:scale-105 active:scale-95 border border-transparent"
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgb(37 99 235)'; e.currentTarget.style.color = 'white'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = isDarkMode ? 'rgb(96 165 250)' : 'rgb(59 130 246)'; }}
-          >
-            <Undo2 size={12} className="mr-2" /> Revert
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={(e) => { e.stopPropagation(); onUndo(); }} 
+                size="sm" 
+                variant="ghost" 
+                className="rounded-lg h-9 px-4 text-[9px] font-black uppercase tracking-widest text-blue-500 dark:text-blue-400 transition-colors w-28 hover:scale-105 active:scale-95 border border-transparent"
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgb(37 99 235)'; e.currentTarget.style.color = 'white'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = isDarkMode ? 'rgb(96 165 250)' : 'rgb(59 130 246)'; }}
+              >
+                <Undo2 size={12} className="mr-2" /> Revert
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-blue-900 text-blue-100 border-blue-800"><p>Undo this action</p></TooltipContent>
+          </Tooltip>
         )}
-        <Button 
-            onClick={(e) => { e.stopPropagation(); onDelete(); }} 
-            size="sm" 
-            variant="ghost" 
-            className="rounded-lg h-9 px-4 text-[9px] font-black uppercase tracking-widest text-red-400 dark:text-red-500 transition-colors w-28 hover:scale-105 active:scale-90 border border-transparent"
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgb(220 38 38)'; e.currentTarget.style.color = 'white'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = isDarkMode ? 'rgb(239 68 68)' : 'rgb(248 113 113)'; }}
-        >
-            <Trash2 size={12} className="mr-2" /> Purge
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+                onClick={(e) => { e.stopPropagation(); onDelete(); }} 
+                size="sm" 
+                variant="ghost" 
+                className="rounded-lg h-9 px-4 text-[9px] font-black uppercase tracking-widest text-red-400 dark:text-red-500 transition-colors w-28 hover:scale-105 active:scale-90 border border-transparent"
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgb(220 38 38)'; e.currentTarget.style.color = 'white'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = isDarkMode ? 'rgb(239 68 68)' : 'rgb(248 113 113)'; }}
+            >
+                <Trash2 size={12} className="mr-2" /> Purge
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Permanently delete this log entry</p></TooltipContent>
+        </Tooltip>
       </div>
     </div>
   )

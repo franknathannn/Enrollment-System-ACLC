@@ -9,6 +9,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Badge } from "@/components/ui/badge"
 import { Activity, Trash2, TrendingUp, TrendingDown, Minus, AlertTriangle, ArrowRight } from "lucide-react"
 import { toast } from "sonner"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function ArchivesManager({ history, onDelete, isDarkMode }: { history: any[], onDelete: (id: string) => Promise<void>, isDarkMode: boolean }) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -31,13 +32,21 @@ export function ArchivesManager({ history, onDelete, isDarkMode }: { history: an
     <>
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="outline" className="inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 bg-white text-black border-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900">
-              <Activity /> Archives
-          </Button>
+          <div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" className="inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 bg-white text-black border-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900">
+                    <Activity /> Archives
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View and manage historical enrollment records</p></TooltipContent>
+            </Tooltip>
+          </div>
         </DialogTrigger>
         <DialogContent 
           className="max-w-4xl rounded-[48px] p-0 overflow-hidden border-none shadow-2xl transition-colors duration-500"
           style={{ backgroundColor: '#020617' }}
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader className="p-10 text-white bg-slate-900">
             <DialogTitle className="text-3xl font-black uppercase">Institutional Archives</DialogTitle>
@@ -97,9 +106,14 @@ export function ArchivesManager({ history, onDelete, isDarkMode }: { history: an
                       </div>
                     </TableCell>
                     <TableCell className="text-right px-6 rounded-r-2xl">
-                      <button onClick={() => { setSnapshotToDelete({id: record.id, year: record.school_year}); setIsDeleteModalOpen(true); }} className="p-2 rounded-xl hover:bg-red-900/20 text-red-400 hover:text-red-600 transition-all">
-                        <Trash2 size={18} />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button onClick={() => { setSnapshotToDelete({id: record.id, year: record.school_year}); setIsDeleteModalOpen(true); }} className="p-2 rounded-xl hover:bg-red-900/20 text-red-400 hover:text-red-600 transition-all">
+                            <Trash2 size={18} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Delete this snapshot</p></TooltipContent>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}

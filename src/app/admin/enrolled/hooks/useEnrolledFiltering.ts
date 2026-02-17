@@ -21,11 +21,16 @@ export function useEnrolledFiltering({ students }: { students: any[] }) {
 
   const filteredStudents = useMemo(() => {
     const filtered = students.filter(student => {
-      // 1. Search Logic (Name or LRN)
+      // 1. Search Logic (Name, LRN, or UUID)
       const fullName = `${student.first_name} ${student.last_name}`.toLowerCase()
       const lrn = student.lrn || ""
+      const id = student.id || "" // Capture the UUID
       const searchLower = searchTerm.toLowerCase()
-      const matchesSearch = fullName.includes(searchLower) || lrn.includes(searchLower)
+
+      const matchesSearch = 
+        fullName.includes(searchLower) || 
+        lrn.includes(searchLower) ||
+        id.toLowerCase().includes(searchLower) // <-- ADDED: Checks for UUID (Short or Full)
 
       // 2. Strand Logic
       const matchesStrand = strandFilter === "ALL" || student.strand === strandFilter

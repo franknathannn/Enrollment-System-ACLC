@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ThemedCard } from "@/components/ThemedCard"
 import { ThemedText } from "@/components/ThemedText"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface EnrolledHeaderProps {
   isDarkMode: boolean
@@ -33,27 +34,39 @@ export const EnrolledHeader = memo(({ isDarkMode, loading, fetchStudents, search
       </div>
       
       <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto flex-wrap justify-center md:justify-end">
-        <Button 
-          onClick={() => fetchStudents(false)} 
-          variant="ghost" 
-          size="icon" 
-          className={`rounded-2xl h-12 w-12 ${isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
-        >
-           <RefreshCw className={loading ? "animate-spin" : ""} />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              onClick={() => fetchStudents(false)} 
+              variant="ghost" 
+              size="icon" 
+              className={`rounded-2xl h-12 w-12 ${isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
+            >
+               <RefreshCw className={loading ? "animate-spin" : ""} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Refresh Data</p></TooltipContent>
+        </Tooltip>
 
         <div className="relative flex-1 w-full md:w-auto md:min-w-[300px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-          <Input 
-            placeholder="Search LRN or Name..." 
-            className="h-10 md:h-12 pl-10 w-full rounded-2xl bg-white dark:bg-slate-900/90 backdrop-blur-sm shadow-lg border font-bold text-sm text-black dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all duration-500" 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ backgroundColor: isDarkMode ? undefined : '#ffffff', color: isDarkMode ? undefined : '#000000', borderColor: isDarkMode ? 'rgba(51, 65, 85, 0.5)' : '#f1f5f9' }}
-          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Input 
+                placeholder="Search LRN, Name or Tracking ID..." 
+                className="h-10 md:h-12 pl-10 w-full rounded-2xl bg-white dark:bg-slate-900/90 backdrop-blur-sm shadow-lg border font-bold text-sm text-black dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all duration-500" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ backgroundColor: isDarkMode ? undefined : '#ffffff', color: isDarkMode ? undefined : '#000000', borderColor: isDarkMode ? 'rgba(51, 65, 85, 0.5)' : '#f1f5f9' }}
+              />
+            </TooltipTrigger>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Search by Student LRN, NAME or Tracking ID.</p></TooltipContent>
+          </Tooltip>
         </div>
 
-        <Button 
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
             onClick={onExport}
             className={`h-10 md:h-12 px-3 md:px-6 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shrink-0 transform hover:scale-105 flex items-center justify-center gap-2 border ${
               isDarkMode 
@@ -63,7 +76,10 @@ export const EnrolledHeader = memo(({ isDarkMode, loading, fetchStudents, search
           >
             <FileDown size={16} />
             <span className="hidden sm:inline">Export List</span>
-        </Button>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Download Enrolled List</p></TooltipContent>
+        </Tooltip>
       </div>
     </ThemedCard>
   )

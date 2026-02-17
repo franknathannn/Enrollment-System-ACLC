@@ -1,5 +1,5 @@
 // src/app/admin/applicants/components/ApplicantsTable.tsx
-import { memo } from "react"
+import { memo, useMemo } from "react"
 import { CheckSquare, Square, Eye, RotateCcw, Trash2, ChevronLeft, ChevronRight, Copy, Shield, Activity, Star } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -10,13 +10,14 @@ import { ThemedText } from "@/components/ThemedText"
 import { themeColors } from "@/lib/themeColors"
 import { AnimatedNumber, AnimatedText } from "../../dashboard/components/primitives"
 import { OptimizedImage } from "./OptimizedImage"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface ApplicantsTableProps {
   isDarkMode: boolean
   filteredStudents: any[]
   selectedIds: string[]
   toggleSelect: (id: string) => void
-  toggleSelectAll: () => void
+  toggleSelectAll: (ids: string[]) => void
   hiddenRows: Set<string>
   exitingRows: Record<string, boolean>
   animatingIds: Set<string>
@@ -105,15 +106,37 @@ const MobileApplicantRow = memo(({
         
         {/* Animated Profile Well */}
         <div className="relative shrink-0">
-            <div className={`absolute inset-0 blur-xl opacity-20 ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
-            <div className={`w-16 h-16 rounded-2xl p-1 border-2 relative z-10 ${isMale ? 'border-blue-500/30' : 'border-pink-500/30'}`}>
-                <OptimizedImage 
-                  src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
-                  alt="Avatar" 
-                  className="w-full h-full object-cover rounded-xl"
-                  fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
-                />
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <div className={`absolute inset-0 blur-xl opacity-20 ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
+                  <div className={`w-16 h-16 rounded-2xl p-1 border-2 relative z-10 ${isMale ? 'border-blue-500/30' : 'border-pink-500/30'}`}>
+                      <OptimizedImage 
+                        src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
+                        alt="Avatar" 
+                        className="w-full h-full object-cover rounded-xl"
+                        fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
+                      />
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
+                      <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
+                          <OptimizedImage 
+                              src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
+                              alt="Avatar" 
+                              className="w-full h-full object-cover"
+                          />
+                      </div>
+                      <div className="min-w-0">
+                          <p className="font-black uppercase text-sm truncate">{student.last_name}, {student.first_name}</p>
+                          <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {student.lrn}</p>
+                          <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{student.strand} - {student.student_category}</Badge>
+                      </div>
+                  </div>
+              </TooltipContent>
+            </Tooltip>
         </div>
         
         <div className="flex-1 min-w-0 text-left">
@@ -338,6 +361,8 @@ const DesktopApplicantRow = memo(({
           onClick={() => setOpenStudentDialog(student.id)} 
           className="flex items-center gap-3 md:gap-4 cursor-pointer hover:opacity-90 transition-opacity group/name"
         >
+          <Tooltip>
+          <TooltipTrigger asChild>
           <div className="relative">
             <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden border border-white shadow-lg shrink-0 ring-2 transition-all group-hover/name:scale-105 ${
               isMale 
@@ -359,6 +384,24 @@ const DesktopApplicantRow = memo(({
               {student.student_category?.toLowerCase().includes('als') ? 'ALS' : 'JHS'}
             </div>
           </div>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
+                  <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
+                      <OptimizedImage 
+                          src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
+                          alt="Avatar" 
+                          className="w-full h-full object-cover"
+                      />
+                  </div>
+                  <div className="min-w-0">
+                      <p className="font-black uppercase text-sm truncate">{student.last_name}, {student.first_name}</p>
+                      <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {student.lrn}</p>
+                      <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{student.strand} - {student.student_category}</Badge>
+                  </div>
+              </div>
+          </TooltipContent>
+          </Tooltip>
           <div className="min-w-0">
             <div className={`font-black text-sm md:text-base uppercase leading-none tracking-tight transition-colors duration-500 ${isDarkMode ? 'text-white group-hover/name:text-blue-400' : 'text-slate-900 group-hover/name:text-blue-600'}`}>
               <AnimatedText text={`${student.last_name}, ${student.first_name}`} /> <span className="text-[10px] opacity-40 font-black italic">{student.middle_name?.[0]}.</span>
@@ -405,6 +448,8 @@ const DesktopApplicantRow = memo(({
       </TableCell>
       <TableCell className="text-right px-4 md:px-8">
         <div className="flex items-center justify-end gap-1.5 md:gap-2 flex-nowrap">
+          <Tooltip>
+          <TooltipTrigger asChild>
           <Button 
             onClick={() => setOpenStudentDialog(student.id)} 
             variant="ghost"
@@ -420,10 +465,16 @@ const DesktopApplicantRow = memo(({
           >
             <Eye size={16}/>
           </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View Profile</p></TooltipContent>
+          </Tooltip>
 
           {student.status === 'Pending' && (
             <>
+              <Tooltip><TooltipTrigger asChild>
               <Button onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted'))} variant="ghost" disabled={isStrandFull} className={`h-9 px-2 md:px-3 rounded-xl font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap ${isStrandFull ? 'text-slate-300 cursor-not-allowed' : 'text-green-600'}`} onMouseEnter={(e) => { if (!isStrandFull) { e.currentTarget.style.backgroundColor = 'rgb(22 163 74)'; e.currentTarget.style.color = 'white'; } }} onMouseLeave={(e) => { if (!isStrandFull) { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = 'rgb(22 163 74)'; } }}><span className="hidden sm:inline">{isStrandFull ? 'FULL' : 'Approve'}</span><span className="sm:hidden">{isStrandFull ? 'X' : '✓'}</span></Button>
+              </TooltipTrigger><TooltipContent className="bg-green-900 text-green-100 border-green-800"><p>Approve Application</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild>
               <Button 
                 onClick={() => {
                   setActiveDeclineStudent(student);
@@ -442,11 +493,13 @@ const DesktopApplicantRow = memo(({
               >
                 <span className="hidden sm:inline">Decline</span><span className="sm:hidden">✗</span>
               </Button>
+              </TooltipTrigger><TooltipContent className="bg-red-900 text-red-100 border-red-800"><p>Decline Application</p></TooltipContent></Tooltip>
             </>
           )}
 
           {(student.status === 'Accepted' || student.status === 'Approved') && (
             <>
+              <Tooltip><TooltipTrigger asChild>
               <Button 
                 onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Pending'))} 
                 variant="ghost" 
@@ -462,10 +515,12 @@ const DesktopApplicantRow = memo(({
               >
                 <RotateCcw size={12} className="mr-1"/> <span className="hidden sm:inline">Reset</span>
               </Button>
+              </TooltipTrigger><TooltipContent className="bg-amber-900 text-amber-100 border-amber-800"><p>Reset to Pending</p></TooltipContent></Tooltip>
             </>
           )}
 
           {student.status === 'Rejected' && (
+            <Tooltip><TooltipTrigger asChild>
             <Button 
               onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Pending'))} 
               variant="ghost" 
@@ -481,9 +536,11 @@ const DesktopApplicantRow = memo(({
             >
               <RotateCcw size={14} className="mr-1 md:mr-2"/> <span className="hidden sm:inline">Reset</span>
             </Button>
+            </TooltipTrigger><TooltipContent className="bg-amber-900 text-amber-100 border-amber-800"><p>Reset to Pending</p></TooltipContent></Tooltip>
           )}
 
           {(student.status === 'Pending' || student.status === 'Rejected') && (
+            <Tooltip><TooltipTrigger asChild>
             <Button 
               onClick={() => {
                 setActiveDeleteStudent(student);
@@ -502,6 +559,7 @@ const DesktopApplicantRow = memo(({
             >
               <Trash2 size={16}/>
             </Button>
+            </TooltipTrigger><TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Delete Record</p></TooltipContent></Tooltip>
           )}
 
         </div>
@@ -516,6 +574,18 @@ export const ApplicantsTable = memo(({
   setOpenStudentDialog, handleExit, handleStatusChange, setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen, strandStats,
   totalFilteredCount, currentPage, totalPages, setCurrentPage
 }: ApplicantsTableProps) => {
+  const visibleStudents = useMemo(() => {
+    if (filteredStudents.length > 10 || (filteredStudents.length === totalFilteredCount && totalFilteredCount > 10)) {
+      const startIndex = (currentPage - 1) * 10
+      const endIndex = startIndex + 10
+      return filteredStudents.slice(startIndex, endIndex)
+    }
+    return filteredStudents
+  }, [filteredStudents, currentPage, totalFilteredCount])
+
+  const pageIds = useMemo(() => visibleStudents.map(s => s.id), [visibleStudents])
+  const isPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id))
+
   return (
     <>
       <style jsx global>{`
@@ -556,11 +626,11 @@ export const ApplicantsTable = memo(({
           {/* Mobile Header */}
           <div className="flex items-center justify-center gap-4 px-2 pb-2">
             <button 
-              onClick={toggleSelectAll} 
+              onClick={() => toggleSelectAll(pageIds)} 
               className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500 touch-manipulation"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
-              {selectedIds.length === totalFilteredCount && totalFilteredCount > 0 
+              {isPageSelected 
                 ? <CheckSquare className="text-blue-600" size={18} /> 
                 : <Square className={isDarkMode ? "text-slate-500" : "text-slate-400"} size={18} />
               }
@@ -573,13 +643,13 @@ export const ApplicantsTable = memo(({
           </div>
 
           {/* Mobile Cards */}
-          {filteredStudents.length === 0 ? (
+          {visibleStudents.length === 0 ? (
             <div className="py-16 sm:py-20 text-center text-slate-400 italic text-sm">
               No applicants match this criteria.
             </div>
           ) : (
             <>
-              {filteredStudents.map((student) => {
+              {visibleStudents.map((student) => {
             return (
               <MobileApplicantRow 
                 key={student.id}
@@ -645,8 +715,8 @@ export const ApplicantsTable = memo(({
             <TableHeader className={`${isDarkMode ? 'bg-slate-900' : 'bg-white'} shadow-sm`}>
               <TableRow className="border-none hover:bg-transparent">
                 <TableHead className="w-12 min-w-[48px] max-w-[48px] pl-4 md:pl-8" style={{ color: 'grey' }}>
-                  <button onClick={toggleSelectAll}>
-                    {selectedIds.length === totalFilteredCount && totalFilteredCount > 0 
+                  <button onClick={() => toggleSelectAll(pageIds)}>
+                    {isPageSelected 
                       ? <CheckSquare className="text-blue-600" size={18} /> 
                       : <Square className={isDarkMode ? "text-slate-500" : "text-slate-400"} size={18} />
                     }
@@ -661,11 +731,11 @@ export const ApplicantsTable = memo(({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredStudents.length === 0 ? (
+              {visibleStudents.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="py-32 text-center text-slate-400 italic">No applicants match this criteria.</TableCell></TableRow>
               ) : (
                 <>
-                  {filteredStudents.map((student) => {
+                  {visibleStudents.map((student) => {
                 return (
                   <DesktopApplicantRow 
                     key={student.id}
@@ -696,7 +766,7 @@ export const ApplicantsTable = memo(({
           {totalPages > 1 && (
             <div className={`flex items-center justify-between px-6 py-4 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Showing {filteredStudents.length} of {totalFilteredCount}
+                Showing {visibleStudents.length} of {totalFilteredCount}
               </span>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">

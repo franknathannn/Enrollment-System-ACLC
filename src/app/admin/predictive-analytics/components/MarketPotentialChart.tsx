@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts"
 import { AnalyticPoint } from "../types"
 
 interface Props {
@@ -37,7 +37,7 @@ export function MarketPotentialChart({ data, isDarkMode }: Props) {
                 tick={{ fill: isDarkMode ? '#94a3b8' : '#64748b', fontWeight: 500 }}
             />
             
-            <Tooltip 
+            <RechartsTooltip 
                 cursor={{fill: 'transparent'}}
                 contentStyle={{ 
                     backgroundColor: isDarkMode ? "#0f172a" : "#ffffff", 

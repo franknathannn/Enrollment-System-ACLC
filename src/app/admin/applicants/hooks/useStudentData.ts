@@ -33,7 +33,7 @@ export function useStudentData() {
     try {
       const [studentsRes, configRes, sectionsRes] = await Promise.all([
         supabase.from('students')
-        .select('id, lrn, first_name, last_name, middle_name, gender, strand, contact_no, phone, email, gwa_grade_10, profile_picture, status, decline_reason, guardian_name, guardian_contact, section_id, school_year, form_138_url, good_moral_url, created_at, cor_url, af5_url, diploma_url, age, civil_status, last_school_attended, guardian_first_name, guardian_middle_name, guardian_last_name, student_category, two_by_two_url, guardian_phone, birth_date, religion, address, updated_at, registrar_feedback, section')
+        .select('id, lrn, first_name, last_name, middle_name, gender, strand, contact_no, phone, email, gwa_grade_10, profile_picture, status, decline_reason, guardian_name, guardian_contact, section_id, school_year, form_138_url, good_moral_url, created_at, cor_url, af5_url, diploma_url, birth_certificate_url, age, civil_status, last_school_attended, guardian_first_name, guardian_middle_name, guardian_last_name, student_category, two_by_two_url, guardian_phone, birth_date, religion, nationality, address, updated_at, registrar_feedback, section')
         .order('created_at', { ascending: false })
         .range(0, 5999),
         supabase.from('system_config').select('school_year').single(),

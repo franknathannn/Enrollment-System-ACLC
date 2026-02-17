@@ -1,6 +1,6 @@
 "use client"
 
-import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts"
 import { AnalyticPoint, SimulationMode } from "../types"
 
 interface Props {
@@ -34,7 +34,7 @@ export function EnrollmentTrendChart({ data, isDarkMode, mode }: Props) {
             tick={{ fill: isDarkMode ? '#94a3b8' : '#64748b', fontWeight: 500 }}
           />
           
-          <Tooltip 
+          <RechartsTooltip 
             contentStyle={{ 
               backgroundColor: isDarkMode ? "#0f172a" : "#ffffff", 
               borderColor: isDarkMode ? "#1e293b" : "#e2e8f0",

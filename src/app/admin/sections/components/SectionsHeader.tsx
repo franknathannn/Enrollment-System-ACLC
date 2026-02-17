@@ -7,6 +7,7 @@ import { FilterButton } from "./FilterButton"
 import { Button } from "@/components/ui/button"
 import { Trash, Plus, Layers, Cpu, BookOpen, Scale } from "lucide-react"
 import { DeleteManagementDialog } from "./DeleteManagementDialog"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface SectionsHeaderProps {
   isDarkMode: boolean
@@ -97,47 +98,72 @@ export const SectionsHeader = memo(({
       {/* 🎮 COMMAND ACTIONS */}
       <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
         {sectionSelection.size > 0 && (
-           <Button 
-             onClick={() => setConfirmDeleteSelect(true)} 
-             variant="destructive" 
-             className="rounded-[18px] h-11 px-6 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-red-500/20 transition-all transform-gpu animate-in fade-in zoom-in slide-in-from-left-4 duration-500"
-           >
-              <Trash className="mr-2" size={14}/> Wipe ({sectionSelection.size})
-           </Button>
+           <Tooltip>
+             <TooltipTrigger asChild>
+               <Button 
+                 onClick={() => setConfirmDeleteSelect(true)} 
+                 variant="destructive" 
+                 className="rounded-[18px] h-11 px-6 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-red-500/20 transition-all transform-gpu animate-in fade-in zoom-in slide-in-from-left-4 duration-500"
+               >
+                  <Trash className="mr-2" size={14}/> Wipe ({sectionSelection.size})
+               </Button>
+             </TooltipTrigger>
+             <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Delete Selected Sections</p></TooltipContent>
+           </Tooltip>
         )}
 
-        <DeleteManagementDialog 
-          sections={sections} 
-          onDelete={handleDeleteSection} 
-          onClearStudents={handleClearAllStudents} 
-          isDarkMode={isDarkMode} 
-        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DeleteManagementDialog 
+              sections={sections} 
+              onDelete={handleDeleteSection} 
+              onClearStudents={handleClearAllStudents} 
+              isDarkMode={isDarkMode} 
+            />
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Manage & Delete Sections</p></TooltipContent>
+        </Tooltip>
 
         <div className="h-8 w-px bg-slate-500/10 mx-1 hidden md:block" />
 
-        <Button
-          onClick={() => onBalance(strandFilter)}
-          disabled={isProcessing}
-          className="rounded-[18px] bg-purple-600 hover:bg-purple-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-purple-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed text-white"
-        >
-          <Scale className="mr-2" size={16}/> Balance {strandFilter}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={() => onBalance(strandFilter)}
+              disabled={isProcessing}
+              className="rounded-[18px] bg-purple-600 hover:bg-purple-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-purple-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed text-white"
+            >
+              <Scale className="mr-2" size={16}/> Balance {strandFilter}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Auto-distribute Students</p></TooltipContent>
+        </Tooltip>
 
-        <Button 
-          onClick={() => initiateAdd('ICT')} 
-          disabled={isProcessing} 
-          className="rounded-[18px] bg-blue-600 hover:bg-blue-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-blue-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none text-white"
-        >
-          <Plus className="mr-2" size={16}/> Add ICT
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              onClick={() => initiateAdd('ICT')} 
+              disabled={isProcessing} 
+              className="rounded-[18px] bg-blue-600 hover:bg-blue-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-blue-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none text-white"
+            >
+              <Plus className="mr-2" size={16}/> Add ICT
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Create New ICT Section</p></TooltipContent>
+        </Tooltip>
         
-        <Button 
-          onClick={() => initiateAdd('GAS')} 
-          disabled={isProcessing} 
-          className="rounded-[18px] bg-orange-600 hover:bg-orange-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-orange-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none text-white"
-        >
-          <Plus className="mr-2" size={16}/> Add GAS
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              onClick={() => initiateAdd('GAS')} 
+              disabled={isProcessing} 
+              className="rounded-[18px] bg-orange-600 hover:bg-orange-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-orange-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none text-white"
+            >
+              <Plus className="mr-2" size={16}/> Add GAS
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Create New GAS Section</p></TooltipContent>
+        </Tooltip>
       </div>
     </ThemedCard>
   )

@@ -8,6 +8,7 @@ import { Undo2, Eye, UserX, Fingerprint, Shield, Copy, User, MoreVertical, Star,
 import { SwitchDialog } from "./SwitchDialog"
 import { AnimatedNumber, AnimatedText } from "../../dashboard/components/primitives"
 import { toast } from "sonner"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export const StudentTable = memo(function StudentTable({ 
   students, 
@@ -45,7 +46,7 @@ export const StudentTable = memo(function StudentTable({
   };
 
   return (
-    <>
+    <TooltipProvider delayDuration={100}>
       {/* 📱 MOBILE MODULE VIEW (Aegis Command Stylized) */}
       <div className="md:hidden space-y-6 px-3 pb-10">
         {students.length === 0 ? (
@@ -77,14 +78,36 @@ export const StudentTable = memo(function StudentTable({
                     
                     {/* Animated Profile Well */}
                     <div className="relative shrink-0">
-                        <div className={`absolute inset-0 blur-xl opacity-20 ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
-                        <div className={`w-16 h-16 rounded-2xl p-1 border-2 relative z-10 ${isMale ? 'border-blue-500/30' : 'border-pink-500/30'}`}>
-                            <img 
-                                src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
-                                className="w-full h-full object-cover rounded-xl" 
-                                alt="Student" 
-                            />
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" onClick={(e) => { e.stopPropagation(); onViewProfile(s); }} className="cursor-pointer relative p-0 bg-transparent border-none">
+                              <div className={`absolute inset-0 blur-xl opacity-20 ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
+                              <div className={`w-16 h-16 rounded-2xl p-1 border-2 relative z-10 ${isMale ? 'border-blue-500/30' : 'border-pink-500/30'}`}>
+                                  <img 
+                                      src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
+                                      className="w-full h-full object-cover rounded-xl" 
+                                      alt="Student" 
+                                  />
+                              </div>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
+                              <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
+                                  <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
+                                      <img 
+                                          src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
+                                          alt="Avatar" 
+                                          className="w-full h-full object-cover"
+                                      />
+                                  </div>
+                                  <div className="min-w-0">
+                                      <p className="font-black uppercase text-sm truncate">{s.last_name}, {s.first_name}</p>
+                                      <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {s.lrn}</p>
+                                      <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{s.strand} - {s.student_category || 'Regular'}</Badge>
+                                  </div>
+                              </div>
+                          </TooltipContent>
+                        </Tooltip>
                     </div>
                     
                     <div className="flex-1 min-w-0">
@@ -126,42 +149,62 @@ export const StudentTable = memo(function StudentTable({
 
                 {/* 🎮 Crystalline Action Dock */}
                 <div className={`p-2 flex items-center gap-2 border-t ${theme.dockBg} ${theme.border}`}>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {e.stopPropagation(); onToggleLock(s.id, !s.is_locked)}}
-                      className={`h-12 w-12 p-0 rounded-2xl transition-all transform-gpu active:scale-95 ${s.is_locked ? 'text-red-500 hover:bg-red-500 hover:text-white' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                    >
-                        {s.is_locked ? <Lock size={18} /> : <Unlock size={18} className="dark:text-slate-400" />}
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {e.stopPropagation(); onToggleLock(s.id, !s.is_locked)}}
+                          className={`h-12 w-12 p-0 rounded-2xl transition-all transform-gpu active:scale-95 ${s.is_locked ? 'text-red-500 hover:bg-red-500 hover:text-white' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                        >
+                            {s.is_locked ? <Lock size={18} /> : <Unlock size={18} className="dark:text-slate-400" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>{s.is_locked ? 'Unlock Student' : 'Lock Student'}</p></TooltipContent>
+                    </Tooltip>
 
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      onClick={(e) => {e.stopPropagation(); handleExit(s.id, () => onReturn(s.id, s.first_name))}} 
-                      className="flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-orange-500 hover:text-white transition-all transform-gpu active:scale-95"
-                    >
-                      <Undo2 size={14} className="mr-2"/> Return
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={(e) => {e.stopPropagation(); handleExit(s.id, () => onReturn(s.id, s.first_name))}} 
+                          className="flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-orange-500 hover:text-white transition-all transform-gpu active:scale-95"
+                        >
+                          <Undo2 size={14} className="mr-2"/> Return
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-orange-900 text-orange-100 border-orange-800"><p>Return to Pending</p></TooltipContent>
+                    </Tooltip>
 
-                    <div onClick={(e) => e.stopPropagation()} className="flex-1">
-                      <SwitchDialog 
-                        student={s} 
-                        allSections={allSections} 
-                        onSwitch={(id: string, target: string) => handleExit(id, () => onSwitch(id, target))} 
-                        isDarkMode={isDarkMode} 
-                        className="w-full h-12 text-[9px] rounded-2xl bg-transparent border-0 hover:bg-blue-600 hover:text-white text-blue-500 font-black uppercase tracking-widest" 
-                      />
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div onClick={(e) => e.stopPropagation()} className="flex-1">
+                          <SwitchDialog 
+                            student={s} 
+                            allSections={allSections} 
+                            onSwitch={(id: string, target: string) => handleExit(id, () => onSwitch(id, target))} 
+                            isDarkMode={isDarkMode} 
+                            className="w-full h-12 text-[9px] rounded-2xl bg-transparent border-0 hover:bg-blue-600 hover:text-white text-blue-500 font-black uppercase tracking-widest" 
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-blue-900 text-blue-100 border-blue-800"><p>Transfer Section</p></TooltipContent>
+                    </Tooltip>
 
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      onClick={(e) => {e.stopPropagation(); onUnenroll(s)}} 
-                      className="h-12 w-12 p-0 rounded-2xl text-red-500 hover:bg-red-500 hover:text-white transition-all transform-gpu active:scale-95"
-                    >
-                      <UserX size={18} />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={(e) => {e.stopPropagation(); onUnenroll(s)}} 
+                          className="h-12 w-12 p-0 rounded-2xl text-red-500 hover:bg-red-500 hover:text-white transition-all transform-gpu active:scale-95"
+                        >
+                          <UserX size={18} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Unenroll Student</p></TooltipContent>
+                    </Tooltip>
                 </div>
               </div>
             )
@@ -239,17 +282,37 @@ export const StudentTable = memo(function StudentTable({
                     }`} />
                     
                     <div className="flex items-center gap-6 transition-transform duration-500 group-hover:translate-x-3">
-                      <div className={`w-14 h-14 rounded-2xl p-1 border-2 transition-all duration-500 shrink-0 ${
-                        isMale 
-                          ? 'border-blue-300/40 group-hover:border-blue-500 group-hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] group-hover:bg-blue-100/30' 
-                          : 'border-pink-300/40 group-hover:border-pink-500 group-hover:shadow-[0_0_25px_rgba(236,72,153,0.6)] group-hover:bg-pink-100/30'
-                      }`}>
-                         <img 
-                            src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
-                            alt="2x2" 
-                            className="w-full h-full object-cover rounded-xl" 
-                         />
-                      </div>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); onViewProfile(s); }} className={`w-14 h-14 rounded-2xl p-1 border-2 transition-all duration-500 shrink-0 cursor-pointer p-0 ${
+                            isMale 
+                              ? 'border-blue-300/40 group-hover:border-blue-500 group-hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] group-hover:bg-blue-100/30' 
+                              : 'border-pink-300/40 group-hover:border-pink-500 group-hover:shadow-[0_0_25px_rgba(236,72,153,0.6)] group-hover:bg-pink-100/30'
+                          }`}>
+                             <img 
+                                src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
+                                alt="2x2" 
+                                className="w-full h-full object-cover rounded-xl" 
+                             />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
+                            <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
+                                <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
+                                    <img 
+                                        src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
+                                        alt="Avatar" 
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-black uppercase text-sm truncate">{s.last_name}, {s.first_name}</p>
+                                    <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {s.lrn}</p>
+                                    <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{s.strand} - {s.student_category || 'Regular'}</Badge>
+                                </div>
+                            </div>
+                        </TooltipContent>
+                      </Tooltip>
                       <div>
                         <div className={`font-black text-lg uppercase leading-none tracking-tight transition-colors duration-500 ${isDarkMode ? 'text-white group-hover:text-blue-400' : 'text-slate-900 group-hover:text-blue-600'}`}>
                           <AnimatedText text={`${s.last_name}, ${s.first_name}`} /> <span className="text-[10px] opacity-40 font-black italic">{s.middle_name?.[0]}.</span>
@@ -291,74 +354,99 @@ export const StudentTable = memo(function StudentTable({
 
                   <TableCell className="text-right px-10">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={(e) => {e.stopPropagation(); onToggleLock(s.id, !s.is_locked)}}
-                        className={`h-9 w-9 p-0 rounded-xl transition-all inline-flex items-center justify-center bg-transparent border-0 ${s.is_locked ? 'text-red-500' : 'text-slate-400'}`}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = s.is_locked ? 'rgb(239 68 68)' : (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgb(15 23 42)')
-                          e.currentTarget.style.color = 'white'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = ''
-                          e.currentTarget.style.color = ''
-                        }}
-                      >
-                        {s.is_locked ? <Lock size={16} /> : <Unlock size={16} />}
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={(e) => {e.stopPropagation(); onToggleLock(s.id, !s.is_locked)}}
+                            className={`h-9 w-9 p-0 rounded-xl transition-all inline-flex items-center justify-center bg-transparent border-0 ${s.is_locked ? 'text-red-500' : 'text-slate-400'}`}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = s.is_locked ? 'rgb(239 68 68)' : (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgb(15 23 42)')
+                              e.currentTarget.style.color = 'white'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = ''
+                              e.currentTarget.style.color = ''
+                            }}
+                          >
+                            {s.is_locked ? <Lock size={16} /> : <Unlock size={16} />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>{s.is_locked ? 'Unlock Student' : 'Lock Student'}</p></TooltipContent>
+                      </Tooltip>
 
-                      <button
-                        onClick={(e) => {e.stopPropagation(); handleExit(s.id, () => onReturn(s.id, s.first_name))}}
-                        className="h-9 px-4 rounded-xl text-orange-500 font-black text-[9px] uppercase tracking-[0.2em] transition-all inline-flex items-center justify-center bg-transparent border-0"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgb(249 115 22)'
-                          e.currentTarget.style.color = 'white'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent'
-                          e.currentTarget.style.color = 'rgb(249 115 22)'
-                        }}
-                      >
-                        <Undo2 size={12} className="mr-2"/> Return
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={(e) => {e.stopPropagation(); handleExit(s.id, () => onReturn(s.id, s.first_name))}}
+                            className="h-9 px-4 rounded-xl text-orange-500 font-black text-[9px] uppercase tracking-[0.2em] transition-all inline-flex items-center justify-center bg-transparent border-0"
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgb(249 115 22)'
+                              e.currentTarget.style.color = 'white'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                              e.currentTarget.style.color = 'rgb(249 115 22)'
+                            }}
+                          >
+                            <Undo2 size={12} className="mr-2"/> Return
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-orange-900 text-orange-100 border-orange-800"><p>Return to Pending</p></TooltipContent>
+                      </Tooltip>
 
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <SwitchDialog 
-                          student={s} 
-                          allSections={allSections} 
-                          onSwitch={(id: string, target: string) => handleExit(id, () => onSwitch(id, target))} 
-                          isDarkMode={isDarkMode}
-                        />
-                      </div>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <SwitchDialog 
+                              student={s} 
+                              allSections={allSections} 
+                              onSwitch={(id: string, target: string) => handleExit(id, () => onSwitch(id, target))} 
+                              isDarkMode={isDarkMode}
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-blue-900 text-blue-100 border-blue-800"><p>Transfer Section</p></TooltipContent>
+                      </Tooltip>
 
-                      <button
-                        onClick={(e) => {e.stopPropagation(); onViewProfile(s)}}
-                        className="h-9 w-9 p-0 rounded-xl transition-all inline-flex items-center justify-center text-slate-400 bg-transparent border-0"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = isDarkMode ? 'white' : 'rgb(15 23 42)'
-                          e.currentTarget.style.color = isDarkMode ? 'rgb(15 23 42)' : 'white'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent'
-                          e.currentTarget.style.color = 'rgb(148 163 184)'
-                        }}
-                      >
-                        <Eye size={16}/>
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={(e) => {e.stopPropagation(); onViewProfile(s)}}
+                            className="h-9 w-9 p-0 rounded-xl transition-all inline-flex items-center justify-center text-slate-400 bg-transparent border-0"
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = isDarkMode ? 'white' : 'rgb(15 23 42)'
+                              e.currentTarget.style.color = isDarkMode ? 'rgb(15 23 42)' : 'white'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                              e.currentTarget.style.color = 'rgb(148 163 184)'
+                            }}
+                          >
+                            <Eye size={16}/>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View Profile</p></TooltipContent>
+                      </Tooltip>
 
-                      <button
-                        onClick={(e) => {e.stopPropagation(); onUnenroll(s)}}
-                        className="h-9 w-9 p-0 rounded-xl text-red-400 transition-all inline-flex items-center justify-center bg-transparent border-0"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgb(239 68 68)'
-                          e.currentTarget.style.color = 'white'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent'
-                          e.currentTarget.style.color = 'rgb(248 113 113)'
-                        }}
-                      >
-                        <UserX size={16}/>
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={(e) => {e.stopPropagation(); onUnenroll(s)}}
+                            className="h-9 w-9 p-0 rounded-xl text-red-400 transition-all inline-flex items-center justify-center bg-transparent border-0"
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgb(239 68 68)'
+                              e.currentTarget.style.color = 'white'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                              e.currentTarget.style.color = 'rgb(248 113 113)'
+                            }}
+                          >
+                            <UserX size={16}/>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Unenroll Student</p></TooltipContent>
+                      </Tooltip>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -368,6 +456,6 @@ export const StudentTable = memo(function StudentTable({
         </TableBody>
       </Table>
       </div>
-    </>
+    </TooltipProvider>
   )
 })

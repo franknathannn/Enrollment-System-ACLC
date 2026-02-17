@@ -20,12 +20,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { useEnrollmentValidation } from "@/hooks/useEnrollmentValidation"
 
 export default function Step4Documents() {
-  const { formData, updateFormData, setStep } = useEnrollmentStore()
+  const [isMounted, setIsMounted] = useState(false)
+  const { formData: rawFormData, updateFormData, setStep } = useEnrollmentStore()
+  const formData = rawFormData as any
   const [loadingField, setLoadingField] = useState<string | null>(null)
   const isJHS = formData.student_category === "JHS Graduate"
   const headerCanvasRef = useRef<HTMLCanvasElement>(null)
+  const { isFieldRequired } = useEnrollmentValidation()
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // --- LOCALIZED HEADER CONSTELLATION ---
   useEffect(() => {
@@ -74,7 +82,7 @@ export default function Step4Documents() {
         .getPublicUrl(fileName)
 
       updateFormData({ [field]: publicUrl })
-      toast.success("Document Matrix Synchronized", { icon: <Sparkles className="text-blue-400" /> })
+      toast.success("Document Synced", { icon: <Sparkles className="text-blue-400" /> })
     } catch (error: any) {
       toast.error("Upload failed: " + error.message)
     } finally {
@@ -90,6 +98,7 @@ export default function Step4Documents() {
   const UploaderBox = ({ label, field }: { label: string, field: string }) => {
     const currentFileUrl = formData[field as keyof typeof formData] as string | null
     const slotCanvasRef = useRef<HTMLCanvasElement>(null)
+    const required = isFieldRequired(field as any)
 
     // LOCAL CONSTELLATION EFFECT FOR EMPTY SLOTS
     useEffect(() => {
@@ -120,8 +129,10 @@ export default function Step4Documents() {
 
     return (
       <div className="space-y-3">
-        <Label className="font-black text-slate-500 text-[9px] uppercase tracking-[0.3em] flex items-center gap-2 ml-2">
-          {label} {currentFileUrl && <Sparkles className="w-3 h-3 text-blue-500 animate-pulse" />}
+        <Label className="font-bold text-slate-500 text-[9px] uppercase tracking-[0.3em] flex items-center gap-2 ml-2">
+          {label} 
+          {required && <span className="text-red-500 text-[8px] font-bold">*</span>}
+          {currentFileUrl && <Sparkles className="w-3 h-3 text-blue-500 animate-pulse" />}
         </Label>
         
         <div className={cn(
@@ -139,7 +150,7 @@ export default function Step4Documents() {
             {loadingField === field ? (
               <div className="flex flex-col items-center gap-3 relative z-10">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                <span className="text-[9px] font-black text-blue-400 uppercase tracking-[0.3em]">Uploading...</span>
+                <span className="text-[9px] font-bold text-blue-400 uppercase tracking-[0.3em]">Uploading...</span>
               </div>
             ) : currentFileUrl ? (
               <div className="absolute inset-0 w-full h-full">
@@ -147,13 +158,13 @@ export default function Step4Documents() {
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-slate-950/40 backdrop-blur-[2px] p-4">
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="secondary" size="sm" className="w-full max-w-[140px] rounded-2xl font-black text-[10px] uppercase h-11 bg-white text-slate-950 hover:bg-blue-50">
-                        <Search className="w-4 h-4 mr-2 text-blue-600" /> Inspect
+                      <Button variant="secondary" size="sm" className="w-full max-w-[140px] rounded-xl font-bold text-[9px] uppercase h-9 bg-white text-slate-950 hover:bg-blue-50">
+                        <Search className="w-4 h-4 mr-2 text-blue-600" /> View Image
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl bg-slate-950/95 border-white/10 text-white rounded-[40px]">
                         <DialogHeader>
-                          <DialogTitle className="text-white uppercase font-black tracking-widest">{label} Matrix Verification</DialogTitle>
+                          <DialogTitle className="text-white uppercase font-black tracking-widest">{label} IMAGE</DialogTitle>
                         </DialogHeader>
                         <div className="flex items-center justify-center p-4 bg-slate-900 rounded-3xl border border-white/5 shadow-2xl">
                            <img src={currentFileUrl} className="max-h-[70vh] object-contain rounded-xl shadow-2xl" />
@@ -161,8 +172,8 @@ export default function Step4Documents() {
                     </DialogContent>
                   </Dialog>
 
-                  <Button onClick={() => handleRemove(field)} variant="destructive" size="sm" className="w-full max-w-[140px] rounded-2xl font-black text-[10px] uppercase h-11 bg-red-900/20 text-red-500 border border-red-500/50 hover:bg-red-600 hover:text-white">
-                    <Trash2 className="w-4 h-4 mr-2" /> Purge Asset
+                  <Button onClick={() => handleRemove(field)} variant="destructive" size="sm" className="w-full max-w-[140px] rounded-xl font-bold text-[9px] uppercase h-9 bg-red-900/20 text-red-500 border border-red-500/50 hover:bg-red-600 hover:text-white">
+                    <Trash2 className="w-4 h-4 mr-2" /> Remove Image
                   </Button>
                 </div>
               </div>
@@ -172,7 +183,7 @@ export default function Step4Documents() {
                 <div className="p-5 bg-blue-600/10 rounded-2xl border border-blue-500/20 mb-4 group-hover:bg-blue-600 group-hover:scale-110 transition-all duration-500">
                    <Upload className="w-6 h-6 text-blue-700 group-hover:text-white" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-center group-hover:text-blue-400 transition-colors">
+                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500 text-center group-hover:text-blue-400 transition-colors">
                   Initialize <br/> {label}
                 </span>
               </label>
@@ -182,6 +193,8 @@ export default function Step4Documents() {
       </div>
     )
   }
+
+  if (!isMounted) return null
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 pb-10">
@@ -193,14 +206,14 @@ export default function Step4Documents() {
           <FileText className="text-white w-7 h-7" />
         </div>
         <div className="relative z-10">
-          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-blue-400 mb-1">Step 04</p>
-          <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase italic text-white leading-none">Document Application</h2>
+          <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-blue-400 mb-1">Step 04</p>
+          <h2 className="text-xl md:text-2xl font-bold tracking-tight uppercase italic text-white leading-none">Document Application</h2>
         </div>
       </div>
 
       <div className="p-5 bg-blue-950/40 rounded-[24px] border border-blue-900/30 flex items-center gap-4">
         <ShieldCheck className="w-6 h-6 text-blue-700 shrink-0" />
-        <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed text-slate-500">
+        <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed text-slate-500">
           Educational validation required. Please use <span className="text-blue-400">JPG, JPEG, or PNG</span> formats only.
         </p>
       </div>
@@ -208,6 +221,7 @@ export default function Step4Documents() {
       {/* UPLOAD GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
         <UploaderBox label="2x2 Identification" field="profile_2x2_url" />
+        <UploaderBox label="Birth Certificate" field="birth_certificate_url" />
 
         {isJHS ? (
           <>
@@ -218,6 +232,7 @@ export default function Step4Documents() {
           <>
             <UploaderBox label="ALS COR" field="cor_url" />
             <UploaderBox label="ALS Diploma" field="diploma_url" />
+            <UploaderBox label="AF5 Form" field="af5_url" />
           </>
         )}
       </div>
@@ -227,20 +242,23 @@ export default function Step4Documents() {
         <Button 
           onClick={() => setStep(5)} 
           disabled={
-            !formData.profile_2x2_url || 
-            (isJHS 
-              ? (!formData.form_138_url || !formData.good_moral_url)
-              : (!formData.cor_url || !formData.diploma_url))
+            (isFieldRequired('profile_2x2_url') && !formData.profile_2x2_url) ||
+            (isFieldRequired('birth_certificate_url') && !formData.birth_certificate_url) ||
+            (isJHS && isFieldRequired('form_138_url') && !formData.form_138_url) ||
+            (isJHS && isFieldRequired('good_moral_url') && !formData.good_moral_url) ||
+            (!isJHS && isFieldRequired('cor_url') && !formData.cor_url) ||
+            (!isJHS && isFieldRequired('af5_url') && !formData.af5_url) ||
+            (!isJHS && isFieldRequired('diploma_url') && !formData.diploma_url)
           }
-          className="h-16 md:h-20 rounded-[32px] bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-all duration-500 active:scale-95 flex items-center justify-center gap-4 group disabled:opacity-10"
+          className="h-14 md:h-16 rounded-[28px] bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-all duration-500 active:scale-95 flex items-center justify-center gap-4 group disabled:opacity-10"
         >
-          <span className="font-black uppercase text-sm tracking-[0.4em] ml-4 text-white group-hover:text-blue-600">Finalize Application</span>
+          <span className="font-bold uppercase text-xs tracking-[0.4em] ml-4 text-white group-hover:text-blue-600">Finalize Application</span>
           <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center group-hover:bg-blue-600 transition-all">
             <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
           </div>
         </Button>
         
-        <button onClick={() => setStep(3)} className="text-slate-600 font-black uppercase text-[9px] tracking-[0.4em] flex items-center justify-center gap-2 hover:text-white transition-colors py-4 group">
+        <button onClick={() => setStep(3)} className="text-slate-600 font-bold uppercase text-[9px] tracking-[0.4em] flex items-center justify-center gap-2 hover:text-white transition-colors py-4 group">
           <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" /> Go Back
         </button>
       </div>

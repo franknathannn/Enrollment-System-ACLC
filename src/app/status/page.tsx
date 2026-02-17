@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense, useEffect, useRef, useCallback } from "react"
+import { useState, Suspense, useEffect, useRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation"
 import { 
   Search, 
   Loader2, 
-  CheckCircle2, 
   AlertCircle, 
   XCircle, 
   MapPin, 
@@ -28,6 +27,7 @@ import { cn } from "@/lib/utils"
 function StatusContent() {
   const [lrn, setLrn] = useState("")
   const [lastName, setLastName] = useState("") 
+  const [trackingId, setTrackingId] = useState("")
   const [result, setResult] = useState<any>(null)
   const [activeSY, setActiveSY] = useState("...")
   const [loading, setLoading] = useState(false)
@@ -43,10 +43,12 @@ function StatusContent() {
   useEffect(() => {
     const savedLrn = sessionStorage.getItem("matrix_search_lrn");
     const savedName = sessionStorage.getItem("matrix_search_name");
-    if (savedLrn && savedName) {
+    const savedId = sessionStorage.getItem("matrix_search_id");
+    if (savedLrn && savedName && savedId) {
       setLrn(savedLrn);
       setLastName(savedName);
-      setTimeout(() => performSearch(savedLrn, savedName), 100);
+      setTrackingId(savedId);
+      setTimeout(() => performSearch(savedLrn, savedName, savedId), 100);
     }
   }, []);
 
@@ -121,7 +123,7 @@ function StatusContent() {
     }
   }, [result?.id])
 
-  const performSearch = async (searchLrn: string, searchName: string) => {
+  const performSearch = async (searchLrn: string, searchName: string, searchId: string) => {
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -131,13 +133,14 @@ function StatusContent() {
         .ilike('last_name', searchName)
         .single()
 
-      if (error || !data) {
+      if (error || !data || !data.id.toLowerCase().startsWith(searchId.toLowerCase())) {
         setResult(null)
         if (hasSearched) toast.error("Record not found in the Northbay Matrix.")
       } else {
         setResult(data)
         sessionStorage.setItem("matrix_search_lrn", searchLrn);
         sessionStorage.setItem("matrix_search_name", searchName);
+        sessionStorage.setItem("matrix_search_id", searchId);
       }
     } catch (error) {
       setResult(null)
@@ -149,7 +152,7 @@ function StatusContent() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    performSearch(lrn, lastName);
+    performSearch(lrn, lastName, trackingId);
   }
 
   const handleFixApplication = () => {
@@ -201,20 +204,27 @@ function StatusContent() {
             value={lrn}
             onChange={(e) => setLrn(e.target.value.replace(/\D/g, ''))}
             maxLength={12}
-            className="h-16 pl-14 rounded-[28px] border-2 border-white/5 bg-white/5 text-white text-lg font-mono font-bold tracking-[0.2em] focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all outline-none"
+            className="h-16 pl-14 rounded-[28px] border-2 border-white/5 bg-white/5 text-white text-base md:text-lg font-mono font-bold tracking-[0.2em] focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all outline-none"
           />
         </div>
 
+        {/* UPDATED SURNAME INPUT: Added font-mono and adjusted tracking to match others */}
         <Input 
           placeholder="SURNAME (LAST NAME)" 
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
-          className="h-16 px-8 rounded-[28px] border-2 border-white/5 bg-white/5 text-white text-md font-black uppercase tracking-widest focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all outline-none"
+          className="h-16 px-8 rounded-[28px] border-2 border-white/5 bg-white/5 text-white text-base md:text-lg font-mono font-bold uppercase tracking-[0.2em] focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all outline-none"
+        /> 
+
+        <Input 
+          placeholder="TRACKING ID (UUID)" 
+          value={trackingId}
+          onChange={(e) => setTrackingId(e.target.value.toLowerCase())}
+          className="h-16 px-8 rounded-[28px] border-2 border-white/5 bg-white/5 text-white text-sm md:text-base font-mono font-bold tracking-widest focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all outline-none"
         />
-        
         <Button 
-          disabled={!isLrnComplete || !lastName || loading}
-          className="w-full h-16 rounded-[28px] bg-blue-600 hover:bg-white hover:text-blue-600 text-white font-black uppercase text-[11px] tracking-[0.4em] shadow-[0_15px_40px_rgba(59,130,246,0.3)] transition-all active:scale-95 flex items-center justify-center gap-3 group"
+          disabled={!isLrnComplete || !lastName || !trackingId || loading}
+          className="w-full h-16 rounded-[28px] bg-blue-600 hover:bg-white hover:text-blue-600 text-white font-black uppercase text-sm tracking-[0.4em] shadow-[0_15px_40px_rgba(59,130,246,0.3)] transition-all active:scale-95 flex items-center justify-center gap-3 group"
         >
           {loading ? <Loader2 className="animate-spin" size={20} /> : (
             <>

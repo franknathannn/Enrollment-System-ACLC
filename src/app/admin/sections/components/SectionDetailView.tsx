@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { StudentTable } from "./StudentTable"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export const SectionDetailView = memo(function SectionDetailView({
   sectionName,
@@ -67,32 +68,47 @@ export const SectionDetailView = memo(function SectionDetailView({
         
         {/* Top Row on Mobile: Back Button & Actions */}
         <div className="flex w-full md:w-auto justify-between items-center">
-          <Button 
-            variant="ghost" 
-            onClick={onBack} 
-            className={`rounded-full font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-500/10 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-          >
-            <ArrowLeft className="mr-3" size={14} strokeWidth={3}/> Return to Sections
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                onClick={onBack} 
+                className={`rounded-full font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-500/10 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+              >
+                <ArrowLeft className="mr-3" size={14} strokeWidth={3}/> Return to Sections
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Go Back</p></TooltipContent>
+          </Tooltip>
 
           <div className="flex items-center gap-2 md:hidden">
-             <Button 
-              onClick={onRefresh} 
-              className={`h-10 w-10 p-0 rounded-full border bg-transparent backdrop-blur-xl shadow-sm ${isDarkMode ? 'text-slate-400 border-slate-800' : 'text-slate-400 border-slate-200'}`}
-            >
-              <RefreshCw className={loading ? "animate-spin" : ""} size={16}/>
-            </Button>
-            <Button 
-              onClick={() => onExport(sectionName, sortedStudents)} 
-              className={`rounded-full h-10 w-10 p-0 md:w-auto md:px-8 shadow-2xl flex items-center justify-center ${
-                isDarkMode 
-                  ? 'bg-white text-black hover:bg-slate-200' 
-                  : 'bg-slate-950 text-white hover:bg-slate-800'
-              }`}
-            >
-              <FileDown size={16} className="md:mr-3" /> 
-              <span className="hidden md:inline font-black uppercase text-[9px] tracking-[0.2em]">Masterlist</span>
-            </Button>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <Button 
+                  onClick={onRefresh} 
+                  className={`h-10 w-10 p-0 rounded-full border bg-transparent backdrop-blur-xl shadow-sm ${isDarkMode ? 'text-slate-400 border-slate-800' : 'text-slate-400 border-slate-200'}`}
+                >
+                  <RefreshCw className={loading ? "animate-spin" : ""} size={16}/>
+                </Button>
+               </TooltipTrigger>
+               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Refresh Data</p></TooltipContent>
+             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={() => onExport(sectionName, sortedStudents)} 
+                  className={`rounded-full h-10 w-10 p-0 md:w-auto md:px-8 shadow-2xl flex items-center justify-center ${
+                    isDarkMode 
+                      ? 'bg-white text-black hover:bg-slate-200' 
+                      : 'bg-slate-950 text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <FileDown size={16} className="md:mr-3" /> 
+                  <span className="hidden md:inline font-black uppercase text-[9px] tracking-[0.2em]">Masterlist</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Export Student Grading</p></TooltipContent>
+            </Tooltip>
           </div>
         </div>
         
@@ -101,39 +117,54 @@ export const SectionDetailView = memo(function SectionDetailView({
           
           {/* Desktop Actions (Hidden on Mobile) */}
           <div className="hidden md:flex items-center gap-4">
-            <Button 
-              onClick={onRefresh} 
-              className={`h-11 w-11 p-0 rounded-full border bg-transparent backdrop-blur-xl shadow-sm transition-all hover:rotate-180 active:scale-90 ${isDarkMode ? 'text-slate-400 border-slate-800' : 'text-slate-400 border-slate-200'}`}
-            >
-              <RefreshCw className={loading ? "animate-spin" : ""} size={18}/>
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={onRefresh} 
+                  className={`h-11 w-11 p-0 rounded-full border bg-transparent backdrop-blur-xl shadow-sm transition-all hover:rotate-180 active:scale-90 ${isDarkMode ? 'text-slate-400 border-slate-800' : 'text-slate-400 border-slate-200'}`}
+                >
+                  <RefreshCw className={loading ? "animate-spin" : ""} size={18}/>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Refresh Data</p></TooltipContent>
+            </Tooltip>
           </div>
           
           {/* Search Bar - 100% Width on Mobile */}
           <div className="relative w-full md:w-80 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-            <Input
-              placeholder="Search Student ID or Name..." 
-              className={`pl-12 rounded-full h-12 md:h-11 text-xs font-bold border-none shadow-inner transition-all focus-visible:ring-2 focus-visible:ring-slate-400/20 w-full ${
-                isDarkMode ? 'bg-slate-900/50 text-white' : 'bg-white/80 text-slate-900'
-              }`} 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
-            />                
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Input
+                  placeholder="Search Student ID or Name..." 
+                  className={`pl-12 rounded-full h-12 md:h-11 text-xs font-bold border-none shadow-inner transition-all focus-visible:ring-2 focus-visible:ring-slate-400/20 w-full ${
+                    isDarkMode ? 'bg-slate-900/50 text-white' : 'bg-white/80 text-slate-900'
+                  }`} 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)} 
+                />                
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Search Students</p></TooltipContent>
+            </Tooltip>
           </div>
           
           {/* Desktop Export (Hidden on Mobile) */}
           <div className="hidden md:block">
-            <Button 
-              onClick={() => onExport(sectionName, sortedStudents)} 
-              className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 px-8 transition-all active:scale-95 shadow-2xl flex items-center justify-center ${
-                isDarkMode 
-                  ? 'bg-white text-black hover:bg-slate-200' 
-                  : 'bg-slate-950 text-white hover:bg-slate-800'
-              }`}
-            >
-              <FileDown size={14} className="mr-3" /> Get Masterlist
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={() => onExport(sectionName, sortedStudents)} 
+                  className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 px-8 transition-all active:scale-95 shadow-2xl flex items-center justify-center ${
+                    isDarkMode 
+                      ? 'bg-white text-black hover:bg-slate-200' 
+                      : 'bg-slate-950 text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <FileDown size={14} className="mr-3" /> Get Masterlist
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Export Student Grading</p></TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>

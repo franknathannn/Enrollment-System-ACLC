@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ThemedCard } from "@/components/ThemedCard"
 import { ThemedText } from "@/components/ThemedText"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface ApplicantsHeaderProps {
   isDarkMode: boolean
@@ -23,7 +24,7 @@ export const ApplicantsHeader = memo(({
 
   return (
     <ThemedCard 
-      className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4 md:gap-6 p-4 md:p-8 rounded-[32px] backdrop-blur-sm transition-colors duration-500 border relative z-40 overflow-hidden"
+      className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4 md:gap-6 p-4 md:p-8 rounded-[32px] backdrop-blur-sm transition-colors duration-500 border relative z-40"
       style={{ 
         backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.8)' : '#ffffff',
         borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9',
@@ -40,37 +41,55 @@ export const ApplicantsHeader = memo(({
       </div>
       
       <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto flex-wrap justify-center md:justify-end">
-        <Button 
-          onClick={() => fetchStudents(false)} 
-          variant="ghost" 
-          className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-12 w-12 p-0 rounded-2xl text-slate-400 hover:text-blue-600 hover:bg-blue-50"
-        >
-          <RefreshCw className={loading ? "animate-spin" : ""} size={18} />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              onClick={() => fetchStudents(false)} 
+              variant="ghost" 
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-12 w-12 p-0 rounded-2xl text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+            >
+              <RefreshCw className={loading ? "animate-spin" : ""} size={18} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Refresh Data</p></TooltipContent>
+        </Tooltip>
+
         <div className="relative flex-1 w-full md:w-auto md:min-w-[300px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-          <Input 
-            placeholder="Search LRN or Name..." 
-            className="h-10 md:h-12 pl-10 w-full rounded-2xl bg-white dark:bg-slate-900/90 backdrop-blur-sm shadow-lg border font-bold text-sm text-black dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all duration-500" 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ backgroundColor: isDarkMode ? undefined : '#ffffff', color: isDarkMode ? undefined : '#000000', borderColor: isDarkMode ? 'rgba(51, 65, 85, 0.5)' : '#f1f5f9' }}
-          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Input 
+                // UPDATED: Added UUID to placeholder
+                placeholder="Search LRN, Name or Tracking ID..." 
+                className="h-10 md:h-12 pl-10 w-full rounded-2xl bg-white dark:bg-slate-900/90 backdrop-blur-sm shadow-lg border font-bold text-sm text-black dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all duration-500" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ backgroundColor: isDarkMode ? undefined : '#ffffff', color: isDarkMode ? undefined : '#000000', borderColor: isDarkMode ? 'rgba(51, 65, 85, 0.5)' : '#f1f5f9' }}
+              />
+            </TooltipTrigger>
+            {/* UPDATED: Added UUID to tooltip */}
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Search by Name, LRN, or Tracking ID.</p></TooltipContent>
+          </Tooltip>
         </div>
         
         <div className="relative">
-          <Button 
-            onClick={() => setExportOpen(!exportOpen)}
-            className={`h-10 md:h-12 px-3 md:px-6 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shrink-0 transform hover:scale-105 flex items-center justify-center gap-2 border ${
-              isDarkMode 
-                ? 'bg-white text-black hover:bg-slate-200 border-white/50' 
-                : 'bg-slate-900 text-white hover:bg-slate-800 border-slate-700/50'
-            }`}
-          >
-            <FileDown size={16} />
-            <span className="hidden sm:inline">Export Excel</span>
-            <ChevronDown size={12} className={`transition-transform duration-300 ${exportOpen ? 'rotate-180' : ''}`} />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={() => setExportOpen(!exportOpen)}
+                className={`h-10 md:h-12 px-3 md:px-6 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shrink-0 transform hover:scale-105 flex items-center justify-center gap-2 border ${
+                  isDarkMode 
+                    ? 'bg-white text-black hover:bg-slate-200 border-white/50' 
+                    : 'bg-slate-900 text-white hover:bg-slate-800 border-slate-700/50'
+                }`}
+              >
+                <FileDown size={16} />
+                <span className="hidden sm:inline">Export Excel</span>
+                <ChevronDown size={12} className={`transition-transform duration-300 ${exportOpen ? 'rotate-180' : ''}`} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Download Data as CSV</p></TooltipContent>
+          </Tooltip>
 
           {exportOpen && (
             <div className={`absolute top-full right-0 mt-2 w-48 rounded-2xl shadow-2xl border overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>

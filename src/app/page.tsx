@@ -140,6 +140,12 @@ export default function HomePage() {
     return "Admissions Offline";
   };
 
+  const heroBadgeText = config?.is_pre_enrollment 
+    ? "Pre-Enrollment" 
+    : isPortalActive 
+      ? "Enrollment Open" 
+      : "Enrollment Closed";
+
   return (
     <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-blue-500/30 overflow-x-hidden relative">
       <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />
@@ -173,32 +179,32 @@ export default function HomePage() {
             <div className="lg:col-span-7 space-y-12">
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                   <div className="px-3 py-1 bg-blue-700 rounded-md text-[10px] font-black uppercase tracking-tighter text-white">Educational Portal</div>
+                   <div className="px-3 py-1 bg-blue-700 rounded-md text-[10px] font-black uppercase tracking-tighter text-white">{heroBadgeText}</div>
                    <div className="h-[1px] w-12 bg-white/20" />
                 </div>
-                <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-[0.8] uppercase">
-                  Start Your <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-100 to-indigo-500 animate-pulse">Destiny</span>.
+                <h1 className="text-5xl sm:text-7xl md:text-9xl font-bold tracking-tighter leading-[0.8] uppercase">
+                  Enroll <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-100 to-indigo-500 animate-pulse">Now!</span>
                 </h1>
                 <p className="text-xl text-slate-400 font-medium max-w-xl leading-relaxed italic border-l-2 border-blue-700 pl-6">
-                  "Simplicity is the ultimate sophistication." Join the intellectual constellation at ACLC Northbay Tondo.
+                  "ACLC Northbay is under AMA Education System. One of the oldest private schools that offers quality education."
                 </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-5">
                 {isPortalActive ? (
                   <Link href="/enroll">
-                    <Button className="h-20 px-12 rounded-[32px] bg-blue-700 hover:bg-blue-600 text-white font-black uppercase text-xs tracking-[0.3em] shadow-[0_20px_60px_rgba(29,78,216,0.4)] transition-all hover:-translate-y-2 active:scale-95 group">
+                    <Button className="h-16 px-10 rounded-[28px] bg-blue-700 hover:bg-blue-600 text-white font-bold uppercase text-xs tracking-[0.3em] shadow-[0_20px_60px_rgba(29,78,216,0.4)] transition-all hover:-translate-y-2 active:scale-95 group">
                       Proceed to Enrollment <ArrowRight className="ml-4 group-hover:translate-x-2 transition-transform text-white" />
                     </Button>
                   </Link>
                 ) : (
-                  <Button disabled className="h-20 px-12 rounded-[32px] bg-slate-900/50 text-slate-600 font-black uppercase text-xs tracking-widest border border-white/5 cursor-not-allowed">
+                  <Button disabled className="h-16 px-10 rounded-[28px] bg-slate-900/50 text-slate-600 font-bold uppercase text-xs tracking-widest border border-white/5 cursor-not-allowed">
                     {isExpired ? <><Lock className="mr-2" size={18}/> Portal Expired</> : "Enrollment Access Locked"}
                   </Button>
                 )}
                 <Link href="/status">
-                   <Button variant="outline" className="h-20 px-12 rounded-[32px] border-white/20 bg-white/5 font-black uppercase text-xs tracking-widest hover:bg-white/10 transition-all text-white backdrop-blur-xl">
+                   <Button variant="outline" className="h-16 px-10 rounded-[28px] border-white/20 bg-white/5 font-bold uppercase text-xs tracking-widest hover:bg-white/10 transition-all text-white backdrop-blur-xl">
                     Track Status
                   </Button>
                 </Link>
@@ -207,7 +213,7 @@ export default function HomePage() {
               <div className="flex items-center gap-4 pt-8">
                  <div className="px-6 py-4 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md flex items-center gap-3">
                     <Users2 className="text-blue-500" size={18} />
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">
                       <span className="text-blue-400">{stats.totalCount}</span> Confirmed Registrants
                     </p>
                  </div>
@@ -220,7 +226,7 @@ export default function HomePage() {
               <Card className="relative p-10 rounded-[56px] border border-white/20 bg-blue-950/40 backdrop-blur-3xl space-y-10 overflow-hidden shadow-2xl">
                 <div className="flex items-center justify-between relative z-10">
                   <div className="space-y-1">
-                    <h3 className="text-xl font-black uppercase tracking-tighter text-white italic">Strand Distribution</h3>
+                    <h3 className="text-xl font-bold uppercase tracking-tighter text-white italic">Strand Distribution</h3>
                     <p className="text-[8px] font-bold text-blue-400 uppercase tracking-[0.5em]">Real-time Academic Tracker</p>
                   </div>
                   <Target className="text-white animate-pulse" size={24} />
@@ -232,8 +238,8 @@ export default function HomePage() {
                    
                    <div className="p-6 bg-blue-700/80 rounded-[32px] text-white flex items-center justify-between border border-white/20 shadow-inner">
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-80 mb-1 text-white uppercase">Enrollment Vacancies</p>
-                        <p className="text-5xl font-black tracking-tighter text-white leading-none">
+                        <p className="text-[9px] font-bold uppercase tracking-[0.3em] opacity-80 mb-1 text-white uppercase">Enrollment Vacancies</p>
+                        <p className="text-5xl font-bold tracking-tighter text-white leading-none">
                           {stats.totalMax - stats.totalCount}
                         </p>
                       </div>
@@ -248,8 +254,8 @@ export default function HomePage() {
                       {isManual ? <Zap size={22} /> : <Calendar size={22} />}
                    </div>
                    <div>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Application Status</p>
-                      <p className={`text-sm font-black uppercase tracking-tighter ${isPortalActive ? 'text-white' : 'text-red-500'}`}>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Application Status</p>
+                      <p className={`text-sm font-bold uppercase tracking-tighter ${isPortalActive ? 'text-white' : 'text-red-500'}`}>
                         {getEnrollmentStatusText()}
                       </p>
                    </div>
@@ -262,7 +268,7 @@ export default function HomePage() {
           <div className="mt-40 space-y-12">
             <div className="flex items-center gap-4">
               <div className="w-12 h-[1px] bg-blue-600" />
-              <h2 className="text-4xl font-black uppercase tracking-tighter italic">Available Strands</h2>
+              <h2 className="text-4xl font-bold uppercase tracking-tighter italic">Available Strands</h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -276,14 +282,14 @@ export default function HomePage() {
                     <Cpu size={28} className="text-white" />
                   </div>
                   <div>
-                    <h3 className="text-3xl font-black uppercase tracking-tighter">Information & Communication Technology</h3>
-                    <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.4em] mt-2">Specialized Tech Curriculum</p>
+                    <h3 className="text-3xl font-bold uppercase tracking-tighter">Information & Communication Technology</h3>
+                    <p className="text-blue-400 text-[10px] font-bold uppercase tracking-[0.4em] mt-2">Specialized Tech Curriculum</p>
                   </div>
                   <p className="text-slate-400 leading-relaxed text-sm">
                     Master the digital landscape with heavy focus on computer programming, systems analysis, and visual graphics. 
                   </p>
                   <div className="pt-4 border-t border-white/5">
-                    <p className="text-[10px] font-black text-white uppercase tracking-widest leading-relaxed">
+                    <p className="text-[10px] font-bold text-white uppercase tracking-widest leading-relaxed">
                       ACLC Northbay is the regional leader in ICT, boasting 100% computerized modules and industry-aligned software training that ensures students are career-ready upon graduation.
                     </p>
                   </div>
@@ -300,14 +306,14 @@ export default function HomePage() {
                     <BookOpen size={28} className="text-white" />
                   </div>
                   <div>
-                    <h3 className="text-3xl font-black uppercase tracking-tighter">General Academic Strand</h3>
-                    <p className="text-indigo-400 text-[10px] font-black uppercase tracking-[0.4em] mt-2">Versatile Collegiate Prep</p>
+                    <h3 className="text-3xl font-bold uppercase tracking-tighter">General Academic Strand</h3>
+                    <p className="text-indigo-400 text-[10px] font-bold uppercase tracking-[0.4em] mt-2">Versatile Collegiate Prep</p>
                   </div>
                   <p className="text-slate-400 leading-relaxed text-sm">
                     A flexible pathway designed for students exploring various professional fields like business, education, and management.
                   </p>
                   <div className="pt-4 border-t border-white/5">
-                    <p className="text-[10px] font-black text-white uppercase tracking-widest leading-relaxed">
+                    <p className="text-[10px] font-bold text-white uppercase tracking-widest leading-relaxed">
                       Our GAS program is exceptionally solid, integrating "Tech-Humanities" where students learn traditional academic disciplines powered by modern digital research tools.
                     </p>
                   </div>
@@ -319,9 +325,9 @@ export default function HomePage() {
           {/* 4. NEW SECTION: LEARNING BENEFITS */}
           <div className="mt-40 space-y-16 py-20 bg-blue-600/5 rounded-[64px] border border-blue-600/10 px-10">
             <div className="text-center space-y-4">
-              <Badge className="bg-blue-600 text-white font-black px-6 py-2 rounded-full uppercase tracking-widest">Welcome New Enrollees!</Badge>
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase">Learning Benefits</h2>
-              <div className="flex flex-wrap justify-center gap-4 text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">
+              <Badge className="bg-blue-600 text-white font-bold px-6 py-2 rounded-full uppercase tracking-widest">Welcome New Enrollees!</Badge>
+              <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase">Learning Benefits</h2>
+              <div className="flex flex-wrap justify-center gap-4 text-[10px] font-bold uppercase tracking-[0.3em] text-blue-400">
                 <span>Grade 10 Completers</span>
                 <span className="text-white/20">•</span>
                 <span>ALS Completers</span>
@@ -335,7 +341,7 @@ export default function HomePage() {
               ].map((benefit, i) => (
                 <div key={i} className="flex items-center gap-4 p-6 bg-slate-900 rounded-[32px] border border-white/5 group hover:bg-blue-700 transition-colors duration-300">
                   <CheckCircle2 className="text-blue-500 group-hover:text-white shrink-0" size={24} />
-                  <span className="text-[11px] font-black uppercase tracking-widest leading-tight">{benefit}</span>
+                  <span className="text-[11px] font-bold uppercase tracking-widest leading-tight">{benefit}</span>
                 </div>
               ))}
             </div>
@@ -351,8 +357,8 @@ export default function HomePage() {
               <div className="flex items-center gap-4">
                 <Orbit className="text-blue-500" size={40} />
                 <div>
-                  <h4 className="font-black uppercase text-xl italic leading-none">ACLC Northbay</h4>
-                  <p className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.5em] mt-2">Institutional Hub</p>
+                  <h4 className="font-bold uppercase text-xl italic leading-none">ACLC Northbay</h4>
+                  <p className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.5em] mt-2">AMA COMPUTER LEARNING CENTER</p>
                 </div>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed font-medium">
@@ -361,7 +367,7 @@ export default function HomePage() {
             </div>
 
             <div className="space-y-6">
-              <h5 className="font-black uppercase text-[10px] tracking-[0.4em] text-blue-500">Contact Matrix</h5>
+              <h5 className="font-bold uppercase text-[10px] tracking-[0.4em] text-blue-500">Contact Detail</h5>
               <ul className="space-y-4">
                 <li className="flex items-start gap-4">
                   <MapPin className="text-slate-500 shrink-0 mt-1" size={18} />
@@ -379,11 +385,11 @@ export default function HomePage() {
             </div>
 
             <div className="space-y-6">
-              <h5 className="font-black uppercase text-[10px] tracking-[0.4em] text-blue-500">System Identity</h5>
+              <h5 className="font-bold uppercase text-[10px] tracking-[0.4em] text-blue-500">System Identity</h5>
               <div className="p-6 bg-white/5 rounded-3xl border border-white/5 flex items-center gap-4">
                  <ShieldCheck size={28} className="text-blue-500" />
                  <div>
-                    <p className="text-[9px] font-black text-white uppercase tracking-widest">Secure Registry</p>
+                    <p className="text-[9px] font-bold text-white uppercase tracking-widest">Secure Registry</p>
                     <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1 italic">AES-256 Encrypted Portal</p>
                  </div>
               </div>
@@ -391,7 +397,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.4em]">© 2025 AMA Education System </p>
+            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.4em]">© 2025 AMA Education System </p>
             <div className="flex items-center gap-4 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
               <GraduationCap size={16} />
               <Globe size={16} />
@@ -409,8 +415,8 @@ function CapacityBar({ label, current, max }: any) {
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-end">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white">{label}</p>
-        <p className="text-xs font-black text-white">{current} <span className="text-blue-400/60">/ {max} Seats</span></p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">{label}</p>
+        <p className="text-xs font-bold text-white">{current} <span className="text-blue-400/60">/ {max} Seats</span></p>
       </div>
       <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden p-[1px] border border-white/10">
         <div 

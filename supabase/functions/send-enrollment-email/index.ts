@@ -12,7 +12,7 @@ serve(async (req: Request) => {
       old_record.section !== 'Unassigned' &&
       record.section && 
       record.section !== 'Unassigned';
-
+      
     // 1. Silent Guard: Only send on status change to Approved or Rejected OR Section Switch
     if (old_record && record.status === old_record.status && !isSectionSwitch) {
       return new Response('Status unchanged and not a section switch', { status: 200 });
@@ -27,6 +27,9 @@ serve(async (req: Request) => {
     const isApproved = record.status === 'Approved';
     const logoUrl = "https://ama-aclc-northbay-es.vercel.app/logo-aclc.png";
     const statusLink = "https://ama-aclc-northbay-es.vercel.app/status";
+    
+    // Extract first part of UUID (before first dash) - same as status page
+    const studentUuid = record.id ? record.id.split('-')[0].toUpperCase() : '';
     
     // Formatting Logic
     let subject = '';
@@ -50,6 +53,9 @@ serve(async (req: Request) => {
     if (isSectionSwitch) {
       contentHtml = `
         <h1 style="color: #1d4ed8; margin-top: 0; font-size: 28px; text-align: center; font-weight: 800;">Section Transfer Notice</h1>
+        <p style="font-size: 18px; line-height: 1.6; color: #1d4ed8; text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">
+          HELLO STUDENT ${studentUuid}
+        </p>
         <p style="font-size: 16px; line-height: 1.6; color: #4b5563; text-align: center;">
           Dear <strong>${record.first_name}</strong>,
         </p>
@@ -68,6 +74,9 @@ serve(async (req: Request) => {
     } else if (isApproved) {
       contentHtml = `
         <h1 style="color: #15803d; margin-top: 0; font-size: 28px; text-align: center; font-weight: 800;">Congratulations, ${record.first_name}!</h1>
+        <p style="font-size: 18px; line-height: 1.6; color: #15803d; text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">
+          HELLO STUDENT ${studentUuid}
+        </p>
         <p style="font-size: 16px; line-height: 1.6; color: #4b5563; text-align: center;">
           We are thrilled to inform you that your application has been <strong>APPROVED</strong>. Welcome to the family!
         </p>
@@ -82,6 +91,9 @@ serve(async (req: Request) => {
     } else {
       contentHtml = `
         <h1 style="color: #991b1b; margin-top: 0; font-size: 26px; text-align: center; font-weight: 800;">Application Status Update</h1>
+        <p style="font-size: 18px; line-height: 1.6; color: #991b1b; text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">
+          HELLO STUDENT ${studentUuid}
+        </p>
         <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">
           Dear <strong>${record.first_name}</strong>,
         </p>
@@ -129,7 +141,7 @@ serve(async (req: Request) => {
     `;
 
     // 3. THE BREVO SEND-OFF
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
         'accept': 'application/json',
