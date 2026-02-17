@@ -67,12 +67,18 @@ export default function AdminDashboard() {
     try {
       const [studentsRes, configRes, sectionsRes, historyRes] = await Promise.all([
         supabase.from('students').select('id,first_name,last_name,gender,strand,status,student_category,gwa_grade_10,created_at').order('created_at', { ascending: false }),
-        supabase.from('system_config').select('*').single(),
+        supabase.from('system_config').select('*').maybeSingle(),
         supabase.from('sections').select('capacity'),
         supabase.from('enrollment_history').select('*').order('school_year', { ascending: false })
       ])
 
-      if (studentsRes.error) throw studentsRes.error
+      if (studentsRes.error) {
+        console.error("Students fetch error:", studentsRes.error)
+        throw studentsRes.error
+      }
+      if (configRes.error) {
+         console.error("Config fetch error:", configRes.error)
+      }
       
       const allStudents = studentsRes.data || []
       

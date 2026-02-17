@@ -41,7 +41,7 @@ export const AnimatedNumber = memo(({ value, duration = 800 }: { value: number, 
     }
     
     requestAnimationFrame(animate)
-  }, [value, displayValue, duration])
+  }, [value, duration]) // Removed displayValue to prevent infinite loop/jitter
 
   return (
     <span className={`inline-block transition-all duration-300 ${isAnimating ? 'scale-110 text-purple-600 dark:text-purple-400' : ''}`}>

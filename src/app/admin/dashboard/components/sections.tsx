@@ -2,6 +2,7 @@
 
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
@@ -89,6 +90,28 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
 }
 
 export function VelocitySection({ trendData, isDarkMode }: any) {
+  const [visibleData, setVisibleData] = useState<any[]>([])
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth
+      if (width < 640) {
+        // Mobile: Show last 5 days (Right side / Latest data)
+        setVisibleData(trendData.slice(-5))
+      } else if (width < 1024) {
+        // Tablet: Show last 10 days (Right side / Latest data)
+        setVisibleData(trendData.slice(-10))
+      } else {
+        // Desktop: Show all (30 days)
+        setVisibleData(trendData)
+      }
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [trendData])
+
   return (
     <Card 
       className="p-6 md:p-10 rounded-[32px] md:rounded-[56px] shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden transition-all duration-500"
@@ -111,7 +134,7 @@ export function VelocitySection({ trendData, isDarkMode }: any) {
             <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Real-time updates from registrar database</p></TooltipContent>
           </Tooltip>
        </div>
-       <VelocityChart data={trendData} isDarkMode={isDarkMode} />
+       <VelocityChart data={visibleData} isDarkMode={isDarkMode} />
     </Card>
   )
 }
