@@ -423,7 +423,7 @@ export default function Step2Academic() {
   const [checking, setChecking]         = useState(false)
 
   const {
-    register, handleSubmit, setValue, watch, control,
+    register, handleSubmit, setValue, watch, control, getValues,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -849,7 +849,10 @@ export default function Step2Academic() {
               </>
             )}
           </Button>
-          <button type="button" onClick={() => setStep(1)}
+          <button type="button" onClick={() => {
+            updateFormData(getValues())
+            setStep(1)
+          }}
             className="min-h-[44px] w-full rounded-xl t-text-muted font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 transition-colors py-3 touch-manipulation active:scale-[0.98]">
             <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
           </button>
