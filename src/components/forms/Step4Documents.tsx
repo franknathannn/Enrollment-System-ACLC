@@ -30,8 +30,8 @@ export default function Step4Documents() {
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: string, label: string) => {
     const file = e.target.files?.[0]; if (!file) return
-    if (file.size > 1 * 1024 * 1024) {
-      toast.error(`"${label}" exceeds 1MB. Please upload a smaller file.`, { description: `Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB`, duration: 5000 })
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(`"${label}" exceeds 5MB. Please upload a smaller file.`, { description: `Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB`, duration: 5000 })
       e.target.value = ""; return
     }
     setLoadingField(field)
@@ -143,7 +143,7 @@ export default function Step4Documents() {
         <div className={cn("p-4 sm:p-5 rounded-2xl sm:rounded-[24px] border flex items-center gap-3 sm:gap-4", isDark ? "bg-blue-950/40 border-blue-900/30" : "bg-blue-50 border-blue-200")}>
           <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-blue-700 shrink-0" />
           <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest leading-relaxed text-slate-500">
-            Use <span className="text-blue-400">JPG, JPEG, or PNG</span> only. <span className="text-blue-400">Max size 1MB</span> per file.
+            Use <span className="text-blue-400">JPG, JPEG, or PNG</span> only. <span className="text-blue-400">Max size 5MB</span> per file.
           </p>
         </div>
 

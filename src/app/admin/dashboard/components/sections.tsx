@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { 
   CheckCircle2, Cpu, BookText, Clock, Calendar, Zap, TrendingUp, TrendingDown, 
   Target, Activity, Users, Banknote, Landmark, Timer, Trophy, PieChart as PieIcon, 
-  ChevronRight, User, UserCircle2, Sun, Moon
+  ChevronRight, User, UserCircle2, Sun, Moon, School
 } from "lucide-react"
 import { ThemedText } from "@/components/ThemedText"
 import { themeColors } from "@/lib/themeColors"
@@ -67,7 +67,7 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
         isDarkMode={isDarkMode}
         tooltip="Female applicants pending approval"
       />
-        <MetricCard 
+      <MetricCard 
         label="AM SHIFT (PREFERENCE)" 
         value={<AnimatedNumber value={stats.amShift} />}
         colorLight="linear-gradient(135deg, rgb(245, 158, 11), rgb(217, 119, 6))"  
@@ -76,7 +76,7 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
         isDarkMode={isDarkMode}
         tooltip="Enrolled students that PREFERS AM SHIFT"
       />
-        <MetricCard 
+      <MetricCard 
         label="PM SHIFT (PREFERENCE)" 
         value={<AnimatedNumber value={stats.pmShift} />}
         colorLight="linear-gradient(135deg, rgb(99, 102, 241), rgb(79, 70, 229))" 
@@ -89,6 +89,163 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
   )
 }
 
+export function AlmaMaterSection({ almaMaterData, isDarkMode }: { almaMaterData: { name: string, count: number }[], isDarkMode: boolean }) {
+  const topSchool = almaMaterData[0]
+  const rest = almaMaterData.slice(1)
+  const totalContributing = almaMaterData.reduce((acc, s) => acc + s.count, 0)
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="w-full cursor-default">
+          <Card
+            className="rounded-[32px] md:rounded-[56px] shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden transition-all duration-500 border-2"
+            style={{
+              backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
+              borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border
+            }}
+          >
+            {/* Header */}
+            <div
+              className="p-6 md:p-10 border-b-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+              style={{
+                borderBottomColor: isDarkMode ? 'rgba(255,255,255,0.07)' : '#e2e8f0',
+                backgroundColor: isDarkMode ? 'rgba(30,41,59,0.4)' : 'rgba(239,246,255,0.6)'
+              }}
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-600 dark:bg-blue-500 rounded-2xl text-white shadow-lg">
+                  <School size={20} />
+                </div>
+                <div>
+                  <ThemedText variant="h3" className="text-lg md:text-xl" isDarkMode={isDarkMode}>Alma Mater</ThemedText>
+                  <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Feeder Schools — Where Students Mostly Came From
+                  </p>
+                </div>
+              </div>
+              <Badge className="bg-slate-900 dark:bg-slate-700 text-white border-none font-black text-[9px] uppercase px-4 py-2">
+                Top {almaMaterData.length} Schools
+              </Badge>
+            </div>
+
+            <div className="p-6 md:p-10 space-y-6">
+
+              {/* Crown Card — #1 Alma Mater */}
+              {topSchool ? (
+                <div
+                  className="relative rounded-3xl p-6 md:p-8 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group transition-all duration-300"
+                  style={{
+                    background: isDarkMode
+                      ? 'linear-gradient(135deg, rgba(37,99,235,0.35), rgba(29,78,216,0.2))'
+                      : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                  }}
+                >
+                  {/* Decorative bg icon */}
+                  <div className="absolute top-0 right-0 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
+                    <School size={140} className="text-white translate-x-8 -translate-y-4" />
+                  </div>
+
+                  <div className="relative z-10 space-y-1">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/60">
+                      🏆 Primary Alma Mater
+                    </p>
+                    <p className="text-xl md:text-3xl font-black text-white tracking-tight leading-tight">
+                      {topSchool.name}
+                    </p>
+                    <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest">
+                      {totalContributing > 0
+                        ? `${((topSchool.count / totalContributing) * 100).toFixed(1)}% of enrolled students`
+                        : 'No data'}
+                    </p>
+                  </div>
+
+                  <div className="relative z-10 text-right shrink-0">
+                    <p className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-none">
+                      <AnimatedNumber value={topSchool.count} />
+                    </p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-white/60 mt-1">
+                      Students
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <p className={`text-[11px] font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-600' : 'text-slate-300'}`}>
+                    No alma mater data available
+                  </p>
+                </div>
+              )}
+
+              {/* Ranked list — #2 onwards */}
+              {rest.length > 0 && (
+                <div className="space-y-3">
+                  {rest.map((school, idx) => {
+                    const percent = totalContributing > 0
+                      ? (school.count / totalContributing) * 100
+                      : 0
+                    const barWidth = topSchool
+                      ? (school.count / topSchool.count) * 100
+                      : 0
+
+                    return (
+                      <div
+                        key={school.name}
+                        className="flex items-center gap-4 p-4 md:p-5 rounded-3xl border group transition-all duration-200 hover:-translate-y-0.5"
+                        style={{
+                          backgroundColor: isDarkMode ? 'rgb(30,41,59)' : 'rgb(241,245,249)',
+                          borderColor: isDarkMode ? 'rgb(51,65,85)' : 'rgb(226,232,240)'
+                        }}
+                      >
+                        {/* Rank */}
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 w-6 shrink-0 text-center">
+                          #{idx + 2}
+                        </span>
+
+                        {/* School name + bar */}
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <p className={`text-[11px] font-black uppercase tracking-wider truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                            {school.name}
+                          </p>
+                          <div
+                            className="h-1.5 rounded-full overflow-hidden"
+                            style={{ backgroundColor: isDarkMode ? 'rgb(51,65,85)' : 'rgb(203,213,225)' }}
+                          >
+                            <div
+                              className="h-full rounded-full bg-blue-500 dark:bg-blue-400 transition-all duration-700"
+                              style={{ width: `${barWidth}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Count + percent */}
+                        <div className="text-right shrink-0">
+                          <ThemedText variant="h3" className="text-base md:text-lg" isDarkMode={isDarkMode}>
+                            <AnimatedNumber value={school.count} />
+                          </ThemedText>
+                          <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                            {percent.toFixed(1)}%
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+            </div>
+          </Card>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent className="bg-slate-900 text-white border-slate-800 max-w-xs">
+        <p className="font-medium text-xs leading-relaxed">
+          Shows the top feeder schools of currently enrolled students. The primary Alma Mater is the school with the most enrollees. Ties are broken alphabetically — the first alphabetically becomes the primary Alma Mater.
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
 export function VelocitySection({ trendData, isDarkMode }: any) {
   const [visibleData, setVisibleData] = useState<any[]>([])
 
@@ -96,13 +253,10 @@ export function VelocitySection({ trendData, isDarkMode }: any) {
     const handleResize = () => {
       const width = window.innerWidth
       if (width < 640) {
-        // Mobile: Show last 5 days (Right side / Latest data)
         setVisibleData(trendData.slice(-5))
       } else if (width < 1024) {
-        // Tablet: Show last 10 days (Right side / Latest data)
         setVisibleData(trendData.slice(-10))
       } else {
-        // Desktop: Show all (30 days)
         setVisibleData(trendData)
       }
     }

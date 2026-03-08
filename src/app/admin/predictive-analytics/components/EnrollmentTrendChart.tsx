@@ -1,12 +1,12 @@
 "use client"
 
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts"
-import { AnalyticPoint, SimulationMode } from "../types"
+import { AnalyticPoint } from "../types"
 
 interface Props {
   data: AnalyticPoint[]
   isDarkMode: boolean
-  mode: SimulationMode
+  mode: string
 }
 
 export function EnrollmentTrendChart({ data, isDarkMode, mode }: Props) {

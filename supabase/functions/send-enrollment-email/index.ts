@@ -3,8 +3,12 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 serve(async (req: Request) => {
   try {
     const payload = await req.json();
-    // Supabase webhooks include a 'type' property ('INSERT', 'UPDATE', 'DELETE')
     const { type, record, old_record } = payload;
+
+    // ── MOCK GUARD — bail immediately, no email ever sent for mock rows ──────
+    if (record?.mock === true) {
+      return new Response('Mock record — email suppressed', { status: 200 });
+    }
 
     const isInsert = type === 'INSERT' || !old_record;
     const isUpdate = type === 'UPDATE' || !!old_record;

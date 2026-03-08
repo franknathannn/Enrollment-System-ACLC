@@ -3,14 +3,13 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CheckCircle2, FlaskConical } from "lucide-react"
-import { SimulationMode } from "../types"
+import { CheckCircle2, FlaskConical, Users, Layers, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface Props {
-  mode: SimulationMode
-  setMode: (m: SimulationMode) => void
+  mode: string
+  setMode: (m: any) => void
   simulationValue: number
   setSimulationValue: (v: number) => void
   currentRealValue: number
@@ -52,19 +51,25 @@ export function PredictionControlPanel({ mode, setMode, simulationValue, setSimu
             <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Choose between live data or simulation mode</p></TooltipContent>
           </Tooltip>
           <SelectContent className={isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'}>
-            <SelectItem value="ongoing" className={`cursor-pointer ${isDarkMode ? 'focus:bg-slate-800 text-white' : 'focus:bg-slate-100 text-slate-900'}`}>
+            <SelectItem value="live_enrolled" className={`cursor-pointer ${isDarkMode ? 'focus:bg-slate-800 text-white' : 'focus:bg-slate-100 text-slate-900'}`}>
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                Live Monitoring
+                Live Enrolled
               </div>
             </SelectItem>
-            <SelectItem value="ended" className={`cursor-pointer ${isDarkMode ? 'focus:bg-slate-800 text-white' : 'focus:bg-slate-100 text-slate-900'}`}>
+            <SelectItem value="live_enrollees" className={`cursor-pointer ${isDarkMode ? 'focus:bg-slate-800 text-white' : 'focus:bg-slate-100 text-slate-900'}`}>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3 h-3 text-blue-500" />
-                Enrollment Ended
+                <UserPlus className="w-3 h-3 text-blue-500" />
+                Live Enrollees
+              </div>
+            </SelectItem>
+            <SelectItem value="live_full" className={`cursor-pointer ${isDarkMode ? 'focus:bg-slate-800 text-white' : 'focus:bg-slate-100 text-slate-900'}`}>
+              <div className="flex items-center gap-2">
+                <Layers className="w-3 h-3 text-indigo-500" />
+                Live Full Data
               </div>
             </SelectItem>
             <SelectItem value="simulation" className={`cursor-pointer ${isDarkMode ? 'focus:bg-slate-800 text-white' : 'focus:bg-slate-100 text-slate-900'}`}>

@@ -18,7 +18,7 @@ interface Props {
 
 export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount, nextYearTotal, lowestPossible, highestPossible, isSimulation, hasHistory, isDarkMode }: Props) {
   // Floor: we already have X enrolled, so lowest can't be below that
-  const displayLowest = Math.max(lowestPossible, currentCount)
+  const displayLowest = lowestPossible
   const displayHighest = Math.max(highestPossible, displayLowest)
   const progressPct = expectedOutcome > 0 ? Math.round((currentCount / expectedOutcome) * 100) : 0
 
@@ -37,19 +37,21 @@ export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount,
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-1">
-                <span className={`text-4xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                <span className={`text-4xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'} ${isSimulation ? 'opacity-50' : ''}`}>
                   {expectedOutcome.toLocaleString()}
                 </span>
                 <span className="text-[10px] font-medium text-slate-500">
-                  {hasHistory ? "From historical trend (backtracking)" : "Insufficient history — using current"}
+                  {isSimulation 
+                    ? "Historical Baseline" 
+                    : hasHistory ? "From historical trend (backtracking)" : "Insufficient history — using current"}
                 </span>
-                <span className="text-xs text-slate-500">+{projectedGrowth}% vs last year</span>
+                {!isSimulation && <span className="text-xs text-slate-500">+{projectedGrowth}% vs last year</span>}
               </div>
             </CardContent>
           </Card>
         </TooltipTrigger>
         <TooltipContent className="bg-slate-900 text-white border-slate-800 max-w-xs">
-          <p>Predicted total enrollment by end of year. Based purely on past years&apos; data — not your current count.</p>
+          <p>{isSimulation ? "This is the predicted value based on history, used as a baseline for your simulation." : "Predicted total enrollment by end of year. Based purely on past years' data — not your current count."}</p>
         </TooltipContent>
       </Tooltip>
 
@@ -61,7 +63,7 @@ export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount,
             <CardHeader className="pb-2">
               <CardTitle className={`text-xs font-black uppercase tracking-wider flex items-center gap-2 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
                 <Activity className="w-3.5 h-3.5" />
-                Current Progress
+                {isSimulation ? "Simulated Target" : "Current Progress"}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -70,7 +72,7 @@ export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount,
                   {currentCount.toLocaleString()}
                 </span>
                 <span className="text-[10px] font-medium text-slate-500">
-                  enrolled so far
+                  {isSimulation ? "Hypothetical Count" : "enrolled so far"}
                 </span>
                 {expectedOutcome > 0 && (
                   <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
@@ -82,7 +84,7 @@ export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount,
           </Card>
         </TooltipTrigger>
         <TooltipContent className="bg-slate-900 text-white border-slate-800">
-          <p>Live enrollment count. This is your actual progress toward the expected outcome.</p>
+          <p>{isSimulation ? "The hypothetical enrollment count you entered." : "Live enrollment count. This is your actual progress toward the expected outcome."}</p>
         </TooltipContent>
       </Tooltip>
 
@@ -122,7 +124,7 @@ export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount,
           </Card>
         </TooltipTrigger>
         <TooltipContent className="bg-slate-900 text-white border-slate-800 max-w-xs">
-          <p>80% confidence interval around expected outcome. Based on historical variance — not your current count.</p>
+          <p>Projected range based on Declining vs. Optimistic scenarios.</p>
         </TooltipContent>
       </Tooltip>
 

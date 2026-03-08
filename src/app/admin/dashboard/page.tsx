@@ -14,7 +14,7 @@ import { ThemedText } from "@/components/ThemedText"
 import { useTheme } from "@/hooks/useTheme"
 import { useRouter } from "next/navigation"
 import { AnimatedNumber, MetricCard } from "./components/primitives"
-import { OverviewGrid, CensusGrid, VelocitySection, SpikeAnalyticsSection, RevenueSection, CapacitySection } from "./components/sections"
+import { OverviewGrid, CensusGrid, VelocitySection, SpikeAnalyticsSection, RevenueSection, CapacitySection, AlmaMaterSection } from "./components/sections"
 import { ArchivesManager } from "./components/ArchivesManager"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -68,7 +68,7 @@ export default function AdminDashboard() {
   const fetchStudents = useCallback(async (isBackground = false) => {
     try {
       const [studentsRes, configRes, sectionsRes, historyRes] = await Promise.all([
-        supabase.from('students').select('id,first_name,last_name,gender,strand,status,student_category,gwa_grade_10,created_at,preferred_shift').order('created_at', { ascending: false }),
+        supabase.from('students').select('id,first_name,last_name,gender,strand,status,student_category,gwa_grade_10,created_at,preferred_shift,last_school_attended').order('created_at', { ascending: false }),
         supabase.from('system_config').select('*').maybeSingle(),
         supabase.from('sections').select('capacity'),
         supabase.from('enrollment_history').select('*').order('school_year', { ascending: false })
@@ -331,6 +331,26 @@ export default function AdminDashboard() {
       .slice(0, 10);
   }, [students]);
 
+  // Alma Mater: feeder school frequency from accepted/approved students
+  const almaMaterData = useMemo(() => {
+    const schoolCounts: Record<string, number> = {};
+
+    students
+      .filter(s => s.status === 'Approved' || s.status === 'Accepted')
+      .forEach(s => {
+        const school = s.last_school_attended?.trim().toUpperCase();
+        if (school) {
+          schoolCounts[school] = (schoolCounts[school] || 0) + 1;
+        }
+      });
+
+    return Object.entries(schoolCounts)
+      .map(([name, count]) => ({ name, count }))
+      // Sort by count DESC, then alphabetically ASC on ties
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+      .slice(0, 10);
+  }, [students]);
+
   const pieData = useMemo(() => [
     { name: 'ICT Division', value: stats.ictAccepted, color: isDarkMode ? '#60a5fa' : '#2563eb' },
     { name: 'GAS Division', value: stats.gasAccepted, color: isDarkMode ? '#fb923c' : '#f97316' }
@@ -448,6 +468,9 @@ export default function AdminDashboard() {
             tooltip="Total count of all students (Male + Female) currently in the system"
           />
       </div>
+
+      {/* ALMA MATER SECTION — below Total Enrollee */}
+      <AlmaMaterSection almaMaterData={almaMaterData} isDarkMode={isDarkMode} />
 
       <VelocitySection trendData={trendData} isDarkMode={isDarkMode} />
 
