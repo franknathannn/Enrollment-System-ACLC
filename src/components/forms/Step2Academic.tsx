@@ -850,7 +850,7 @@ export default function Step2Academic() {
             )}
           </Button>
           <button type="button" onClick={() => {
-            updateFormData(getValues())
+            updateFormData(getValues() as any)
             setStep(1)
           }}
             className="min-h-[44px] w-full rounded-xl t-text-muted font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 transition-colors py-3 touch-manipulation active:scale-[0.98]">
