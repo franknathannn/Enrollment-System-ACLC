@@ -1,6 +1,6 @@
 "use client"
 
-import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts"
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts"
 import { AnalyticPoint, SimulationMode } from "../types"
 
 interface Props {
@@ -61,23 +61,73 @@ export function EnrollmentTrendChart({ data, isDarkMode, mode }: Props) {
             animationDuration={1500}
           />
 
-          {/* Future/Simulation Line */}
+          {/* Scenario 1: Stable/Optimistic (If drop is not final) */}
           <Line 
             type="monotone" 
-            dataKey="futureTotal" 
-            name={mode === 'simulation' ? "Simulated Outcome" : "Possible Projection"}
-            stroke={mode === 'simulation' ? "#d946ef" : "#f59e0b"} // Hot Pink for simulation, Amber for normal
+            dataKey="futureStable" 
+            name="Optimistic Recovery"
+            stroke="#10b981" // Emerald Green
             strokeWidth={4} 
-            strokeDasharray={mode === 'simulation' ? "0" : "10 6"} // Solid line if simulation, dashed if projection
+            strokeDasharray="10 6"
             dot={{ 
                 r: 5, 
-                fill: mode === 'simulation' ? "#d946ef" : "#f59e0b", 
+                fill: "#10b981", 
                 strokeWidth: 2, 
                 stroke: isDarkMode ? "#0f172a" : "#ffffff" 
             }}
             activeDot={{ r: 8, strokeWidth: 0 }}
             connectNulls={true}
             animationDuration={1500}
+          />
+
+          {/* Scenario 2: Declining/Real (If drop is real) */}
+          <Line 
+            type="monotone" 
+            dataKey="futureDeclining" 
+            name="Linear Trend (Declining)"
+            stroke="#ef4444" // Red
+            strokeWidth={4} 
+            strokeDasharray="5 5"
+            dot={{ 
+                r: 5, 
+                fill: "#ef4444", 
+                strokeWidth: 2, 
+                stroke: isDarkMode ? "#0f172a" : "#ffffff" 
+            }}
+            activeDot={{ r: 8, strokeWidth: 0 }}
+            connectNulls={true}
+            animationDuration={1500}
+          />
+
+          {/* Scenario 3: Wavy/Oscillating */}
+          <Line 
+            type="natural" 
+            dataKey="futureWavy" 
+            name="Realistic Forecast (Wavy)"
+            stroke="#8b5cf6" // Violet
+            strokeWidth={4} 
+            strokeDasharray="3 3"
+            dot={{ 
+                r: 4, 
+                fill: "#8b5cf6", 
+                strokeWidth: 2, 
+                stroke: isDarkMode ? "#0f172a" : "#ffffff" 
+            }}
+            activeDot={{ r: 8, strokeWidth: 0 }}
+            connectNulls={true}
+            animationDuration={1500}
+          />
+
+          {/* Gap Line (Visual dashed line for current year gap) */}
+          <Bar 
+            dataKey="gap" 
+            fill="transparent" 
+            stroke={isDarkMode ? "#94a3b8" : "#64748b"} 
+            strokeDasharray="3 3" 
+            strokeWidth={2}
+            barSize={1}
+            legendType="none"
+            isAnimationActive={false}
           />
 
         </ComposedChart>

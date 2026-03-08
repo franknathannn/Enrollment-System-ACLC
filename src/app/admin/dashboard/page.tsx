@@ -40,7 +40,9 @@ export default function AdminDashboard() {
     males: 0,
     females: 0,
     pendingMales: 0,
-    pendingFemales: 0
+    pendingFemales: 0,
+    amShift: 0,
+    pmShift: 0
   })
   
   const [system, setSystem] = useState({
@@ -66,7 +68,7 @@ export default function AdminDashboard() {
   const fetchStudents = useCallback(async (isBackground = false) => {
     try {
       const [studentsRes, configRes, sectionsRes, historyRes] = await Promise.all([
-        supabase.from('students').select('id,first_name,last_name,gender,strand,status,student_category,gwa_grade_10,created_at').order('created_at', { ascending: false }),
+        supabase.from('students').select('id,first_name,last_name,gender,strand,status,student_category,gwa_grade_10,created_at,preferred_shift').order('created_at', { ascending: false }),
         supabase.from('system_config').select('*').maybeSingle(),
         supabase.from('sections').select('capacity'),
         supabase.from('enrollment_history').select('*').order('school_year', { ascending: false })
@@ -101,7 +103,9 @@ export default function AdminDashboard() {
         males: approved.filter((s: any) => s.gender === 'Male').length,
         females: approved.filter((s: any) => s.gender === 'Female').length,
         pendingMales: pendingList.filter((s: any) => s.gender === 'Male').length,
-        pendingFemales: pendingList.filter((s: any) => s.gender === 'Female').length
+        pendingFemales: pendingList.filter((s: any) => s.gender === 'Female').length,
+        amShift: approved.filter((s: any) => s.preferred_shift === 'AM').length,
+        pmShift: approved.filter((s: any) => s.preferred_shift === 'PM').length
       })
 
       if (configRes.data) setConfig(configRes.data)
@@ -337,7 +341,8 @@ export default function AdminDashboard() {
   // Calculated Totals for Archive and Display
   const totalMaleEnrollees = stats.males + stats.pendingMales;
   const totalFemaleEnrollees = stats.females + stats.pendingFemales;
-  const grandTotalEnrollees = totalMaleEnrollees + totalFemaleEnrollees;
+  // const grandTotalEnrollees = totalMaleEnrollees + totalFemaleEnrollees;
+  const totalEnrollees = stats.males + stats.females;
 
   const handleCaptureSnapshot = async () => {
     const activeYear = config?.school_year || ""; 
@@ -369,7 +374,7 @@ export default function AdminDashboard() {
   if (!mounted || loading) return (
     <div className="h-screen flex flex-col items-center justify-center gap-4 text-slate-400">
       <Loader2 className="animate-spin text-blue-600 w-12 h-12" />
-      <p className="text-[10px] font-black uppercase tracking-[0.3em]">Calibrating Matrix...</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.3em]">Fetching Data...</p>
     </div>
   )
 
@@ -426,7 +431,7 @@ export default function AdminDashboard() {
             </Tooltip>
         </div>
       </div>
-
+      
       <OverviewGrid stats={stats} isDarkMode={isDarkMode} />
 
       <CensusGrid stats={stats} totalMaleEnrollees={totalMaleEnrollees} totalFemaleEnrollees={totalFemaleEnrollees} isDarkMode={isDarkMode} />
@@ -434,7 +439,7 @@ export default function AdminDashboard() {
       <div className="w-full">
         <MetricCard 
             label="TOTAL ENROLLEE (MALE + FEMALE)" 
-            value={<AnimatedNumber value={grandTotalEnrollees} />}
+            value={<AnimatedNumber value={totalEnrollees} />}
             colorLight="#ffffff" 
             colorDark="#0f172a"
             textColor={isDarkMode ? "text-white" : "text-slate-900"}

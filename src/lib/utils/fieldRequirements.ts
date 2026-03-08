@@ -26,6 +26,13 @@ export type FieldRequirements = {
   student_category: FieldRequirement
   last_school_attended: FieldRequirement
   school_year: FieldRequirement
+  last_school_address: FieldRequirement
+  year_completed_jhs: FieldRequirement
+  facebook_user: FieldRequirement
+  facebook_link: FieldRequirement
+  school_type: FieldRequirement
+  preferred_modality: FieldRequirement
+  preferred_shift: FieldRequirement
   
   // Step 3: Family
   guardian_first_name: FieldRequirement
@@ -46,46 +53,53 @@ export type FieldRequirements = {
 
 export const DEFAULT_FIELD_REQUIREMENTS: FieldRequirements = {
   // Step 1
-  first_name: { required: true, editable: true },
-  middle_name: { required: false, editable: true },
-  last_name: { required: true, editable: true },
-  nationality: { required: true, editable: true },
-  gender: { required: true, editable: true },
-  email: { required: true, editable: true },
-  age: { required: true, editable: true },
-  civil_status: { required: true, editable: true },
-  birth_date: { required: true, editable: true },
-  religion: { required: true, editable: true },
-  address: { required: true, editable: true },
+  first_name:    { required: true,  editable: true },
+  middle_name:   { required: false, editable: true },
+  last_name:     { required: true,  editable: true },
+  nationality:   { required: true,  editable: true },
+  gender:        { required: true,  editable: true },
+  email:         { required: true,  editable: true },
+  age:           { required: true,  editable: true },
+  civil_status:  { required: true,  editable: true },
+  birth_date:    { required: true,  editable: true },
+  religion:      { required: true,  editable: true },
+  address:       { required: true,  editable: true },
   
   // Step 2
-  lrn: { required: true, editable: true },
-  strand: { required: true, editable: true },
-  gwa_grade_10: { required: false, editable: true },
-  student_category: { required: true, editable: true },
-  last_school_attended: { required: true, editable: true },
-  school_year: { required: false, editable: false }, // Always locked
+  lrn:                  { required: true,  editable: true },
+  strand:               { required: true,  editable: true },
+  gwa_grade_10:         { required: false, editable: true },
+  student_category:     { required: true,  editable: true },
+  last_school_attended: { required: true,  editable: true },
+  school_year:          { required: false, editable: false }, // Always locked
+  last_school_address:  { required: true,  editable: true },
+  year_completed_jhs:   { required: true,  editable: true },
+  facebook_user:        { required: true,  editable: true },
+  facebook_link:        { required: true,  editable: true },
+  school_type:          { required: true,  editable: true },
+  preferred_modality:   { required: true,  editable: true },
+  preferred_shift:      { required: false, editable: true }, // conditional: only required when modality = Face to Face
   
   // Step 3
-  guardian_first_name: { required: true, editable: true },
+  guardian_first_name:  { required: true,  editable: true },
   guardian_middle_name: { required: false, editable: true },
-  guardian_last_name: { required: true, editable: true },
-  guardian_phone: { required: true, editable: true },
-  phone: { required: true, editable: true },
+  guardian_last_name:   { required: true,  editable: true },
+  guardian_phone:       { required: true,  editable: true },
+  phone:                { required: true,  editable: true },
   
   // Step 4
-  profile_2x2_url: { required: true, editable: true },
-  birth_certificate_url: { required: true, editable: true },
-  form_138_url: { required: false, editable: true },
-  good_moral_url: { required: false, editable: true },
-  cor_url: { required: false, editable: true },
-  af5_url: { required: false, editable: true },
-  diploma_url: { required: false, editable: true },
+  profile_2x2_url:       { required: true,  editable: true },
+  birth_certificate_url: { required: true,  editable: true },
+  form_138_url:          { required: false, editable: true },
+  good_moral_url:        { required: false, editable: true },
+  cor_url:               { required: false, editable: true },
+  af5_url:               { required: false, editable: true },
+  diploma_url:           { required: false, editable: true },
 }
 
 /**
- * Fetch field requirements from database
- * Falls back to defaults if not found
+ * Fetch field requirements from database.
+ * Falls back to defaults if not found.
  */
 export async function getFieldRequirements(): Promise<FieldRequirements> {
   try {
@@ -98,10 +112,12 @@ export async function getFieldRequirements(): Promise<FieldRequirements> {
       return DEFAULT_FIELD_REQUIREMENTS
     }
 
-    // Merge with defaults to ensure all fields are present
+    // Merge with defaults to ensure all fields are present,
+    // then enforce school_year is always locked regardless of DB value
     return {
       ...DEFAULT_FIELD_REQUIREMENTS,
-      ...data.field_requirements
+      ...data.field_requirements,
+      school_year: { ...DEFAULT_FIELD_REQUIREMENTS.school_year, editable: false },
     }
   } catch (err) {
     console.error("Error fetching field requirements:", err)
@@ -128,4 +144,3 @@ export function isFieldEditable(
 ): boolean {
   return requirements[fieldKey]?.editable ?? DEFAULT_FIELD_REQUIREMENTS[fieldKey]?.editable ?? true
 }
-

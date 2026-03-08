@@ -2,428 +2,738 @@
 
 import { useEffect, useState, useRef, useCallback } from "react"
 import { supabase } from "@/lib/supabase/client"
-import { 
-  ArrowRight, Search, Activity, Cpu, 
-  BookOpen, Calendar, ChevronRight, Zap, 
-  ShieldCheck, Target, Users2, Sparkles, Orbit,
-  CheckCircle2, MapPin, Facebook, Globe, GraduationCap, Lock
+import {
+  ArrowRight, Activity, Cpu,
+  BookOpen, Calendar, Zap,
+  ShieldCheck, Target, Users2, Orbit,
+  CheckCircle2, MapPin, Facebook, Globe, GraduationCap, Lock,
+  Sun, Moon, Sparkles, TrendingUp
 } from "lucide-react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { useThemeStore } from "@/store/useThemeStore"
 
+// ── TYPES ────────────────────────────────────────────────────────────────────
+interface Particle { x: number; y: number; vx: number; vy: number; size: number; pulse: number; twinkle: number }
+interface TailPoint { x: number; y: number }
+interface ShootingStar { x: number; y: number; len: number; speed: number; opacity: number; angle: number; width: number; tail: TailPoint[]; dead: boolean }
+
+// ── MOBILE DETECTION ─────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent))
+    check()
+    window.addEventListener("resize", check, { passive: true })
+    return () => window.removeEventListener("resize", check)
+  }, [])
+  return isMobile
+}
+
+// ── ANIMATED COUNTER ─────────────────────────────────────────────────────────
+function useCountUp(target: number, duration = 1200, trigger = true) {
+  const [val, setVal] = useState(0)
+  useEffect(() => {
+    if (!trigger || target === 0) return
+    let current = 0
+    const step = target / (duration / 16)
+    const timer = setInterval(() => {
+      current += step
+      if (current >= target) { setVal(target); clearInterval(timer) }
+      else setVal(Math.floor(current))
+    }, 16)
+    return () => clearInterval(timer)
+  }, [target, trigger, duration])
+  return val
+}
+
+// ── SCROLL REVEAL ────────────────────────────────────────────────────────────
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current; if (!el) return
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } }, { threshold: 0.1 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+  return { ref, visible }
+}
+function Reveal({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+  const { ref, visible } = useScrollReveal()
+  return (
+    <div ref={ref} className={cn(className, "lg:transition-[opacity,transform] lg:duration-[700ms] lg:ease-out", visible ? "opacity-100 translate-y-0" : "opacity-100 translate-y-0 lg:opacity-0 lg:translate-y-8")} style={{ transitionDelay: `${delay}ms` }}>
+      {children}
+    </div>
+  )
+}
+
+// ── STATS CARD COMPONENT ─────────────────────────────────────────────────────
+// Extracted to isolate re-renders caused by the animated counters
+function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: any, isMobile: boolean, isDark: boolean }) {
+  const [statsVisible, setStatsVisible] = useState(false)
+  const statsRef = useRef<HTMLDivElement>(null)
+
+  const animIct = useCountUp(stats.ictCount, 1200, statsVisible)
+  const animGas = useCountUp(stats.gasCount, 1200, statsVisible)
+  const animVacancy = useCountUp(stats.totalMax - stats.totalCount, 1400, statsVisible)
+
+  const displayIct = isMobile ? stats.ictCount : animIct
+  const displayGas = isMobile ? stats.gasCount : animGas
+  const displayVacancy = isMobile ? (stats.totalMax - stats.totalCount) : animVacancy
+
+  useEffect(() => {
+    const el = statsRef.current; if (!el) return
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setStatsVisible(true); obs.disconnect() } }, { threshold: 0.15 })
+    obs.observe(el); return () => obs.disconnect()
+  }, [])
+
+  const d = isDark
+  const isManual = config?.control_mode === 'manual'
+  const now = new Date()
+  const start = config?.enrollment_start ? new Date(config.enrollment_start) : null
+  const end = config?.enrollment_end ? new Date(config.enrollment_end) : null
+  const isExpired = !isManual && end && now > end
+  const isPortalActive = isManual ? config?.is_portal_active : (start && end && now >= start && now <= end)
+
+  const getStatusText = () => {
+    if (isManual) return isPortalActive ? "Enrollment Form is Open" : "System Lockdown"
+    if (isExpired) return "Portal Expired"
+    if (isPortalActive && config?.enrollment_start && config?.enrollment_end) {
+      const s = new Date(config.enrollment_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      const e = new Date(config.enrollment_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      return `${s} — ${e}`
+    }
+    return "Admissions Offline"
+  }
+
+  return (
+    <div className={cn("lg:col-span-5 relative", !isMobile && "float")} ref={statsRef}>
+      <div className={cn("absolute -inset-8 rounded-[65px] blur-3xl transition-[opacity,background] duration-700", d ? "bg-indigo-600/10" : "bg-indigo-300/20")} />
+      <div className={cn("absolute -inset-4 rounded-[60px] blur-2xl transition-[opacity,background] duration-700", d ? "bg-blue-500/6" : "bg-blue-200/20")} />
+      <div className={cn(
+        "relative rounded-[48px] border overflow-hidden backdrop-blur-3xl",
+        "transition-[background,border-color,box-shadow] duration-500",
+        d ? "bg-gradient-to-b from-[#0d1433]/80 to-[#060c20]/90 border-white/10 shadow-[0_40px_100px_rgba(0,0,40,0.6)]"
+          : "bg-white/90 border-blue-100 shadow-[0_30px_80px_rgba(99,102,241,0.18)]"
+      )}>
+        <div className="h-[3px] w-full bg-gradient-to-r from-blue-500 via-violet-500 via-indigo-400 to-cyan-400" />
+        <div className="p-8 space-y-8">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className={cn("text-base font-black uppercase tracking-tight", d ? "text-white" : "text-slate-900")}>Strand Distribution</h3>
+              <p className={cn("text-[8px] font-bold uppercase tracking-[0.4em] mt-1", d ? "text-blue-400" : "text-blue-600")}>Real-time Academic Tracker</p>
+            </div>
+            <div className={cn("p-2.5 rounded-xl", d ? "bg-indigo-900/40" : "bg-blue-50")}>
+              <Target size={18} className={cn("lg:animate-pulse", d ? "text-indigo-400" : "text-blue-600")} />
+            </div>
+          </div>
+          <div className="space-y-7">
+            <PrettyBar label="ICT Division" icon={<Cpu size={12} />} current={displayIct} max={stats.ictMax} color="blue" isDark={d} />
+            <PrettyBar label="GAS Division" icon={<BookOpen size={12} />} current={displayGas} max={stats.gasMax} color="indigo" isDark={d} />
+          </div>
+          <div className="relative overflow-hidden rounded-3xl p-7" style={{
+            background: d ? "linear-gradient(135deg,#1e3a8a 0%,#312e81 50%,#1e1b4b 100%)" : "linear-gradient(135deg,#2563eb 0%,#4f46e5 100%)"
+          }}>
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.08),transparent_60%)]" />
+            <div className="absolute -right-8 -top-8 w-36 h-36 bg-white/4 rounded-full" />
+            <p className="relative text-[8px] font-black uppercase tracking-[0.4em] text-white/50 mb-2">Open Slots</p>
+            <p className="relative text-[4.5rem] font-black leading-none text-white tracking-tight tabular-nums">{displayVacancy}</p>
+            <p className="relative text-[9px] font-bold text-white/40 uppercase tracking-widest mt-2">of {stats.totalMax} total seats</p>
+            <div className="absolute right-6 bottom-6">
+              <Orbit size={38} className="text-white/10 lg:animate-spin" style={{ animationDuration: '14s' }} />
+            </div>
+          </div>
+          <div className={cn("flex items-center gap-4 pt-4 border-t", d ? "border-white/6" : "border-slate-100")}>
+            <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0",
+              isPortalActive ? "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30" : d ? "bg-slate-800 text-slate-500" : "bg-slate-100 text-slate-400"
+            )}>
+              {isManual ? <Zap size={16} className={isPortalActive ? "text-white" : ""} /> : <Calendar size={16} className={isPortalActive ? "text-white" : ""} />}
+            </div>
+            <div>
+              <p className={cn("text-[8px] font-bold uppercase tracking-widest", d ? "text-slate-500" : "text-slate-400")}>Application Status</p>
+              <p className={cn("text-sm font-black uppercase tracking-tight mt-0.5",
+                isPortalActive ? d ? "text-white" : "text-slate-900" : "text-red-400")}>
+                {getStatusText()}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function HomePage() {
+  const { isDark, toggleTheme } = useThemeStore()
+  const isMobile = useIsMobile()
   const [config, setConfig] = useState<any>(null)
-  const [stats, setStats] = useState({ 
-    totalCount: 0, totalMax: 0,
-    ictCount: 0, ictMax: 0,
-    gasCount: 0, gasMax: 0 
-  })
+  const [stats, setStats] = useState({ totalCount: 0, totalMax: 0, ictCount: 0, ictMax: 0, gasCount: 0, gasMax: 0 })
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const isDarkRef = useRef(isDark)
+  useEffect(() => { isDarkRef.current = isDark }, [isDark])
 
-  // --- 1. DYNAMIC DATABASE SLOTS LOGIC (LOAD INDEX SYNC) ---
   const fetchDatabaseStats = useCallback(async () => {
     try {
-      const { data: configData } = await supabase.from('system_config').select('*').single();
-      if (configData) setConfig(configData);
-
+      const { data: configData } = await supabase.from('system_config').select('*').single()
+      if (configData) setConfig(configData)
       const [sectionsRes, studentsRes] = await Promise.all([
         supabase.from('sections').select('strand, capacity'),
         supabase.from('students').select('status, strand')
-      ]);
-
-      const sections = sectionsRes.data || [];
-      const students = studentsRes.data || [];
-      const activeStudents = students.filter(s => s.status === 'Accepted' || s.status === 'Approved');
-
-      const ictMax = sections.filter(s => s.strand === 'ICT').reduce((sum, s) => sum + (s.capacity || 40), 0);
-      const ictCount = activeStudents.filter(s => s.strand === 'ICT').length;
-
-      const gasMax = sections.filter(s => s.strand === 'GAS').reduce((sum, s) => sum + (s.capacity || 40), 0);
-      const gasCount = activeStudents.filter(s => s.strand === 'GAS').length;
-
-      setStats({
-        totalCount: ictCount + gasCount,
-        totalMax: ictMax + gasMax,
-        ictCount,
-        ictMax,
-        gasCount,
-        gasMax
-      });
-    } catch (error) {
-      console.error("Matrix Sync Error:", error);
-    }
-  }, []);
+      ])
+      const sections = sectionsRes.data || []
+      const students = studentsRes.data || []
+      const active   = students.filter(s => s.status === 'Accepted' || s.status === 'Approved')
+      const ictMax   = sections.filter(s => s.strand === 'ICT').reduce((sum, s) => sum + (s.capacity || 40), 0)
+      const ictCount = active.filter(s => s.strand === 'ICT').length
+      const gasMax   = sections.filter(s => s.strand === 'GAS').reduce((sum, s) => sum + (s.capacity || 40), 0)
+      const gasCount = active.filter(s => s.strand === 'GAS').length
+      setStats({ totalCount: ictCount + gasCount, totalMax: ictMax + gasMax, ictCount, ictMax, gasCount, gasMax })
+    } catch (e) { console.error(e) }
+  }, [])
 
   useEffect(() => {
-    fetchDatabaseStats();
+    fetchDatabaseStats()
     const channel = supabase.channel('matrix-live-home')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => fetchDatabaseStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sections' }, () => fetchDatabaseStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, () => fetchDatabaseStats())
-      .subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, fetchDatabaseStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sections' }, fetchDatabaseStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, fetchDatabaseStats)
+      .subscribe()
+    const interval = setInterval(fetchDatabaseStats, 3000)
+    return () => { supabase.removeChannel(channel); clearInterval(interval) }
+  }, [fetchDatabaseStats])
 
-    // Fallback polling (2s) to ensure data consistency if sockets fail
-    const interval = setInterval(fetchDatabaseStats, 2000);
-
-    return () => { 
-      supabase.removeChannel(channel); 
-      clearInterval(interval);
-    };
-  }, [fetchDatabaseStats]);
-
-  // --- 2. THE DAVINCI CONSTELLATION ENGINE ---
+  // ── CANVAS — DESKTOP ONLY, RUNS ONCE ────────────────────────────────────
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    let particles: any[] = [];
-    const mouse = { x: -1000, y: -1000 };
+    if (isMobile) return // Skip entirely on mobile — CSS background handles it
+    const canvas = canvasRef.current; if (!canvas) return
+    const ctx = canvas.getContext("2d"); if (!ctx) return
+
+    let particles: Particle[] = []
+    let shootingStars: ShootingStar[] = []
+    let raf: number
+    let frameCount = 0
+    const mouse = { x: -9999, y: -9999 }
+
+    const spawnStar = (): ShootingStar => ({
+      x: Math.random() * canvas.width * 0.75, y: Math.random() * canvas.height * 0.45,
+      len: Math.random() * 140 + 70, speed: Math.random() * 12 + 7, opacity: 1,
+      angle: Math.PI / 4 + (Math.random() - 0.5) * 0.35, width: Math.random() * 1.4 + 0.4,
+      tail: [], dead: false,
+    })
+
     const init = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      particles = [];
-      for (let i = 0; i < 85; i++) {
-        particles.push({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          vx: (Math.random() - 0.5) * 0.4,
-          vy: (Math.random() - 0.5) * 0.4,
-          size: Math.random() * 2 + 1
-        });
-      }
-    };
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-      particles.forEach((p) => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
-        const dx = mouse.x - p.x; const dy = mouse.y - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 180) {
-          ctx.beginPath(); ctx.lineWidth = 0.8;
-          ctx.strokeStyle = `rgba(59, 130, 246, ${1 - dist / 180})`;
-          ctx.moveTo(p.x, p.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke();
-        }
-      });
-      requestAnimationFrame(animate);
-    };
-    const handleMouseMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("resize", init);
-    init(); animate();
-    return () => { window.removeEventListener("resize", init); window.removeEventListener("mousemove", handleMouseMove); };
-  }, []);
-
-  const isManual = config?.control_mode === 'manual';
-  const now = new Date();
-  const start = config?.enrollment_start ? new Date(config.enrollment_start) : null;
-  const end = config?.enrollment_end ? new Date(config.enrollment_end) : null;
-  const isExpired = !isManual && end && now > end;
-  
-  const isPortalActive = isManual ? config?.is_portal_active : (start && end && now >= start && now <= end);
-
-  const getEnrollmentStatusText = () => {
-    if (isManual) return isPortalActive ? "Enrollment Form is Open" : "System Lockdown";
-    if (isExpired) return "Portal is Expired";
-    if (isPortalActive && config?.enrollment_start && config?.enrollment_end) {
-      const start = new Date(config.enrollment_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const end = new Date(config.enrollment_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      return `${start} — ${end}`;
+      canvas.width  = window.innerWidth
+      canvas.height = window.innerHeight
+      particles = Array.from({ length: 55 }, (): Particle => ({
+        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+        size: Math.random() * 1.5 + 0.3, pulse: Math.random() * Math.PI * 2,
+        twinkle: Math.random() * 0.018 + 0.006,
+      }))
     }
-    return "Admissions Offline";
-  };
 
-  const heroBadgeText = config?.is_pre_enrollment 
-    ? "Pre-Enrollment" 
-    : isPortalActive 
-      ? "Enrollment Open" 
-      : "Enrollment Closed";
+    const starSpawner = setInterval(() => { if (shootingStars.length < 2) shootingStars.push(spawnStar()) }, 3000)
+
+    const animate = () => {
+      frameCount++
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      const dark = isDarkRef.current
+      const pCol = dark ? [255, 255, 255] : [37, 99, 235]
+      const lCol = dark ? [140, 180, 255] : [29, 78, 216]
+      const n = particles.length
+
+      particles.forEach((p: Particle) => {
+        p.x += p.vx; p.y += p.vy; p.pulse += p.twinkle
+        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1
+        const alpha = dark ? Math.max(0.08, 0.22 + Math.sin(p.pulse) * 0.18) : Math.max(0.05, 0.15 + Math.sin(p.pulse) * 0.10)
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(${pCol.join(',')},${alpha})`; ctx.fill()
+
+        const mx = mouse.x - p.x; const my = mouse.y - p.y
+        const md = Math.sqrt(mx * mx + my * my)
+        if (md < 180) {
+          ctx.beginPath(); ctx.lineWidth = 0.8
+          ctx.strokeStyle = `rgba(${lCol.join(',')},${(1 - md / 180) * 0.7})`
+          ctx.moveTo(p.x, p.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke()
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2.2, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${lCol.join(',')},${(1 - md / 180) * 0.28})`; ctx.fill()
+        }
+      })
+
+      // Inter-particle lines — every 3rd frame, skip every other pair
+      if (frameCount % 3 === 0) {
+        for (let a = 0; a < n - 1; a++) {
+          for (let b = a + 1; b < n; b += 2) {
+            const dx = particles[a].x - particles[b].x; const dy = particles[a].y - particles[b].y
+            const d2 = dx * dx + dy * dy
+            if (d2 < 8100) {
+              ctx.beginPath(); ctx.lineWidth = 0.3
+              ctx.strokeStyle = `rgba(${lCol.join(',')},${(1 - Math.sqrt(d2) / 90) * 0.18})`
+              ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y); ctx.stroke()
+            }
+          }
+        }
+      }
+
+      // Shooting stars
+      shootingStars = shootingStars.filter(s => !s.dead)
+      shootingStars.forEach((s: ShootingStar) => {
+        s.tail.push({ x: s.x, y: s.y }); if (s.tail.length > 18) s.tail.shift()
+        s.x += Math.cos(s.angle) * s.speed; s.y += Math.sin(s.angle) * s.speed; s.opacity -= 0.024
+        if (s.opacity <= 0 || s.x > canvas.width + 80 || s.y > canvas.height + 80) { s.dead = true; return }
+        s.tail.forEach((pt: TailPoint, i: number) => {
+          const ratio = i / s.tail.length
+          const r = dark ? [200, 220, 255] : [99, 140, 255]
+          ctx.beginPath(); ctx.arc(pt.x, pt.y, s.width * ratio * 1.4, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${r.join(',')},${ratio * s.opacity * (dark ? 0.85 : 0.65)})`; ctx.fill()
+        })
+        const headR = dark ? [220, 240, 255] : [120, 160, 255]
+        const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.width * 5)
+        grad.addColorStop(0, `rgba(${headR.join(',')},${s.opacity})`); grad.addColorStop(1, `rgba(${headR.join(',')},0)`)
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.width * 5, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill()
+      })
+
+      raf = requestAnimationFrame(animate)
+    }
+
+    const onMove  = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY }
+    window.addEventListener("mousemove", onMove, { passive: true })
+    window.addEventListener("resize", init, { passive: true })
+    init(); animate()
+    return () => { cancelAnimationFrame(raf); clearInterval(starSpawner); window.removeEventListener("mousemove", onMove); window.removeEventListener("resize", init) }
+  }, [isMobile]) // re-run only if mobile state changes
+
+  const isManual = config?.control_mode === 'manual'
+  const now   = new Date()
+  const start = config?.enrollment_start ? new Date(config.enrollment_start) : null
+  const end   = config?.enrollment_end   ? new Date(config.enrollment_end)   : null
+  const isExpired      = !isManual && end && now > end
+  const isPortalActive = isManual ? config?.is_portal_active : (start && end && now >= start && now <= end)
+
+  const heroBadge = config?.is_pre_enrollment ? "Pre-Enrollment" : isPortalActive ? "Enrollment Open" : "Enrollment Closed"
+  const d = isDark
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-blue-500/30 overflow-x-hidden relative">
-      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />
+    <div className={cn(
+      "min-h-screen font-sans overflow-x-hidden relative",
+      "transition-[background-color] duration-500 ease-in-out",
+      d ? "bg-[#030712] text-white" : "bg-[#eef2ff] text-slate-900"
+    )}>
 
-      {/* NAVIGATION BAR */}
-      <nav className="fixed top-0 w-full z-50 bg-slate-950/60 backdrop-blur-2xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
-          <div className="flex items-center gap-6 group cursor-pointer">
-            <div className="relative flex items-center justify-center p-2">
-               <div className="absolute inset-0 bg-blue-600/40 blur-[25px] rounded-full animate-pulse group-hover:bg-blue-500/60 transition-all duration-700" />
-               <img src="/logo-aclc.png" alt="ACLC Logo" className="relative w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.8)] group-hover:scale-110 transition-transform duration-500" />
+      {/* ── AURORA — CSS only, zero JS ───────────────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        <div className={cn(
+          "absolute top-[-20%] left-[-10%] w-[80vw] h-[70vh] rounded-full blur-[50px] sm:blur-[90px] animate-aurora-1 transform-gpu",
+          "transition-[opacity] duration-700 lg:animate-aurora-1",
+          d ? "opacity-[0.18] bg-gradient-to-br from-blue-500 via-indigo-600 to-violet-700"
+            : "opacity-[0.22] bg-gradient-to-br from-blue-300 via-indigo-300 to-violet-300"
+        )} />
+        <div className={cn(
+          "absolute top-[10%] right-[-15%] w-[60vw] h-[60vh] rounded-full blur-[60px] sm:blur-[110px] animate-aurora-2 transform-gpu",
+          "transition-[opacity] duration-700 lg:animate-aurora-2",
+          d ? "opacity-[0.13] bg-gradient-to-bl from-cyan-500 via-blue-600 to-indigo-700"
+            : "opacity-[0.16] bg-gradient-to-bl from-cyan-200 via-blue-200 to-indigo-200"
+        )} />
+        <div className={cn(
+          "absolute bottom-[5%] left-[20%] w-[50vw] h-[40vh] rounded-full blur-[50px] sm:blur-[100px] animate-aurora-3 transform-gpu",
+          "transition-[opacity] duration-700 lg:animate-aurora-3",
+          d ? "opacity-[0.1] bg-gradient-to-tr from-violet-600 via-purple-500 to-blue-500"
+            : "opacity-[0.14] bg-gradient-to-tr from-violet-200 via-purple-200 to-blue-200"
+        )} />
+      </div>
+
+      <style>{`
+        /* ── Hide scrollbar globally ── */
+        html,body{scrollbar-width:none;-ms-overflow-style:none}
+        html::-webkit-scrollbar,body::-webkit-scrollbar{display:none}
+        
+        .shimmer-text{background-size:200% auto;}
+
+        @media (min-width: 1024px) {
+          @keyframes aurora1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(4%,3%) scale(1.06)}66%{transform:translate(-3%,5%) scale(0.97)}}
+          @keyframes aurora2{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(-5%,-3%) scale(1.08)}70%{transform:translate(4%,4%) scale(0.95)}}
+          @keyframes aurora3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(3%,-4%) scale(1.05)}}
+          .animate-aurora-1{animation:aurora1 18s ease-in-out infinite}
+          .animate-aurora-2{animation:aurora2 22s ease-in-out infinite}
+          .animate-aurora-3{animation:aurora3 15s ease-in-out infinite}
+          @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+          .float{animation:floatY 6s ease-in-out infinite}
+          @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+          .shimmer-text{animation:shimmer 4s linear infinite}
+        }
+
+        /* Mobile CSS starfield — replaces canvas on mobile */
+        .mobile-starfield{
+          background-image:
+            radial-gradient(1px 1px at 10% 15%, rgba(147,197,253,0.5) 0%, transparent 100%),
+            radial-gradient(1px 1px at 25% 40%, rgba(165,180,252,0.4) 0%, transparent 100%),
+            radial-gradient(1.5px 1.5px at 50% 20%, rgba(224,242,254,0.5) 0%, transparent 100%),
+            radial-gradient(1px 1px at 70% 60%, rgba(147,197,253,0.35) 0%, transparent 100%),
+            radial-gradient(1px 1px at 85% 30%, rgba(165,180,252,0.4) 0%, transparent 100%),
+            radial-gradient(1.5px 1.5px at 35% 75%, rgba(224,242,254,0.3) 0%, transparent 100%),
+            radial-gradient(1px 1px at 90% 85%, rgba(147,197,253,0.4) 0%, transparent 100%),
+            radial-gradient(1px 1px at 15% 90%, rgba(165,180,252,0.3) 0%, transparent 100%);
+          background-repeat:no-repeat;
+          background-size:100% 100%;
+        }
+        .mobile-starfield-light{
+          background-image:
+            radial-gradient(1px 1px at 10% 15%, rgba(37,99,235,0.25) 0%, transparent 100%),
+            radial-gradient(1px 1px at 25% 40%, rgba(79,70,229,0.2) 0%, transparent 100%),
+            radial-gradient(1.5px 1.5px at 50% 20%, rgba(14,165,233,0.25) 0%, transparent 100%),
+            radial-gradient(1px 1px at 70% 60%, rgba(37,99,235,0.2) 0%, transparent 100%),
+            radial-gradient(1px 1px at 85% 30%, rgba(79,70,229,0.2) 0%, transparent 100%);
+          background-repeat:no-repeat;
+          background-size:100% 100%;
+        }
+      `}</style>
+
+      {/* Canvas — desktop only */}
+      {!isMobile && (
+        <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" style={{ willChange: "transform" }} aria-hidden="true" />
+      )}
+      {/* Mobile static CSS starfield */}
+      {isMobile && (
+        <div className={cn("fixed inset-0 pointer-events-none z-0", d ? "mobile-starfield" : "mobile-starfield-light")} aria-hidden="true" />
+      )}
+
+      {/* ── NAVBAR ──────────────────────────────────────────────────────────── */}
+      <nav className={cn(
+        "fixed top-0 w-full z-50 backdrop-blur-2xl border-b",
+        "transition-[background-color,border-color] duration-500",
+        d ? "bg-[#030712]/65 border-white/5" : "bg-white/75 border-blue-200/60"
+      )}>
+        <div className="max-w-7xl mx-auto px-6 h-[86px] flex items-center justify-between">
+          <div className="flex items-center gap-5 group cursor-pointer">
+            <div className="relative flex items-center justify-center">
+              <div className={cn("absolute inset-0 rounded-full blur-2xl transition-[opacity] duration-700 group-hover:scale-125",
+                d ? "bg-blue-500/35" : "bg-blue-400/45")} />
+              <img src="/logo-aclc.png" alt="ACLC" loading="eager"
+                className="relative w-14 h-14 object-contain drop-shadow-[0_0_22px_rgba(99,160,255,0.95)] group-hover:scale-110 transition-transform duration-500" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-black text-2xl tracking-tighter uppercase leading-none italic text-white drop-shadow-md">ACLC</span>
-              <span className="text-[9px] font-bold tracking-[0.5em] text-blue-400 uppercase leading-none mt-1 shadow-blue-900">Northbay Campus</span>
+            <div>
+              <div className="flex items-baseline gap-2.5">
+                <span className={cn("font-black text-[22px] tracking-[-0.04em] uppercase italic", d ? "text-white" : "text-slate-900")}>ACLC</span>
+                <span className={cn("text-[10px] font-black tracking-[0.25em] uppercase", d ? "text-blue-400" : "text-blue-600")}>Northbay</span>
+              </div>
+              <p className={cn("text-[7.5px] font-bold tracking-[0.45em] uppercase mt-0.5", d ? "text-slate-500" : "text-slate-400")}>AMA Education System</p>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-6">
-            <Badge className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-4 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-widest">
-               S.Y. {config?.school_year || "2025-2026"}
-            </Badge>
+          <div className="flex items-center gap-3">
+            <div className={cn("hidden md:flex px-5 py-2 rounded-xl border text-[9px] font-black uppercase tracking-[0.3em]",
+              "transition-[background-color,border-color,color] duration-300",
+              d ? "bg-blue-950/60 border-blue-500/20 text-blue-300" : "bg-blue-50 border-blue-200 text-blue-700")}>
+              S.Y. {config?.school_year || "2025–2026"}
+            </div>
+            <button onClick={toggleTheme} aria-label="Toggle theme"
+              className={cn(
+                "relative w-11 h-11 rounded-2xl flex items-center justify-center border overflow-hidden",
+                "transition-[background-color,border-color] duration-300",
+                d ? "bg-slate-800/80 border-white/10 lg:hover:bg-yellow-400/10 lg:hover:border-yellow-400/30"
+                  : "bg-white border-slate-200 lg:hover:bg-blue-50 lg:hover:border-blue-300 shadow-sm"
+              )}>
+              <span className={cn("absolute transition-[opacity,transform] duration-500",
+                d ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-50")}>
+                <Sun size={15} className="text-yellow-300" />
+              </span>
+              <span className={cn("absolute transition-[opacity,transform] duration-500",
+                !d ? "opacity-100 rotate-0 scale-100" : "opacity-0 rotate-90 scale-50")}>
+                <Moon size={15} className="text-blue-600" />
+              </span>
+            </button>
           </div>
         </div>
       </nav>
 
-      <main className="pt-48 pb-20 px-6 relative z-10">
+      {/* ── MAIN ──────────────────────────────────────────────────────────────── */}
+      <main className="relative z-10 pt-44 pb-24 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-            
-            {/* HERO SECTION */}
-            <div className="lg:col-span-7 space-y-12">
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                   <div className="px-3 py-1 bg-blue-700 rounded-md text-[10px] font-black uppercase tracking-tighter text-white">{heroBadgeText}</div>
-                   <div className="h-[1px] w-12 bg-white/20" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+
+            {/* Hero Left */}
+            <div className="lg:col-span-7 space-y-10">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "flex items-center gap-2.5 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-[0.3em]",
+                  "transition-[background-color,border-color,color] duration-300",
+                  isPortalActive
+                    ? d ? "bg-emerald-950/60 border-emerald-500/30 text-emerald-300" : "bg-emerald-50 border-emerald-300 text-emerald-700"
+                    : d ? "bg-slate-900/60 border-white/10 text-slate-400" : "bg-slate-100 border-slate-300 text-slate-500"
+                )}>
+                  <span className={cn("w-1.5 h-1.5 rounded-full", isPortalActive ? "bg-emerald-400 lg:animate-pulse" : "bg-slate-500")} />
+                  {heroBadge}
                 </div>
-                <h1 className="text-5xl sm:text-7xl md:text-9xl font-bold tracking-tighter leading-[0.8] uppercase">
-                  Enroll <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-100 to-indigo-500 animate-pulse">Now!</span>
-                </h1>
-                <p className="text-xl text-slate-400 font-medium max-w-xl leading-relaxed italic border-l-2 border-blue-700 pl-6">
-                  "ACLC Northbay is under AMA Education System. One of the oldest private schools that offers quality education."
-                </p>
+                <div className={cn("h-px w-16", d ? "bg-white/10" : "bg-slate-300/60")} />
+                <span className={cn("text-[9px] font-bold uppercase tracking-widest", d ? "text-slate-500" : "text-slate-400")}>
+                  {config?.school_year || "2025–2026"}
+                </span>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-5">
+              <div className="space-y-1">
+                <h1 className={cn("font-black leading-[0.82] tracking-[-0.045em] uppercase", d ? "text-white" : "text-slate-900")}>
+                  <span className="block text-[clamp(3.8rem,11.5vw,8.8rem)]">Shape</span>
+                  <span className="block text-[clamp(3.8rem,11.5vw,8.8rem)] text-transparent bg-clip-text shimmer-text"
+                    style={{ backgroundImage: d ? "linear-gradient(90deg,#93c5fd,#a5b4fc,#e0f2fe,#818cf8,#93c5fd)" : "linear-gradient(90deg,#2563eb,#4f46e5,#0ea5e9,#3b82f6,#2563eb)" }}>
+                    Your
+                  </span>
+                  <span className="block text-[clamp(3.8rem,11.5vw,8.8rem)]">Future.</span>
+                </h1>
+                <div className={cn("w-28 h-[3px] rounded-full mt-5", d ? "bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400" : "bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500")} />
+              </div>
+
+              <p className={cn("text-lg font-medium max-w-lg leading-relaxed pl-5 border-l-2", d ? "text-slate-400 border-blue-500/60" : "text-slate-500 border-blue-400/70")}>
+                ACLC Northbay — under the AMA Education System — delivers world-class, technology-driven Senior High education in the heart of Tondo, Manila.
+              </p>
+
+              <div className="flex flex-wrap gap-4 pt-2">
                 {isPortalActive ? (
                   <Link href="/enroll">
-                    <Button className="h-16 px-10 rounded-[28px] bg-blue-700 hover:bg-blue-600 text-white font-bold uppercase text-xs tracking-[0.3em] shadow-[0_20px_60px_rgba(29,78,216,0.4)] transition-all hover:-translate-y-2 active:scale-95 group">
-                      Proceed to Enrollment <ArrowRight className="ml-4 group-hover:translate-x-2 transition-transform text-white" />
-                    </Button>
+                    <button className="group relative h-[60px] px-10 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] text-white overflow-hidden transition-transform duration-300 lg:hover:-translate-y-1.5 active:scale-95">
+                      <span className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-600 bg-[length:200%_100%] lg:animate-[shimmer_2s_linear_infinite]" />
+                      <span className="absolute inset-0 shadow-[0_8px_40px_rgba(99,130,246,0.5)] lg:group-hover:shadow-[0_14px_55px_rgba(99,130,246,0.7)] transition-shadow duration-300 rounded-2xl" />
+                      <span className="relative flex items-center gap-3">
+                        Begin Enrollment
+                        <ArrowRight size={16} className="lg:group-hover:translate-x-1.5 transition-transform" />
+                      </span>
+                    </button>
                   </Link>
                 ) : (
-                  <Button disabled className="h-16 px-10 rounded-[28px] bg-slate-900/50 text-slate-600 font-bold uppercase text-xs tracking-widest border border-white/5 cursor-not-allowed">
-                    {isExpired ? <><Lock className="mr-2" size={18}/> Portal Expired</> : "Enrollment Access Locked"}
-                  </Button>
+                  <button disabled className={cn(
+                    "h-[60px] px-10 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] flex items-center gap-2 cursor-not-allowed border",
+                    d ? "bg-slate-900/50 text-slate-600 border-white/5" : "bg-slate-100 text-slate-400 border-slate-200"
+                  )}>
+                    <Lock size={14} /> {isExpired ? "Portal Expired" : "Access Locked"}
+                  </button>
                 )}
                 <Link href="/status">
-                   <Button variant="outline" className="h-16 px-10 rounded-[28px] border-white/20 bg-white/5 font-bold uppercase text-xs tracking-widest hover:bg-white/10 transition-all text-white backdrop-blur-xl">
-                    Track Status
-                  </Button>
+                  <button className={cn(
+                    "h-[60px] px-10 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] border",
+                    "transition-[background-color,border-color,transform] duration-300 lg:hover:-translate-y-1.5",
+                    d ? "bg-white/5 border-white/15 text-white lg:hover:bg-white/10 backdrop-blur-xl" : "bg-white border-slate-200 text-slate-700 lg:hover:bg-blue-50 lg:hover:border-blue-300 shadow-sm"
+                  )}>Track My Status</button>
                 </Link>
               </div>
 
-              <div className="flex items-center gap-4 pt-8">
-                 <div className="px-6 py-4 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md flex items-center gap-3">
-                    <Users2 className="text-blue-500" size={18} />
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">
-                      <span className="text-blue-400">{stats.totalCount}</span> Confirmed Registrants
-                    </p>
-                 </div>
+              <div className="flex items-center gap-3 pt-4">
+                <div className={cn("flex items-center gap-3 px-5 py-3.5 rounded-2xl border transition-[background-color,border-color] duration-300",
+                  d ? "bg-white/4 border-white/8 backdrop-blur-md" : "bg-white border-slate-200 shadow-sm")}>
+                  <div className="relative">
+                    <Users2 size={16} className="text-blue-400" />
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full lg:animate-pulse" />
+                  </div>
+                  <span className={cn("text-[10px] font-black uppercase tracking-widest", d ? "text-slate-300" : "text-slate-600")}>
+                    <span className={cn("text-base font-black", d ? "text-blue-300" : "text-blue-600")}>{stats.totalCount}</span>{" "}Confirmed
+                  </span>
+                </div>
+                <div className={cn("flex items-center gap-2 px-4 py-3.5 rounded-2xl border text-[9px] font-black uppercase tracking-widest",
+                  d ? "bg-white/4 border-white/8 text-slate-400" : "bg-white border-slate-200 text-slate-500 shadow-sm")}>
+                  <TrendingUp size={12} className="text-emerald-400" />Live
+                </div>
               </div>
             </div>
 
-            {/* STATUS CARD */}
-            <div className="lg:col-span-5 relative">
-              <div className="absolute -inset-1 bg-blue-600/20 rounded-[50px] blur-2xl animate-pulse"></div>
-              <Card className="relative p-10 rounded-[56px] border border-white/20 bg-blue-950/40 backdrop-blur-3xl space-y-10 overflow-hidden shadow-2xl">
-                <div className="flex items-center justify-between relative z-10">
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-bold uppercase tracking-tighter text-white italic">Strand Distribution</h3>
-                    <p className="text-[8px] font-bold text-blue-400 uppercase tracking-[0.5em]">Real-time Academic Tracker</p>
-                  </div>
-                  <Target className="text-white animate-pulse" size={24} />
-                </div>
-
-                <div className="space-y-10 relative z-10">
-                   <CapacityBar label="ICT Division" current={stats.ictCount} max={stats.ictMax} />
-                   <CapacityBar label="GAS Division" current={stats.gasCount} max={stats.gasMax} />
-                   
-                   <div className="p-6 bg-blue-700/80 rounded-[32px] text-white flex items-center justify-between border border-white/20 shadow-inner">
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-[0.3em] opacity-80 mb-1 text-white uppercase">Enrollment Vacancies</p>
-                        <p className="text-5xl font-bold tracking-tighter text-white leading-none">
-                          {stats.totalMax - stats.totalCount}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                         <Orbit size={40} className="text-white/20 animate-spin" style={{ animationDuration: '10s' }} />
-                      </div>
-                   </div>
-                </div>
-
-                <div className="pt-6 flex items-center gap-5 border-t border-white/5">
-                   <div className={`p-4 rounded-2xl ${isPortalActive ? 'bg-white text-blue-900 shadow-lg' : 'bg-slate-800 text-slate-500'}`}>
-                      {isManual ? <Zap size={22} /> : <Calendar size={22} />}
-                   </div>
-                   <div>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Application Status</p>
-                      <p className={`text-sm font-bold uppercase tracking-tighter ${isPortalActive ? 'text-white' : 'text-red-500'}`}>
-                        {getEnrollmentStatusText()}
-                      </p>
-                   </div>
-                </div>
-              </Card>
-            </div>
+            {/* ── STATUS CARD ───────────────────────────────────────────────── */}
+            <StatsCard stats={stats} config={config} isMobile={isMobile} isDark={d} />
           </div>
 
-          {/* 3. NEW SECTION: ACADEMIC STRANDS SCROLL */}
-          <div className="mt-40 space-y-12">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-[1px] bg-blue-600" />
-              <h2 className="text-4xl font-bold uppercase tracking-tighter italic">Available Strands</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* ICT CARD */}
-              <Card className="group relative p-10 rounded-[48px] bg-white/5 border border-white/10 backdrop-blur-md overflow-hidden hover:border-blue-500/50 transition-all duration-500">
-                <div className="absolute -right-10 -top-10 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Cpu size={200} className="text-blue-500" />
+          {/* ── STRANDS ─────────────────────────────────────────────────────── */}
+          <div className="mt-44 space-y-10">
+            <Reveal>
+              <div className="flex items-end gap-6">
+                <div>
+                  <p className={cn("text-[9px] font-black uppercase tracking-[0.5em] mb-2", d ? "text-indigo-400" : "text-indigo-600")}>Curriculum Paths</p>
+                  <h2 className={cn("text-5xl font-black uppercase tracking-tight leading-none", d ? "text-white" : "text-slate-900")}>Available Strands</h2>
                 </div>
-                <div className="relative z-10 space-y-6">
-                  <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20">
-                    <Cpu size={28} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-3xl font-bold uppercase tracking-tighter">Information & Communication Technology</h3>
-                    <p className="text-blue-400 text-[10px] font-bold uppercase tracking-[0.4em] mt-2">Specialized Tech Curriculum</p>
-                  </div>
-                  <p className="text-slate-400 leading-relaxed text-sm">
-                    Master the digital landscape with heavy focus on computer programming, systems analysis, and visual graphics. 
-                  </p>
-                  <div className="pt-4 border-t border-white/5">
-                    <p className="text-[10px] font-bold text-white uppercase tracking-widest leading-relaxed">
-                      ACLC Northbay is the regional leader in ICT, boasting 100% computerized modules and industry-aligned software training that ensures students are career-ready upon graduation.
-                    </p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* GAS CARD */}
-              <Card className="group relative p-10 rounded-[48px] bg-white/5 border border-white/10 backdrop-blur-md overflow-hidden hover:border-indigo-500/50 transition-all duration-500">
-                <div className="absolute -right-10 -top-10 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <BookOpen size={200} className="text-indigo-500" />
-                </div>
-                <div className="relative z-10 space-y-6">
-                  <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/20">
-                    <BookOpen size={28} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-3xl font-bold uppercase tracking-tighter">General Academic Strand</h3>
-                    <p className="text-indigo-400 text-[10px] font-bold uppercase tracking-[0.4em] mt-2">Versatile Collegiate Prep</p>
-                  </div>
-                  <p className="text-slate-400 leading-relaxed text-sm">
-                    A flexible pathway designed for students exploring various professional fields like business, education, and management.
-                  </p>
-                  <div className="pt-4 border-t border-white/5">
-                    <p className="text-[10px] font-bold text-white uppercase tracking-widest leading-relaxed">
-                      Our GAS program is exceptionally solid, integrating "Tech-Humanities" where students learn traditional academic disciplines powered by modern digital research tools.
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-
-          {/* 4. NEW SECTION: LEARNING BENEFITS */}
-          <div className="mt-40 space-y-16 py-20 bg-blue-600/5 rounded-[64px] border border-blue-600/10 px-10">
-            <div className="text-center space-y-4">
-              <Badge className="bg-blue-600 text-white font-bold px-6 py-2 rounded-full uppercase tracking-widest">Welcome New Enrollees!</Badge>
-              <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase">Learning Benefits</h2>
-              <div className="flex flex-wrap justify-center gap-4 text-[10px] font-bold uppercase tracking-[0.3em] text-blue-400">
-                <span>Grade 10 Completers</span>
-                <span className="text-white/20">•</span>
-                <span>ALS Completers</span>
+                <div className={cn("h-px flex-1 max-w-xs mb-3", d ? "bg-white/8" : "bg-slate-200")} />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            </Reveal>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
-                "No Top-Up", "No Hidden Fees", "No Entrance Exam", "No Grade Requirements",
-                "No Books to Purchase", "Airconditioned Classrooms", "Flexible Learning Schedule", "DepEd Voucher Accepted"
-              ].map((benefit, i) => (
-                <div key={i} className="flex items-center gap-4 p-6 bg-slate-900 rounded-[32px] border border-white/5 group hover:bg-blue-700 transition-colors duration-300">
-                  <CheckCircle2 className="text-blue-500 group-hover:text-white shrink-0" size={24} />
-                  <span className="text-[11px] font-bold uppercase tracking-widest leading-tight">{benefit}</span>
-                </div>
+                { strand: "ICT", Icon: Cpu, color: "blue", title: ["Information &", "Communication", "Technology"], sub: "Specialized Tech Curriculum",
+                  desc: "Master the digital landscape through computer programming, systems analysis, and visual graphics — built for tomorrow's tech leaders.",
+                  feats: ["100% Computerized Modules","Industry-aligned Software Training","Career-ready upon Graduation"] },
+                { strand: "GAS", Icon: BookOpen, color: "indigo", title: ["General", "Academic", "Strand"], sub: "Versatile Collegiate Prep",
+                  desc: "A flexible pathway for students exploring business, education, and management — powered by modern digital research tools.",
+                  feats: ["Tech-Humanities Integration","Multi-field Career Pathways","DepEd-aligned Curriculum"] },
+              ].map(({ strand, Icon, color, title, sub, desc, feats }, idx) => (
+                <Reveal key={strand} delay={idx * 120}>
+                  <div className={cn(
+                    "group relative rounded-[40px] p-10 border overflow-hidden h-full cursor-default",
+                    "transition-[background,border-color,box-shadow] duration-500",
+                    color === "blue"
+                      ? d ? "bg-gradient-to-br from-[#0d1433]/70 to-[#070b1c]/80 border-blue-900/25 lg:hover:border-blue-400/40 lg:hover:shadow-[0_0_70px_rgba(99,130,246,0.15)]"
+                            : "bg-white border-slate-200 lg:hover:border-blue-300 lg:hover:shadow-[0_20px_60px_rgba(59,130,246,0.12)] shadow-sm"
+                      : d ? "bg-gradient-to-br from-[#100d33]/70 to-[#070b1c]/80 border-indigo-900/25 lg:hover:border-indigo-400/40 lg:hover:shadow-[0_0_70px_rgba(129,140,248,0.15)]"
+                            : "bg-white border-slate-200 lg:hover:border-indigo-300 lg:hover:shadow-[0_20px_60px_rgba(99,102,241,0.12)] shadow-sm"
+                  )}>
+                    <div className="absolute -right-12 -bottom-12 opacity-[0.04] lg:group-hover:opacity-[0.08] transition-opacity duration-500">
+                      <Icon size={240} className={color === "blue" ? "text-blue-400" : "text-indigo-400"} />
+                    </div>
+                    <div className="relative z-10 space-y-5">
+                      <div className="flex items-start justify-between">
+                        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg lg:group-hover:scale-110 lg:group-hover:rotate-3 transition-transform duration-300",
+                          color === "blue" ? "bg-gradient-to-br from-blue-500 to-blue-700 shadow-blue-500/30" : "bg-gradient-to-br from-indigo-500 to-violet-700 shadow-indigo-500/30")}>
+                          <Icon size={26} className="text-white" />
+                        </div>
+                        <span className={cn("text-[8px] font-black uppercase tracking-[0.3em] px-3 py-1.5 rounded-full border",
+                          color === "blue"
+                            ? d ? "border-blue-500/20 text-blue-400 bg-blue-900/30" : "border-blue-200 text-blue-600 bg-blue-50"
+                            : d ? "border-indigo-500/20 text-indigo-400 bg-indigo-900/30" : "border-indigo-200 text-indigo-600 bg-indigo-50"
+                        )}>{strand}</span>
+                      </div>
+                      <div>
+                        <h3 className={cn("text-2xl font-black uppercase tracking-tight leading-tight", d ? "text-white" : "text-slate-900")}>
+                          {title.map((l, i) => <span key={i} className="block">{l}</span>)}
+                        </h3>
+                        <p className={cn("text-[9px] font-black uppercase tracking-[0.3em] mt-2",
+                          color === "blue" ? d ? "text-blue-400" : "text-blue-600" : d ? "text-indigo-400" : "text-indigo-600")}>{sub}</p>
+                      </div>
+                      <p className={cn("text-sm leading-relaxed", d ? "text-slate-400" : "text-slate-500")}>{desc}</p>
+                      <div className={cn("pt-5 border-t space-y-2.5", d ? "border-white/5" : "border-slate-100")}>
+                        {feats.map((f, i) => (
+                          <div key={i} className="flex items-center gap-3">
+                            <CheckCircle2 size={13} className={color === "blue" ? "text-blue-400 shrink-0" : "text-indigo-400 shrink-0"} />
+                            <span className={cn("text-[10px] font-bold uppercase tracking-wider", d ? "text-slate-300" : "text-slate-600")}>{f}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
               ))}
             </div>
+          </div>
+
+          {/* ── BENEFITS ────────────────────────────────────────────────────── */}
+          <div className="mt-44">
+            <Reveal>
+              <div className={cn(
+                "relative rounded-[56px] border overflow-hidden",
+                "transition-[background,border-color] duration-500",
+                d ? "bg-gradient-to-br from-[#0d1433]/60 to-[#0a0d28]/70 border-indigo-900/20" : "bg-gradient-to-br from-blue-50 to-indigo-50/80 border-blue-200/60"
+              )}>
+                <div className="relative z-10 p-14 space-y-14">
+                  <div className="text-center space-y-4">
+                    <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-[9px] font-black uppercase tracking-[0.3em]"
+                      style={{ background: "linear-gradient(90deg,#3b82f6,#6366f1,#8b5cf6)" }}>
+                      <Sparkles size={11} />Welcome New Enrollees
+                    </div>
+                    <h2 className={cn("text-5xl md:text-[5.5rem] font-black uppercase tracking-tight leading-none", d ? "text-white" : "text-slate-900")}>
+                      Why Choose<br />ACLC?
+                    </h2>
+                    <p className={cn("text-sm font-medium max-w-md mx-auto", d ? "text-slate-400" : "text-slate-500")}>
+                      Open to all Grade 10 Completers and ALS Graduates — no barriers, just opportunity.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {["No Top-Up","No Hidden Fees","No Entrance Exam","No Grade Requirements","No Books to Purchase","Airconditioned Classrooms","Flexible Learning Schedule","DepEd Voucher Accepted"].map((b, i) => (
+                      <div key={i} className={cn(
+                        "group flex items-center gap-4 p-5 rounded-3xl border cursor-default",
+                        "transition-[background,border-color,box-shadow,transform] duration-300 lg:hover:-translate-y-1.5",
+                        d ? "bg-white/3 border-white/6 lg:hover:bg-gradient-to-br lg:hover:from-blue-600/80 lg:hover:to-indigo-700/80 lg:hover:border-indigo-400/30 lg:hover:shadow-[0_10px_40px_rgba(99,130,246,0.25)]"
+                          : "bg-white border-slate-200 lg:hover:bg-gradient-to-br lg:hover:from-blue-600 lg:hover:to-indigo-600 lg:hover:border-blue-500 lg:hover:shadow-[0_10px_40px_rgba(59,130,246,0.2)] shadow-sm"
+                      )}>
+                        <CheckCircle2 size={20} className={cn("shrink-0 transition-colors duration-300 lg:group-hover:text-white", d ? "text-indigo-400" : "text-blue-500")} />
+                        <span className={cn("text-[10px] font-black uppercase tracking-widest leading-tight transition-colors duration-300 lg:group-hover:text-white", d ? "text-slate-300" : "text-slate-700")}>{b}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
       </main>
 
-      {/* 5. NEW INSTITUTIONAL HUB FOOTER */}
-      <footer className="mt-40 border-t border-white/5 bg-slate-950/80 backdrop-blur-3xl py-20 px-6">
+      {/* ── FOOTER ────────────────────────────────────────────────────────────── */}
+      <footer className={cn("mt-44 border-t backdrop-blur-3xl py-20 px-6", "transition-[background-color,border-color] duration-500", d ? "bg-[#020510]/90 border-white/5" : "bg-white/80 border-slate-200")}>
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-16 items-start">
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Orbit className="text-blue-500" size={40} />
-                <div>
-                  <h4 className="font-bold uppercase text-xl italic leading-none">ACLC Northbay</h4>
-                  <p className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.5em] mt-2">AMA COMPUTER LEARNING CENTER</p>
+          <Reveal>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
+              <div className="space-y-5">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className={cn("absolute inset-0 rounded-full blur-xl", d ? "bg-blue-500/30" : "bg-blue-400/30")} />
+                    <img src="/logo-aclc.png" alt="ACLC" loading="lazy" className="relative w-12 h-12 object-contain" />
+                  </div>
+                  <div>
+                    <p className={cn("font-black text-lg uppercase italic tracking-tight", d ? "text-white" : "text-slate-900")}>ACLC Northbay</p>
+                    <p className={cn("text-[7px] font-bold uppercase tracking-[0.4em]", d ? "text-slate-500" : "text-slate-400")}>AMA Computer Learning Center</p>
+                  </div>
+                </div>
+                <p className="text-xs leading-relaxed text-slate-500">Delivering quality, technology-driven Senior High education under the AMA Education System in the heart of Tondo, Manila.</p>
+              </div>
+              <div className="space-y-5">
+                <p className={cn("text-[8px] font-black uppercase tracking-[0.4em]", d ? "text-indigo-400" : "text-blue-600")}>Contact</p>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <MapPin size={15} className={cn("shrink-0 mt-0.5", d ? "text-slate-500" : "text-slate-400")} />
+                    <p className={cn("text-[11px] font-semibold leading-relaxed", d ? "text-slate-400" : "text-slate-600")}>2nd/3rd Floor MTSC Bldg, Juan Luna cor. Capulong St., Tondo, Manila</p>
+                  </div>
+                  <a href="https://www.facebook.com/Northbaycampus" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group">
+                    <Facebook size={15} className={cn("transition-colors", d ? "text-slate-500 lg:group-hover:text-blue-400" : "text-slate-400 lg:group-hover:text-blue-600")} />
+                    <span className={cn("text-[11px] font-semibold transition-colors", d ? "text-slate-400 lg:group-hover:text-white" : "text-slate-600 lg:group-hover:text-slate-900")}>/Northbaycampus</span>
+                  </a>
                 </div>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                Part of the AMA Education System, providing quality technology-driven education in the heart of Tondo, Manila.
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              <h5 className="font-bold uppercase text-[10px] tracking-[0.4em] text-blue-500">Contact Detail</h5>
-              <ul className="space-y-4">
-                <li className="flex items-start gap-4">
-                  <MapPin className="text-slate-500 shrink-0 mt-1" size={18} />
-                  <p className="text-[11px] font-bold text-slate-300 leading-relaxed uppercase tracking-wider">
-                    2nd/3rd floor MTSC Bldg Juan Luna Cor. Capulong Street, Tondo Manila
-                  </p>
-                </li>
-                <li>
-                  <a href="https://www.facebook.com/Northbaycampus" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 group">
-                    <Facebook className="text-slate-500 group-hover:text-blue-500 transition-colors" size={18} />
-                    <span className="text-[11px] font-bold text-slate-300 group-hover:text-white transition-colors uppercase tracking-widest">/Northbaycampus</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="space-y-6">
-              <h5 className="font-bold uppercase text-[10px] tracking-[0.4em] text-blue-500">System Identity</h5>
-              <div className="p-6 bg-white/5 rounded-3xl border border-white/5 flex items-center gap-4">
-                 <ShieldCheck size={28} className="text-blue-500" />
-                 <div>
-                    <p className="text-[9px] font-bold text-white uppercase tracking-widest">Secure Registry</p>
-                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1 italic">AES-256 Encrypted Portal</p>
-                 </div>
+              <div className="space-y-5">
+                <p className={cn("text-[8px] font-black uppercase tracking-[0.4em]", d ? "text-indigo-400" : "text-blue-600")}>System</p>
+                <div className={cn("p-5 rounded-3xl border flex items-center gap-4", "transition-[background-color,border-color] duration-300", d ? "bg-white/3 border-white/6" : "bg-blue-50 border-blue-100")}>
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20">
+                    <ShieldCheck size={18} className="text-white" />
+                  </div>
+                  <div>
+                    <p className={cn("text-[9px] font-black uppercase tracking-widest", d ? "text-white" : "text-slate-800")}>Secure Registry</p>
+                    <p className={cn("text-[8px] font-bold uppercase tracking-wider mt-0.5 italic", d ? "text-slate-500" : "text-slate-400")}>AES-256 Encrypted</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.4em]">© 2025 AMA Education System </p>
-            <div className="flex items-center gap-4 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
-              <GraduationCap size={16} />
-              <Globe size={16} />
-              <Activity size={16} />
+          </Reveal>
+          <div className={cn("mt-16 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4", d ? "border-white/5" : "border-slate-200")}>
+            <p className={cn("text-[8px] font-bold uppercase tracking-[0.3em]", d ? "text-slate-600" : "text-slate-400")}>© 2025 AMA Education System — All rights reserved</p>
+            <div className={cn("flex items-center gap-3 transition-opacity duration-300", d ? "opacity-25 lg:hover:opacity-60" : "opacity-35 lg:hover:opacity-70")}>
+              <GraduationCap size={14} className={d ? "text-white" : "text-slate-500"} />
+              <Globe size={14} className={d ? "text-white" : "text-slate-500"} />
+              <Activity size={14} className={d ? "text-white" : "text-slate-500"} />
             </div>
           </div>
         </div>
       </footer>
     </div>
-  );
+  )
 }
 
-function CapacityBar({ label, current, max }: any) {
-  const percentage = max > 0 ? (current / max) * 100 : 0;
+// ── CAPACITY BAR ──────────────────────────────────────────────────────────────
+function PrettyBar({ label, icon, current, max, color, isDark }: { label: string; icon: React.ReactNode; current: number; max: number; color: string; isDark: boolean }) {
+  const pct = max > 0 ? Math.min((current / max) * 100, 100) : 0
+  const isBlue = color === "blue"
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-end">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">{label}</p>
-        <p className="text-xs font-bold text-white">{current} <span className="text-blue-400/60">/ {max} Seats</span></p>
+    <div className="space-y-2.5">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <span className={cn("p-1 rounded-md",
+            isDark ? (isBlue ? "bg-blue-900/40 text-blue-400" : "bg-indigo-900/40 text-indigo-400")
+                   : (isBlue ? "bg-blue-50 text-blue-600" : "bg-indigo-50 text-indigo-600"))}>{icon}</span>
+          <p className={cn("text-[9px] font-black uppercase tracking-[0.2em]", isDark ? "text-slate-300" : "text-slate-700")}>{label}</p>
+        </div>
+        <p className={cn("text-[10px] font-black tabular-nums", isDark ? "text-white" : "text-slate-800")}>
+          {current} <span className={cn("font-bold", isDark ? "text-slate-500" : "text-slate-400")}>/ {max}</span>
+        </p>
       </div>
-      <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden p-[1px] border border-white/10">
-        <div 
-          className="h-full rounded-full bg-gradient-to-r from-blue-700 via-blue-500 to-white transition-all duration-[2000ms] ease-out shadow-[0_0_15px_rgba(59,130,246,0.6)]" 
-          style={{ width: `${percentage}%` }} 
+      <div className={cn("relative h-2 w-full rounded-full overflow-hidden", isDark ? "bg-white/5" : "bg-slate-100")}>
+        <div
+          className={cn("h-full rounded-full transition-[width] duration-[2000ms] ease-out",
+            isBlue ? "bg-gradient-to-r from-blue-700 via-blue-400 to-cyan-300 lg:shadow-[0_0_14px_rgba(59,130,246,0.7)]"
+                   : "bg-gradient-to-r from-indigo-700 via-violet-400 to-purple-300 lg:shadow-[0_0_14px_rgba(139,92,246,0.7)]"
+          )}
+          style={{ width: `${pct}%` }}
         />
       </div>
+      <p className={cn("text-[8px] font-bold uppercase tracking-widest text-right tabular-nums", isDark ? "text-slate-600" : "text-slate-400")}>{Math.round(pct)}% filled</p>
     </div>
-  );
+  )
 }

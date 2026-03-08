@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@plugin "tailwindcss-animate"; /* This is the fix for the animation error */
+@plugin "tailwindcss-animate";
 
 @theme {
   /* AMA Brand Colors */
@@ -17,7 +17,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  
+
   --radius-xl: 0.75rem;
 }
 
@@ -39,6 +39,7 @@ img {
 
 @layer base {
   :root {
+    /* ── Shadcn/Tailwind tokens (existing) ── */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -48,8 +49,33 @@ img {
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
+
+    /* ── Enrollment theme tokens (light) ── */
+    --t-bg:                  #eef2ff;
+    --t-surface:             #ffffff;
+    --t-border:              rgba(226, 232, 240, 1);
+    --t-text:                #0f172a;
+    --t-text-muted:          #64748b;
+    --t-text-faint:          #94a3b8;
+    --t-input-bg:            #ffffff;
+    --t-input-border:        rgba(226, 232, 240, 1);
+    --t-input-filled-bg:     rgba(239, 246, 255, 1);
+    --t-input-filled-border: rgba(147, 197, 253, 0.4);
+    --t-input-filled-text:   #1e3a8a;
+    --t-sticky-bg:           rgba(255, 255, 255, 0.95);
+    --t-glow-1:              rgba(96, 165, 250, 0.15);
+    --t-glow-2:              rgba(165, 180, 252, 0.15);
+    --t-aurora-1-opacity:    0.15;
+    --t-aurora-2-opacity:    0.10;
+    --t-card-bg:             rgba(255, 255, 255, 0.9);
+    --t-card-border:         rgba(219, 234, 254, 1);
+    --t-card-shadow:         0 30px 80px rgba(99, 102, 241, 0.15);
+    --t-header-bg:           #ffffff;
+    --t-header-border:       rgba(219, 234, 254, 1);
+    --t-shield-color:        rgba(59, 130, 246, 0.04);
   }
 
+  /* Tailwind dark class (existing) */
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -61,9 +87,203 @@ img {
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
   }
-}
 
-@layer base {
+  /* ── Enrollment dark theme via data-theme attribute ──
+     Triggered by a single DOM write: document.documentElement.setAttribute("data-theme","dark")
+     Zero React re-renders — CSS cascade handles everything. */
+  [data-theme="dark"] {
+    --t-bg:                  #020617;
+    --t-surface:             rgba(15, 20, 51, 0.8);
+    --t-border:              rgba(255, 255, 255, 0.1);
+    --t-text:                #ffffff;
+    --t-text-muted:          #64748b;
+    --t-text-faint:          #475569;
+    --t-input-bg:            rgba(255, 255, 255, 0.05);
+    --t-input-border:        rgba(255, 255, 255, 0.05);
+    --t-input-filled-bg:     rgba(2, 6, 23, 0.6);
+    --t-input-filled-border: rgba(30, 58, 138, 0.4);
+    --t-input-filled-text:   #bfdbfe;
+    --t-sticky-bg:           rgba(2, 6, 23, 0.95);
+    --t-glow-1:              rgba(37, 99, 235, 0.10);
+    --t-glow-2:              rgba(79, 70, 229, 0.10);
+    --t-aurora-1-opacity:    0.12;
+    --t-aurora-2-opacity:    0.08;
+    --t-card-bg:             linear-gradient(to bottom, rgba(13, 20, 51, 0.8), rgba(2, 6, 23, 0.9));
+    --t-card-border:         rgba(255, 255, 255, 0.10);
+    --t-card-shadow:         0 40px 80px -15px rgba(0, 0, 0, 0.9);
+    --t-header-bg:           rgba(37, 99, 235, 0.10);
+    --t-header-border:       rgba(59, 130, 246, 0.20);
+    --t-shield-color:        rgba(255, 255, 255, 0.02);
+  }
+
   * { @apply border-border; }
   body { @apply bg-background text-foreground antialiased; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Enrollment themed utility classes
+   Used by Step1–5 and EnrollmentPage components.
+   All colors come from CSS vars above — theme switch = one DOM attr write.
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Page background */
+.t-page {
+  background-color: var(--t-bg);
+  color: var(--t-text);
+}
+
+/* Generic surface (dropdowns, cards) */
+.t-surface {
+  background-color: var(--t-surface);
+  border-color: var(--t-border);
+}
+
+/* Step header block */
+.t-header-block {
+  background-color: var(--t-header-bg);
+  border-color: var(--t-header-border);
+  color: var(--t-text);
+}
+
+/* Input base — use alongside border-2 and rounded-* */
+.t-input {
+  background-color: var(--t-input-bg);
+  border-color: var(--t-input-border);
+  color: var(--t-text);
+  transition: border-color 150ms, background-color 150ms;
+}
+.t-input:focus {
+  border-color: #3b82f6;
+  outline: none;
+}
+.t-input.filled {
+  background-color: var(--t-input-filled-bg);
+  border-color: var(--t-input-filled-border);
+  color: var(--t-input-filled-text);
+}
+.t-input.error {
+  background-color: rgba(127, 29, 29, 0.3);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+.t-input.error:focus {
+  border-color: #ef4444;
+}
+
+/* Sticky bottom bar */
+.t-sticky {
+  background-color: var(--t-sticky-bg);
+  border-color: var(--t-border);
+}
+
+/* Text helpers */
+.t-text       { color: var(--t-text); }
+.t-text-muted { color: var(--t-text-muted); }
+.t-text-faint { color: var(--t-text-faint); }
+
+/* Gender button inactive state */
+.t-gender-inactive {
+  background-color: var(--t-input-bg);
+  border-color: var(--t-input-border);
+  color: var(--t-text-muted);
+}
+
+/* Form card */
+.enroll-card {
+  background: var(--t-card-bg);
+  border-color: var(--t-card-border);
+  box-shadow: var(--t-card-shadow);
+}
+
+/* Ambient glows */
+.glow-1 { background-color: var(--t-glow-1); }
+.glow-2 { background-color: var(--t-glow-2); }
+
+/* Aurora bands — opacity driven by CSS var, no JS */
+.aurora-1 {
+  opacity: var(--t-aurora-1-opacity);
+  background: linear-gradient(135deg, #3b82f6, #6366f1, #7c3aed);
+}
+.aurora-2 {
+  opacity: var(--t-aurora-2-opacity);
+  background: linear-gradient(225deg, #06b6d4, #3b82f6, #6366f1);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  background-color: var(--t-surface);
+  border-color: var(--t-border);
+  transition: background-color 200ms, border-color 200ms;
+}
+
+/* Theme toggle icon swap — pure CSS, zero JS re-render */
+.theme-btn-sun {
+  position: absolute;
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+  transition: opacity 300ms, transform 300ms;
+}
+.theme-btn-moon {
+  position: absolute;
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+  transition: opacity 300ms, transform 300ms;
+}
+[data-theme="dark"] .theme-btn-sun {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+[data-theme="dark"] .theme-btn-moon {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
+}
+
+/* Timer pill */
+.timer-pill {
+  background-color: var(--t-surface);
+  border-color: var(--t-border);
+}
+
+/* Progress bar track */
+.progress-track {
+  background-color: var(--t-input-bg);
+  border-color: var(--t-border);
+}
+
+/* Step dots */
+.dot-done { background-color: #1e3a8a; }
+.dot-idle { background-color: var(--t-input-border); }
+[data-theme="light"] .dot-done { background-color: #bfdbfe; }
+[data-theme="light"] .dot-idle { background-color: #cbd5e1; }
+
+/* Closed state */
+.closed-card {
+  background-color: var(--t-surface);
+  border-color: var(--t-border);
+}
+.closed-btn {
+  background-color: var(--t-input-bg);
+  color: var(--t-text-faint);
+  border-color: var(--t-border);
+}
+
+/* GPU shimmer via translateX — compositor-only, no paint cost on mobile */
+.shimmer-bar { position: relative; overflow: hidden; }
+.shimmer-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.25) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: shimmerSlide 2s linear infinite;
+  will-change: transform;
+}
+@keyframes shimmerSlide {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(300%); }
+}
+
+/* Kill aurora blur animation on mobile — expensive on low-end devices */
+@media (max-width: 767px) {
+  .animate-aurora-1,
+  .animate-aurora-2 { animation: none !important; }
 }

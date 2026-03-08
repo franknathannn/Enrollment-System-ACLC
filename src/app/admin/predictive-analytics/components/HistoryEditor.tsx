@@ -17,9 +17,10 @@ import {
   DialogTrigger 
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { HistoryRecord } from "../types"
 
 interface Props {
-  historyData: any[] 
+  historyData: HistoryRecord[] 
   isDarkMode: boolean
 }
 
@@ -39,10 +40,10 @@ export function HistoryEditor({ historyData, isDarkMode }: Props) {
       const { error } = await supabase
         .from('enrollment_predictions_data')
         .update({
-          total_enrolled: parseInt(editValues.total_enrolled),
-          jhs_graduates_count: parseInt(editValues.jhs_graduates_count),
-          als_passers_count: parseInt(editValues.als_passers_count),
-          others_count: parseInt(editValues.others_count)
+          total_enrolled: parseInt(editValues.total_enrolled) || 0,
+          jhs_graduates_count: parseInt(editValues.jhs_graduates_count) || 0,
+          als_passers_count: parseInt(editValues.als_passers_count) || 0,
+          others_count: parseInt(editValues.others_count) || 0
         })
         .eq('id', editingId)
 

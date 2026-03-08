@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { 
   CheckCircle2, Cpu, BookText, Clock, Calendar, Zap, TrendingUp, TrendingDown, 
   Target, Activity, Users, Banknote, Landmark, Timer, Trophy, PieChart as PieIcon, 
-  ChevronRight, User, UserCircle2 
+  ChevronRight, User, UserCircle2, Sun, Moon
 } from "lucide-react"
 import { ThemedText } from "@/components/ThemedText"
 import { themeColors } from "@/lib/themeColors"
@@ -50,40 +50,40 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
         tooltip="Total female students currently enrolled"
       />
       <MetricCard 
-        label="Current Male Enrollee" 
+        label="Pending Male" 
         value={<AnimatedNumber value={stats.pendingMales} />}
-        colorLight="linear-gradient(135deg, rgba(30, 64, 175, 0.9), rgba(30, 58, 138, 0.9))" 
+        colorLight="linear-gradient(135deg, rgb(30, 58, 138), rgb(15, 23, 42))" 
         colorDark="linear-gradient(135deg, rgba(30, 58, 138, 0.7), rgba(23, 37, 84, 0.7))"
         icon={<User size={48} className="opacity-70"/>}
         isDarkMode={isDarkMode}
         tooltip="Male applicants pending approval"
       />
       <MetricCard 
-        label="Current Female Enrollee" 
+        label="Pending Female" 
         value={<AnimatedNumber value={stats.pendingFemales} />}
-        colorLight="linear-gradient(135deg, rgba(190, 24, 93, 0.9), rgba(157, 23, 77, 0.9))" 
+        colorLight="linear-gradient(135deg, rgb(131, 24, 67), rgb(80, 7, 36))"  
         colorDark="linear-gradient(135deg, rgba(157, 23, 77, 0.7), rgba(131, 24, 67, 0.7))"
         icon={<UserCircle2 size={48} className="opacity-70"/>}
         isDarkMode={isDarkMode}
         tooltip="Female applicants pending approval"
       />
-      <MetricCard 
-        label="TOTAL MALE ENROLLEE" 
-        value={<AnimatedNumber value={totalMaleEnrollees} />}
-        colorLight="linear-gradient(135deg, rgb(30, 58, 138), rgb(15, 23, 42))" 
-        colorDark="linear-gradient(135deg, rgb(30, 58, 138), rgb(15, 23, 42))"
-        icon={<User size={48} className="text-blue-200 opacity-50"/>}
+        <MetricCard 
+        label="AM SHIFT (PREFERENCE)" 
+        value={<AnimatedNumber value={stats.amShift} />}
+        colorLight="linear-gradient(135deg, rgb(245, 158, 11), rgb(217, 119, 6))"  
+        colorDark="linear-gradient(135deg, rgba(180, 83, 9, 0.7), rgba(120, 53, 15, 0.7))"
+        icon={<Sun size={48} className="text-white"/>}
         isDarkMode={isDarkMode}
-        tooltip="Combined count of enrolled and pending male students"
+        tooltip="Enrolled students that PREFERS AM SHIFT"
       />
-      <MetricCard 
-        label="TOTAL FEMALE ENROLLEE" 
-        value={<AnimatedNumber value={totalFemaleEnrollees} />}
-        colorLight="linear-gradient(135deg, rgb(131, 24, 67), rgb(80, 7, 36))" 
-        colorDark="linear-gradient(135deg, rgb(80, 7, 36), rgb(60, 5, 25))"
-        icon={<UserCircle2 size={48} className="text-pink-200 opacity-50"/>}
+        <MetricCard 
+        label="PM SHIFT (PREFERENCE)" 
+        value={<AnimatedNumber value={stats.pmShift} />}
+        colorLight="linear-gradient(135deg, rgb(99, 102, 241), rgb(79, 70, 229))" 
+        colorDark="linear-gradient(135deg, rgba(55, 48, 163, 0.7), rgba(49, 46, 129, 0.7))"
+        icon={<Moon size={48} className="text-white"/>}
         isDarkMode={isDarkMode}
-        tooltip="Combined count of enrolled and pending female students"
+        tooltip="Enrolled students that PREFERS PM SHIFT"
       />
     </div>
   )

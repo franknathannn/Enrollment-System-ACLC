@@ -10,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { 
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger 
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -77,7 +78,7 @@ export default function CommunicationPage() {
         message_reads(
           user_id, 
           read_at, 
-          profiles:admin_profiles!user_id(full_name)
+          profiles:admin_profiles!user_id(full_name, avatar_url)
         )
       `)
       .order('created_at', { ascending: true });
@@ -302,15 +303,16 @@ const MessageItem = memo(({ msg, currentUser, isDarkMode, editingId, editContent
   const isOptimistic = msg.id.toString().startsWith('optimistic');
   const displayName = msg.profiles?.full_name || "Admin Staff";
   const readers = msg.message_reads?.filter((r: any) => r.user_id !== msg.sender_id);
+  const formattedDate = msg.created_at ? format(new Date(msg.created_at), 'MMMM d, yyyy || h:mma') : 'Syncing...';
 
   return (
     <div className={cn(
-      "flex gap-4 group animate-in slide-in-from-bottom-2 duration-500",
+      "flex gap-3 group animate-in slide-in-from-bottom-2 duration-500",
       isMe ? 'flex-row-reverse' : 'flex-row',
       isOptimistic && 'opacity-40 grayscale blur-[1px]'
     )}>
-      <div className="relative shrink-0 self-end mb-2">
-        <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-800 overflow-hidden shadow-md transition-transform group-hover:scale-110">
+      <div className="relative shrink-0 self-end mb-1">
+        <div className="w-8 h-8 md:w-10 md:h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-800 overflow-hidden shadow-md transition-transform group-hover:scale-110">
           {msg.profiles?.avatar_url ? (
             <img src={msg.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
           ) : (
@@ -319,12 +321,12 @@ const MessageItem = memo(({ msg, currentUser, isDarkMode, editingId, editContent
         </div>
       </div>
 
-      <div className={cn("flex flex-col max-w-[75%] md:max-w-[60%]", isMe ? 'items-end' : 'items-start')}>
-        <span className="text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase mb-2 tracking-widest leading-none px-2 italic">
-          {displayName} • {msg.created_at ? format(new Date(msg.created_at), 'HH:mm') : 'Syncing'}
+      <div className={cn("flex flex-col max-w-[85%] md:max-w-[60%]", isMe ? 'items-end' : 'items-start')}>
+        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1 px-1 opacity-70">
+          {displayName} • {formattedDate}
         </span>
 
-        <div className="flex items-center gap-2 w-full group/controls">
+        <div className={cn("flex items-center gap-2 group/controls", isMe ? "flex-row-reverse" : "flex-row")}>
           {editingId === msg.id ? (
             <div 
               className="flex items-center gap-2 p-2 rounded-[24px] border border-blue-500/50 shadow-2xl animate-in zoom-in-95 w-full"
@@ -336,10 +338,10 @@ const MessageItem = memo(({ msg, currentUser, isDarkMode, editingId, editContent
             </div>
           ) : (
             <div className={cn(
-              "p-5 rounded-[32px] text-[13px] font-bold leading-relaxed shadow-sm transition-[background-color,border-color,box-shadow,color] duration-300 group-hover:shadow-md relative overflow-hidden border",
+              "p-4 md:p-5 rounded-[24px] text-[13px] font-bold leading-relaxed shadow-sm transition-all duration-300 relative overflow-hidden border",
               isMe 
-                ? 'bg-slate-900 text-white rounded-tr-none shadow-blue-500/10' 
-                : 'rounded-tl-none'
+                ? 'bg-slate-900 text-white rounded-tr-sm shadow-blue-500/10' 
+                : 'rounded-tl-sm'
             )}
             style={isMe ? 
               { backgroundColor: isDarkMode ? themeColors.dark.primary : 'rgb(37, 99, 235)', border: 'none' } : 
@@ -355,7 +357,7 @@ const MessageItem = memo(({ msg, currentUser, isDarkMode, editingId, editContent
           {isMe && !editingId && !isOptimistic && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all active:scale-90 opacity-0 group-hover:opacity-100">
+                <button className="h-8 w-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all active:scale-90">
                   <MoreVertical size={16} />
                 </button>
               </DropdownMenuTrigger>
@@ -365,10 +367,10 @@ const MessageItem = memo(({ msg, currentUser, isDarkMode, editingId, editContent
                 style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface, borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgb(241 245 249)' }}
               >
                 <DropdownMenuItem onClick={() => onStartEdit(msg)} className="gap-3 text-[10px] font-black uppercase tracking-widest px-4 py-3 rounded-xl cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
-                  <Edit3 size={14} className="text-blue-500" /> Edit Node
+                  <Edit3 size={14} className="text-blue-500" /> Edit Message
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onDelete(msg.id)} className="gap-3 text-[10px] font-black uppercase tracking-widest text-red-600 hover:!text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 px-4 py-3 rounded-xl cursor-pointer transition-colors">
-                  <Trash2 size={14} /> Purge Message
+                  <Trash2 size={14} /> Delete Message
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -376,11 +378,25 @@ const MessageItem = memo(({ msg, currentUser, isDarkMode, editingId, editContent
         </div>
 
         {isMe && readers?.length > 0 && (
-          <div className="mt-2 flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity animate-in fade-in">
-            <Eye size={10} className="text-blue-500" />
-            <span className="text-[8px] font-black uppercase tracking-tighter dark:text-slate-400">
-              Seen by {readers.map((r: any) => `${r.profiles?.full_name?.split(' ')[0] || "Staff"}`).join(', ')}
-            </span>
+          <div className="mt-1.5 flex items-center justify-end gap-1 flex-wrap px-1 animate-in fade-in">
+            {readers.map((r: any, i: number) => (
+              <TooltipProvider key={i}>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <div className="w-4 h-4 rounded-full border border-white dark:border-slate-900 overflow-hidden shadow-sm cursor-help ring-1 ring-slate-100 dark:ring-slate-800 transition-transform hover:scale-125 hover:z-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800">
+                      {r.profiles?.avatar_url ? (
+                        <img src={r.profiles.avatar_url} alt="Seen by" className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon size={10} className="text-slate-400" />
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white border-slate-800">
+                    {r.profiles?.full_name || "Admin Staff"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ))}
           </div>
         )}
       </div>

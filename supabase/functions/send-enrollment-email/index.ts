@@ -3,23 +3,32 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 serve(async (req: Request) => {
   try {
     const payload = await req.json();
-    const { record, old_record } = payload;
+    // Supabase webhooks include a 'type' property ('INSERT', 'UPDATE', 'DELETE')
+    const { type, record, old_record } = payload;
+
+    const isInsert = type === 'INSERT' || !old_record;
+    const isUpdate = type === 'UPDATE' || !!old_record;
 
     // Logic to detect section switch (From one valid section to another)
-    const isSectionSwitch = old_record && 
+    const isSectionSwitch = isUpdate && 
+      old_record && 
       record.section !== old_record.section && 
       old_record.section && 
       old_record.section !== 'Unassigned' &&
       record.section && 
       record.section !== 'Unassigned';
       
-    // 1. Silent Guard: Only send on status change to Approved or Rejected OR Section Switch
-    if (old_record && record.status === old_record.status && !isSectionSwitch) {
-      return new Response('Status unchanged and not a section switch', { status: 200 });
+    // 1. Silent Guard: Route logic based on Insert vs Update
+    if (isUpdate) {
+      // If it's an update, ensure it's a relevant status change OR a section switch
+      const isStatusChange = record.status !== old_record?.status;
+      const isRelevantStatus = ['Approved', 'Rejected'].includes(record.status);
+
+      if (!isSectionSwitch && (!isStatusChange || !isRelevantStatus)) {
+        return new Response('Status unchanged, not a relevant status, or not a section switch', { status: 200 });
+      }
     }
-    if (!['Approved', 'Rejected'].includes(record.status)) {
-      return new Response('Status update not relevant for email', { status: 200 });
-    }
+    // If it's an insert, it passes the guard automatically to send the welcome email
 
     // --- DEFINE VARIABLES BEFORE HTML ---
     const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
@@ -33,7 +42,9 @@ serve(async (req: Request) => {
     
     // Formatting Logic
     let subject = '';
-    if (isSectionSwitch) {
+    if (isInsert) {
+        subject = 'Application Received - ACLC Northbay';
+    } else if (isSectionSwitch) {
         subject = 'Section Transfer Notice - ACLC Northbay';
     } else {
         subject = isApproved 
@@ -50,14 +61,31 @@ serve(async (req: Request) => {
     // 2. THE BEAUTIFIED HTML TEMPLATE CONTENT
     let contentHtml = '';
 
-    if (isSectionSwitch) {
+    if (isInsert) {
+      contentHtml = `
+        <h1 style="color: #4f46e5; margin-top: 0; font-size: 28px; text-align: center; font-weight: 800;">Application Received</h1>
+        <p style="font-size: 18px; line-height: 1.6; color: #4f46e5; text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">
+          HELLO STUDENT ${studentUuid}
+        </p>
+        <p style="font-size: 16px; line-height: 1.6; color: #4b5563; text-align: center;">
+          Dear <strong>${record.last_name}</strong>
+          LRN <strong>${record.lrn}</strong>,
+        </p>
+        <p style="font-size: 16px; line-height: 1.6; color: #4b5563; text-align: center;">
+          We have successfully received your application for enrollment at ACLC College Northbay.
+        </p>
+        <p style="font-size: 14px; color: #6b7280; text-align: center; font-style: italic; margin-top: 25px;">
+          Our registrar team is currently reviewing your documents. We will send you another email once your application status changes.
+        </p>
+      `;
+    } else if (isSectionSwitch) {
       contentHtml = `
         <h1 style="color: #1d4ed8; margin-top: 0; font-size: 28px; text-align: center; font-weight: 800;">Section Transfer Notice</h1>
         <p style="font-size: 18px; line-height: 1.6; color: #1d4ed8; text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">
           HELLO STUDENT ${studentUuid}
         </p>
         <p style="font-size: 16px; line-height: 1.6; color: #4b5563; text-align: center;">
-          Dear <strong>${record.first_name}</strong>,
+          Dear <strong>${record.last_name}</strong>,
         </p>
         <p style="font-size: 16px; line-height: 1.6; color: #4b5563; text-align: center;">
           This is to inform you that your section assignment has been updated.
@@ -73,7 +101,7 @@ serve(async (req: Request) => {
       `;
     } else if (isApproved) {
       contentHtml = `
-        <h1 style="color: #15803d; margin-top: 0; font-size: 28px; text-align: center; font-weight: 800;">Congratulations, ${record.first_name}!</h1>
+        <h1 style="color: #15803d; margin-top: 0; font-size: 28px; text-align: center; font-weight: 800;">Congratulations, ${record.last_name}!</h1>
         <p style="font-size: 18px; line-height: 1.6; color: #15803d; text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">
           HELLO STUDENT ${studentUuid}
         </p>
@@ -95,7 +123,7 @@ serve(async (req: Request) => {
           HELLO STUDENT ${studentUuid}
         </p>
         <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">
-          Dear <strong>${record.first_name}</strong>,
+          Dear <strong>${record.last_name}</strong>,
         </p>
         <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">
           Thank you for your interest in joining the ACLC Northbay Community. We have reviewed your application, and we noticed a few things that need your attention before we can proceed.
@@ -120,7 +148,7 @@ serve(async (req: Request) => {
       `;
     }
 
-    // 2. THE BEAUTIFIED HTML TEMPLATE
+    // 2. THE BEAUTIFIED HTML TEMPLATE (Wrapper)
     const htmlContent = `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
         <div style="text-align: center; margin-bottom: 30px;">

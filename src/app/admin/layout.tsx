@@ -314,7 +314,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }}
           >
             <LogOut size={18} className="group-hover:-translate-x-1 transition-transform shrink-0" /> 
-            {!isCollapsed && <span>Terminate</span>}
+            {!isCollapsed && <span>Log Out</span>}
           </button>
         </div>
       </aside>

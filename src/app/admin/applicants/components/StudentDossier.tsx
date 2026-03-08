@@ -1,163 +1,88 @@
 // src/app/admin/applicants/components/StudentDossier.tsx
 
 import { memo, useState, useRef, useEffect, useMemo } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { 
-  User, Mail, Phone, MapPin, ShieldCheck, 
-  GraduationCap, ScrollText, FileText, ZoomIn, 
-  X, Globe, Heart, Calendar, Fingerprint,
-  Copy, Check, Save, Edit2, Camera, Undo2, ChevronDown
-} from "lucide-react"
 import { toast } from "sonner"
-import { OptimizedImage } from "./../components/OptimizedImage"
-import { AnimatedNumber, AnimatedText } from "../../dashboard/components/primitives"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { supabase } from "@/lib/supabase/client"
 
-// ===== STATUS BADGE =====
-const StatusBadge = memo(function StatusBadge({ status, isDarkMode }: { status: string, isDarkMode: boolean }) {
-  const styles: any = { 
-    Pending: isDarkMode ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-amber-50 text-amber-600 border-amber-200", 
-    Accepted: isDarkMode ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-green-50 text-green-600 border-green-200", 
-    Approved: isDarkMode ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-green-50 text-green-600 border-green-200", 
-    Rejected: isDarkMode ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-red-50 text-red-600 border-red-200" 
-  }
-  
-  return (
-    <div className={`px-4 md:px-6 py-2 rounded-full border text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] w-fit shadow-sm transition-all duration-500 ${styles[status]}`}>
-      {status === 'Approved' ? 'Accepted' : status}
-    </div>
-  )
-})
+import { DossierHeader }   from "./DossierHeader.tsx"
+import { DossierSections } from "./DossierSections"
+import { DossierDocuments } from "./DossierDocuments"
 
-// ===== INFO BLOCK =====
-const InfoBlock = memo(function InfoBlock({ label, value, icon, isDarkMode, animate = true }: { label: string, value: string, icon?: React.ReactNode, isDarkMode: boolean, animate?: boolean }) {
-  return (
-    <div className="group transition-all duration-300">
-      <p className={`text-[9px] md:text-[10px] uppercase font-black tracking-[0.2em] mb-1.5 transition-colors ${isDarkMode ? 'text-slate-500 group-hover:text-blue-400' : 'text-slate-400 group-hover:text-blue-600'}`}>{label}</p>
-      <div className="flex items-center gap-2.5">
-        {icon && <span className={`shrink-0 ${isDarkMode ? 'text-blue-400/30' : 'text-blue-500/40'}`}>{icon}</span>}
-        <p className={`font-bold text-sm md:text-base break-words leading-tight transition-colors duration-500 whitespace-pre-line ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-          {animate ? <AnimatedText text={value || "—"} className="whitespace-pre-line" /> : (value || "—")}
-        </p>
-      </div>
-    </div>
-  )
-})
+// ── Fields that trigger hasChanges detection ───────────────────────────────
+const WATCHED_FIELDS = [
+  "first_name", "middle_name", "last_name", "gender", "religion", "nationality",
+  "school_year", "civil_status", "age", "birth_date", "email", "phone", "address",
+  "guardian_first_name", "guardian_middle_name", "guardian_last_name", "guardian_phone",
+  "last_school_attended", "gwa_grade_10", "strand", "section",
+  "school_type", "year_completed_jhs", "last_school_address",
+  "facebook_user", "facebook_link", "preferred_modality", "preferred_shift",
+] as const
 
-// ===== CREDENTIAL CARD =====
-const CredentialCard = memo(function CredentialCard({ label, url, onOpen, isDarkMode, isEditing }: { label: string, url: string, onOpen?: (url: string, label: string) => void, isDarkMode: boolean, isEditing?: boolean }) {
-  if (!url) return (
-    <div 
-      className={`p-4 md:p-6 rounded-[24px] border border-dashed opacity-40 flex flex-col items-center justify-center text-slate-400 h-32 md:h-40 transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
-    >
-      <FileText size={20} className="mb-2 opacity-50" />
-      <p className="text-[8px] font-black uppercase tracking-widest text-center leading-none">{label}</p>
-    </div>
-  )
-  
-  return (
-    <div 
-      onClick={(e) => { e.stopPropagation(); onOpen && onOpen(url, label); }} 
-      className="cursor-pointer group relative"
-    >
-      <div 
-        className={`p-2 rounded-[24px] border hover:border-blue-400 hover:shadow-2xl transition-all h-full relative overflow-hidden duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`} 
-      >
-        <div className={`h-28 md:h-32 rounded-[18px] overflow-hidden relative transition-colors duration-500 ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
-          {url.toLowerCase().endsWith('.pdf') ? (
-            <div className={`w-full h-full flex flex-col items-center justify-center ${isDarkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
-              <FileText size={32} className="text-slate-400" />
-              <p className="text-[8px] font-black uppercase text-slate-500 mt-2">PDF Document</p>
-            </div>
-          ) : (
-            <img 
-              src={url} 
-              alt={label} 
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-            />
-          )}
-          <div className="absolute inset-0 bg-blue-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[2px]">
-            <ZoomIn className="text-white drop-shadow-md" size={24} />
-          </div>
-          {isEditing && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-              <Camera className="text-white" size={32} />
-            </div>
-          )}
-        </div>
-        <p className={`text-[10px] font-black text-center mt-3 uppercase tracking-widest leading-tight px-1 truncate transition-colors duration-500 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-          {label}
-        </p>
-      </div>
-    </div>
-  )
-})
 
-export const StudentDossier = memo(function StudentDossier({ 
-  student, 
-  onOpenFile, 
+
+
+export const StudentDossier = memo(function StudentDossier({
+  student,
+  onOpenFile,
   isDarkMode,
   onClose,
   onUpdate,
-  sections = []
-}: { 
-  student: any, 
-  onOpenFile: (url: string, label: string, allDocs?: {url: string, label: string}[]) => void, 
-  isDarkMode: boolean,
-  onClose?: () => void,
-  onUpdate?: (id: string, data: any) => Promise<void | boolean>,
+  sections = [],
+}: {
+  student: any
+  onOpenFile: (url: string, label: string, allDocs?: { url: string; label: string }[]) => void
+  isDarkMode: boolean
+  onClose?: () => void
+  onUpdate?: (id: string, data: any) => Promise<void | boolean>
   sections?: any[]
 }) {
-  useEffect(() => {
-    setFormData(student);
-  }, [student]);
-  const [copied, setCopied] = useState(false);
-  const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState(student)
-  const [isSaving, setIsSaving] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const docInputRef = useRef<HTMLInputElement>(null)
-  const [activeDocField, setActiveDocField] = useState<string | null>(null)
-  const [genderDropdownOpen, setGenderDropdownOpen] = useState(false)
-  const [strandDropdownOpen, setStrandDropdownOpen] = useState(false)
-  const [sectionDropdownOpen, setSectionDropdownOpen] = useState(false)
+  const [formData, setFormData]       = useState(student)
+  const [isEditing, setIsEditing]     = useState(false)
+  const [isSaving, setIsSaving]       = useState(false)
+  const [genderOpen, setGenderOpen]   = useState(false)
+  const [strandOpen, setStrandOpen]   = useState(false)
+  const [sectionOpen, setSectionOpen] = useState(false)
+  const [modalityOpen, setModalityOpen]     = useState(false)
+  const [shiftOpen, setShiftOpen]           = useState(false)
+  const [schoolTypeOpen, setSchoolTypeOpen] = useState(false)
 
-  const isJHS = student.student_category?.toLowerCase().includes("jhs") || student.student_category === "Standard" || student.student_category === "JHS Graduate"
-  const isALS = student.student_category?.toLowerCase().includes("als")
-  const badgeColor = isALS ? "bg-orange-500" : "bg-blue-600"
+  const fileInputRef    = useRef<HTMLInputElement>(null)
+  const docInputRef     = useRef<HTMLInputElement>(null)
+  const [activeDocField, setActiveDocField] = useState<string | null>(null)
+
+  useEffect(() => { setFormData(student) }, [student])
+
+  const isJHS = student.student_category?.toLowerCase().includes("jhs") ||
+                student.student_category === "Standard" ||
+                student.student_category === "JHS Graduate"
 
   const hasChanges = useMemo(() => {
-    if (!student || !formData) return false;
-    if (formData._file) return true;
-
-    const fieldsToCompare = [
-        'first_name', 'middle_name', 'last_name', 'gender', 'religion', 'nationality', 'school_year',
-        'civil_status', 'age', 'birth_date', 'email', 'phone', 'address',
-        'guardian_first_name', 'guardian_last_name', 'guardian_phone',
-        'last_school_attended', 'gwa_grade_10', 'strand', 'section'
-    ];
-
-    for (const field of fieldsToCompare) {
-        const originalValue = student[field] ?? '';
-        const currentValue = formData[field] ?? '';
-        if (originalValue !== currentValue) {
-            return true;
-        }
-    }
-
-    return false;
-  }, [formData, student]);
+    if (!student || !formData) return false
+    if (formData._file) return true
+    return WATCHED_FIELDS.some((f) => (student[f] ?? "") !== (formData[f] ?? ""))
+  }, [formData, student])
 
   const isValid = useMemo(() => {
-    if (!formData) return false;
-    if (!formData.first_name?.trim() || !formData.last_name?.trim()) return false;
-    if (!formData.gender || !formData.strand) return false;
-    if (!formData.profile_picture && !formData.two_by_two_url && !formData.profile_2x2_url && !formData._file) return false;
-    return true;
-  }, [formData]);
+    if (!formData) return false
+    if (!formData.first_name?.trim() || !formData.last_name?.trim()) return false
+    if (!formData.gender || !formData.strand) return false
+    if (!formData.profile_picture && !formData.two_by_two_url && !formData.profile_2x2_url && !formData._file) return false
+    return true
+  }, [formData])
+
+  const handleChange = (field: string, value: string) => {
+    setFormData((prev: any) => {
+      const next = { ...prev, [field]: value }
+      if (field === "strand") {
+        next.section    = value !== student.strand ? "Unassigned" : student.section
+        next.section_id = value !== student.strand ? null         : student.section_id
+      }
+      if (field === "preferred_modality" && value !== "Face to Face") {
+        next.preferred_shift = ""
+      }
+      return next
+    })
+  }
 
   const handleSave = async () => {
     if (!onUpdate) return
@@ -166,44 +91,26 @@ export const StudentDossier = memo(function StudentDossier({
       await onUpdate(student.id, formData)
       setIsEditing(false)
       toast.success("Profile Updated Successfully")
-    } catch (error) {
+    } catch {
       toast.error("Failed to update profile")
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleChange = (field: string, value: string) => {
-    setFormData((prev: any) => {
-      const newData = { ...prev, [field]: value }
-      
-      if (field === 'strand') {
-        if (value !== student.strand) {
-          newData.section = "Unassigned"
-          newData.section_id = null
-        } else {
-          newData.section = student.section
-          newData.section_id = student.section_id
-        }
-      }
-      return newData
-    })
-  }
-
   const handleImageClick = () => {
-    if (isEditing && fileInputRef.current) {
-      fileInputRef.current.click()
+    if (isEditing) {
+      fileInputRef.current?.click()
     } else {
-      const imgUrl = student.profile_picture || student.two_by_two_url || student.profile_2x2_url;
-      if (imgUrl) onOpenFile(imgUrl, `${student.last_name}_2X2_PICTURE`.toUpperCase(), getAllDocs());
+      const url = student.profile_picture || student.two_by_two_url || student.profile_2x2_url
+      if (url) onOpenFile(url, `${student.last_name}_2X2_PICTURE`.toUpperCase(), getAllDocs())
     }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const previewUrl = URL.createObjectURL(file)
-      setFormData((prev: any) => ({ ...prev, profile_picture: previewUrl, _file: file }))
+      setFormData((prev: any) => ({ ...prev, profile_picture: URL.createObjectURL(file), _file: file }))
       toast.info("Image selected. Save to apply changes.")
     }
   }
@@ -217,543 +124,283 @@ export const StudentDossier = memo(function StudentDossier({
 
   const handleDocChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && activeDocField) {
-      const toastId = toast.loading("Uploading document...")
-      try {
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${student.lrn}_${activeDocField}_${Date.now()}.${fileExt}`
-        
-        const { error: uploadError } = await supabase.storage
-          .from('enrollment-docs')
-          .upload(fileName, file)
-        
-        if (uploadError) throw uploadError
-
-        const { data: { publicUrl } } = supabase.storage.from('enrollment-docs').getPublicUrl(fileName)
-        
-        setFormData((prev: any) => ({ ...prev, [activeDocField]: publicUrl }))
-        toast.success("Document updated. Save to apply.", { id: toastId })
-      } catch (error: any) {
-        toast.error("Upload failed: " + error.message, { id: toastId })
-      }
+    if (!file || !activeDocField) return
+    const toastId = toast.loading("Uploading document...")
+    try {
+      const ext      = file.name.split(".").pop()
+      const fileName = `${student.lrn}_${activeDocField}_${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from("enrollment-docs").upload(fileName, file)
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage.from("enrollment-docs").getPublicUrl(fileName)
+      setFormData((prev: any) => ({ ...prev, [activeDocField]: publicUrl }))
+      toast.success("Document updated. Save to apply.", { id: toastId })
+    } catch (err: any) {
+      toast.error("Upload failed: " + err.message, { id: toastId })
     }
   }
 
-  const filteredSections = useMemo(() => {
-    if (!formData.strand || !sections) return []
-    return sections.filter((sec: any) => sec.strand === formData.strand)
-  }, [formData.strand, sections])
-
-  const handleCopyInfo = async () => {
-    const infoText = `
-STUDENT RECORD:
-
-Name: ${student.last_name}, ${student.first_name}${student.middle_name ? `, ${student.middle_name[0]}.` : ''}
-LRN: ${student.lrn}
-Age: ${student.age || ''}
-Gender: ${student.gender}
-Section: ${student.section || ''}
-Email: ${student.email}
-Phone Number: ${student.phone || student.contact_no}
-Strand: ${student.strand}
-Address: ${student.address}
-    `.trim();
-
-    try {
-      await navigator.clipboard.writeText(infoText);
-      setCopied(true);
-      toast.success("Student Information Copied", {
-        style: { fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em' }
-      });
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      toast.error("Failed to copy information");
-    }
-  };
-
-  const getAllDocs = () => {
-    const docs: {url: string, label: string}[] = [];
-    const imgUrl = student.profile_picture || student.two_by_two_url || student.profile_2x2_url;
-    if (imgUrl) docs.push({ url: imgUrl, label: `${student.last_name}_2X2_PICTURE`.toUpperCase() });
-    if (student.birth_certificate_url) docs.push({ url: student.birth_certificate_url, label: `${student.last_name}_BIRTH_CERT`.toUpperCase() });
-
+  const getAllDocs = (): { url: string; label: string }[] => {
+    const docs: { url: string; label: string }[] = []
+    const img = student.profile_picture || student.two_by_two_url || student.profile_2x2_url
+    if (img) docs.push({ url: img, label: `${student.last_name}_2X2_PICTURE`.toUpperCase() })
+    if (student.birth_certificate_url) docs.push({ url: student.birth_certificate_url, label: `${student.last_name}_BIRTH_CERT`.toUpperCase() })
     if (isJHS) {
-      if (student.form_138_url) docs.push({ url: student.form_138_url, label: `${student.last_name}_FORM_138`.toUpperCase() });
-      if (student.good_moral_url) docs.push({ url: student.good_moral_url, label: `${student.last_name}_GOOD_MORAL`.toUpperCase() });
+      if (student.form_138_url)   docs.push({ url: student.form_138_url,   label: `${student.last_name}_FORM_138`.toUpperCase() })
+      if (student.good_moral_url) docs.push({ url: student.good_moral_url, label: `${student.last_name}_GOOD_MORAL`.toUpperCase() })
     } else {
-      if (student.cor_url) docs.push({ url: student.cor_url, label: `${student.last_name}_ALS_RATING`.toUpperCase() });
-      if (student.diploma_url) docs.push({ url: student.diploma_url, label: `${student.last_name}_DIPLOMA`.toUpperCase() });
-      if (student.af5_url) docs.push({ url: student.af5_url, label: `${student.last_name}_AF5`.toUpperCase() });
+      if (student.cor_url)     docs.push({ url: student.cor_url,     label: `${student.last_name}_ALS_RATING`.toUpperCase() })
+      if (student.diploma_url) docs.push({ url: student.diploma_url, label: `${student.last_name}_DIPLOMA`.toUpperCase() })
+      if (student.af5_url)     docs.push({ url: student.af5_url,     label: `${student.last_name}_AF5`.toUpperCase() })
     }
-    return docs;
-  };
+    return docs
+  }
+
+  // ── Download registration form (unchanged logic) ───────────────────────
+   // ── VERIFIED RECTANGLE MAPPING (confirmed by visual render of the template) ──
+//
+// TEXT FIELDS:
+//   Rectangle 9   = Facebook Account
+//   Rectangle 10  = First Name
+//   Rectangle 12  = Last Name
+//   Rectangle 13  = Middle Name
+//   Rectangle 14  = Home Address
+//   Rectangle 16  = Guardian Full Name
+//   Rectangle 23  = Date Filed
+//   Rectangle 24  = Date of Birth
+//   Rectangle 25  = Student Mobile Number
+//   Rectangle 26  = Guardian Phone
+//   Rectangle 28  = Student's Signature over Printed Name  ← name ONLY, nothing else
+//   Rectangle 45  = LRN
+//   Rectangle 47  = Citizenship / Nationality
+//   Rectangle 50  = Age
+//   Rectangle 53  = Email
+//   Rectangle 54  = Previous School Name
+//   Rectangle 55  = Previous School Address
+//   Rectangle 229 = Year Completed Junior High
+//
+// CHECKBOXES (visually verified by rendering the template):
+//   Rectangle 2   = Grade 11 (Enrolling For)
+//   Rectangle 3   = Grade 10 Completer     ← LEFT on Grade10/ALS row
+//   Rectangle 4   = GAS strand
+//   Rectangle 5   = ICT strand
+//   Rectangle 15  = ALS Completer          ← RIGHT on Grade10/ALS row
+//   Rectangle 17  = Public School          ← RIGHT on Private/Public row
+//   Rectangle 18  = Private School         ← LEFT on Private/Public row
+//   Rectangle 21  = Male
+//   Rectangle 29  = Female
+//   Rectangle 30  = Single
+//   Rectangle 31  = Married
+//
+// NOTE: There are NO checkboxes for Face to Face / Online / AM Shift / PM Shift.
+//       Those option labels are pre-printed inside Rectangle 28's text content.
+//       The student circles the applicable option manually on the printed form.
+//       Rectangle 28 should only receive the student's full printed name.
+
+const handleDownloadForm = async () => {
+  const toastId = toast.loading("Preparing Registration Form...")
+  try {
+    const JSZip     = (await import("jszip")).default
+    const fileSaver = await import("file-saver")
+    const saveAs    = fileSaver.saveAs || (fileSaver as any).default
+
+    const response = await fetch("/REGISTRATION - GAS & ICT.docx")
+    if (!response.ok) throw new Error("Template not found in /public folder")
+
+    const content = await response.arrayBuffer()
+    const zip     = await JSZip.loadAsync(content)
+    let docXml    = await zip.file("word/document.xml")?.async("string")
+    if (!docXml) throw new Error("Invalid .docx: missing document.xml")
+
+    const x = (str: string) =>
+      (str || "").replace(/[<>&'"]/g, (c) =>
+        (({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" } as any)[c] ?? c))
+
+    const expandPara = (xml: string, pStart: number, innerXml: string) => {
+      const tagEnd = xml.indexOf(">", pStart)
+      const isSC   = xml[tagEnd - 1] === "/"
+      if (isSC) {
+        return xml.slice(0, pStart) + xml.slice(pStart, tagEnd - 1) + ">" + innerXml + "</w:p>" + xml.slice(tagEnd + 1)
+      }
+      const pEnd    = xml.indexOf("</w:p>", pStart) + 6
+      const para    = xml.slice(pStart, pEnd)
+      const pPr     = para.match(/<w:pPr[\s\S]*?<\/w:pPr>/)?.[0] ?? ""
+      const openTag = para.match(/^<w:p\b[^>]*>/)?.[0] ?? "<w:p>"
+      return xml.slice(0, pStart) + openTag + pPr + innerXml + "</w:p>" + xml.slice(pEnd)
+    }
+
+    const fillRectByName = (xml: string, name: string, text: string) => {
+      if (!text) return xml
+      const mi = xml.indexOf(`name="${name}"`)
+      if (mi === -1) return xml
+      const wspEnd = xml.indexOf("</wps:wsp>", mi)
+      let tx = xml.indexOf("<w:txbxContent>", mi); if (wspEnd !== -1 && tx > wspEnd) tx = -1
+      let bp = xml.indexOf("<wps:bodyPr",     mi); if (wspEnd !== -1 && bp > wspEnd) bp = -1
+      const run = `<w:r><w:t xml:space="preserve">${text}</w:t></w:r>`
+      if (tx !== -1 && (bp === -1 || tx < bp)) {
+        const ps = xml.indexOf("<w:p", tx); if (ps === -1 || (wspEnd !== -1 && ps > wspEnd)) return xml
+        return expandPara(xml, ps, run)
+      }
+      if (bp !== -1) return xml.slice(0, bp) + `<wps:txbx><w:txbxContent><w:p>${run}</w:p></w:txbxContent></wps:txbx>` + xml.slice(bp)
+      return xml
+    }
+
+    const checkRect = (xml: string, name: string) => {
+      const mi = xml.indexOf(`name="${name}"`)
+      if (mi === -1) return xml
+      const wspEnd = xml.indexOf("</wps:wsp>", mi)
+      let tx = xml.indexOf("<w:txbxContent>", mi); if (wspEnd !== -1 && tx > wspEnd) tx = -1
+      let bp = xml.indexOf("<wps:bodyPr",     mi); if (wspEnd !== -1 && bp > wspEnd) bp = -1
+      const cr  = `<w:r><w:rPr><w:b/><w:sz w:val="18"/></w:rPr><w:t>\u2713</w:t></w:r>`
+      const ppr = `<w:pPr><w:jc w:val="center"/></w:pPr>`
+      if (tx !== -1 && (bp === -1 || tx < bp)) {
+        const ps = xml.indexOf("<w:p", tx); if (ps === -1 || (wspEnd !== -1 && ps > wspEnd)) return xml
+        return expandPara(xml, ps, ppr + cr)
+      }
+      if (bp !== -1) return xml.slice(0, bp) + `<wps:txbx><w:txbxContent><w:p>${ppr}${cr}</w:p></w:txbxContent></wps:txbx>` + xml.slice(bp)
+      return xml
+    }
+
+    // ── Derived values ──────────────────────────────────────────────────
+    const today = new Date().toLocaleDateString("en-US", {
+      year: "numeric", month: "long", day: "numeric",
+    })
+    const fullGuardian = [student.guardian_first_name, student.guardian_last_name]
+      .filter(Boolean).join(" ")
+    const fullName = [student.first_name, student.middle_name, student.last_name]
+      .filter(Boolean).join(" ")
+
+    const isALS    = student.student_category?.toLowerCase().includes("als")
+    const isJHS    = !isALS
+    // Defaults to Public — never assume Private when school_type is null/undefined
+    const isPublic = !student.school_type || student.school_type.toLowerCase().includes("public")
+
+    // ── Text field fills ────────────────────────────────────────────────
+    const fields: [string, string][] = [
+      ["Rectangle 10",  x(student.first_name  || "")],
+      ["Rectangle 13",  x(student.middle_name || "")],
+      ["Rectangle 12",  x(student.last_name   || "")],
+      ["Rectangle 14",  x(student.address     || "")],
+      ["Rectangle 16",  x(fullGuardian)],
+      ["Rectangle 45",  x(student.lrn         || "")],
+      ["Rectangle 23",  x(today)],
+      ["Rectangle 47",  x(student.nationality || student.citizenship || "Filipino")],
+      ["Rectangle 24",  x(student.birth_date  || "")],
+      ["Rectangle 50",  x(String(student.age  || ""))],
+      ["Rectangle 25",  x(student.phone       || student.contact_no || "")],
+      ["Rectangle 26",  x(student.guardian_phone || "")],
+      ["Rectangle 53",  x(student.email       || "")],
+      ["Rectangle 9",   x(student.facebook_user || student.fb_account || student.facebook || "")],
+      ["Rectangle 54",  x(student.last_school_attended || "")],
+      ["Rectangle 55",  x(student.last_school_address  || student.school_address || "")],
+      // Printed name ONLY — no shift suffix, no extra text
+      ["Rectangle 28",  x(fullName)],
+      // Year Completed JHS — filled only for JHS graduates, blank for ALS passers
+      ["Rectangle 229", isJHS ? x(student.year_completed_jhs || "") : ""],
+    ]
+
+    for (const [n, v] of fields) {
+      if (v) docXml = fillRectByName(docXml, n, v)
+    }
+
+    // ── Checkboxes ───────────────────────────────────────────────────────
+
+    // Enrolling For: Grade 11 (always)
+    docXml = checkRect(docXml, "Rectangle 2")
+
+    // JHS Completer Category
+    // Rectangle 3  = Grade 10 Completer (left checkbox)
+    // Rectangle 15 = ALS Completer      (right checkbox)
+    docXml = checkRect(docXml, isJHS ? "Rectangle 3" : "Rectangle 15")
+
+    // School Type (defaults to Public when school_type is null)
+    // Rectangle 18 = Private School (left checkbox)
+    // Rectangle 17 = Public School  (right checkbox)
+    docXml = checkRect(docXml, isPublic ? "Rectangle 17" : "Rectangle 18")
+
+    // Gender
+    docXml = checkRect(docXml, student.gender === "Female" ? "Rectangle 29" : "Rectangle 21")
+
+    // Civil Status
+    docXml = checkRect(docXml, student.civil_status === "Married" ? "Rectangle 31" : "Rectangle 30")
+
+    // Strand
+    docXml = checkRect(docXml, student.strand?.toUpperCase() === "GAS" ? "Rectangle 4" : "Rectangle 5")
+
+    // ── Generate and save ────────────────────────────────────────────────
+    zip.file("word/document.xml", docXml)
+    const out = await zip.generateAsync({
+      type: "blob",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    })
+    saveAs(out, `REGISTRATION_${(student.last_name || "STUDENT").toUpperCase()}_${(student.first_name || "").toUpperCase()}.docx`)
+    toast.success("Registration Form Downloaded!", { id: toastId })
+  } catch (err: any) {
+    toast.error("Failed to generate form: " + (err.message || "Unknown error"), { id: toastId })
+  }
+}
+
+
   
-  const inputClass = `h-9 text-sm font-bold transition-all ${isDarkMode ? 'bg-slate-900 border-slate-700 text-white focus:border-blue-500' : 'bg-white border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10'}`;
-  const labelClass = `text-[9px] uppercase font-black tracking-[0.2em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`;
 
+  // ── Render ─────────────────────────────────────────────────────────────
   return (
-    <div className={`flex flex-col h-full transition-colors duration-500 ${isDarkMode ? 'bg-slate-950' : 'bg-white'}`}>
-      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-      <input type="file" ref={docInputRef} className="hidden" accept="image/*,application/pdf" onChange={handleDocChange} />
+    <div className={`flex flex-col h-full transition-colors duration-500 ${isDarkMode ? "bg-slate-950" : "bg-white"}`}>
+      <input type="file" ref={fileInputRef} className="hidden" accept="image/*"              onChange={handleFileChange} />
+      <input type="file" ref={docInputRef}  className="hidden" accept="image/*,application/pdf" onChange={handleDocChange} />
 
-      {/* 🟢 HEADER SECTION: Darker Greyish Theme */}
-      <div className={`p-6 md:p-12 flex flex-col items-center text-center relative overflow-hidden shrink-0 transition-all duration-500 ${
-          isDarkMode 
-          ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800' 
-          : 'bg-slate-200 border-b border-slate-300'
-        }`}>
+      <DossierHeader
+        student={student}
+        formData={formData}
+        isDarkMode={isDarkMode}
+        isEditing={isEditing}
+        isSaving={isSaving}
+        hasChanges={hasChanges}
+        isValid={isValid}
+        showEditButton={!!onUpdate}
+        onClose={onClose}
+        onEditToggle={() => setIsEditing(true)}
+        onCancelEdit={() => { setIsEditing(false); setFormData(student) }}
+        onSave={handleSave}
+        onImageClick={handleImageClick}
+        onDownloadForm={handleDownloadForm}
+      />
+
+      <div className={`p-6 md:p-12 space-y-12 md:space-y-20 text-sm flex-1 overflow-y-auto no-scrollbar transition-colors duration-500 ${isDarkMode ? "bg-slate-950" : "bg-white"}`}>
+        <DossierSections
+          student={student}
+          formData={formData}
+          setFormData={setFormData}
+          isEditing={isEditing}
+          isDarkMode={isDarkMode}
+          sections={sections}
+          onChange={handleChange}
+          dropdowns={{
+            genderOpen,   setGenderOpen,
+            strandOpen,   setStrandOpen,
+            sectionOpen,  setSectionOpen,
+            modalityOpen, setModalityOpen,
+            shiftOpen,    setShiftOpen,
+            schoolTypeOpen, setSchoolTypeOpen,
+          }}
+        />
+
+        <DossierDocuments
+          student={student}
+          formData={formData}
+          isEditing={isEditing}
+          isDarkMode={isDarkMode}
+          isJHS={isJHS}
+          onOpenFile={onOpenFile}
+          onDocClick={handleDocClick}
+          getAllDocs={getAllDocs}
+          
+        />
         
-        {/* Decorative Background Pattern */}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 dark:opacity-10" />
-
-        {/* ❌ EXIT & COPY BUTTONS */}
-        <div className="absolute top-4 left-4 z-30 flex gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={onClose} 
-                className={`rounded-full transition-all active:scale-90 ${isDarkMode ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-white/20 hover:bg-white/40 text-slate-900'}`}
-              >
-                <X size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Close Dossier</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleCopyInfo} 
-                className={`rounded-full transition-all active:scale-90 ${isDarkMode ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-white/20 hover:bg-white/40 text-slate-900'}`}
-              >
-                {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Copy Student Info</p></TooltipContent>
-          </Tooltip>
-        </div>
-
-        {/* EDIT BUTTON */}
-        <div className="absolute top-4 right-4 z-30 flex gap-2">
-           {onUpdate && (
-             <>
-               {isEditing ? (
-                 <>
-                   <Tooltip>
-                     <TooltipTrigger asChild>
-                       <Button 
-                         onClick={() => { setIsEditing(false); setFormData(student); }}
-                         className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-red-500 hover:bg-red-600 text-white`}
-                         disabled={isSaving}
-                       >
-                         <Undo2 size={14} className="mr-2" /> Cancel
-                       </Button>
-                     </TooltipTrigger>
-                     <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Discard Changes</p></TooltipContent>
-                   </Tooltip>
-                   {hasChanges && (
-                     <Tooltip>
-                       <TooltipTrigger asChild>
-                         <Button 
-                           onClick={handleSave}
-                           className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-400 disabled:cursor-not-allowed`}
-                           disabled={isSaving || !isValid}
-                         >
-                           <Save size={14} className="mr-2" /> {isSaving ? 'Saving...' : 'Save Changes'}
-                         </Button>
-                       </TooltipTrigger>
-                       <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Save Profile Updates</p></TooltipContent>
-                     </Tooltip>
-                   )}
-                 </>
-                 ) : (
-                   <Tooltip>
-                     <TooltipTrigger asChild>
-                       <Button onClick={() => setIsEditing(true)} className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
-                         <Edit2 size={14} className="mr-2" /> Edit Profile
-                       </Button>
-                     </TooltipTrigger>
-                     <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Modify Student Data</p></TooltipContent>
-                   </Tooltip>
-                 )}
-             </>
-           )}
-        </div>
-
-        <div className="absolute top-16 right-4 z-20">
-          <Badge className={`${badgeColor} backdrop-blur-md text-white text-[9px] md:text-[10px] font-black px-3 md:px-5 py-2 md:py-2.5 uppercase tracking-widest border-none shadow-xl transition-all`}>
-            {student.student_category || "Regular"}
-          </Badge>
-        </div>
-
-        {/* 🟢 PROFILE IMAGE */}
-        <div className="relative z-10 mb-4 md:mb-8 scale-90 md:scale-100 mt-8">
-          <div 
-            className={`w-36 h-36 md:w-48 md:h-48 rounded-[40px] md:rounded-[56px] border-[6px] overflow-hidden shadow-2xl flex items-center justify-center cursor-zoom-in group transition-all duration-500 hover:rotate-2 ${
-                isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-300 border-white'
-            }`}
-            onClick={handleImageClick}
-          >
-            {formData.profile_picture || student.profile_picture || student.two_by_two_url || student.profile_2x2_url ? (
-              <OptimizedImage
-                src={formData.profile_picture || student.profile_picture || student.two_by_two_url || student.profile_2x2_url}
-                alt={`${student.last_name}, ${student.first_name}`}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
-              />
-            ) : (
-              <div className={`flex flex-col items-center ${isDarkMode ? 'text-slate-600' : 'text-slate-500'}`}>
-                <User size={64} strokeWidth={1} />
-                <p className="text-[10px] font-black uppercase mt-3">Identity Missing</p>
-              </div>
-            )}
-            {isEditing && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Camera className="text-white" size={32} />
-              </div>
-            )}
-          </div>
-        </div>
-
-        <h2 className={`relative z-10 text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none italic transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          <AnimatedText text={`${formData.first_name} ${formData.last_name}`} />
-        </h2>
-        
-        <div className="flex flex-col items-center gap-4 mt-4 md:mt-6 relative z-10">
-            <p className={`font-bold uppercase tracking-[0.4em] text-[10px] md:text-[11px] px-4 py-1.5 rounded-full border backdrop-blur-sm transition-all duration-500 ${isDarkMode ? 'text-slate-300 bg-white/5 border-white/5' : 'text-slate-700 bg-black/5 border-black/10'}`}>
-              Student LRN ID: {student.lrn}
-            </p>
-            <StatusBadge status={student.status} isDarkMode={isDarkMode} />
-            
-            {/* REJECTION REASON BOX */}
-            {student.status === 'Rejected' && (
-              <div className="mt-4 w-full max-w-md animate-in fade-in slide-in-from-top-2 duration-500">
-                <div className={`p-4 rounded-2xl border text-left ${isDarkMode ? 'bg-red-950/30 border-red-900/50 text-red-200' : 'bg-red-50 border-red-100 text-red-800'}`}>
-                  <p className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-70">Rejection Notice</p>
-                  <p className="text-xs font-bold leading-relaxed">{student.registrar_feedback || student.decline_reason || "No specific reason provided."}</p>
-                </div>
-              </div>
-            )}
-        </div>
       </div>
       
-      {/* 🟢 DATA MATRIX */}
-      <div className={`p-6 md:p-12 space-y-12 md:space-y-20 text-sm flex-1 overflow-y-auto no-scrollbar transition-colors duration-500 ${isDarkMode ? 'bg-slate-950' : 'bg-white'}`}>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-20">
-          {/* I. PERSONAL IDENTITY */}
-          <div className="space-y-8 md:space-y-10">
-            <h3 className={`flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.3em] border-b pb-4 transition-colors duration-500 ${isDarkMode ? 'text-blue-400 border-slate-800' : 'text-blue-600 border-slate-200'}`}>
-              <User size={16} /> I. Student Information
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-6">
-              {['first_name', 'middle_name', 'last_name', 'gender', 'religion', 'nationality', 'civil_status', 'age', 'birth_date', 'school_year'].map(field => (
-                <div key={field} className="space-y-1.5">
-                  {isEditing ? (
-                    <>
-                      <p className={labelClass}>{field.replace('_', ' ')}</p>
-                      {field === 'gender' ? (
-                        <div className="relative">
-                          <Button
-                            onClick={() => setGenderDropdownOpen(!genderDropdownOpen)}
-                            className={`w-full justify-between ${inputClass} px-3`}
-                            variant="ghost"
-                          >
-                            {formData.gender || "Select Gender"}
-                            <ChevronDown size={14} className={`transition-transform duration-300 ${genderDropdownOpen ? 'rotate-180' : ''}`} />
-                          </Button>
-                          {genderDropdownOpen && (
-                            <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
-                              <div className="p-1 space-y-1">
-                                {['Male', 'Female'].map((opt) => (
-                                  <button
-                                    key={opt}
-                                    onClick={() => { handleChange('gender', opt); setGenderDropdownOpen(false); }}
-                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.gender === opt ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
-                                  >
-                                    {opt}
-                                    {formData.gender === opt && <Check size={12} />}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <Input 
-                          value={formData[field] || ""} 
-                          onChange={(e) => {
-                            const newFormData = { ...formData, [field]: e.target.value };
-                            setFormData(newFormData);
-                          }}
-                          className={inputClass}
-                        />
-                      )}
-                    </>
-                  ) : (
-                    <InfoBlock 
-                      label={field.replace('_', ' ')} 
-                      value={
-                        field === 'birth_date' && formData[field] 
-                          ? `${formData[field]}\n${new Date(formData[field]).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
-                          : formData[field] || '—'
-                      } 
-                      isDarkMode={isDarkMode} 
-                      animate={field !== 'gender'} 
-                    />
-                  )}
-                </div>
-              ))}
-              <div className="sm:col-span-2">
-                <InfoBlock label="Full Legal Name" value={`${formData.first_name} ${formData.middle_name || ''} ${formData.last_name}`} isDarkMode={isDarkMode} />
-              </div>
-            </div>
-          </div>
-          
-          {/* II. CONNECTIVITY MATRIX */}
-          <div className="space-y-8 md:space-y-10">
-            <h3 className={`flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.3em] border-b pb-4 transition-colors duration-500 ${isDarkMode ? 'text-indigo-400 border-slate-800' : 'text-indigo-600 border-slate-200'}`}>
-              <Mail size={16} /> II. Student Hotlines
-            </h3>
-            <div className="space-y-8">
-              {['email', 'phone'].map(field => (
-                <div key={field} className="space-y-1.5">
-                  {isEditing ? (
-                    <>
-                      <p className={labelClass}>{field === 'phone' ? 'Contact Number' : 'Student Email'}</p>
-                      <Input value={formData[field] || ""} onChange={(e) => {
-                          const newFormData = { ...formData, [field]: e.target.value };
-                          setFormData(newFormData);
-                        }} className={inputClass} />
-                    </>
-                  ) : (
-                    <InfoBlock label={field === 'phone' ? 'Contact Number' : 'Student Email'} value={formData[field] || '—'} icon={field === 'email' ? <Mail size={12}/> : <Phone size={12}/>} isDarkMode={isDarkMode} />
-                  )}
-                </div>
-              ))}
-              <div className="sm:col-span-2">
-                {isEditing ? (
-                  <div className="space-y-1.5"><p className={labelClass}>Home Address</p><Input value={formData.address || ""} onChange={(e) => {
-                    const newFormData = { ...formData, address: e.target.value };
-                    setFormData(newFormData);
-                  }} className={inputClass} /></div>
-                ) : (
-                  <InfoBlock label="Home Address" value={formData.address || '—'} icon={<MapPin size={12} />} isDarkMode={isDarkMode} />
-                )}
-              </div>
-              <div className={`p-5 rounded-[24px] border shadow-inner transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="flex items-center gap-2 mb-1.5">
-                   <Fingerprint size={12} className={isDarkMode ? 'text-slate-500' : 'text-slate-400'} />
-                   <p className={`text-[9px] font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Database ID</p>
-                </div>
-                <p className={`text-[11px] font-bold truncate transition-colors duration-500 ${isDarkMode ? 'text-slate-300' : 'text-slate-900'}`}>{student.id}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* III. GUARDIAN & ACADEMIC STANDING */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-20">
-           <div className="space-y-8 md:space-y-10">
-             <h3 className={`flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.3em] border-b pb-4 transition-colors duration-500 ${isDarkMode ? 'text-emerald-400 border-slate-800' : 'text-emerald-600 border-slate-200'}`}>
-               <ShieldCheck size={16} /> III. Guardian Information
-             </h3>
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-               {['guardian_first_name', 'guardian_last_name', 'guardian_phone'].map(field => (
-                 <div key={field} className="space-y-1.5">
-                   {isEditing ? (
-                     <><p className={labelClass}>{field === 'guardian_phone' ? 'Guardian Contact Number' : field.replace(/_/g, ' ')}</p><Input value={formData[field] || ""} onChange={(e) => {
-                      const newFormData = { ...formData, [field]: e.target.value };
-                      setFormData(newFormData);
-                    }} className={inputClass} /></>
-                   ) : <InfoBlock label={field === 'guardian_phone' ? 'Guardian Contact Number' : field.replace(/_/g, ' ')} value={formData[field] || '—'} isDarkMode={isDarkMode} />}
-                 </div>
-               ))}
-             </div>
-           </div>
-           
-          <div className="space-y-8 md:space-y-10">
-            <h3 className={`flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.3em] border-b pb-4 transition-colors duration-500 ${isDarkMode ? 'text-orange-400 border-slate-800' : 'text-orange-600 border-slate-200'}`}>
-              <GraduationCap size={16} /> IV. Academic Background
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className={`col-span-1 sm:col-span-2 p-6 rounded-[32px] border shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 italic ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Previous School</p>
-                {isEditing ? (
-                   <Input 
-                    value={formData.last_school_attended || ""} 
-                    onChange={(e) => {
-                      const newFormData = { ...formData, last_school_attended: e.target.value };
-                      setFormData(newFormData);
-                    }}
-                    className={inputClass}
-                  />
-                ) : (
-                  <p className={`font-black uppercase text-sm md:text-base leading-tight truncate transition-colors duration-500 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                    {formData.last_school_attended || "Not Disclosed"}
-                  </p>
-                )}
-              </div>
-              <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-blue-900/10 border-blue-900/40' : 'bg-blue-50 border-blue-200'}`}>
-                <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>GWA</p>
-                {isEditing ? (
-                   <Input 
-                    value={formData.gwa_grade_10 || ""} 
-                    onChange={(e) => {
-                      const newFormData = { ...formData, gwa_grade_10: e.target.value };
-                      setFormData(newFormData);
-                    }}
-                    className={`${inputClass} text-center`}
-                  />
-                ) : (
-                  <p className={`text-3xl font-black italic leading-none transition-colors duration-500 ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>{formData.gwa_grade_10 ? <AnimatedNumber value={parseFloat(formData.gwa_grade_10)} /> : "0.00"}</p>
-                )}
-              </div>
-              <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-orange-900/10 border-orange-900/40' : 'bg-orange-50 border-orange-200'}`}>
-                <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>Strand</p>
-                {isEditing ? (
-                   <div className="relative">
-                     <Button
-                       onClick={() => setStrandDropdownOpen(!strandDropdownOpen)}
-                       className={`w-full justify-between ${inputClass} px-3`}
-                       variant="ghost"
-                     >
-                       {formData.strand || "Select Strand"}
-                       <ChevronDown size={14} className={`transition-transform duration-300 ${strandDropdownOpen ? 'rotate-180' : ''}`} />
-                     </Button>
-                     {strandDropdownOpen && (
-                       <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
-                         <div className="p-1 space-y-1">
-                           {['ICT', 'GAS'].map((opt) => (
-                             <button
-                               key={opt}
-                               onClick={() => { handleChange('strand', opt); setStrandDropdownOpen(false); }}
-                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.strand === opt ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
-                             >
-                               {opt}
-                               {formData.strand === opt && <Check size={12} />}
-                             </button>
-                           ))}
-                         </div>
-                       </div>
-                     )}
-                   </div>
-                ) : (
-                  <p className={`text-2xl md:text-3xl font-black leading-none transition-colors duration-500 ${isDarkMode ? 'text-orange-400' : 'text-orange-700'}`}>{formData.strand}</p>
-                )}
-              </div>
-              <div className={`col-span-1 sm:col-span-2 p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-purple-900/10 border-purple-900/40' : 'bg-purple-50 border-purple-200'}`}>
-                <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>Assigned Section</p>
-                {isEditing && (student.status === 'Accepted' || student.status === 'Approved') ? (
-                   <div className="relative">
-                     <Button
-                       onClick={() => setSectionDropdownOpen(!sectionDropdownOpen)}
-                       className={`w-full justify-between ${inputClass} px-3`}
-                       variant="ghost"
-                     >
-                       {formData.section || "Unassigned"}
-                       <ChevronDown size={14} className={`transition-transform duration-300 ${sectionDropdownOpen ? 'rotate-180' : ''}`} />
-                     </Button>
-                     {sectionDropdownOpen && (
-                       <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 max-h-[200px] overflow-y-auto custom-scrollbar ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
-                         <div className="p-1 space-y-1">
-                           <button
-                               onClick={() => {
-                                   setFormData((prev: any) => ({ ...prev, section: "Unassigned", section_id: null }));
-                                   setSectionDropdownOpen(false);
-                               }}
-                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.section === "Unassigned" || !formData.section ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
-                           >
-                               Unassigned
-                               {(formData.section === "Unassigned" || !formData.section) && <Check size={12} />}
-                           </button>
-                           {filteredSections.map((sec: any) => (
-                             <button
-                               key={sec.id}
-                               onClick={() => {
-                                   setFormData((prev: any) => ({ ...prev, section: sec.section_name, section_id: sec.id }));
-                                   setSectionDropdownOpen(false);
-                               }}
-                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.section === sec.section_name ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
-                             >
-                               {sec.section_name}
-                               {formData.section === sec.section_name && <Check size={12} />}
-                             </button>
-                           ))}
-                         </div>
-                       </div>
-                     )}
-                   </div>
-                ) : (
-                  <p className={`text-xl md:text-2xl font-black leading-none transition-colors duration-500 ${isDarkMode ? 'text-purple-400' : 'text-purple-700'}`}>{formData.section || "Unassigned"}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* V. CREDENTIAL VAULT */}
-        <div className="space-y-8 pb-12">
-          <h3 className={`flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.3em] border-b pb-4 transition-colors duration-500 ${isDarkMode ? 'text-slate-400 border-slate-800' : 'text-slate-500 border-slate-200'}`}>
-            <ScrollText size={16} /> V. Student Documents
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            <CredentialCard 
-              label="Birth Certificate" 
-              url={formData.birth_certificate_url} 
-              onOpen={(url) => isEditing ? handleDocClick('birth_certificate_url') : onOpenFile(url, `${student.last_name}_BIRTH_CERT`.toUpperCase(), getAllDocs())} 
-              isDarkMode={isDarkMode} 
-              isEditing={isEditing}
-            />
-            {isJHS ? (
-              <>
-                <CredentialCard 
-                  label="Form 138" 
-                  url={formData.form_138_url} 
-                  onOpen={(url) => isEditing ? handleDocClick('form_138_url') : onOpenFile(url, `${student.last_name}_FORM_138`.toUpperCase(), getAllDocs())} 
-                  isDarkMode={isDarkMode} 
-                  isEditing={isEditing}
-                />
-                <CredentialCard 
-                  label="Good Moral" 
-                  url={formData.good_moral_url} 
-                  onOpen={(url) => isEditing ? handleDocClick('good_moral_url') : onOpenFile(url, `${student.last_name}_GOOD_MORAL`.toUpperCase(), getAllDocs())} 
-                  isDarkMode={isDarkMode} 
-                  isEditing={isEditing}
-                />
-              </>
-            ) : (
-              <>
-                <CredentialCard 
-                  label="ALS Rating" 
-                  url={formData.cor_url} 
-                  onOpen={(url) => isEditing ? handleDocClick('cor_url') : onOpenFile(url, `${student.last_name}_ALS_RATING`.toUpperCase(), getAllDocs())} 
-                  isDarkMode={isDarkMode} 
-                  isEditing={isEditing}
-                />
-                <CredentialCard 
-                  label="Diploma" 
-                  url={formData.diploma_url} 
-                  onOpen={(url) => isEditing ? handleDocClick('diploma_url') : onOpenFile(url, `${student.last_name}_DIPLOMA`.toUpperCase(), getAllDocs())} 
-                  isDarkMode={isDarkMode} 
-                  isEditing={isEditing}
-                />
-                <CredentialCard 
-                  label="AF5 Form" 
-                  url={formData.af5_url} 
-                  onOpen={(url) => isEditing ? handleDocClick('af5_url') : onOpenFile(url, `${student.last_name}_AF5`.toUpperCase(), getAllDocs())} 
-                  isDarkMode={isDarkMode} 
-                  isEditing={isEditing}
-                />
-              </>
-            )}
-          </div>
-          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 text-center italic mt-6 opacity-60">Educational Verification System.</p>
-        </div>
-      </div>
     </div>
+    
   )
+  
 })
+
