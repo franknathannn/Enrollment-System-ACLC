@@ -3,7 +3,7 @@ import { memo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  User, X, Copy, Check, FileDown, Edit2, Save, Undo2, Camera
+  User, X, Copy, Check, FileDown, Edit2, Save, Undo2, Camera, BookOpen, Cpu
 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { OptimizedImage } from "./OptimizedImage"
@@ -27,15 +27,18 @@ interface DossierHeaderProps {
   onDownloadForm: () => void
 }
 
+const STATUS_CFG: Record<string, { dark: string; light: string; dot: string; bar: string; glow: string }> = {
+  Pending:  { dark: "bg-amber-500/10 text-amber-400 border-amber-500/25",   light: "bg-amber-50 text-amber-600 border-amber-200",   dot: "bg-amber-400",   bar: "from-amber-500/70 via-amber-400/20 to-transparent",   glow: "bg-amber-400"   },
+  Accepted: { dark: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25", light: "bg-emerald-50 text-emerald-600 border-emerald-200", dot: "bg-emerald-400", bar: "from-emerald-500/70 via-emerald-400/20 to-transparent", glow: "bg-emerald-400" },
+  Approved: { dark: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25", light: "bg-emerald-50 text-emerald-600 border-emerald-200", dot: "bg-emerald-400", bar: "from-emerald-500/70 via-emerald-400/20 to-transparent", glow: "bg-emerald-400" },
+  Rejected: { dark: "bg-red-500/10 text-red-400 border-red-500/25",         light: "bg-red-50 text-red-600 border-red-200",         dot: "bg-red-400",     bar: "from-red-500/70 via-red-400/20 to-transparent",     glow: "bg-red-400"     },
+}
+
 const StatusBadge = memo(function StatusBadge({ status, isDarkMode }: { status: string; isDarkMode: boolean }) {
-  const styles: Record<string, string> = {
-    Pending:  isDarkMode ? "bg-amber-500/10 text-amber-400 border-amber-500/20"  : "bg-amber-50 text-amber-600 border-amber-200",
-    Accepted: isDarkMode ? "bg-green-500/10 text-green-400 border-green-500/20"  : "bg-green-50 text-green-600 border-green-200",
-    Approved: isDarkMode ? "bg-green-500/10 text-green-400 border-green-500/20"  : "bg-green-50 text-green-600 border-green-200",
-    Rejected: isDarkMode ? "bg-red-500/10 text-red-400 border-red-500/20"        : "bg-red-50 text-red-600 border-red-200",
-  }
+  const cfg = STATUS_CFG[status] ?? STATUS_CFG.Pending
   return (
-    <div className={`px-4 md:px-6 py-2 rounded-full border text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] w-fit shadow-sm transition-all duration-500 ${styles[status] ?? ""}`}>
+    <div className={`flex items-center gap-2 px-4 md:px-6 py-2 rounded-full border text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] w-fit shadow-sm transition-all duration-300 ${isDarkMode ? cfg.dark : cfg.light}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot} ${status === "Pending" ? "animate-pulse" : ""}`} />
       {status === "Approved" ? "Accepted" : status}
     </div>
   )
@@ -46,8 +49,11 @@ export const DossierHeader = memo(function DossierHeader({
   showEditButton, onClose, onEditToggle, onCancelEdit, onSave, onImageClick, onDownloadForm,
 }: DossierHeaderProps) {
   const [copied, setCopied] = useState(false)
-  const isALS = student.student_category?.toLowerCase().includes("als")
-  const badgeColor = isALS ? "bg-orange-500" : "bg-blue-600"
+  const isALS      = student.student_category?.toLowerCase().includes("als")
+  const isMale     = student.gender !== "Female"
+  const genderColor = isMale ? "#3b82f6" : "#ec4899"
+  const strandColor = student.strand === "ICT" ? "#3b82f6" : "#f97316"
+  const statusCfg   = STATUS_CFG[student.status] ?? STATUS_CFG.Pending
 
   const handleCopyInfo = async () => {
     const text = `
@@ -75,132 +81,213 @@ Address: ${student.address}
   }
 
   return (
-    <div className={`p-6 md:p-12 flex flex-col items-center text-center relative overflow-hidden shrink-0 transition-all duration-500 ${
+    <div className={`relative overflow-hidden shrink-0 transition-all duration-500 ${
       isDarkMode
-        ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800"
-        : "bg-slate-200 border-b border-slate-300"
+        ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800/80"
+        : "bg-gradient-to-br from-white via-slate-50 to-slate-100/70 border-b border-slate-200"
     }`}>
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 dark:opacity-10" />
+      {/* Status accent bar at very top */}
+      <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${statusCfg.bar}`} />
 
-      {/* Left buttons */}
-      <div className="absolute top-4 left-4 z-30 flex gap-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={onClose}
-              className={`rounded-full transition-all active:scale-90 ${isDarkMode ? "bg-white/5 hover:bg-white/10 text-white" : "bg-white/20 hover:bg-white/40 text-slate-900"}`}>
-              <X size={20} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Close Dossier</p></TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={handleCopyInfo}
-              className={`rounded-full transition-all active:scale-90 ${isDarkMode ? "bg-white/5 hover:bg-white/10 text-white" : "bg-white/20 hover:bg-white/40 text-slate-900"}`}>
-              {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Copy Student Info</p></TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={onDownloadForm}
-              className={`rounded-full transition-all active:scale-90 ${isDarkMode ? "bg-white/5 hover:bg-white/10 text-white" : "bg-white/20 hover:bg-white/40 text-slate-900"}`}>
-              <FileDown size={18} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Download Registration Form</p></TooltipContent>
-        </Tooltip>
-      </div>
+      {/* CSS dot-grid texture — no external URL */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `radial-gradient(circle, ${isDarkMode ? "rgba(148,163,184,0.07)" : "rgba(100,116,139,0.10)"} 1px, transparent 1px)`,
+          backgroundSize: "20px 20px",
+        }}
+      />
 
-      {/* Right edit controls */}
-      {showEditButton && <div className="absolute top-4 right-4 z-30 flex gap-2">
-        {isEditing ? (
-          <>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button onClick={onCancelEdit} disabled={isSaving}
-                  className="rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-red-500 hover:bg-red-600 text-white">
-                  <Undo2 size={14} className="mr-2" /> Cancel
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Discard Changes</p></TooltipContent>
-            </Tooltip>
-            {hasChanges && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button onClick={onSave} disabled={isSaving || !isValid}
-                    className="rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-400 disabled:cursor-not-allowed">
-                    <Save size={14} className="mr-2" /> {isSaving ? "Saving..." : "Save Changes"}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Save Profile Updates</p></TooltipContent>
-              </Tooltip>
-            )}
-          </>
-        ) : (
+      {/* Subtle status glow behind content */}
+      <div
+        className={`absolute top-0 left-1/2 -translate-x-1/2 w-72 h-40 blur-[70px] pointer-events-none opacity-20 ${statusCfg.glow}`}
+      />
+
+      <div className="p-6 md:p-12 flex flex-col items-center text-center relative z-10">
+
+        {/* Left action buttons */}
+        <div className="absolute top-0 left-0 z-30 flex gap-1.5 p-4">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button onClick={onEditToggle}
-                className={`rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg ${isDarkMode ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-slate-900 hover:bg-slate-800 text-white"}`}>
-                <Edit2 size={14} className="mr-2" /> Edit Profile
+              <Button variant="ghost" size="icon" onClick={onClose}
+                className={`h-9 w-9 rounded-2xl transition-all active:scale-90 ${isDarkMode ? "bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white" : "bg-black/5 hover:bg-black/10 text-slate-700"}`}>
+                <X size={16} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Modify Student Data</p></TooltipContent>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Close Dossier</p></TooltipContent>
           </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={handleCopyInfo}
+                className={`h-9 w-9 rounded-2xl transition-all active:scale-90 ${isDarkMode ? "bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white" : "bg-black/5 hover:bg-black/10 text-slate-700"}`}>
+                {copied ? <Check size={15} className="text-emerald-400" /> : <Copy size={15} />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Copy Student Info</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={onDownloadForm}
+                className={`h-9 w-9 rounded-2xl transition-all active:scale-90 ${isDarkMode ? "bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white" : "bg-black/5 hover:bg-black/10 text-slate-700"}`}>
+                <FileDown size={15} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Download Registration Form</p></TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Right edit controls */}
+        {showEditButton && (
+          <div className="absolute top-0 right-0 z-30 flex gap-1.5 p-4">
+            {isEditing ? (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={onCancelEdit} disabled={isSaving}
+                      className="h-9 rounded-2xl font-black uppercase text-[9px] tracking-widest shadow-lg bg-red-500 hover:bg-red-600 text-white px-4">
+                      <Undo2 size={13} className="mr-1.5" /> Cancel
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Discard Changes</p></TooltipContent>
+                </Tooltip>
+                {hasChanges && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={onSave} disabled={isSaving || !isValid}
+                        className="h-9 rounded-2xl font-black uppercase text-[9px] tracking-widest shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-slate-400 disabled:cursor-not-allowed px-4">
+                        <Save size={13} className="mr-1.5" /> {isSaving ? "Saving…" : "Save"}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Save Profile Updates</p></TooltipContent>
+                  </Tooltip>
+                )}
+              </>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={onEditToggle}
+                    className={`h-9 rounded-2xl font-black uppercase text-[9px] tracking-widest shadow-lg px-4 ${isDarkMode ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-slate-900 hover:bg-slate-800 text-white"}`}>
+                    <Edit2 size={13} className="mr-1.5" /> Edit Profile
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Modify Student Data</p></TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         )}
-      </div>}
 
-      {/* Category badge */}
-      <div className="absolute top-16 right-4 z-20">
-        <Badge className={`${badgeColor} backdrop-blur-md text-white text-[9px] md:text-[10px] font-black px-3 md:px-5 py-2 md:py-2.5 uppercase tracking-widest border-none shadow-xl`}>
-          {student.student_category || "Regular"}
-        </Badge>
-      </div>
+        {/* Category badge — top right below controls */}
+        <div className="absolute top-14 right-4 z-20">
+          <Badge className={`${isALS ? "bg-orange-500 shadow-orange-500/30" : "bg-blue-600 shadow-blue-500/30"} backdrop-blur-md text-white text-[8px] md:text-[9px] font-black px-3 py-1.5 uppercase tracking-widest border-none shadow-lg`}>
+            {student.student_category || "Regular"}
+          </Badge>
+        </div>
 
-      {/* Profile image */}
-      <div className="relative z-10 mb-4 md:mb-8 scale-90 md:scale-100 mt-8">
-        <div
-          onClick={onImageClick}
-          className={`w-36 h-36 md:w-48 md:h-48 rounded-[40px] md:rounded-[56px] border-[6px] overflow-hidden shadow-2xl flex items-center justify-center cursor-zoom-in group transition-all duration-500 hover:rotate-2 ${
-            isDarkMode ? "bg-slate-800 border-slate-700" : "bg-slate-300 border-white"
-          }`}
-        >
-          {formData.profile_picture || student.profile_picture || student.two_by_two_url || student.profile_2x2_url ? (
-            <OptimizedImage
-              src={formData.profile_picture || student.profile_picture || student.two_by_two_url || student.profile_2x2_url}
-              alt={`${student.last_name}, ${student.first_name}`}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-              fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
-            />
-          ) : (
-            <div className={`flex flex-col items-center ${isDarkMode ? "text-slate-600" : "text-slate-500"}`}>
-              <User size={64} strokeWidth={1} />
-              <p className="text-[10px] font-black uppercase mt-3">Identity Missing</p>
-            </div>
+        {/* Profile image with gender-based ring + glow */}
+        <div className="relative z-10 mt-10 mb-4 md:mb-6">
+          {/* Outer glow ring */}
+          <div
+            className="absolute inset-[-6px] rounded-[48px] md:rounded-[64px] blur-xl opacity-25 pointer-events-none"
+            style={{ backgroundColor: genderColor }}
+          />
+          <div
+            onClick={onImageClick}
+            className="relative w-36 h-36 md:w-44 md:h-44 rounded-[40px] md:rounded-[52px] overflow-hidden shadow-2xl flex items-center justify-center cursor-zoom-in group transition-all duration-300 hover:scale-[1.03]"
+            style={{
+              border: `4px solid ${genderColor}50`,
+              boxShadow: `0 20px 50px -10px ${genderColor}40, 0 0 0 6px ${genderColor}12`,
+            }}
+          >
+            {formData.profile_picture || student.profile_picture || student.two_by_two_url || student.profile_2x2_url ? (
+              <OptimizedImage
+                src={formData.profile_picture || student.profile_picture || student.two_by_two_url || student.profile_2x2_url}
+                alt={`${student.last_name}, ${student.first_name}`}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
+              />
+            ) : (
+              <div className={`flex flex-col items-center gap-2 ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>
+                <User size={56} strokeWidth={1} />
+                <p className="text-[9px] font-black uppercase tracking-widest">No Photo</p>
+              </div>
+            )}
+            {isEditing && (
+              <div className="absolute inset-0 bg-black/55 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <Camera className="text-white drop-shadow-lg" size={28} />
+              </div>
+            )}
+          </div>
+
+          {/* Gender + strand dot badges */}
+          <div
+            className="absolute -bottom-2 -left-2 w-8 h-8 rounded-xl border-2 flex items-center justify-center shadow-lg"
+            style={{
+              backgroundColor: isDarkMode ? genderColor + "45" : genderColor + "20",
+              borderColor: isDarkMode ? genderColor + "CC" : genderColor + "55",
+            }}
+          >
+            <span className="text-[8px] font-black" style={{ color: genderColor }}>
+              {isMale ? "M" : "F"}
+            </span>
+          </div>
+          <div
+            className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl border-2 flex items-center justify-center shadow-lg"
+            style={{
+              backgroundColor: isDarkMode ? strandColor + "45" : strandColor + "20",
+              borderColor: isDarkMode ? strandColor + "CC" : strandColor + "55",
+            }}
+          >
+            {student.strand === "ICT"
+              ? <Cpu size={13} style={{ color: strandColor }} />
+              : <BookOpen size={13} style={{ color: strandColor }} />
+            }
+          </div>
+        </div>
+
+        {/* Name */}
+        <h2 className={`relative z-10 text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none italic transition-colors duration-300 mt-4 ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+          <AnimatedText text={`${formData.first_name} ${formData.last_name}`} />
+        </h2>
+
+        {/* LRN pill */}
+        <p className={`mt-3 font-bold uppercase tracking-[0.35em] text-[10px] px-4 py-1.5 rounded-full border transition-all duration-300 ${isDarkMode ? "text-slate-400 bg-white/5 border-white/8" : "text-slate-500 bg-black/5 border-black/8"}`}>
+          LRN · {student.lrn}
+        </p>
+
+        {/* Status badge */}
+        <div className="mt-3">
+          <StatusBadge status={student.status} isDarkMode={isDarkMode} />
+        </div>
+
+        {/* Quick-info strip: Grade · Strand · Section · GWA */}
+        <div className="flex flex-wrap items-center justify-center gap-1.5 mt-4">
+          <span className={`px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-colors duration-300 ${isDarkMode ? "bg-slate-800/80 border-slate-700/80 text-slate-400" : "bg-white border-slate-200 text-slate-500 shadow-sm"}`}>
+            Grade {student.grade_level || "11"}
+          </span>
+          <span
+            className="px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border"
+            style={{ backgroundColor: strandColor + "18", borderColor: strandColor + "45", color: strandColor }}
+          >
+            {student.strand}
+          </span>
+          {student.section && student.section !== "Unassigned" && (
+            <span className={`px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-colors duration-300 ${isDarkMode ? "bg-purple-500/12 border-purple-500/30 text-purple-400" : "bg-purple-50 border-purple-200 text-purple-600"}`}>
+              {student.section}
+            </span>
           )}
-          {isEditing && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera className="text-white" size={32} />
-            </div>
+          {student.gwa_grade_10 && (
+            <span className={`px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-colors duration-300 ${isDarkMode ? "bg-blue-500/12 border-blue-500/30 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600"}`}>
+              GWA {student.gwa_grade_10}
+            </span>
           )}
         </div>
-      </div>
 
-      <h2 className={`relative z-10 text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none italic transition-colors duration-500 ${isDarkMode ? "text-white" : "text-slate-900"}`}>
-        <AnimatedText text={`${formData.first_name} ${formData.last_name}`} />
-      </h2>
-
-      <div className="flex flex-col items-center gap-4 mt-4 md:mt-6 relative z-10">
-        <p className={`font-bold uppercase tracking-[0.4em] text-[10px] md:text-[11px] px-4 py-1.5 rounded-full border backdrop-blur-sm transition-all duration-500 ${isDarkMode ? "text-slate-300 bg-white/5 border-white/5" : "text-slate-700 bg-black/5 border-black/10"}`}>
-          Student LRN ID: {student.lrn}
-        </p>
-        <StatusBadge status={student.status} isDarkMode={isDarkMode} />
+        {/* Rejection notice */}
         {student.status === "Rejected" && (
-          <div className="mt-4 w-full max-w-md animate-in fade-in slide-in-from-top-2 duration-500">
+          <div className="mt-5 w-full max-w-md animate-in fade-in slide-in-from-top-2 duration-500">
             <div className={`p-4 rounded-2xl border text-left ${isDarkMode ? "bg-red-950/30 border-red-900/50 text-red-200" : "bg-red-50 border-red-100 text-red-800"}`}>
-              <p className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-70">Rejection Notice</p>
-              <p className="text-xs font-bold leading-relaxed">{student.registrar_feedback || student.decline_reason || "No specific reason provided."}</p>
+              <p className="text-[9px] font-black uppercase tracking-widest mb-1.5 opacity-60">Rejection Notice</p>
+              <p className="text-xs font-semibold leading-relaxed">{student.registrar_feedback || student.decline_reason || "No specific reason provided."}</p>
             </div>
           </div>
         )}

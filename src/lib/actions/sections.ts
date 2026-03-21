@@ -7,25 +7,26 @@ import { syncSectionCapacities } from "./settings"
 /**
  * ADD SECTION (Sequential Logic)
  * Automatically determines the next letter (e.g., E -> F)
+ * Supports grade_level: "11" | "12" (defaults to "11")
  */
-export async function addSection(strand: "ICT" | "GAS") {
+export async function addSection(strand: "ICT" | "GAS", gradeLevel: "11" | "12" = "11") {
   const supabase = await createClient()
 
-  // 1. Fetch ALL sections to determine the next letter accurately (Robust against gaps/sorting issues)
+  // 1. Fetch ALL sections for this strand AND grade level
   const { data: sections } = await supabase
     .from('sections')
     .select('section_name')
     .eq('strand', strand)
+    .eq('grade_level', gradeLevel)
 
   // Extract existing suffixes (e.g., 'A', 'B')
   const existingSuffixes = new Set<string>()
   if (sections) {
     sections.forEach(sec => {
-      // Assuming format "STRAND11-X"
+      // Format: "STRAND11-X" or "STRAND12-X"
       const parts = sec.section_name.split('-')
       if (parts.length > 1) {
         const suffix = parts[parts.length - 1]
-        // Only consider single uppercase letters to avoid confusion with other formats
         if (suffix.length === 1 && /[A-Z]/.test(suffix)) {
           existingSuffixes.add(suffix)
         }
@@ -35,16 +36,14 @@ export async function addSection(strand: "ICT" | "GAS") {
 
   let nextChar = 'A'
   if (existingSuffixes.size > 0) {
-    // Find the max char code used
     const maxCode = Array.from(existingSuffixes)
       .map(s => s.charCodeAt(0))
       .reduce((a, b) => Math.max(a, b), 0)
-    
     nextChar = String.fromCharCode(maxCode + 1)
   }
 
-  // 2. Collision detection loop (Safety net against race conditions or manual DB edits)
-  let newName = `${strand}11-${nextChar}`
+  // 2. Collision detection loop
+  let newName = `${strand}${gradeLevel}-${nextChar}`
   let attempts = 0
   
   while (attempts < 10) {
@@ -53,11 +52,10 @@ export async function addSection(strand: "ICT" | "GAS") {
       .select('*', { count: 'exact', head: true })
       .eq('section_name', newName)
     
-    if (count === 0) break // Unique name found
+    if (count === 0) break
 
-    // Increment char if collision
     nextChar = String.fromCharCode(nextChar.charCodeAt(0) + 1)
-    newName = `${strand}11-${nextChar}`
+    newName = `${strand}${gradeLevel}-${nextChar}`
     attempts++
   }
 
@@ -71,6 +69,7 @@ export async function addSection(strand: "ICT" | "GAS") {
     .insert([{
       section_name: newName,
       strand: strand,
+      grade_level: gradeLevel,
       capacity: 0 
     }])
     .select()
@@ -89,14 +88,27 @@ export async function addSection(strand: "ICT" | "GAS") {
  * DELETE & COLLAPSE (Sequential Shift Logic)
  * If B is deleted, C becomes B, D becomes C, and students follow the move.
  */
-export async function deleteAndCollapseSection(sectionId: string, strand: "ICT" | "GAS") {
+export async function deleteAndCollapseSection(sectionId: string, strand: "ICT" | "GAS", gradeLevel?: "11" | "12") {
   const supabase = await createClient()
 
-  // 1. Get all sections for this strand ordered A-Z
+  // 1. Resolve grade level — if not supplied, fetch it from the target section.
+  //    This ensures we NEVER mix G11 and G12 during the collapse shift.
+  let resolvedGradeLevel = gradeLevel
+  if (!resolvedGradeLevel) {
+    const { data: targetSection } = await supabase
+      .from('sections')
+      .select('grade_level')
+      .eq('id', sectionId)
+      .single()
+    resolvedGradeLevel = (targetSection?.grade_level as "11" | "12") || "11"
+  }
+
+  // Get ONLY sections matching this strand + grade level
   const { data: allSections } = await supabase
     .from('sections')
-    .select('id, section_name')
+    .select('id, section_name, grade_level')
     .eq('strand', strand)
+    .eq('grade_level', resolvedGradeLevel)
     .order('section_name', { ascending: true })
 
   if (!allSections || allSections.length === 0) return

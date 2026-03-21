@@ -2,9 +2,21 @@
 
 import { memo } from "react"
 
-export const StatusBadge = memo(({ status, isDarkMode }: { status: string, isDarkMode: boolean }) => {
-  const styles: any = { Pending: isDarkMode ? "dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20" : "bg-amber-50 text-amber-600 border-amber-200", Accepted: isDarkMode ? "dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20" : "bg-green-50 text-green-600 border-green-200", Approved: isDarkMode ? "dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20" : "bg-green-50 text-green-600 border-green-200", Rejected: isDarkMode ? "dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20" : "bg-red-50 text-red-600 border-red-200" }
-  return (<div className={`mt-6 px-6 py-2 rounded-full border-2 text-[10px] font-black uppercase tracking-[0.3em] w-fit ${styles[status]}`}>{status === 'Approved' ? 'Accepted' : status}</div>)
+const CONFIG: Record<string, { dot: string; badge: string; label: string }> = {
+  Pending:  { dot: 'bg-amber-400 animate-pulse',   badge: 'bg-amber-500/12 text-amber-500 border-amber-400/30',   label: 'Pending'  },
+  Accepted: { dot: 'bg-emerald-400',                badge: 'bg-emerald-500/12 text-emerald-500 border-emerald-400/30', label: 'Accepted' },
+  Approved: { dot: 'bg-emerald-400',                badge: 'bg-emerald-500/12 text-emerald-500 border-emerald-400/30', label: 'Accepted' },
+  Rejected: { dot: 'bg-red-400',                   badge: 'bg-red-500/12 text-red-500 border-red-400/30',         label: 'Rejected' },
+}
+
+export const StatusBadge = memo(({ status }: { status: string, isDarkMode?: boolean }) => {
+  const cfg = CONFIG[status] ?? CONFIG.Pending
+  return (
+    <div className={`mt-5 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-[0.25em] ${cfg.badge}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
+      {cfg.label}
+    </div>
+  )
 })
 
 StatusBadge.displayName = "StatusBadge"

@@ -1,6 +1,6 @@
 "use client"
 
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts"
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts"
 import { AnalyticPoint } from "../types"
 
 interface Props {
@@ -9,11 +9,19 @@ interface Props {
   mode: string
 }
 
+const LEGEND_ITEMS = [
+  { name: "Enrolled History",            color: "#0ea5e9", dashArray: ""       },
+  { name: "Optimistic Recovery",         color: "#10b981", dashArray: "10 6"   },
+  { name: "Linear Trend (Declining)",    color: "#ef4444", dashArray: "5 5"    },
+  { name: "Realistic Forecast (Wavy)",   color: "#8b5cf6", dashArray: "3 3"    },
+]
+
 export function EnrollmentTrendChart({ data, isDarkMode, mode }: Props) {
   return (
-    <div className="h-[450px] w-full p-4">
+    <div className="w-full">
+    <div className="h-[260px] md:h-[420px] w-full px-2 pt-4 pb-1">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+        <ComposedChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? "#1e293b" : "#e2e8f0"} />
           
           <XAxis 
@@ -46,8 +54,6 @@ export function EnrollmentTrendChart({ data, isDarkMode, mode }: Props) {
             labelStyle={{ color: isDarkMode ? "#94a3b8" : "#64748b", fontWeight: 700 }}
           />
           
-          <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
-
           {/* Historical Line */}
           <Line 
             type="monotone" 
@@ -132,6 +138,24 @@ export function EnrollmentTrendChart({ data, isDarkMode, mode }: Props) {
 
         </ComposedChart>
       </ResponsiveContainer>
+    </div>
+
+    {/* Custom legend — rendered outside the chart so it never overlaps */}
+    <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 px-4 pb-4">
+      {LEGEND_ITEMS.map(item => (
+        <div key={item.name} className="flex items-center gap-1.5">
+          <svg width="20" height="4" className="shrink-0">
+            {item.dashArray
+              ? <line x1="0" y1="2" x2="20" y2="2" stroke={item.color} strokeWidth="2.5" strokeDasharray={item.dashArray} />
+              : <line x1="0" y1="2" x2="20" y2="2" stroke={item.color} strokeWidth="2.5" />
+            }
+          </svg>
+          <span style={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontSize: '10px', fontWeight: 600 }}>
+            {item.name}
+          </span>
+        </div>
+      ))}
+    </div>
     </div>
   )
 }

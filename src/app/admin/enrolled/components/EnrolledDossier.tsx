@@ -162,7 +162,10 @@ export const EnrolledDossier = memo(function EnrolledDossier({
       const fileSaver = await import("file-saver")
       const saveAs    = fileSaver.saveAs || (fileSaver as any).default
 
-      const response = await fetch("/REGISTRATION - GAS & ICT.docx")
+      const templateFile = student.grade_level === "12"
+        ? "/REGISTRATION - GAS & ICT - G12.docx"
+        : "/REGISTRATION - GAS & ICT.docx"
+      const response = await fetch(templateFile)
       if (!response.ok) throw new Error("Template not found in /public folder")
 
       const content = await response.arrayBuffer()

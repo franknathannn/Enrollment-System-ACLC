@@ -28,6 +28,7 @@ export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount,
       <Tooltip>
         <TooltipTrigger asChild>
           <Card className={`border shadow-sm relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-blue-100'}`}>
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
             <CardHeader className="pb-2">
               <CardTitle className={`text-xs font-black uppercase tracking-wider flex items-center gap-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
@@ -59,6 +60,7 @@ export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount,
       <Tooltip>
         <TooltipTrigger asChild>
           <Card className={`border shadow-sm relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-emerald-100'}`}>
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400" />
             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
             <CardHeader className="pb-2">
               <CardTitle className={`text-xs font-black uppercase tracking-wider flex items-center gap-2 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
@@ -92,6 +94,7 @@ export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount,
       <Tooltip>
         <TooltipTrigger asChild>
           <Card className={`border shadow-sm relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-amber-100'}`}>
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-400" />
             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
             <CardHeader className="pb-2">
               <CardTitle className={`text-xs font-black uppercase tracking-wider ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`}>
@@ -132,6 +135,7 @@ export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount,
       <Tooltip>
         <TooltipTrigger asChild>
           <Card className={`border shadow-sm relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-purple-100'}`}>
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-400" />
             <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
             <CardHeader className="pb-2">
               <CardTitle className={`text-xs font-black uppercase tracking-wider ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>

@@ -3,8 +3,9 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import {
   GraduationCap, LayoutDashboard, Users, Settings,
-  LogOut, BookOpen, User as UserIcon, Loader2, ShieldCheck, 
-  Camera, Sparkles, MessageSquare, ChevronLeft, ChevronRight, Menu, Activity, Sun, Moon, UserCheck, ChartColumnBig
+  LogOut, BookOpen, User as UserIcon, Loader2,
+  Camera, MessageSquare, ChevronLeft, ChevronRight, Menu, Activity, Sun, Moon, UserCheck, ChartColumnBig,
+  CalendarRange, Archive
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -120,22 +121,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const navigationItems = [
-    { href: "/admin/dashboard", icon: <LayoutDashboard size={18} />, label: "Overview" },
-    { href: "/admin/predictive-analytics", icon: <ChartColumnBig size={18} />, label: "Analysis" },
-    { href: "/admin/applicants", icon: <Users size={18} />, label: "Applicants" },
-    { href: "/admin/enrolled", icon: <UserCheck size={18} />, label: "Enrolled" },
-    { href: "/admin/sections", icon: <BookOpen size={18} />, label: "Sections" },
-    { href: "/admin/settings", icon: <Settings size={18} />, label: "Configuration" },
-    { href: "/admin/activity_logs", icon: <Activity size={18} />, label: "Activity Logs" },
-    { href: "/admin/communication", icon: <MessageSquare size={18} />, label: "Messenger" },
-
+    { href: "/admin/dashboard",            icon: <LayoutDashboard size={18} />, label: "Overview"      },
+    { href: "/admin/predictive-analytics", icon: <ChartColumnBig  size={18} />, label: "Analysis"      },
+    { href: "/admin/applicants",           icon: <Users           size={18} />, label: "Applicants"    },
+    { href: "/admin/enrolled",             icon: <UserCheck       size={18} />, label: "Students"      },
+    { href: "/admin/sections",             icon: <BookOpen        size={18} />, label: "Sections"      },
+    { href: "/admin/teachers",             icon: <GraduationCap   size={18} />, label: "Teachers"      },
+    { href: "/admin/schedules",            icon: <CalendarRange   size={18} />, label: "Schedules"     },
+    { href: "/admin/settings",             icon: <Settings        size={18} />, label: "Settings" },
+    { href: "/admin/archive",              icon: <Archive         size={18} />, label: "Archive"      },
+    { href: "/admin/activity_logs",        icon: <Activity        size={18} />, label: "Activity Logs" },
+    { href: "/admin/communication",        icon: <MessageSquare   size={18} />, label: "Messenger"     },
   ];
 
   if (pathname === "/admin/login") return <>{children}</>;
 
   if (!authorized) return (
-    <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-slate-950 transition-colors">
-      <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
+    <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-slate-950 transition-colors gap-6">
+      <div className="relative flex items-center justify-center">
+        <span className="absolute w-20 h-20 rounded-full border-2 border-blue-500/20 animate-ping" />
+        <span className="absolute w-14 h-14 rounded-full border-2 border-blue-400/30 animate-ping" style={{ animationDelay: "0.15s" }} />
+        <span className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 shadow-lg shadow-blue-500/30 flex items-center justify-center">
+          <Loader2 className="animate-spin text-white" size={18} />
+        </span>
+      </div>
       <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Verifying Admin Access</p>
     </div>
   );
@@ -150,21 +159,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         color: isDarkMode ? themeColors.dark.text.secondary : themeColors.light.text.primary
       }}
     >
+      <style>{`
+        .nav-scroll::-webkit-scrollbar { width: 4px; }
+        .nav-scroll::-webkit-scrollbar-track { background: transparent; }
+        .nav-scroll::-webkit-scrollbar-thumb {
+          background: ${isDarkMode ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)"};
+          border-radius: 99px;
+        }
+        .nav-scroll::-webkit-scrollbar-thumb:hover {
+          background: ${isDarkMode ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.22)"};
+        }
+      `}</style>
       
-      {/* DESKTOP SIDEBAR - WHITE IN LIGHT MODE */}
+      {/* DESKTOP SIDEBAR */}
       <aside 
         className={cn(
-          "hidden lg:flex flex-col fixed h-full z-40 transition-all duration-500 ease-in-out group",
-          "border-r",
+          "hidden lg:flex flex-col fixed h-full z-40 group border-r",
           isCollapsed ? "w-20" : "w-72"
         )}
         style={{
           backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
           borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border,
-          transition: 'all 0.5s ease-in-out'
+          transition: 'width 300ms cubic-bezier(0.4,0,0.2,1)',
+          willChange: 'width'
         }}
       >
-        {/* GLOWING ARROW TOGGLE */}
+        {/* COLLAPSE TOGGLE */}
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
           className={cn(
@@ -181,7 +201,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </button>
 
         {/* TOP BRANDING */}
-        <div className="p-6 mb-4 relative z-10">
+        <div className="p-6 mb-4 relative z-10 shrink-0">
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
                <div className="absolute inset-0 bg-blue-500 blur-md opacity-0 group-hover:opacity-40 transition-opacity" />
@@ -198,20 +218,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 Northbay
               </span>
-              <span 
-                className="text-[9px] font-bold uppercase tracking-widest mt-1"
-                style={{ color: isDarkMode ? themeColors.dark.primary : themeColors.light.primary }}
-              >
+              <span className="text-[9px] font-black uppercase tracking-widest mt-1 bg-gradient-to-r from-blue-500 to-blue-400 bg-clip-text text-transparent">
                 Admin Portal
               </span>
             </div>
           </div>
         </div>
         
-        <nav className="flex-1 px-4 space-y-1.5 relative z-10">
+        {/* NAV — scrollable so all items visible on small screens */}
+        <nav className="flex-1 px-4 space-y-1.5 relative z-10 overflow-y-auto overflow-x-hidden nav-scroll">
           <p 
             className={cn(
-              "text-[9px] font-black uppercase tracking-[0.4em] mb-6 ml-4 transition-all",
+              "text-[9px] font-black uppercase tracking-[0.4em] mb-6 ml-4 transition-all shrink-0",
               isCollapsed && "opacity-0"
             )}
             style={{ color: isDarkMode ? themeColors.dark.text.muted : themeColors.light.text.muted }}
@@ -225,7 +243,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* BOTTOM USER PROFILE */}
-        <div className="p-4 mt-auto space-y-2 relative z-10">
+        <div className="p-4 mt-auto space-y-2 relative z-10 shrink-0">
           <div 
             className={cn(
               "rounded-[24px] p-2 flex items-center gap-2 transition-all backdrop-blur-sm border",
@@ -356,7 +374,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }}
           >
              <div className="h-full flex flex-col p-6">
-                <SheetHeader className="mb-10 text-left">
+                <SheetHeader className="mb-10 text-left shrink-0">
                    <div className="flex items-center gap-3 mb-4">
                       <img src="/logo-aclc.png" className="w-10 h-10 object-contain" />
                       <div>
@@ -370,7 +388,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       </div>
                    </div>
                 </SheetHeader>
-                <nav className="flex-1 space-y-2">
+                {/* Mobile nav also scrollable */}
+                <nav className="flex-1 space-y-2 overflow-y-auto">
                    {navigationItems.map((item) => (
                       <Link 
                         key={item.href} 
@@ -407,14 +426,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <span>{isDarkMode ? "Switch to Light" : "Switch to Dark"}</span>
                    </button>
                 </nav>
-                <Button onClick={handleLogout} variant="destructive" className="h-16 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em]">Logout Session</Button>
+                <Button onClick={handleLogout} variant="destructive" className="h-16 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shrink-0 mt-4">Logout Session</Button>
              </div>
           </SheetContent>
       </Sheet>
 
       {/* MAIN VIEWPORT */}
       <main className={cn(
-        "flex-1 min-h-screen transition-all duration-500 ease-in-out",
+        "flex-1 min-h-screen min-w-0 overflow-x-hidden",
         authorized ? (isCollapsed ? "lg:pl-20" : "lg:pl-72") : ""
       )}>
         <header 
@@ -425,7 +444,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           }}
         >
            <div className="flex items-center gap-3">
-              <Sparkles className="text-blue-500 animate-pulse" size={16} />
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              </span>
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 italic">AMA ACLC - NORTHBAY CAMPUS</p>
            </div>
 
@@ -465,14 +487,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                </button>
              </SheetTrigger>
              <SheetContent 
-               className="w-[400px] sm:w-[500px] p-0 border-none shadow-2xl rounded-l-[40px]"
+               className="w-full sm:w-[400px] md:w-[500px] p-0 border-none shadow-2xl sm:rounded-l-[40px]"
                style={{
                  backgroundColor: isDarkMode ? themeColors.dark.background : '#fafafa'
                }}
              >
                 <div className="h-full flex flex-col">
-                  <SheetHeader 
-                    className="p-12 text-white relative overflow-hidden"
+                  <SheetHeader
+                    className="p-6 sm:p-12 text-white relative overflow-hidden shrink-0"
                     style={{
                       backgroundColor: isDarkMode ? themeColors.dark.surface : 'rgb(30, 58, 138)'
                     }}
@@ -487,7 +509,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </SheetDescription>
                   </SheetHeader>
                   
-                  <div className="p-12 space-y-12">
+                  <div className="p-6 sm:p-12 space-y-8 sm:space-y-12 overflow-y-auto flex-1">
                     <div className="flex flex-col items-center">
                        <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                           <div 
@@ -558,7 +580,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         }
                       }}
                     >
-                      {updating ? <Loader2 className="animate-spin" /> : <><Sparkles size={20} className="mr-3 group-hover:rotate-12 transition-transform"/> Change Profile</>}
+                      {updating ? <Loader2 className="animate-spin" /> : <>Change Profile</>}
                     </Button>
                   </div>
                 </div>
@@ -566,8 +588,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
            </Sheet>
         </header>
         
-        <div className="pt-24 lg:pt-0 p-4 md:p-12 relative">
-           <div className="max-w-7xl mx-auto">
+        <div className="pt-24 lg:pt-0 p-4 md:p-8 relative overflow-x-hidden">
+           <div className="w-full min-w-0">
               {children}
            </div>
         </div>

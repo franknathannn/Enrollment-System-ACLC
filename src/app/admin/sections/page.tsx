@@ -18,20 +18,27 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 export default function SectionsPage() {
   const {
     config, isDarkMode, sections, loading, isProcessing, selectedSectionName, setSelectedSectionName,
-    searchTerm, setSearchTerm, debouncedSearch, strandFilter, setStrandFilter, sectionSelection,
+    searchTerm, setSearchTerm, debouncedSearch, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter, sectionSelection,
     confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, ictExpanded, setIctExpanded,
     gasExpanded, setGasExpanded, exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
     viewingFile, rotation, setRotation, unenrollOpen, setUnenrollOpen, activeUnenrollStudent, profileOpen, setProfileOpen,
     activeProfile, realtimeStatus, lastUpdate, ictSections, gasSections, ictLoad, gasLoad, currentSection, activeStudents,
     currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
-    handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections, handleToggleLock, updateStudentProfile
+    handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections, handleToggleLock, updateStudentProfile,
+    allSchedules
   } = useSections()
 
   if (loading && sections.length === 0) return (
-    <div className="h-screen flex flex-col items-center justify-center gap-4 text-slate-400">
-      <Loader2 className="animate-spin text-blue-600 w-10 h-10" />
-      <p className="text-[10px] font-black uppercase tracking-widest text-center">Syncing School Sections & Students...</p>
+    <div className={`h-screen flex flex-col items-center justify-center gap-6 ${isDarkMode ? 'bg-slate-950' : 'bg-gradient-to-br from-slate-50 to-blue-50'}`}>
+      <div className="relative flex items-center justify-center">
+        <span className="absolute w-24 h-24 rounded-full border-2 border-blue-500/15 animate-ping" />
+        <span className="absolute w-16 h-16 rounded-full border-2 border-blue-400/20 animate-ping" style={{ animationDelay: "0.15s" }} />
+        <span className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 shadow-lg shadow-blue-500/30 flex items-center justify-center relative z-10">
+          <Loader2 className="animate-spin text-white" size={20} />
+        </span>
+      </div>
+      <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Syncing School Sections...</p>
     </div>
   )
 
@@ -80,6 +87,7 @@ export default function SectionsPage() {
             handleExit={handleExit}
             animatingIds={animatingIds}
             onToggleLock={handleToggleLock}
+            allSchedules={allSchedules}
           />
         )
       })() : (
@@ -88,6 +96,8 @@ export default function SectionsPage() {
             isDarkMode={isDarkMode}
             strandFilter={strandFilter}
             setStrandFilter={setStrandFilter}
+            gradeLevelFilter={gradeLevelFilter}
+            setGradeLevelFilter={setGradeLevelFilter}
             sectionSelection={sectionSelection}
             setConfirmDeleteSelect={setConfirmDeleteSelect}
             sections={sections}
@@ -105,7 +115,9 @@ export default function SectionsPage() {
               mobileTitle={strand === 'ICT' ? "ICT Program" : "GAS Program"}
               icon={strand === 'ICT' ? <Cpu/> : <BookOpen/>} 
               color={strand === 'ICT' ? 'blue' : 'orange'} 
-              sections={strand === 'ICT' ? ictSections : gasSections} 
+              sections={(strand === 'ICT' ? ictSections : gasSections).filter((s: any) => 
+                gradeLevelFilter === 'ALL' || s.grade_level === gradeLevelFilter
+              )} 
               load={strand === 'ICT' ? ictLoad : gasLoad} 
               onSelect={setSelectedSectionName} 
               onDelete={handleDeleteSection} 

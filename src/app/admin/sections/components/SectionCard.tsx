@@ -37,231 +37,117 @@ export const SectionCard = memo(function SectionCard({ section, isSelected, isDa
   };
 
   return (
-    <div 
+    <div
       className={`
         relative overflow-hidden h-full w-full
-        p-4 sm:p-6 
-        rounded-2xl sm:rounded-[32px]
+        rounded-2xl sm:rounded-[28px]
         border transition-all duration-300
-        ${theme.surface} ${theme.border} ${theme.shadow} ${theme.hover}
-        ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+        ${theme.surface} ${theme.border} ${theme.shadow}
+        ${isSelected ? `ring-2 ring-offset-1 ${isICT ? 'ring-blue-500/70' : 'ring-orange-500/70'}` : ''}
         touch-manipulation
-        safe-area-inset
       `}
-      style={{
-        WebkitTapHighlightColor: 'transparent',
-        touchAction: 'manipulation'
-      }}
+      style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
     >
-      {/* 🌈 Strand Identity Pulse Bar - Thicker on mobile */}
-      <div className={`
-        absolute top-0 left-0 h-full transition-all duration-500
-        w-1.5 sm:w-2
-        ${isICT ? 'bg-blue-500 shadow-[2px_0_15px_rgba(59,130,246,0.5)]' : 'bg-orange-500 shadow-[2px_0_15px_rgba(249,115,22,0.5)]'}
-        ${isSelected ? 'w-2 sm:w-3 opacity-100' : 'opacity-50'}
-      `} />
+      {/* Top accent strip — strand-colored */}
+      <div className={`absolute top-0 left-0 right-0 h-[3px] z-10 ${
+        isICT ? 'bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400'
+              : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400'
+      }`} />
 
-      {/* Header Cluster - Mobile Optimized */}
-      <div className="flex justify-between items-start mb-5 sm:mb-8 ml-1 sm:ml-2">
-        <div className="space-y-2 sm:space-y-3 flex-1 min-w-0">
-          {/* Section Name - Responsive sizing */}
-          <ThemedText 
-            variant="h2" 
-            className={`
-              text-xl sm:text-2xl 
-              font-black uppercase italic tracking-tighter leading-none 
-              ${theme.textMain}
-              truncate
-            `} 
-            isDarkMode={isDarkMode}
-          >
-            {section.section_name}
-          </ThemedText>
-          
-          {/* Badges - Stack on very small screens */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <Badge className={`
-              ${isICT ? 'bg-blue-500/10 text-blue-500' : 'bg-orange-500/10 text-orange-500'} 
-              border-none rounded-lg font-black 
-              text-[9px] sm:text-[8px]
-              uppercase tracking-widest 
-              px-2 py-0.5
-              whitespace-nowrap
-            `}>
-              {section.strand} NODE
-            </Badge>
-            <span className={`
-              text-[10px] sm:text-[9px] 
-              font-bold uppercase tracking-widest 
-              opacity-40 ${theme.textSub}
-              whitespace-nowrap
-            `}>
+      {/* Ambient strand glow bg */}
+      <div className={`absolute inset-0 pointer-events-none ${
+        isICT ? 'bg-gradient-to-br from-blue-500/[0.04] via-transparent to-transparent'
+              : 'bg-gradient-to-br from-orange-500/[0.04] via-transparent to-transparent'
+      }`} />
+
+      {/* ── HERO HEADER ──────────────────────────────────────── */}
+      <div className="flex items-start justify-between px-4 pt-6 pb-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Strand pill icon */}
+          <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center font-black text-[10px] tracking-widest text-white ${
+            isICT ? 'bg-gradient-to-br from-blue-500 to-blue-700 shadow-md shadow-blue-500/30'
+                  : 'bg-gradient-to-br from-orange-500 to-orange-700 shadow-md shadow-orange-500/30'
+          }`}>
+            {isICT ? 'ICT' : 'GAS'}
+          </div>
+          <div className="min-w-0">
+            <p className={`text-3xl font-black uppercase italic tracking-tighter leading-none truncate ${theme.textMain}`}>
+              {section.section_name}
+            </p>
+            <p className={`text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5 opacity-40 ${theme.textSub}`}>
               SY.{config?.school_year || "2025"}
+            </p>
+          </div>
+        </div>
+
+        {/* FULL badge or activity pulse */}
+        {isFull ? (
+          <span className={`shrink-0 px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest text-white animate-pulse ${
+            isICT ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]'
+                  : 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]'
+          }`}>FULL</span>
+        ) : (
+          <Activity size={16} className={`${isICT ? 'text-blue-500/25' : 'text-orange-500/25'} animate-pulse shrink-0 mt-1`} />
+        )}
+      </div>
+
+      {/* ── CAPACITY BLOCK ───────────────────────────────────── */}
+      <div className="px-4 pb-3">
+        {/* Big fill % + count */}
+        <div className="flex items-baseline justify-between mb-2">
+          <span className={`text-[10px] font-black uppercase tracking-widest ${theme.textSub} opacity-50 flex items-center gap-1`}>
+            <Layers size={10} /> Capacity
+          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className={`text-2xl font-black tabular-nums leading-none ${isFull ? 'text-red-400' : theme.textMain}`}>
+              {Math.round(fillPercent)}<span className={`text-sm font-bold opacity-50`}>%</span>
+            </span>
+            <span className={`text-[10px] font-black tabular-nums ${theme.textSub} opacity-40`}>
+              {activeStudents.length}/{capacity}
             </span>
           </div>
         </div>
-        
-        {/* Activity Icon - Slightly larger on mobile */}
-        <Activity 
-          size={20} 
-          className={`
-            ${isICT ? 'text-blue-500/30' : 'text-orange-500/30'} 
-            animate-pulse mt-0.5 sm:mt-1.5
-            flex-shrink-0 ml-2
-          `} 
-        />
+
+        {/* Combined M/F progress bar */}
+        <div className={`relative w-full rounded-full overflow-hidden h-3 ${theme.track} border ${theme.border}`}>
+          <div style={{ width: `${mP}%` }} className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-blue-700 to-blue-400 transition-all duration-1000 ease-out" />
+          <div style={{ width: `${fP}%` }} className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-pink-700 to-pink-400 transition-all duration-1000 ease-out" />
+          <div style={{ left: getFinishLinePosition() }} className={`absolute top-0 bottom-0 z-10 -translate-x-1/2 w-[2px] mix-blend-difference opacity-60 ${theme.line}`} />
+        </div>
       </div>
 
-      {/* 📊 Biometric Analytics Block - Mobile Optimized */}
-      <div className={`
-        p-4 sm:p-5 
-        rounded-xl sm:rounded-[24px] 
-        border mb-4 sm:mb-6 
-        relative overflow-hidden isolate 
-        ${theme.inner} ${theme.border}
-      `}>
-        {/* Header Row */}
-        <div className="flex justify-between items-center mb-3 sm:mb-4">
-          <div className={`
-            flex items-center gap-1.5 sm:gap-2 
-            font-black text-[10px] sm:text-[9px]
-            uppercase tracking-widest 
-            ${theme.textSub}
-          `}>
-            <Layers size={12} className="flex-shrink-0" /> 
-            <span className="hidden xs:inline">Matrix Distribution</span>
-            <span className="xs:hidden">Distribution</span>
+      {/* ── GENDER TILES ─────────────────────────────────────── */}
+      <div className={`grid grid-cols-2 gap-px border-t ${theme.border} mx-0`}>
+        {/* Males */}
+        <div className={`flex items-center justify-between px-4 py-3 ${isDarkMode ? 'bg-blue-950/20' : 'bg-blue-50/50'}`}>
+          <div>
+            <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-0.5 flex items-center gap-1">
+              <Users size={9} /> M
+            </p>
+            <span className={`text-3xl font-black tabular-nums text-blue-400 leading-none ${isDarkMode ? 'drop-shadow-[0_0_10px_rgba(96,165,250,0.5)]' : ''}`}>
+              {mCount}
+            </span>
           </div>
-          <span className={`
-            text-base sm:text-sm 
-            font-black tabular-nums 
-            ${theme.textMain}
-            whitespace-nowrap
-          `}>
-            {activeStudents.length} <span className="opacity-20 mx-0.5 sm:mx-1">/</span> {capacity}
-          </span>
+          {/* Mini M bar */}
+          <div className={`w-1.5 h-10 rounded-full overflow-hidden ${isDarkMode ? 'bg-blue-950/60' : 'bg-blue-100'}`}>
+            <div className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-full transition-all duration-700" style={{ height: `${mP}%`, marginTop: `${100 - mP}%` }} />
+          </div>
         </div>
 
-        {/* Enhanced Progress Bar - Taller on mobile for easier viewing */}
-        <div className={`
-          relative w-full rounded-full overflow-hidden 
-          shadow-inner border isolate
-          h-4 sm:h-3
-          ${theme.track} ${theme.border}
-        `}>
-          {/* Male Segment */}
-          <div 
-            style={{ width: `${mP}%` }} 
-            className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-blue-700 to-blue-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(59,130,246,0.4)]"
-          />
-          
-          {/* Female Segment */}
-          <div 
-            style={{ width: `${fP}%` }} 
-            className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-pink-700 to-pink-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(236,72,153,0.4)]"
-          />
-          
-          {/* DYNAMIC EQUILIBRIUM LINE - More visible on mobile */}
-          <div 
-            style={{ left: getFinishLinePosition() }}
-            className={`
-              absolute top-0 bottom-0 z-10 -translate-x-1/2 
-              transition-all duration-1000 ease-in-out 
-              mix-blend-difference opacity-70
-              w-[2.5px] sm:w-[2px]
-              ${theme.line} 
-              shadow-[0_0_10px_white]
-            `} 
-          />
-        </div>
-
-        {/* Capacity Info - Better spacing on mobile */}
-        <div className="mt-3 sm:mt-4 flex justify-between items-center gap-2">
-          <p className={`
-            text-[9px] sm:text-[8px] 
-            font-black uppercase tracking-widest 
-            ${theme.textSub}
-          `}>
-            Registry Capacity
-          </p>
-          <p className={`
-            text-[11px] sm:text-[10px] 
-            font-black whitespace-nowrap
-            ${isFull ? 'text-red-500' : 'text-emerald-500'}
-          `}>
-            {Math.round(fillPercent)}% OCCUPIED
-          </p>
-        </div>
-      </div>
-
-      {/* Gender Count Grid - Optimized for mobile touch */}
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-        {/* Males Card */}
-        <div 
-          className={`
-            p-3 sm:p-4 
-            rounded-xl sm:rounded-2xl 
-            text-center border 
-            transition-all duration-300 
-            active:scale-95 sm:hover:scale-[1.02]
-            ${isDarkMode ? 'bg-slate-950/40 border-white/5' : 'bg-white border-slate-200 shadow-sm'}
-          `}
-          style={{ WebkitTapHighlightColor: 'transparent' }}
-        >
-          <p className="
-            text-[9px] sm:text-[8px] 
-            font-black text-blue-500 
-            uppercase tracking-widest 
-            mb-1.5 sm:mb-1.5 
-            flex items-center justify-center gap-1
-          ">
-            <Users size={11} className="flex-shrink-0" /> Males
-          </p>
-          <ThemedText 
-            variant="h3" 
-            className={`
-              text-2xl sm:text-xl 
-              font-black tabular-nums 
-              ${theme.textMain}
-            `} 
-            isDarkMode={isDarkMode}
-          >
-            {mCount}
-          </ThemedText>
-        </div>
-        
-        {/* Females Card */}
-        <div 
-          className={`
-            p-3 sm:p-4 
-            rounded-xl sm:rounded-2xl 
-            text-center border 
-            transition-all duration-300 
-            active:scale-95 sm:hover:scale-[1.02]
-            ${isDarkMode ? 'bg-slate-950/40 border-white/5' : 'bg-white border-slate-200 shadow-sm'}
-          `}
-          style={{ WebkitTapHighlightColor: 'transparent' }}
-        >
-          <p className="
-            text-[9px] sm:text-[8px] 
-            font-black text-pink-500 
-            uppercase tracking-widest 
-            mb-1.5 sm:mb-1.5 
-            flex items-center justify-center gap-1
-          ">
-            <Users size={11} className="flex-shrink-0" /> Females
-          </p>
-          <ThemedText 
-            variant="h3" 
-            className={`
-              text-2xl sm:text-xl 
-              font-black tabular-nums 
-              ${theme.textMain}
-            `} 
-            isDarkMode={isDarkMode}
-          >
-            {fCount}
-          </ThemedText>
+        {/* Females */}
+        <div className={`flex items-center justify-between px-4 py-3 border-l ${theme.border} ${isDarkMode ? 'bg-pink-950/20' : 'bg-pink-50/50'}`}>
+          <div>
+            <p className="text-[8px] font-black text-pink-500 uppercase tracking-widest mb-0.5 flex items-center gap-1">
+              <Users size={9} /> F
+            </p>
+            <span className={`text-3xl font-black tabular-nums text-pink-400 leading-none ${isDarkMode ? 'drop-shadow-[0_0_10px_rgba(244,114,182,0.5)]' : ''}`}>
+              {fCount}
+            </span>
+          </div>
+          {/* Mini F bar */}
+          <div className={`w-1.5 h-10 rounded-full overflow-hidden ${isDarkMode ? 'bg-pink-950/60' : 'bg-pink-100'}`}>
+            <div className="w-full bg-gradient-to-t from-pink-600 to-pink-400 rounded-full transition-all duration-700" style={{ height: `${fP}%`, marginTop: `${100 - fP}%` }} />
+          </div>
         </div>
       </div>
     </div>

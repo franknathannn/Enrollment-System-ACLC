@@ -314,7 +314,8 @@ function StatInsightsPanel({
   const cycleLabel = cyclePhase === 'up' ? '↑ Upturn expected' : cyclePhase === 'down' ? '↓ Dip expected' : '→ Holding steady'
 
   return (
-    <Card className={`border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+    <Card className={`border shadow-sm relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-indigo-500 to-purple-400" />
       <CardHeader className="pb-3">
         <CardTitle className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
           <span className="w-2 h-5 rounded-full bg-gradient-to-b from-violet-500 to-indigo-500" />
@@ -384,10 +385,125 @@ function StatInsightsPanel({
   )
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARED PREDICTION ENGINE — called by both analyticsData and metrics useMemos
+// so both always produce identical numbers with zero duplication risk.
+// ─────────────────────────────────────────────────────────────────────────────
+function computeScenarios(historicalTotals: number[]) {
+  const n = historicalTotals.length
+  if (n === 0) return null
+
+  // ── Step 1: Weighted baseline (recency-biased average) ───────────────────
+  const recencyWeights = (() => {
+    const raw = historicalTotals.map((_, i) => i + 1)
+    const sum = raw.reduce((s, v) => s + v, 0)
+    return raw.map(w => w / sum)
+  })()
+  const weightedMeanVal  = historicalTotals.reduce((s, v, i) => s + v * recencyWeights[i], 0)
+  const last3            = historicalTotals.slice(-3)
+  const last3Mean        = last3.reduce((s, v) => s + v, 0) / last3.length
+  const sortedH          = [...historicalTotals].sort((a, b) => a - b)
+  const median           = sortedH[Math.floor(n / 2)]
+  const longRunMean      = historicalTotals.reduce((s, v) => s + v, 0) / n
+
+  let projectionBaseline = Math.max(50, Math.round(
+    weightedMeanVal * 0.50 +
+    last3Mean       * 0.35 +
+    median          * 0.15
+  ))
+
+  // ── Step 2: Trend momentum correction ────────────────────────────────────
+  // If the last 2-3 years ALL moved in the same direction, the recency-weighted
+  // average still gets dragged toward older opposing values. Blend in half of
+  // the recent momentum to correct for this bias.
+  const last3Changes = historicalTotals
+    .slice(Math.max(1, n - 3))
+    .map((v, i, arr) => i === 0 ? v - historicalTotals[Math.max(0, n - 3) + i - 1] : v - arr[i - 1])
+    .filter((_, i, arr) => i > 0 || n - 3 >= 1) // ensure we have real pairs
+  // Simpler: compute from raw indices
+  const trendChanges: number[] = []
+  for (let i = Math.max(1, n - 3); i < n; i++) {
+    trendChanges.push(historicalTotals[i] - historicalTotals[i - 1])
+  }
+  const isConsistentlyGrowing   = trendChanges.length >= 2 && trendChanges.every(c => c > 0)
+  const isConsistentlyDeclining = trendChanges.length >= 2 && trendChanges.every(c => c < 0)
+  if (trendChanges.length >= 2) {
+    const avgRecent = trendChanges.reduce((s, v) => s + v, 0) / trendChanges.length
+    if (isConsistentlyGrowing)   projectionBaseline += Math.round(avgRecent * 0.50)
+    if (isConsistentlyDeclining) projectionBaseline += Math.round(avgRecent * 0.40)
+  }
+
+  // ── Step 3: Oscillation cycle detection ──────────────────────────────────
+  const deviations  = historicalTotals.map(v => v - longRunMean)
+  const dampenRatios: number[] = []
+  for (let i = 1; i < deviations.length; i++) {
+    if (Math.abs(deviations[i - 1]) > 0)
+      dampenRatios.push(Math.abs(deviations[i]) / Math.abs(deviations[i - 1]))
+  }
+  const avgDampen = dampenRatios.length > 0
+    ? Math.min(0.80, Math.max(0.35, dampenRatios.reduce((s, v) => s + v, 0) / dampenRatios.length))
+    : 0.55
+  const lastDev    = deviations[n - 1]
+  const lastChange = n >= 2 ? historicalTotals[n - 1] - historicalTotals[n - 2] : 0
+  const cycleSign  = -Math.sign(lastDev === 0 ? lastChange : lastDev)
+  const nextDev    = lastDev * avgDampen * cycleSign
+  const meanReversionPrediction = Math.round(longRunMean + nextDev)
+  const cyclePhase = Math.abs(lastDev) < longRunMean * 0.02
+    ? 'neutral' as const
+    : lastDev < 0 ? 'up' as const : 'down' as const
+
+  // ── Step 4: Confidence range ──────────────────────────────────────────────
+  const changes    = historicalTotals.slice(1).map((v, i) => v - historicalTotals[i])
+  const meanChange = changes.length > 0 ? changes.reduce((s, v) => s + v, 0) / changes.length : 0
+  const variance   = changes.length >= 2
+    ? changes.reduce((s, v) => s + Math.pow(v - meanChange, 2), 0) / changes.length
+    : Math.pow(projectionBaseline * 0.10, 2)
+  // BUG FIX: enforce a minimum spread of 6% of baseline so scenarios never
+  // all collapse to the same number when there are fewer than 2 change values.
+  const stdDev = Math.max(Math.sqrt(variance), projectionBaseline * 0.06)
+
+  const enrollmentFloor   = Math.round(Math.min(...historicalTotals) * 0.85)
+  const enrollmentCeiling = Math.round(Math.max(...historicalTotals) * 1.20)
+
+  const scenarioDeclining  = Math.max(enrollmentFloor,   Math.round(projectionBaseline - stdDev * 0.6))
+  const scenarioOptimistic = Math.min(enrollmentCeiling, Math.round(projectionBaseline + stdDev * 0.8))
+
+  // Weighted regression (used only to shape the declining future line slope)
+  let wSumX=0,wSumY=0,wSumXY=0,wSumXX=0,wSum=0
+  for (let i=0;i<n;i++){const w=i+1;wSumX+=w*i;wSumY+=w*historicalTotals[i];wSumXY+=w*i*historicalTotals[i];wSumXX+=w*i*i;wSum+=w}
+  const wDen=wSum*wSumXX-wSumX*wSumX
+  const wM=wDen!==0?(wSum*wSumXY-wSumX*wSumY)/wDen:0
+  const wB=(wSumY-wM*wSumX)/wSum
+  const weightedRegPrediction = Math.round(wM * n + wB)
+
+  return {
+    projectionBaseline,       // the realistic mid-point (50/35/15 blend + momentum)
+    longRunMean,
+    avgDampen,
+    lastDev,
+    lastChange,
+    cycleSign,
+    nextDev,
+    meanReversionPrediction,
+    cyclePhase,
+    stdDev,
+    enrollmentFloor,
+    enrollmentCeiling,
+    scenarioDeclining,
+    scenarioRealistic:  projectionBaseline,
+    scenarioOptimistic,
+    weightedRegPrediction,
+    regSlope: wM,
+    regIntercept: wB,
+    n,
+    historicalTotals,
+  }
+}
+
 export default function PredictiveAnalytics() {
   const router = useRouter()
-  const { isDarkMode: themeDarkMode, mounted } = useTheme()
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const { isDarkMode, mounted } = useTheme()
   const [loading, setLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
   
@@ -414,18 +530,8 @@ export default function PredictiveAnalytics() {
   const [pendingCount, setPendingCount] = useState<number>(0)
   const [jhsLiveCount, setJhsLiveCount] = useState<number>(0)
   const [alsLiveCount, setAlsLiveCount] = useState<number>(0)
+  const fetchingRef = useRef(false)
 
-  useEffect(() => {
-    setIsDarkMode(themeDarkMode)
-  }, [themeDarkMode])
-
-  useEffect(() => {
-    const handleThemeChange = (e: any) => {
-      setIsDarkMode(e.detail.mode === 'dark')
-    }
-    window.addEventListener('theme-change', handleThemeChange)
-    return () => window.removeEventListener('theme-change', handleThemeChange)
-  }, [])
 
   // Market data predictor — uses recent growth rates from past JHS and ALS
   // data to estimate next year's feeder pool size
@@ -466,6 +572,8 @@ export default function PredictiveAnalytics() {
 
   // Fetches all data from Supabase: system config, history, enrolled count, pending count
   const fetchData = useCallback(async (isBackground = false) => {
+    if (isBackground && fetchingRef.current) return
+    fetchingRef.current = true
     if (!isBackground) setLoading(true)
     
     try {
@@ -580,10 +688,11 @@ export default function PredictiveAnalytics() {
       console.error("Sync error:", error)
       if (!isBackground) toast.error("Failed to sync analytics")
     } finally {
+      fetchingRef.current = false
       setLoading(false)
       setIsSyncing(false)
     }
-  }, []) 
+  }, [])
 
   useEffect(() => {
     if (enrolledCount > 0 && simulationValue === 0) {
@@ -609,7 +718,7 @@ export default function PredictiveAnalytics() {
   }, [activeConfig?.school_year, history])
 
   useEffect(() => {
-    const pollingInterval = setInterval(() => fetchData(true), 5000)
+    const pollingInterval = setInterval(() => fetchData(true), 15000)
     const channel = supabase.channel('analytics-live-v3')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => fetchData(true))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, () => {
@@ -673,111 +782,24 @@ export default function PredictiveAnalytics() {
         return combinedData
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // How the prediction engine works
-    //
-    // Enrollment data in most schools doesn't grow in a straight line —
-    // it goes up one year, down the next, then back up, slowly settling
-    // toward a stable average. That alternating pattern is called a
-    // damped oscillation, and it's exactly what we see here.
-    //
-    // Classic tools like linear regression or Holt's smoothing assume the
-    // data is always moving in one direction. When applied to oscillating
-    // data, they follow the wrong signal and produce numbers that are
-    // far too low (sometimes by hundreds of students).
-    //
-    // This engine is built specifically for oscillating enrollment data:
-    //   Baseline   — a weighted average of past years (no trend assumed)
-    //   Realistic  — oscillates around the baseline, dampening each year
-    //   Declining  — follows the regression slope as a lower-bound shape
-    //   Optimistic — baseline + one standard deviation of historical swings
-    //   All three  — bounded by a realistic floor and ceiling so they
-    //                never suggest numbers that couldn't happen in practice
-    // ─────────────────────────────────────────────────────────────────────
-
-    // Step 1 — Establish a baseline
-    // Rather than projecting a trend, we ask: "What has the average been?"
-    // Recent years are weighted more heavily because they better reflect
-    // the school's current situation. We also factor in the last 3 years
-    // and the median to smooth out any unusual one-off years.
-    const recencyWeights = (() => {
-        const raw = historicalTotals.map((_, i) => i + 1)
-        const sum = raw.reduce((s, v) => s + v, 0)
-        return raw.map(w => w / sum)
-    })()
-    const weightedMeanVal = historicalTotals.reduce((s, v, i) => s + v * recencyWeights[i], 0)
-    const last3 = historicalTotals.slice(-3)
-    const last3Mean = last3.reduce((s, v) => s + v, 0) / last3.length
-    const sortedH = [...historicalTotals].sort((a, b) => a - b)
-    const median = sortedH[Math.floor(n / 2)]
-    const longRunMean = historicalTotals.reduce((s, v) => s + v, 0) / n
-
-    // Final baseline: half from recency-weighted history, a third from
-    // the last 3 years, and a small anchor from the median year
-    const projectionBaseline = Math.max(50, Math.round(
-        weightedMeanVal * 0.50 +
-        last3Mean       * 0.35 +
-        median          * 0.15
-    ))
-
-    // Step 2 — Measure the oscillation pattern
-    // We look at how far each year's enrollment deviated from the long-run
-    // average, then measure how quickly those swings are shrinking. A school
-    // with a dampening ratio of ~0.58 means each swing is about 58% of the
-    // previous one — the pattern is converging steadily toward the mean.
-    const deviations = historicalTotals.map(v => v - longRunMean)
-    const dampenRatios: number[] = []
-    for (let i = 1; i < deviations.length; i++) {
-        if (Math.abs(deviations[i-1]) > 0)
-            dampenRatios.push(Math.abs(deviations[i]) / Math.abs(deviations[i-1]))
+    // ── Call the shared prediction engine ──────────────────────────────────
+    const sc = computeScenarios(historicalTotals)
+    if (!sc) {
+        const fallback = Math.max(pivotTotal, 100)
+        combinedData.push({ year: currentYearStr, sortYear: currentYearInt, total: fallback,
+            historicalTotal: pivotTotal, futureStable: Math.round(fallback*1.15),
+            futureDeclining: Math.round(fallback*0.88), futureWavy: fallback,
+            marketJHS: 0, marketALS: 0, marketTransferees: 0, gap: [pivotTotal, Math.round(fallback*1.15)], type: 'current' })
+        return combinedData
     }
-    const avgDampen = dampenRatios.length > 0
-        ? Math.min(0.80, Math.max(0.35, dampenRatios.reduce((s,v) => s+v,0) / dampenRatios.length))
-        : 0.55
+    const {
+        projectionBaseline, longRunMean, avgDampen, lastDev, lastChange,
+        cycleSign, nextDev, stdDev, enrollmentFloor, enrollmentCeiling,
+        scenarioDeclining, scenarioRealistic, scenarioOptimistic,
+        regSlope, regIntercept,
+    } = sc
 
-    // Current phase: if enrollment was above average last year, expect a
-    // slight dip next year — and vice versa. This is the oscillation signal.
-    const lastDev   = deviations[n - 1]
-    const lastChange = n >= 2 ? historicalTotals[n-1] - historicalTotals[n-2] : 0
-    const cycleSign  = -Math.sign(lastDev === 0 ? lastChange : lastDev)
-    const nextDev    = lastDev * avgDampen * cycleSign
-    const meanReversionPrediction = Math.round(longRunMean + nextDev)
-
-    // Step 3 — Set the confidence range
-    // We use the standard deviation of year-to-year changes to define how
-    // wide the scenario fan should be. A volatile history (big swings) gives
-    // a wider fan; a stable history gives a narrower one.
-    //
-    // We then apply a structural floor and ceiling so the bands never suggest
-    // enrollment numbers that simply couldn't happen in a real school context.
-    // No model should predict a 35% student drop without a pandemic or closure.
-    const changes = historicalTotals.slice(1).map((v, i) => v - historicalTotals[i])
-    const meanChange = changes.length > 0 ? changes.reduce((s,v) => s+v,0) / changes.length : 0
-    const variance   = changes.length > 0
-        ? changes.reduce((s,v) => s + Math.pow(v - meanChange, 2), 0) / changes.length
-        : Math.pow(projectionBaseline * 0.10, 2)
-    const stdDev = Math.sqrt(variance)
-
-    // Floor = 85% of the worst year ever recorded (retention rarely falls further)
-    // Ceiling = 120% of the best year ever recorded (realistic growth upper bound)
-    const enrollmentFloor   = Math.round(Math.min(...historicalTotals) * 0.85)
-    const enrollmentCeiling = Math.round(Math.max(...historicalTotals) * 1.20)
-
-    const scenarioDeclining  = Math.max(enrollmentFloor,   Math.round(projectionBaseline - stdDev * 0.6))
-    const scenarioRealistic  = projectionBaseline
-    const scenarioOptimistic = Math.min(enrollmentCeiling, Math.round(projectionBaseline + stdDev * 0.8))
-
-    // Weighted regression is used only to give the declining scenario
-    // a realistic downward shape — not to set the baseline itself
-    let wSumX=0,wSumY=0,wSumXY=0,wSumXX=0,wSum=0
-    for(let i=0;i<n;i++){const w=i+1;wSumX+=w*i;wSumY+=w*historicalTotals[i];wSumXY+=w*i*historicalTotals[i];wSumXX+=w*i*i;wSum+=w}
-    const wDen=wSum*wSumXX-wSumX*wSumX
-    const wM=wDen!==0?(wSum*wSumXY-wSumX*wSumY)/wDen:0
-    const wB=(wSumY-wM*wSumX)/wSum
-    const weightedRegPrediction = Math.round(wM*n+wB)
-    const regDeclining = { m: wM, b: wB }
-
-    const { predictedJHS, predictedALS, predictedOthers } = predictMarketData(history)
+        const { predictedJHS, predictedALS, predictedOthers } = predictMarketData(history)
 
     // ── MILESTONE LOGIC ─────────────────────────────────────────────────
     // When live count surpasses a scenario, that scenario re-anchors to the
@@ -867,7 +889,7 @@ export default function PredictiveAnalytics() {
           declStart = Math.round(declStart + (longRunMean - declStart) * 0.15)
           declVal   = Math.max(MIN_FLOOR, Math.min(wavyVal - 5, declStart))
         } else {
-          const linearDecl = regDeclining.m * nextX + regDeclining.b
+          const linearDecl = regSlope * nextX + regIntercept
           declVal = Math.max(MIN_FLOOR, Math.round(linearDecl))
         }
 
@@ -918,37 +940,20 @@ export default function PredictiveAnalytics() {
       }
     }
 
-    // Re-run the same logic here to get the numbers shown in the UI cards.
-    // This mirrors the analyticsData engine so everything stays consistent.
-    const nM = historicalTotals.length
-    const recWM = (() => { const r=historicalTotals.map((_,i)=>i+1); const s=r.reduce((a,v)=>a+v,0); return r.map(w=>w/s) })()
-    const wMeanM  = historicalTotals.reduce((s,v,i)=>s+v*recWM[i],0)
-    const l3M     = historicalTotals.slice(-3); const last3MeanM = l3M.reduce((s,v)=>s+v,0)/l3M.length
-    const sortedM = [...historicalTotals].sort((a,b)=>a-b); const medianM = sortedM[Math.floor(nM/2)]
-    const meanM   = historicalTotals.reduce((s,v)=>s+v,0)/nM
-    const blendedBaseline = Math.max(50, Math.round(wMeanM*0.50 + last3MeanM*0.35 + medianM*0.15))
-    // Cycle detection — same dampening measurement as the chart engine
-    const devs  = historicalTotals.map(v=>v-meanM)
-    const dRatios: number[] = []
-    for(let i=1;i<devs.length;i++) if(Math.abs(devs[i-1])>0) dRatios.push(Math.abs(devs[i])/Math.abs(devs[i-1]))
-    const avgDamp = Math.min(0.80, Math.max(0.35, dRatios.length>0 ? dRatios.reduce((s,v)=>s+v,0)/dRatios.length : 0.55))
-    const lastDevM = devs[nM-1] ?? 0
-    const lastChM  = nM>=2 ? historicalTotals[nM-1]-historicalTotals[nM-2] : 0
-    const meanRevP = Math.round(meanM + lastDevM*avgDamp*(-Math.sign(lastDevM===0?lastChM:lastDevM)))
-    // Weighted regression — shown in the diagnostics panel for reference
-    let wSX=0,wSY=0,wSXY=0,wSXX=0,wS=0
-    for(let i=0;i<nM;i++){const w=i+1;wSX+=w*i;wSY+=w*historicalTotals[i];wSXY+=w*i*historicalTotals[i];wSXX+=w*i*i;wS+=w}
-    const wD=wS*wSXX-wSX*wSX; const wMv=wD!==0?(wS*wSXY-wSX*wSY)/wD:0; const wBv=(wSY-wMv*wSX)/wS
-    const wRegP = Math.round(wMv*nM+wBv)
-    // Confidence range and domain bounds — same as the chart engine
-    const changesM = historicalTotals.slice(1).map((v,i)=>v-historicalTotals[i])
-    const meanChM  = changesM.length>0 ? changesM.reduce((s,v)=>s+v,0)/changesM.length : 0
-    const varM     = changesM.length>0 ? changesM.reduce((s,v)=>s+Math.pow(v-meanChM,2),0)/changesM.length : Math.pow(blendedBaseline*0.10,2)
-    const stdDevM  = Math.sqrt(varM)
-    const floorM   = Math.round(Math.min(...historicalTotals)*0.85)
-    const ceilingM = Math.round(Math.max(...historicalTotals)*1.20)
+    // ── Use the shared engine — same result as analyticsData, zero duplication ─
+    const scM = computeScenarios(historicalTotals)
+    const blendedBaseline   = scM?.projectionBaseline ?? Math.max(...historicalTotals)
+    const meanRevP          = scM?.meanReversionPrediction ?? blendedBaseline
+    const wRegP             = scM?.weightedRegPrediction   ?? blendedBaseline
+    const avgDampM          = scM?.avgDampen     ?? 0.55
+    const lastDevM          = scM?.lastDev       ?? 0
+    const cyclePhaseM       = scM?.cyclePhase    ?? ('neutral' as const)
+    const longRunMeanM      = scM?.longRunMean   ?? blendedBaseline
+    const stdDevM           = scM?.stdDev        ?? blendedBaseline * 0.10
+    const floorM            = scM?.enrollmentFloor   ?? Math.round(Math.min(...historicalTotals) * 0.85)
+    const ceilingM          = scM?.enrollmentCeiling ?? Math.round(Math.max(...historicalTotals) * 1.20)
 
-    const expectedOutcome = currentPoint?.futureWavy ?? blendedBaseline
+        const expectedOutcome = currentPoint?.futureWavy ?? blendedBaseline
     const lowestPossible  = currentPoint?.futureDeclining ?? Math.max(floorM,   Math.round(expectedOutcome - stdDevM * 0.6))
     const highestPossible = currentPoint?.futureStable    ?? Math.min(ceilingM, Math.round(expectedOutcome + stdDevM * 0.8))
     const nextTotal = nextPoint?.futureWavy ?? Math.round(expectedOutcome * 1.05)
@@ -956,20 +961,15 @@ export default function PredictiveAnalytics() {
       ? (((expectedOutcome - lastYear.total) / lastYear.total) * 100).toFixed(1)
       : "0"
 
-    const cyclePhase = Math.abs(lastDevM) < meanM * 0.02
-        ? 'neutral' as const
-        : lastDevM < 0 ? 'up' as const
-        : 'down' as const
-
     return {
       growth, expectedOutcome, nextTotal, lowestPossible, highestPossible, hasHistory: true,
       stdDev: stdDevM,
-      holtPrediction: blendedBaseline,  // show baseline as primary in diagnostics
+      holtPrediction: blendedBaseline,
       meanRevPrediction: meanRevP,
       weightedRegPrediction: wRegP,
-      cyclePhase,
-      longRunMean: meanM,
-      dampening: avgDamp,
+      cyclePhase: cyclePhaseM,
+      longRunMean: longRunMeanM,
+      dampening: avgDampM,
       historicalTotals,
       enrollmentFloor: floorM,
       enrollmentCeiling: ceilingM,
@@ -988,19 +988,29 @@ export default function PredictiveAnalytics() {
   if (!mounted) return null
 
   if (loading && !activeConfig) return (
-    <div className={`min-h-screen flex flex-col items-center justify-center gap-4 ${isDarkMode ? 'bg-slate-950' : 'bg-gradient-to-br from-slate-50 to-blue-50'}`}>
-      <div className="relative">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-xl">
-          <RefreshCw className="animate-spin text-white w-7 h-7" />
+    <div className={`min-h-screen flex flex-col items-center justify-center gap-6 ${isDarkMode ? 'bg-slate-950' : 'bg-gradient-to-br from-slate-50 to-blue-50'}`}>
+      <div className="relative flex items-center justify-center">
+        <span className="absolute w-24 h-24 rounded-full border-2 border-blue-500/15 animate-ping" />
+        <span className="absolute w-16 h-16 rounded-full border-2 border-purple-400/20 animate-ping" style={{ animationDelay: "0.2s" }} />
+        <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-xl shadow-blue-500/30 z-10">
+          <RefreshCw className="animate-spin text-white w-6 h-6" />
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 opacity-30 blur-xl -z-10 scale-150" />
         </div>
-        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 opacity-20 blur-lg" />
       </div>
-      <p className={`text-[11px] font-black uppercase tracking-[0.3em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Loading Analytics...</p>
+      <p className={`text-[11px] font-black uppercase tracking-[0.3em] ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Loading Analytics...</p>
     </div>
   )
 
   return (
     <TooltipProvider delayDuration={100}>
+    {/* Thin themed scrollbar — adapts to dark/light mode */}
+    <style>{`
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      ::-webkit-scrollbar-track { background: ${isDarkMode ? 'rgba(51,65,85,0.3)' : 'rgba(226,232,240,0.6)'}; border-radius: 99px; }
+      ::-webkit-scrollbar-thumb { background: ${isDarkMode ? 'rgba(100,116,139,0.7)' : 'rgba(148,163,184,0.8)'}; border-radius: 99px; }
+      ::-webkit-scrollbar-thumb:hover { background: ${isDarkMode ? 'rgba(148,163,184,0.9)' : 'rgba(100,116,139,0.9)'}; }
+      * { scrollbar-width: thin; scrollbar-color: ${isDarkMode ? 'rgba(100,116,139,0.7) rgba(51,65,85,0.3)' : 'rgba(148,163,184,0.8) rgba(226,232,240,0.6)'}; }
+    `}</style>
     <div className={`space-y-6 p-4 md:p-8 pb-24 transition-colors animate-in fade-in duration-700 ${isDarkMode ? '' : 'bg-gradient-to-br from-slate-50/50 via-white to-blue-50/30 min-h-screen'}`}>
 
         {/* ── HEADER ── */}
@@ -1008,8 +1018,8 @@ export default function PredictiveAnalytics() {
             <div className="space-y-2">
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="ghost" onClick={() => router.back()} className={`pl-0 hover:bg-transparent hover:text-blue-600 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                        <Button variant="ghost" onClick={() => router.back()} className={`pl-0 hover:bg-transparent hover:text-blue-600 text-sm group ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                            <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-0.5 transition-transform duration-200" /> Back to Dashboard
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Return to main dashboard</p></TooltipContent>

@@ -29,6 +29,7 @@
     "docxtemplater": "^3.68.3",
     "file-saver": "^2.0.5",
     "html-to-image": "^1.11.13",
+    "jsqr": "^1.4.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.561.0",
     "next": "16.0.10",
@@ -44,6 +45,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
+    "xlsx": "^0.18.5",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

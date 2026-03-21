@@ -11,6 +11,7 @@ interface FilteringDependencies {
 export function useStudentFiltering({ students, processingIds, processingIdsRef, setHiddenRows, setExitingRows }: FilteringDependencies) {
   const [searchTerm, setSearchTerm] = useState("")
   const [filter, setFilter] = useState<"Pending" | "Accepted" | "Rejected">("Pending")
+  const [gradeLevelFilter, setGradeLevelFilter] = useState<"ALL" | "11" | "12">("ALL")
   const [sortBy, setSortBy] = useState<string>("alpha")
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -51,6 +52,8 @@ export function useStudentFiltering({ students, processingIds, processingIdsRef,
   const filteredStudents = useMemo(() => {
     const filtered = students.filter(s => {
       const matchesStatus = s.status === filter || (filter === 'Accepted' && s.status === 'Approved');
+      const studentGradeLevel = s.grade_level || '11'
+      const matchesGradeLevel = gradeLevelFilter === 'ALL' || studentGradeLevel === gradeLevelFilter;
       
       // --- UPDATED SEARCH LOGIC HERE ---
       const term = searchTerm.toLowerCase();
@@ -59,7 +62,7 @@ export function useStudentFiltering({ students, processingIds, processingIdsRef,
         (s.lrn && s.lrn.includes(term)) || 
         (s.id && s.id.toLowerCase().includes(term)); // This covers the UUID (and Short ID)
       
-      return matchesStatus && matchesSearch;
+      return matchesStatus && matchesSearch && matchesGradeLevel;
     })
 
     return filtered.sort((a, b) => {
@@ -76,7 +79,7 @@ export function useStudentFiltering({ students, processingIds, processingIdsRef,
         case 'alpha': default: return a.last_name.localeCompare(b.last_name);
       }
     })
-  }, [students, filter, searchTerm, sortBy])
+  }, [students, filter, gradeLevelFilter, searchTerm, sortBy])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -188,6 +191,7 @@ export function useStudentFiltering({ students, processingIds, processingIdsRef,
   return {
     searchTerm, setSearchTerm,
     filter, setFilter,
+    gradeLevelFilter, setGradeLevelFilter,
     sortBy, setSortBy,
     sortDropdownOpen, setSortDropdownOpen,
     currentPage, setCurrentPage,

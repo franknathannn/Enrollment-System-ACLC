@@ -131,8 +131,9 @@ export default function Step4Documents() {
 
         {/* HEADER */}
         <div className={cn("rounded-2xl sm:rounded-[32px] p-4 sm:p-6 border flex items-center gap-3 sm:gap-5 shadow-2xl relative overflow-hidden", isDark ? "bg-blue-600/10 border-blue-500/20 text-white" : "bg-white border-blue-100 text-slate-900")}>
-          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
-            <FileText className="text-white w-6 h-6 sm:w-7 sm:h-7" />
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
+            <FileText className="text-white w-6 h-6 sm:w-7 sm:h-7 drop-shadow-[0_1px_4px_rgba(255,255,255,0.3)]" />
           </div>
           <div className="min-w-0">
             <p className="text-[9px] font-bold uppercase tracking-[0.3em] sm:tracking-[0.4em] text-blue-400 mb-0.5 sm:mb-1">Step 04</p>
@@ -179,7 +180,7 @@ export default function Step4Documents() {
             (!isJHS && isFieldRequired('af5_url')       && !formData.af5_url) ||
             (!isJHS && isFieldRequired('diploma_url')   && !formData.diploma_url)
           }
-          className="w-full min-h-[48px] sm:min-h-[52px] md:h-14 rounded-2xl sm:rounded-[28px] bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-[background-color,color,transform] duration-300 active:scale-[0.98] flex items-center justify-center gap-3 sm:gap-4 group disabled:opacity-50 touch-manipulation">
+          className="w-full min-h-[48px] sm:min-h-[52px] md:h-14 rounded-2xl sm:rounded-[28px] bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white shadow-[0_20px_50px_rgba(59,130,246,0.4)] transition-[background-color,color,box-shadow,transform] duration-300 active:scale-[0.98] flex items-center justify-center gap-3 sm:gap-4 group disabled:opacity-50 touch-manipulation">
           <span className="font-bold uppercase text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.4em] text-white lg:group-hover:text-blue-600">Finalize Application</span>
           <div className="w-9 h-9 sm:w-10 sm:h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-[background-color]">
             <ChevronRight size={18} className="sm:w-5 sm:h-5 lg:group-hover:translate-x-1 transition-transform" />

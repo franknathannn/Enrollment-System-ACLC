@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 // supabase/functions/weekly-snapshot/index.ts
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 

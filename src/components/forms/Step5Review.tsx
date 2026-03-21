@@ -63,6 +63,7 @@ export default function Step5Review() {
         address: formData.address, email: formData.email, phone: formData.phone, lrn: formData.lrn,
         strand: formData.strand, student_category: formData.student_category, last_school_attended: formData.last_school_attended,
         school_year: activeSY, gwa_grade_10: isJHS ? formData.gwa_grade_10 : null,
+        grade_level: (formData as any).grade_level || "11",
         guardian_first_name: formData.guardian_first_name, guardian_middle_name: formData.guardian_middle_name,
         guardian_last_name: formData.guardian_last_name, guardian_phone: formData.guardian_phone,
         form_138_url: isJHS ? formData.form_138_url : null, good_moral_url: isJHS ? formData.good_moral_url : null,
@@ -107,9 +108,10 @@ export default function Step5Review() {
 
         {/* HEADER */}
         <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b pb-4 sm:pb-6 relative overflow-hidden group rounded-2xl sm:rounded-[32px] p-4 sm:p-6 transition-colors duration-300", isDark ? "bg-blue-600/5 border-white/5" : "bg-white border-slate-200")}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
           <div className="flex items-center gap-3 sm:gap-5 relative z-10 min-w-0">
-            <div className="w-10 h-10 sm:w-14 sm:h-14 bg-blue-600 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
-              <BadgeCheck size={22} className="sm:w-8 sm:h-8" />
+            <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
+              <BadgeCheck size={22} className="sm:w-8 sm:h-8 drop-shadow-[0_1px_4px_rgba(255,255,255,0.3)]" />
             </div>
             <div className="min-w-0">
               <h2 className={cn("text-base sm:text-2xl md:text-3xl font-bold tracking-tighter uppercase italic leading-tight", isDark ? "text-white" : "text-slate-900")}>Review Information</h2>
@@ -173,8 +175,8 @@ export default function Step5Review() {
           <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-5 rotate-12 transition-transform lg:group-hover:scale-125 duration-700">
             <ShieldCheck size={80} className="sm:w-[120px] sm:h-[120px] text-blue-400" />
           </div>
-          <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg">
-            <ShieldCheck className="text-white w-5 h-5 sm:w-7 sm:h-7" />
+          <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
+            <ShieldCheck className="text-white w-5 h-5 sm:w-7 sm:h-7 drop-shadow-[0_1px_4px_rgba(255,255,255,0.3)]" />
           </div>
           <div className="space-y-1 relative z-10 min-w-0">
             <p className="text-[9px] sm:text-[10px] font-bold text-blue-400 uppercase tracking-[0.3em] sm:tracking-[0.4em]">Upon Submission</p>
@@ -190,7 +192,7 @@ export default function Step5Review() {
           <ChevronLeft className="mr-2 h-4 w-4 shrink-0" /> Edit
         </Button>
         <Button onClick={handleFinalSubmit} disabled={loading}
-          className="flex-1 w-full min-h-[48px] sm:min-h-[52px] md:h-14 bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white rounded-2xl sm:rounded-[28px] shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-[background-color,color,transform] duration-300 active:scale-[0.98] flex items-center justify-center gap-3 sm:gap-4 group touch-manipulation order-1 sm:order-2">
+          className="flex-1 w-full min-h-[48px] sm:min-h-[52px] md:h-14 bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white rounded-2xl sm:rounded-[28px] shadow-[0_20px_50px_rgba(59,130,246,0.4)] transition-[background-color,color,box-shadow,transform] duration-300 active:scale-[0.98] flex items-center justify-center gap-3 sm:gap-4 group touch-manipulation order-1 sm:order-2">
           {loading ? <Loader2 className="animate-spin w-5 h-5 shrink-0" /> : <><Sparkles size={16} className="sm:w-5 sm:h-5 shrink-0" /><span className="font-bold uppercase text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.4em]">Submit Application</span></>}
         </Button>
       </div>
@@ -200,10 +202,14 @@ export default function Step5Review() {
         <DialogContent className={cn("w-[95vw] max-w-md max-h-[90dvh] overflow-auto p-0 overflow-hidden rounded-2xl sm:rounded-[56px] shadow-2xl", isDark ? "bg-slate-950 border-white/10" : "bg-white border-slate-200")}>
           <DialogHeader className="sr-only"><DialogTitle>Success</DialogTitle><DialogDescription>Application transmitted.</DialogDescription></DialogHeader>
           <div className="p-6 sm:p-12 text-center space-y-6 sm:space-y-8 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
             <div className="absolute inset-0 bg-blue-600/10 blur-[100px]" />
             <div className="relative z-10">
-              <div className="w-16 h-16 sm:w-24 sm:h-24 bg-blue-600 rounded-2xl sm:rounded-[32px] flex items-center justify-center mx-auto mb-6 sm:mb-8 shadow-[0_20px_60px_rgba(59,130,246,0.5)] rotate-6">
-                <Building2 className="text-white w-8 h-8 sm:w-12 sm:h-12" />
+              <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-6 sm:mb-8">
+                <span className="absolute inset-0 rounded-2xl sm:rounded-[32px] border-2 border-blue-500/30 animate-ping" />
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl sm:rounded-[32px] flex items-center justify-center shadow-[0_20px_60px_rgba(59,130,246,0.5)] rotate-6">
+                  <Building2 className="text-white w-8 h-8 sm:w-12 sm:h-12" />
+                </div>
               </div>
               <h2 className={cn("text-2xl sm:text-4xl font-black uppercase tracking-tighter leading-tight italic", isDark ? "text-white" : "text-slate-900")}>
                 APPLICATION <br /> <span className="text-blue-500">SUBMITTED</span>
@@ -224,7 +230,8 @@ export default function Step5Review() {
 
 function ReviewSection({ icon, title, details, isDark }: any) {
   return (
-    <Card className={cn("p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-[32px] border w-full overflow-hidden shadow-inner transition-colors duration-300", isDark ? "border-blue-900/40 bg-slate-950/60 lg:hover:bg-white/[0.08]" : "border-slate-200 bg-white lg:hover:bg-slate-50")}>
+    <Card className={cn("p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-[32px] border w-full overflow-hidden shadow-inner transition-colors duration-300 relative", isDark ? "border-blue-900/40 bg-slate-950/60 lg:hover:bg-white/[0.08]" : "border-slate-200 bg-white lg:hover:bg-slate-50")}>
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/60 via-violet-500/40 to-transparent" />
       <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="p-2 sm:p-3 bg-blue-600/20 rounded-xl sm:rounded-2xl border border-blue-500/20 shrink-0">{icon}</div>
         <p className="text-[9px] sm:text-[10px] font-bold text-blue-400 uppercase tracking-[0.3em] sm:tracking-[0.4em] italic truncate">{title}</p>

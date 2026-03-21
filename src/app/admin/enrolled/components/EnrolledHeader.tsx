@@ -17,18 +17,27 @@ interface EnrolledHeaderProps {
 
 export const EnrolledHeader = memo(({ isDarkMode, loading, fetchStudents, searchTerm, setSearchTerm, onExport }: EnrolledHeaderProps) => {
   return (
-    <ThemedCard 
+    <ThemedCard
       className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4 p-4 md:p-8 rounded-[32px] border relative z-40 transition-colors duration-500 overflow-hidden"
-      style={{ 
-        backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.8)' : '#ffffff',
-        borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9',
+      style={{
+        backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.85)' : '#ffffff',
+        borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.6)' : '#e2e8f0',
         width: '100%',
         maxWidth: '100%'
       }}
     >
+      {/* Top accent strip */}
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400" />
+      {/* Ambient glow */}
+      <div className={`absolute -top-16 -right-16 w-48 h-48 rounded-full blur-[60px] pointer-events-none ${isDarkMode ? 'bg-emerald-500/6' : 'bg-emerald-400/5'}`} />
+
       <div className="w-full md:w-auto text-center md:text-left">
-        <ThemedText variant="h1" className={`text-3xl md:text-5xl ${isDarkMode ? 'text-white' : 'text-slate-900'}`} isDarkMode={isDarkMode}>Enrolled Students</ThemedText>
-        <p className={`text-xs md:text-sm italic mt-2 font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+        <div className="flex items-center gap-2.5 justify-center md:justify-start mb-1">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>Official Registry</p>
+        </div>
+        <ThemedText variant="h1" className={`text-4xl md:text-6xl font-black uppercase tracking-tighter leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`} isDarkMode={isDarkMode}>Enrolled</ThemedText>
+        <p className={`text-[11px] font-semibold mt-1.5 italic ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
           Official List of Enrolled Students
         </p>
       </div>

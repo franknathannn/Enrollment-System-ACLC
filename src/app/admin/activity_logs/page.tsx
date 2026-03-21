@@ -47,8 +47,7 @@ const StarConstellation = memo(function StarConstellation() {
 })
 
 export default function ActivityLogsPage() {
-  const { isDarkMode: themeDarkMode } = useTheme()
-  const [isDarkMode, setIsDarkMode] = useState(themeDarkMode)
+  const { isDarkMode } = useTheme()
   const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -83,18 +82,21 @@ export default function ActivityLogsPage() {
     if (user) setUser(user)
   }, [])
 
-  useEffect(() => {
-    setIsDarkMode(themeDarkMode)
-  }, [themeDarkMode])
+  const [adminProfiles, setAdminProfiles] = useState<Record<string, { name: string; avatar: string | null }>>({})
 
+  // Batch-fetch all distinct admin profiles whenever logs change
   useEffect(() => {
-    const handleThemeChange = (e: any) => {
-      setIsDarkMode(e.detail.mode === 'dark')
-    }
-    window.addEventListener('theme-change', handleThemeChange)
-    return () => window.removeEventListener('theme-change', handleThemeChange)
-  }, [])
-  
+    const ids = [...new Set(logs.map((l: any) => l.admin_id).filter(Boolean))]
+    if (ids.length === 0) return
+    supabase.from('admin_profiles').select('id, full_name, avatar_url').in('id', ids)
+      .then(({ data }) => {
+        if (!data) return
+        const map: Record<string, { name: string; avatar: string | null }> = {}
+        data.forEach((p: any) => { map[p.id] = { name: p.full_name, avatar: p.avatar_url } })
+        setAdminProfiles(map)
+      })
+  }, [logs])
+
   useEffect(() => {
     checkUser()
     fetchLogs()
@@ -203,6 +205,14 @@ export default function ActivityLogsPage() {
     ) && (filter === "ALL" || log.action_type === filter)
   })
 
+  // Pagination — 5 per page
+  const LOGS_PER_PAGE = 5
+  const [logsPage, setLogsPage] = useState(1)
+  const totalLogsPages = Math.max(1, Math.ceil(filteredLogs.length / LOGS_PER_PAGE))
+  const pagedLogs = filteredLogs.slice((logsPage - 1) * LOGS_PER_PAGE, logsPage * LOGS_PER_PAGE)
+  // Reset page when filter/search changes
+  useEffect(() => { setLogsPage(1) }, [searchTerm, filter])
+
   const handleClearAllLogs = async () => {
     const toastId = toast.loading("Clearing all logs...")
     try {
@@ -269,26 +279,41 @@ export default function ActivityLogsPage() {
 
   return (
     <TooltipProvider delayDuration={100}>
-    <div 
-      className="relative min-h-screen transition-colors duration-500"
-    >
+    {/* Thin themed scrollbar — adapts to dark/light mode */}
+    <style>{`
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      ::-webkit-scrollbar-track { background: ${isDarkMode ? 'rgba(51,65,85,0.3)' : 'rgba(226,232,240,0.6)'}; border-radius: 99px; }
+      ::-webkit-scrollbar-thumb { background: ${isDarkMode ? 'rgba(100,116,139,0.7)' : 'rgba(148,163,184,0.8)'}; border-radius: 99px; }
+      ::-webkit-scrollbar-thumb:hover { background: ${isDarkMode ? 'rgba(148,163,184,0.9)' : 'rgba(100,116,139,0.9)'}; }
+      * { scrollbar-width: thin; scrollbar-color: ${isDarkMode ? 'rgba(100,116,139,0.7) rgba(51,65,85,0.3)' : 'rgba(148,163,184,0.8) rgba(226,232,240,0.6)'}; }
+    `}</style>
+    <div className="relative min-h-screen transition-colors duration-500">
       <StarConstellation />
 
       <div className="relative z-10 p-4 md:p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700 pb-32">
         
         {/* HEADER SECTION */}
-        <div 
-          className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 backdrop-blur-md p-6 md:p-8 rounded-[32px] shadow-xl border transition-all duration-500"
+        <div
+          className="relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-end gap-6 p-6 md:p-8 rounded-[32px] shadow-xl border transition-all duration-500"
           style={{
-            backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.2)'
+            backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.85)' : '#ffffff',
+            borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.6)' : '#e2e8f0',
           }}
         >
-          <div>
-            <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase leading-none italic" style={{ color: isDarkMode ? themeColors.dark.text.primary : themeColors.light.text.primary }}>System Logs</h1>
-            <p className="font-medium italic text-sm mt-2 flex items-center gap-2" style={{ color: isDarkMode ? themeColors.dark.text.secondary : themeColors.light.text.secondary }}>
-              <History size={14} className="text-blue-500" />
-              Enrollment System Activity Logs for {user?.user_metadata?.full_name || "Authorized Admin"}
+          {/* Top accent strip */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
+          {/* Ambient glow */}
+          <div className={`absolute -top-16 -right-16 w-48 h-48 rounded-full blur-[60px] pointer-events-none ${isDarkMode ? 'bg-violet-500/6' : 'bg-blue-400/5'}`} />
+
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}`} />
+              <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Audit Trail</p>
+            </div>
+            <h1 className={`text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>System Logs</h1>
+            <p className={`text-[11px] font-semibold italic mt-1.5 flex items-center gap-2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+              <History size={12} className="text-blue-500 shrink-0" />
+              Activity Logs · {user?.user_metadata?.full_name || "Authorized Admin"}
             </p>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
@@ -320,6 +345,39 @@ export default function ActivityLogsPage() {
           </div>
         </div>
 
+
+        {/* PAGINATION — TOP */}
+        {totalLogsPages > 1 && (
+          <div className="flex items-center justify-between px-2">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+              {filteredLogs.length} log{filteredLogs.length !== 1 ? "s" : ""} · Page {logsPage} of {totalLogsPages}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setLogsPage(p => Math.max(1, p - 1))} disabled={logsPage <= 1}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
+              >‹</button>
+              {Array.from({ length: totalLogsPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalLogsPages || Math.abs(p - logsPage) <= 1)
+                .reduce<(number | string)[]>((acc, p, i, arr) => {
+                  if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push("…")
+                  acc.push(p); return acc
+                }, [])
+                .map((p, i) => typeof p === "string" ? (
+                  <span key={`e${i}`} className="text-[10px] px-1 text-slate-400">…</span>
+                ) : (
+                  <button key={p} onClick={() => setLogsPage(p as number)}
+                    className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all shadow-sm border ${logsPage === p ? "bg-blue-600 text-white border-blue-600 shadow-blue-500/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
+                  >{p}</button>
+                ))}
+              <button
+                onClick={() => setLogsPage(p => Math.min(totalLogsPages, p + 1))} disabled={logsPage >= totalLogsPages}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
+              >›</button>
+            </div>
+          </div>
+        )}
+
         {/* FEED SECTION */}
         <div className="space-y-4">
           {filteredLogs.length === 0 ? (
@@ -330,10 +388,11 @@ export default function ActivityLogsPage() {
               No Node Data Recorded
             </div>
           ) : (
-            filteredLogs.map((log) => (
+            pagedLogs.map((log) => (
               <LogItem 
                 key={log.id} 
-                log={log} 
+                log={log}
+                adminProfile={adminProfiles[log.admin_id]}
                 onUndo={() => { setActiveLog(log); setUndoOpen(true); }} 
                 onDelete={() => { setActiveLog(log); setDeleteOpen(true); }}
                 isExiting={exitingIds.has(log.id)}
@@ -342,6 +401,42 @@ export default function ActivityLogsPage() {
             ))
           )}
         </div>
+
+        {/* PAGINATION */}
+        {totalLogsPages > 1 && (
+          <div className="flex items-center justify-between px-2">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+              {filteredLogs.length} log{filteredLogs.length !== 1 ? "s" : ""} · Page {logsPage} of {totalLogsPages}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setLogsPage(p => Math.max(1, p - 1))} disabled={logsPage <= 1}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
+              >‹</button>
+              {Array.from({ length: totalLogsPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalLogsPages || Math.abs(p - logsPage) <= 1)
+                .reduce<(number | string)[]>((acc, p, i, arr) => {
+                  if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push("…")
+                  acc.push(p); return acc
+                }, [])
+                .map((p, i) => typeof p === "string" ? (
+                  <span key={`e${i}`} className="text-[10px] px-1 text-slate-400">…</span>
+                ) : (
+                  <button key={p} onClick={() => setLogsPage(p as number)}
+                    className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all shadow-sm border
+                      ${logsPage === p
+                        ? "bg-blue-600 text-white border-blue-600 shadow-blue-500/20"
+                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      }`}
+                  >{p}</button>
+                ))}
+              <button
+                onClick={() => setLogsPage(p => Math.min(totalLogsPages, p + 1))} disabled={logsPage >= totalLogsPages}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
+              >›</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* REVERSAL MODAL */}
@@ -414,25 +509,16 @@ export default function ActivityLogsPage() {
   )
 }
 
-const LogItem = memo(function LogItem({ log, onUndo, onDelete, isExiting, isDarkMode }: { log: any, onUndo: () => void, onDelete: () => void, isExiting: boolean, isDarkMode: boolean }) {
+const LogItem = memo(function LogItem({ log, adminProfile, onUndo, onDelete, isExiting, isDarkMode }: { log: any, adminProfile?: { name: string; avatar: string | null }, onUndo: () => void, onDelete: () => void, isExiting: boolean, isDarkMode: boolean }) {
   const isUndoable = ['ACCEPTED', 'APPROVED', 'REJECTED', 'PENDING', 'DELETED'].includes(log.action_type)
-  const [adminDetails, setAdminDetails] = useState({ name: log.admin_name || "Admin", avatar: log.admin_image || null })
-
-  useEffect(() => {
-    const fetchAdminProfile = async () => {
-      if (!log.admin_id) return
-      const { data } = await supabase.from('admin_profiles').select('full_name, avatar_url').eq('id', log.admin_id).single()
-      if (data) setAdminDetails({ name: data.full_name, avatar: data.avatar_url })
-    }
-    fetchAdminProfile()
-  }, [log.admin_id])
-
-  const adminAvatar = adminDetails.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${adminDetails.name}&backgroundColor=1e293b`
+  // Use pre-fetched admin profile from parent — no per-item DB call
+  const adminName = adminProfile?.name || log.admin_name || "Admin"
+  const adminAvatar = adminProfile?.avatar || log.admin_image || `https://api.dicebear.com/7.x/initials/svg?seed=${adminName}&backgroundColor=1e293b`
   const gender = log.students?.gender || 'Male'
 
   return (
     <div className={cn(
-      "group flex flex-col md:flex-row gap-4 md:gap-6 p-6 border shadow-sm transition-[transform,background-color,border-color,box-shadow,opacity] duration-300 ease-out items-start md:items-center relative overflow-hidden",
+      "group flex flex-col md:flex-row gap-4 md:gap-6 p-6 rounded-[24px] border shadow-sm transition-[transform,background-color,border-color,box-shadow,opacity] duration-300 ease-out items-start md:items-center relative overflow-hidden",
       isExiting ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100',
       "hover:shadow-xl dark:hover:shadow-blue-500/5 hover:scale-[1.01]"
     )}
@@ -453,7 +539,7 @@ const LogItem = memo(function LogItem({ log, onUndo, onDelete, isExiting, isDark
           <div className="absolute -bottom-1 -right-1 bg-slate-950 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase border border-white/10 italic drop-shadow-sm">Admin</div>
         </div>
         <div className="flex flex-col">
-          <span className="text-xs font-black uppercase tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" style={{ color: isDarkMode ? themeColors.dark.text.primary : themeColors.light.text.primary }}>{adminDetails.name}</span>
+          <span className="text-xs font-black uppercase tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" style={{ color: isDarkMode ? themeColors.dark.text.primary : themeColors.light.text.primary }}>{adminName}</span>
           <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</span>
         </div>
       </div>

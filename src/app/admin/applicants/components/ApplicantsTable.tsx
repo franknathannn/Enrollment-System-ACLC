@@ -1,5 +1,5 @@
 // src/app/admin/applicants/components/ApplicantsTable.tsx
-import { memo, useMemo } from "react"
+import { memo, useMemo, useEffect, useRef, useState } from "react"
 import { CheckSquare, Square, Eye, RotateCcw, Trash2, ChevronLeft, ChevronRight, Copy, Shield, Activity, Star } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -41,6 +41,7 @@ interface ApplicantRowProps {
   isHidden: boolean
   isExiting: boolean
   isAnimatingIn: boolean
+  animIndex: number
   isStrandFull: boolean
   isDarkMode: boolean
   toggleSelect: (id: string) => void
@@ -61,252 +62,186 @@ const handleCopyLRN = (e: React.MouseEvent, lrn: string) => {
   });
 };
 
-const MobileApplicantRow = memo(({ 
-  student, isSelected, isHidden, isExiting, isAnimatingIn, isStrandFull, isDarkMode,
-  toggleSelect, setOpenStudentDialog, handleExit, handleStatusChange, 
-  setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen 
+const STATUS_STYLES: Record<string, { badge: string; glow: string; bar: string }> = {
+  Pending:  { badge: 'bg-amber-500/15 text-amber-400 border-amber-500/25',   glow: 'shadow-amber-500/10',   bar: 'bg-amber-400'   },
+  Accepted: { badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25', glow: 'shadow-emerald-500/10', bar: 'bg-emerald-400' },
+  Approved: { badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25', glow: 'shadow-emerald-500/10', bar: 'bg-emerald-400' },
+  Rejected: { badge: 'bg-red-500/15 text-red-400 border-red-500/25',         glow: 'shadow-red-500/10',     bar: 'bg-red-400'     },
+}
+
+const MobileApplicantRow = memo(({
+  student, isSelected, isHidden, isExiting, isAnimatingIn, animIndex, isStrandFull, isDarkMode,
+  toggleSelect, setOpenStudentDialog, handleExit, handleStatusChange,
+  setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen
 }: ApplicantRowProps) => {
   if (isHidden) return null
   const isMale = student.gender !== 'Female'
+  const statusStyle = STATUS_STYLES[student.status] || STATUS_STYLES.Pending
 
-  // 🧪 PROP-BASED THEME ENGINE (Matches StudentTable)
-  const theme = {
-    cardBg: isDarkMode ? 'bg-slate-900/60' : 'bg-white',
-    textMain: isDarkMode ? 'text-white' : 'text-slate-900',
-    textSub: isDarkMode ? 'text-slate-400' : 'text-slate-500',
-    border: isDarkMode ? 'border-white/10' : 'border-slate-200',
-    innerBg: isDarkMode ? 'bg-black/40' : 'bg-slate-50',
-    dockBg: isDarkMode ? 'bg-slate-950/80' : 'bg-slate-100/80',
-    shadow: isDarkMode ? 'shadow-[0_15px_30px_-10px_rgba(0,0,0,0.6)]' : 'shadow-lg shadow-slate-200/50'
-  };
-  
+  const cardBg  = isDarkMode ? 'bg-slate-900/70' : 'bg-white'
+  const border  = isDarkMode ? 'border-white/8'  : 'border-slate-200'
+  const textMain = isDarkMode ? 'text-white'      : 'text-slate-900'
+  const textSub  = isDarkMode ? 'text-slate-400'  : 'text-slate-500'
+  const innerBg  = isDarkMode ? 'bg-slate-800/60' : 'bg-slate-50'
+  const dockBg   = isDarkMode ? 'bg-slate-950/70' : 'bg-slate-50/90'
+
   return (
-    <div 
-      className={`
-        rounded-[32px] overflow-hidden border transition-all duration-500 transform-gpu relative isolate bg-clip-padding outline outline-1 outline-transparent
-        ${theme.cardBg} ${theme.border} ${theme.shadow} w-full
-        ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900' : ''}
-        ${isExiting ? 'animate-[slideOutRight_0.3s_ease-in-out_forwards]' : ''} 
+    <div
+      className={`rounded-[28px] overflow-hidden border transition-all duration-300 transform-gpu relative w-full
+        ${cardBg} ${border}
+        shadow-[0_8px_30px_-8px_rgba(0,0,0,0.15)] ${statusStyle.glow}
+        ${isSelected ? 'ring-2 ring-blue-500 ring-offset-1' + (isDarkMode ? ' ring-offset-slate-950' : ' ring-offset-white') : ''}
+        ${isExiting ? 'animate-[slideOutRight_0.3s_ease-in-out_forwards]' : ''}
         ${isAnimatingIn ? 'animate-[slideInRight_0.5s_ease-out_backwards]' : ''}
       `}
       onClick={() => setOpenStudentDialog(student.id)}
       style={{
         animationFillMode: isExiting ? 'forwards' : isAnimatingIn ? 'backwards' : 'none',
+        animationDelay: isAnimatingIn ? `${animIndex * 45}ms` : undefined,
         WebkitTapHighlightColor: 'transparent',
         touchAction: 'manipulation',
-        width: '100%',
-        maxWidth: '100%',
-        boxSizing: 'border-box'
       }}
     >
-      {/* 🌈 Lively Bio-Header */}
-      <div className="p-4 sm:p-5 flex items-center gap-3 sm:gap-5 relative">
-        {/* Gender Logic Accent Bar */}
-        <div className={`absolute left-0 top-6 bottom-6 w-1.5 rounded-r-full shadow-[0_0_15px_rgba(var(--accent),0.5)] ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
-        
-        {/* Animated Profile Well */}
-        <div className="relative shrink-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <div className={`absolute inset-0 blur-xl opacity-20 ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
-                  <div className={`w-16 h-16 rounded-2xl p-1 border-2 relative z-10 ${isMale ? 'border-blue-500/30' : 'border-pink-500/30'}`}>
-                      <OptimizedImage 
-                        src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
-                        alt="Avatar" 
-                        className="w-full h-full object-cover rounded-xl"
-                        fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
-                      />
-                  </div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
-                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
-                      <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
-                          <OptimizedImage 
-                              src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
-                              alt="Avatar" 
-                              className="w-full h-full object-cover"
-                          />
-                      </div>
-                      <div className="min-w-0">
-                          <p className="font-black uppercase text-sm truncate">{student.last_name}, {student.first_name}</p>
-                          <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {student.lrn}</p>
-                          <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{student.strand} - {student.student_category}</Badge>
-                      </div>
-                  </div>
-              </TooltipContent>
-            </Tooltip>
-        </div>
-        
-        <div className="flex-1 min-w-0 text-left">
-          <h3 className={`font-black text-lg uppercase leading-none tracking-tighter truncate ${theme.textMain}`}>
-            <AnimatedText text={`${student.last_name}, ${student.first_name}`} />
-          </h3>
-          <div className="flex items-center gap-2 mt-2">
-              <Badge className={`text-[8px] font-black uppercase px-2 py-0 border-none rounded-md ${isMale ? 'bg-blue-500/20 text-blue-500' : 'bg-pink-500/20 text-pink-500'}`}>
-                {student.gender}
-              </Badge>
-              <div className="flex items-center gap-1.5 opacity-60">
-                <span className={`text-[9px] font-mono font-bold tracking-widest ${theme.textSub}`}>LRN:{student.lrn}</span>
-                <button 
-                    onClick={(e) => handleCopyLRN(e, student.lrn)}
-                    className={`p-1 rounded-md transition-all active:scale-90 ${theme.innerBg}`}
-                >
-                    <Copy size={10} className={theme.textSub} />
-                </button>
-              </div>
+      {/* Status accent bar at top */}
+      <div className={`h-[3px] w-full ${statusStyle.bar} opacity-70`} />
+
+      {/* Header */}
+      <div className="p-4 flex items-center gap-3 relative">
+        {/* Gender side bar */}
+        <div className={`absolute left-0 top-5 bottom-5 w-[3px] rounded-r-full ${isMale ? 'bg-blue-500' : 'bg-pink-400'}`} />
+
+        {/* Avatar */}
+        <div className="relative shrink-0 ml-1">
+          <div className={`absolute inset-0 rounded-2xl blur-lg opacity-30 ${isMale ? 'bg-blue-500' : 'bg-pink-400'}`} />
+          <div className={`w-14 h-14 rounded-2xl border-2 relative z-10 overflow-hidden ${isMale ? 'border-blue-400/40' : 'border-pink-400/40'}`}>
+            <OptimizedImage
+              src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name}
+              alt="Avatar"
+              className="w-full h-full object-cover"
+              fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
+            />
+          </div>
+          {/* Strand dot badge */}
+          <div className={`absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full text-[7px] font-black text-white z-20 ${student.strand === 'ICT' ? 'bg-blue-600' : 'bg-orange-500'}`}>
+            {student.strand}
           </div>
         </div>
 
-        {/* Checkbox - Top Right */}
-        <button 
-          onClick={(e) => { e.stopPropagation(); toggleSelect(student.id); }} 
-          className="absolute top-4 right-4 p-1 touch-manipulation"
+        {/* Identity */}
+        <div className="flex-1 min-w-0">
+          <div className={`font-black text-base uppercase leading-tight tracking-tight truncate ${textMain}`}>
+            <AnimatedText text={`${student.last_name}, ${student.first_name}`} />
+          </div>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <Badge className={`text-[8px] font-black uppercase px-1.5 py-0 border-none rounded-md shrink-0 ${isMale ? 'bg-blue-500/15 text-blue-400' : 'bg-pink-500/15 text-pink-400'}`}>
+              {student.gender}
+            </Badge>
+            <span className={`text-[9px] font-mono font-bold tracking-wider truncate ${textSub}`}>
+              {student.lrn}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => handleCopyLRN(e, student.lrn)}
+              className={`p-1 rounded-md transition-all active:scale-90 shrink-0 ${innerBg}`}
+            >
+              <Copy size={9} className={textSub} />
+            </button>
+          </div>
+          {/* Status pill */}
+          <div className={`mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-widest ${statusStyle.badge}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.bar} ${student.status === 'Pending' ? 'animate-pulse' : ''}`} />
+            {student.status === 'Approved' ? 'Accepted' : student.status}
+          </div>
+        </div>
+
+        {/* Checkbox */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); toggleSelect(student.id); }}
+          className="absolute top-3 right-3 p-1.5 touch-manipulation"
           style={{ WebkitTapHighlightColor: 'transparent' }}
         >
-          {isSelected 
-            ? <CheckSquare className="text-blue-600" size={22} /> 
-            : <Square className="text-slate-300" size={22} />
+          {isSelected
+            ? <CheckSquare className="text-blue-500" size={20} />
+            : <Square className={isDarkMode ? "text-slate-600" : "text-slate-300"} size={20} />
           }
         </button>
       </div>
 
-      {/* 📊 Hardware Data Grid */}
-      <div className="px-4 sm:px-5 pb-4 sm:pb-5 grid grid-cols-2 gap-2 sm:gap-3">
-        <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
-          <Activity size={12} className="text-slate-500 opacity-40" />
+      {/* Data grid */}
+      <div className="px-4 pb-3 grid grid-cols-3 gap-2">
+        <div className={`p-2.5 rounded-2xl border flex flex-col items-center gap-0.5 ${innerBg} ${border}`}>
+          <Activity size={10} className="text-slate-500 opacity-50 mb-0.5" />
           <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">Category</p>
-          <p className={`text-[10px] font-black uppercase truncate max-w-full ${theme.textMain}`}>{student.student_category || "Standard"}</p>
+          <p className={`text-[9px] font-black uppercase truncate max-w-full ${textMain}`}>{student.student_category || "Standard"}</p>
         </div>
-        <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
-          <Star size={12} className="text-blue-500 opacity-50" />
-          <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">GWA Index</p>
-          <p className={`text-[12px] font-black italic text-blue-500`}>
-            {student.gwa_grade_10 ? <AnimatedNumber value={parseFloat(student.gwa_grade_10)} /> : "0.00"}
+        <div className={`p-2.5 rounded-2xl border flex flex-col items-center gap-0.5 ${innerBg} ${border}`}>
+          <Star size={10} className="text-blue-400 opacity-60 mb-0.5" />
+          <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">GWA</p>
+          <p className="text-[11px] font-black italic text-blue-400">
+            {student.gwa_grade_10 ? <AnimatedNumber value={parseFloat(student.gwa_grade_10)} /> : "—"}
           </p>
         </div>
-        <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
-          <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">Strand</p>
-          <p className={`text-[10px] font-black uppercase ${student.strand === 'ICT' ? 'text-blue-500' : 'text-orange-500'}`}>{student.strand}</p>
-        </div>
-        <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
-          <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">Section</p>
-          <p className={`text-[10px] font-black uppercase truncate max-w-full ${!student.section || student.section === 'Unassigned' ? 'text-red-500' : theme.textMain}`}>
-            {student.section || 'Unassigned'}
+        <div className={`p-2.5 rounded-2xl border flex flex-col items-center gap-0.5 ${innerBg} ${border}`}>
+          <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em] mb-0.5">Section</p>
+          <p className={`text-[9px] font-black uppercase truncate max-w-full ${!student.section || student.section === 'Unassigned' ? 'text-red-400' : textMain}`}>
+            {student.section || '—'}
           </p>
         </div>
       </div>
 
-      {/* 🎮 Crystalline Action Dock */}
-      <div className={`p-2 flex items-center gap-2 border-t ${theme.dockBg} ${theme.border}`}>
-        {/* View Button - Always visible */}
-        <Button 
-          onClick={(e) => { e.stopPropagation(); setOpenStudentDialog(student.id); }} 
-          variant="ghost" 
-          size="sm" 
-          className="
-            h-12 w-12 p-0 rounded-2xl transition-all transform-gpu active:scale-95 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800
-          "
+      {/* Action dock */}
+      <div className={`px-3 pb-3 pt-1 flex items-center gap-2 border-t ${dockBg} ${border}`}>
+        <Button
+          onClick={(e) => { e.stopPropagation(); setOpenStudentDialog(student.id); }}
+          variant="ghost"
+          size="sm"
+          className={`h-10 w-10 p-0 rounded-2xl transition-all active:scale-95 shrink-0 ${isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-400 hover:bg-slate-200'}`}
         >
-          <Eye size={18} />
+          <Eye size={16} />
         </Button>
 
-        {/* Pending Status Actions */}
         {student.status === 'Pending' && (
           <>
-            <Button 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted')); 
-              }} 
-              variant="ghost" 
-              size="sm" 
-              disabled={isStrandFull} 
-              className={`
-                flex-1 h-12
-                rounded-2xl 
-                font-black 
-                text-[9px] 
-                uppercase tracking-widest 
-                transition-all transform-gpu active:scale-95
-                ${isStrandFull 
-                  ? 'text-slate-300 cursor-not-allowed' 
-                  : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
-                }
-              `}
+            <Button
+              onClick={(e) => { e.stopPropagation(); handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted')); }}
+              variant="ghost"
+              size="sm"
+              disabled={isStrandFull}
+              className={`flex-1 h-10 rounded-2xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 ${isStrandFull ? 'text-slate-400 cursor-not-allowed opacity-50' : 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}
             >
-              {isStrandFull ? 'FULL' : 'Approve'}
+              {isStrandFull ? 'Full' : 'Approve'}
             </Button>
-            
-            <Button 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                setActiveDeclineStudent(student); 
-                setDeclineModalOpen(true); 
-              }} 
-              variant="ghost" 
-              size="sm" 
-              className="
-                flex-1 h-12
-                rounded-2xl 
-                text-red-600 
-                font-black 
-                text-[9px] 
-                uppercase tracking-widest 
-                transition-all transform-gpu active:scale-95
-                hover:bg-red-50 dark:hover:bg-red-900/20
-              "
+            <Button
+              onClick={(e) => { e.stopPropagation(); setActiveDeclineStudent(student); setDeclineModalOpen(true); }}
+              variant="ghost"
+              size="sm"
+              className="flex-1 h-10 rounded-2xl text-red-500 font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 hover:bg-red-50 dark:hover:bg-red-900/20"
             >
               Decline
             </Button>
           </>
         )}
 
-        {/* Reset for Accepted/Approved/Rejected */}
         {(student.status === 'Accepted' || student.status === 'Approved' || student.status === 'Rejected') && (
-          <Button 
-            onClick={(e) => { 
-              e.stopPropagation(); 
-              handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Pending')); 
-            }} 
-            variant="ghost" 
-            size="sm" 
-            className="
-              flex-1 h-12
-              rounded-2xl 
-              text-amber-600 
-              font-black 
-              text-[9px] 
-              uppercase tracking-widest 
-              transition-all transform-gpu active:scale-95
-              hover:bg-amber-50 dark:hover:bg-amber-900/20
-            "
+          <Button
+            onClick={(e) => { e.stopPropagation(); handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Pending')); }}
+            variant="ghost"
+            size="sm"
+            className="flex-1 h-10 rounded-2xl text-amber-500 font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 hover:bg-amber-50 dark:hover:bg-amber-900/20"
           >
-            <RotateCcw size={14} className="mr-1.5"/> Reset
+            <RotateCcw size={13} className="mr-1.5" /> Reset
           </Button>
         )}
 
-        {/* Delete Button */}
         {(student.status === 'Pending' || student.status === 'Rejected') && (
-          <Button 
-            onClick={(e) => { 
-              e.stopPropagation(); 
-              setActiveDeleteStudent(student); 
-              setDeleteModalOpen(true); 
-            }} 
-            variant="ghost" 
-            size="sm" 
-            className="
-              h-12 w-12
-              p-0 
-              rounded-2xl 
-              text-red-400 
-              transition-all transform-gpu active:scale-95
-              hover:bg-red-50 dark:hover:bg-red-900/20
-            "
+          <Button
+            onClick={(e) => { e.stopPropagation(); setActiveDeleteStudent(student); setDeleteModalOpen(true); }}
+            variant="ghost"
+            size="sm"
+            className="h-10 w-10 p-0 rounded-2xl text-red-400 transition-all active:scale-95 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
           >
-            <Trash2 size={18}/>
+            <Trash2 size={16} />
           </Button>
         )}
       </div>
@@ -315,40 +250,38 @@ const MobileApplicantRow = memo(({
 })
 MobileApplicantRow.displayName = "MobileApplicantRow"
 
-const DesktopApplicantRow = memo(({ 
-  student, isSelected, isHidden, isExiting, isAnimatingIn, isStrandFull, isDarkMode,
-  toggleSelect, setOpenStudentDialog, handleExit, handleStatusChange, 
-  setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen 
+const DesktopApplicantRow = memo(({
+  student, isSelected, isHidden, isExiting, isAnimatingIn, animIndex, isStrandFull, isDarkMode,
+  toggleSelect, setOpenStudentDialog, handleExit, handleStatusChange,
+  setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen
 }: ApplicantRowProps) => {
   if (isHidden) return null
   const isMale = student.gender !== 'Female'
-  const baseBg = isSelected ? (isMale ? 'bg-blue-100/80 dark:bg-blue-900/40' : 'bg-pink-100/80 dark:bg-pink-900/40') : ''
-  const genderHoverBg = isMale 
-    ? (isSelected ? 'hover:!bg-blue-300 dark:hover:!bg-blue-800' : 'hover:!bg-blue-200 dark:hover:!bg-blue-900/40') 
-    : (isSelected ? 'hover:!bg-pink-300 dark:hover:!bg-pink-800' : 'hover:!bg-pink-200 dark:hover:!bg-pink-900/40')
+  const genderColor = isMale ? '#3b82f6' : '#ec4899'
 
   return (
-    <TableRow 
-      className={`transition-colors border-b group relative ${baseBg} ${genderHoverBg} hover:shadow-sm will-change-transform ${isExiting ? 'animate-[slideOutRight_0.3s_ease-in-out_forwards] pointer-events-none' : ''} ${isAnimatingIn ? 'animate-[slideInRight_0.5s_ease-out_backwards]' : ''}`}
+    <TableRow
+      className={`border-b group relative will-change-transform
+        ${isExiting ? 'animate-[slideOutRight_0.3s_ease-in-out_forwards] pointer-events-none' : ''}
+        ${isAnimatingIn ? 'animate-[slideInRight_0.5s_ease-out_backwards]' : ''}
+        ${isSelected ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50/80') : ''}
+      `}
       onMouseEnter={(e) => {
-        if (isSelected) {
-          e.currentTarget.style.backgroundColor = isMale ? 'rgb(219 234 254 / 0.8)' : 'rgb(252 231 243 / 0.8)'
-        } else {
-          e.currentTarget.style.backgroundColor = isMale ? 'rgb(191 219 254 / 0.6)' : 'rgb(251 207 232 / 0.6)'
-        }
-        e.currentTarget.style.transition = 'background-color 0.2s ease'
+        if (!isSelected) e.currentTarget.style.backgroundColor = isDarkMode ? 'rgba(30,41,59,0.5)' : 'rgba(248,250,252,0.8)'
       }}
       onMouseLeave={(e) => {
-        if (isSelected) {
-          e.currentTarget.style.backgroundColor = isMale ? 'rgb(219 234 254 / 0.8)' : 'rgb(252 231 243 / 0.8)'
-        } else {
-          e.currentTarget.style.backgroundColor = ''
-        }
+        if (!isSelected) e.currentTarget.style.backgroundColor = ''
       }}
       style={{
-        borderColor: isDarkMode ? 'rgba(77, 87, 100, 0.4)' : 'rgba(231, 229, 229, 0.53)',
-        ...(isSelected ? { backgroundColor: isMale ? 'rgb(219 234 254 / 0.8)' : 'rgb(252 231 243 / 0.8)' } : undefined),
-        animationFillMode: isExiting ? 'forwards' : isAnimatingIn ? 'backwards' : 'none'
+        borderTopColor: isDarkMode ? 'rgba(51,65,85,0.4)' : 'rgba(226,232,240,0.8)',
+        borderRightColor: isDarkMode ? 'rgba(51,65,85,0.4)' : 'rgba(226,232,240,0.8)',
+        borderBottomColor: isDarkMode ? 'rgba(51,65,85,0.4)' : 'rgba(226,232,240,0.8)',
+        borderLeftColor: genderColor,
+        borderLeftWidth: '3px',
+        borderLeftStyle: 'solid',
+        animationFillMode: isExiting ? 'forwards' : isAnimatingIn ? 'backwards' : 'none',
+        animationDelay: isAnimatingIn ? `${animIndex * 45}ms` : undefined,
+        transition: 'background-color 0.15s ease',
       }}
     >
       <TableCell className="pl-4 md:pl-8">
@@ -583,6 +516,23 @@ export const ApplicantsTable = memo(({
     return filteredStudents
   }, [filteredStudents, currentPage, totalFilteredCount])
 
+  // Tab-switch / status-transfer entrance animation
+  const prevIdsKeyRef = useRef<string>('')
+  const [localAnimatingIds, setLocalAnimatingIds] = useState<Set<string>>(new Set())
+  const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    const newKey = visibleStudents.map(s => s.id).join(',')
+    if (prevIdsKeyRef.current !== '' && prevIdsKeyRef.current !== newKey) {
+      const ids = new Set(visibleStudents.map(s => s.id))
+      setLocalAnimatingIds(ids)
+      if (animTimerRef.current) clearTimeout(animTimerRef.current)
+      animTimerRef.current = setTimeout(() => setLocalAnimatingIds(new Set()), 700)
+    }
+    prevIdsKeyRef.current = newKey
+    return () => { if (animTimerRef.current) clearTimeout(animTimerRef.current) }
+  }, [visibleStudents])
+
   const pageIds = useMemo(() => visibleStudents.map(s => s.id), [visibleStudents])
   const isPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id))
 
@@ -612,15 +562,16 @@ export const ApplicantsTable = memo(({
         }
       `}</style>
       
-      <ThemedCard 
-        className="rounded-2xl sm:rounded-3xl md:rounded-[48px] shadow-lg sm:shadow-2xl shadow-slate-200/50 dark:shadow-blue-500/10 overflow-hidden transition-colors duration-500 border w-full"
-        style={{    
+      <ThemedCard
+        className="rounded-2xl sm:rounded-3xl md:rounded-[48px] shadow-lg sm:shadow-2xl shadow-slate-200/50 dark:shadow-blue-500/10 overflow-hidden transition-colors duration-500 border w-full relative"
+        style={{
           backgroundColor: isDarkMode ? themeColors.dark.surface : '#ffffff',
           borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9',
           width: '100%',
           maxWidth: '100%'
         }}
       >
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400 z-10" />
         {/* MOBILE CARD VIEW */}
         <div className="md:hidden p-2 sm:p-4 space-y-3 sm:space-y-4">
           {/* Mobile Header */}
@@ -649,15 +600,16 @@ export const ApplicantsTable = memo(({
             </div>
           ) : (
             <>
-              {visibleStudents.map((student) => {
+              {visibleStudents.map((student, index) => {
             return (
-              <MobileApplicantRow 
+              <MobileApplicantRow
                 key={student.id}
                 student={student}
                 isSelected={selectedIds.includes(student.id)}
                 isHidden={hiddenRows.has(student.id)}
                 isExiting={exitingRows[student.id]}
-                isAnimatingIn={animatingIds.has(student.id)}
+                isAnimatingIn={animatingIds.has(student.id) || localAnimatingIds.has(student.id)}
+                animIndex={index}
                 isStrandFull={strandStats?.[student.strand] || false}
                 isDarkMode={isDarkMode}
                 toggleSelect={toggleSelect}
@@ -712,22 +664,22 @@ export const ApplicantsTable = memo(({
         {/* DESKTOP TABLE VIEW */}
         <div className="hidden md:block relative">
           <Table className="min-w-full table-fixed">
-            <TableHeader className={`${isDarkMode ? 'bg-slate-900' : 'bg-white'} shadow-sm`}>
-              <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="w-12 min-w-[48px] max-w-[48px] pl-4 md:pl-8" style={{ color: 'grey' }}>
-                  <button onClick={() => toggleSelectAll(pageIds)}>
-                    {isPageSelected 
-                      ? <CheckSquare className="text-blue-600" size={18} /> 
-                      : <Square className={isDarkMode ? "text-slate-500" : "text-slate-400"} size={18} />
+            <TableHeader>
+              <TableRow className={`border-none hover:bg-transparent ${isDarkMode ? 'bg-slate-900/80' : 'bg-slate-50/80'}`}>
+                <TableHead className="w-12 min-w-[48px] max-w-[48px] pl-6">
+                  <button type="button" onClick={() => toggleSelectAll(pageIds)}>
+                    {isPageSelected
+                      ? <CheckSquare className="text-blue-500" size={17} />
+                      : <Square className={isDarkMode ? "text-slate-600" : "text-slate-300"} size={17} />
                     }
                   </button>
                 </TableHead>
-                <TableHead className={`w-[280px] min-w-[280px] px-3 md:px-6 py-6 font-black uppercase text-[10px] tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} style={{ color: 'grey' }}>Applicant Identity</TableHead>
-                <TableHead className={`w-[100px] min-w-[100px] font-black uppercase text-[10px] tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} text-center`} style={{ color: 'grey' }}>Gender</TableHead>
-                <TableHead className={`w-[120px] min-w-[120px] font-black uppercase text-[10px] tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} text-center`} style={{ color: 'grey' }}>Strand</TableHead>
-                <TableHead className={`w-[140px] min-w-[140px] font-black uppercase text-[10px] tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} text-center`} style={{ color: 'grey' }}>Section</TableHead>
-                <TableHead className={`w-[80px] min-w-[80px] font-black uppercase text-[10px] tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} text-center`} style={{ color: 'grey' }}>GWA</TableHead>
-                <TableHead className={`w-[280px] min-w-[280px] text-right px-4 md:px-8 font-black uppercase text-[10px] tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} style={{ color: 'grey' }}>Actions</TableHead>
+                <TableHead className={`w-[280px] min-w-[280px] px-6 py-5 font-black uppercase text-[9px] tracking-[0.25em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Applicant</TableHead>
+                <TableHead className={`w-[90px] min-w-[90px] font-black uppercase text-[9px] tracking-[0.25em] text-center ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Gender</TableHead>
+                <TableHead className={`w-[110px] min-w-[110px] font-black uppercase text-[9px] tracking-[0.25em] text-center ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Strand</TableHead>
+                <TableHead className={`w-[140px] min-w-[140px] font-black uppercase text-[9px] tracking-[0.25em] text-center ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Section</TableHead>
+                <TableHead className={`w-[80px] min-w-[80px] font-black uppercase text-[9px] tracking-[0.25em] text-center ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>GWA</TableHead>
+                <TableHead className={`w-[280px] min-w-[280px] text-right px-6 font-black uppercase text-[9px] tracking-[0.25em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -735,15 +687,16 @@ export const ApplicantsTable = memo(({
                 <TableRow><TableCell colSpan={7} className="py-32 text-center text-slate-400 italic">No applicants match this criteria.</TableCell></TableRow>
               ) : (
                 <>
-                  {visibleStudents.map((student) => {
+                  {visibleStudents.map((student, index) => {
                 return (
-                  <DesktopApplicantRow 
+                  <DesktopApplicantRow
                     key={student.id}
                     student={student}
                     isSelected={selectedIds.includes(student.id)}
                     isHidden={hiddenRows.has(student.id)}
                     isExiting={exitingRows[student.id]}
-                    isAnimatingIn={animatingIds.has(student.id)}
+                    isAnimatingIn={animatingIds.has(student.id) || localAnimatingIds.has(student.id)}
+                    animIndex={index}
                     isStrandFull={strandStats?.[student.strand] || false}
                     isDarkMode={isDarkMode}
                     toggleSelect={toggleSelect}

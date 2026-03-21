@@ -20,7 +20,9 @@ export async function getDashboardStats() {
       { count: males },   // New Query
       { count: females },  // New Query
       { count: pendingMales },
-      { count: pendingFemales }
+      { count: pendingFemales },
+      { count: g11Accepted },
+      { count: g12Accepted },
     ] = await Promise.all([
       supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'Approved'),
       supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'Approved').eq('strand', 'ICT'),
@@ -34,6 +36,9 @@ export async function getDashboardStats() {
       supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'Approved').eq('gender', 'Female'),
       supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'Pending').eq('gender', 'Male'),
       supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'Pending').eq('gender', 'Female'),
+      // Grade level counts:
+      supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'Approved').eq('grade_level', '11'),
+      supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'Approved').eq('grade_level', '12'),
     ])
 
     return {
@@ -47,7 +52,9 @@ export async function getDashboardStats() {
       males,
       females,
       pendingMales,
-      pendingFemales
+      pendingFemales,
+      g11Accepted: g11Accepted || 0,
+      g12Accepted: g12Accepted || 0,
     }
   } catch (error) {
     console.error("Dashboard Stats Error:", error)

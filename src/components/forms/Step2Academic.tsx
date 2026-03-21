@@ -429,6 +429,7 @@ export default function Step2Academic() {
     defaultValues: {
       lrn:                  formData.lrn                       || "",
       school_year:          formData.school_year               || "",
+      grade_level:          (formData as any).grade_level      || "11",
       student_category:     formData.student_category          || "",
       strand:               formData.strand                    || "",
       last_school_attended: formData.last_school_attended      || "",
@@ -450,6 +451,7 @@ export default function Step2Academic() {
   const selectedShift      = watch("preferred_shift")
   const selectedSchoolType = watch("school_type")
   const watchLastSchool    = watch("last_school_attended")
+  const selectedGradeLevel = watch("grade_level")
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => window.scrollTo(0, 0))
@@ -508,8 +510,9 @@ export default function Step2Academic() {
 
         {/* HEADER */}
         <div className="rounded-2xl sm:rounded-[32px] p-4 sm:p-6 border flex items-center gap-3 sm:gap-5 shadow-2xl relative overflow-hidden t-header-block">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
-            <GraduationCap className="text-white w-6 h-6 sm:w-7 sm:h-7" />
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
+            <GraduationCap className="text-white w-6 h-6 sm:w-7 sm:h-7 drop-shadow-[0_1px_4px_rgba(255,255,255,0.3)]" />
           </div>
           <div className="min-w-0">
             <p className="text-[9px] font-bold uppercase tracking-[0.3em] sm:tracking-[0.4em] text-blue-400 mb-0.5 sm:mb-1">Step 02</p>
@@ -555,6 +558,34 @@ export default function Step2Academic() {
           </div>
         </div>
 
+        {/* GRADE LEVEL */}
+        <div className="space-y-3">
+          <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", "t-text-muted")}>
+            Grade Level <span className="text-red-500">*</span>
+          </Label>
+          <input type="hidden" {...register("grade_level")} />
+          <div className="grid grid-cols-2 gap-3">
+            <CheckCard
+              label="Grade 11" sublabel="New SHS Student"
+              checked={selectedGradeLevel === "11"}
+              onClick={() => {
+                setValue("grade_level", "11", { shouldValidate: true })
+                updateFormData({ grade_level: "11" } as any)
+              }}
+              icon={<GraduationCap size={20} />}
+            />
+            <CheckCard
+              label="Grade 12" sublabel="Continuing Student"
+              checked={selectedGradeLevel === "12"}
+              onClick={() => {
+                setValue("grade_level", "12", { shouldValidate: true })
+                updateFormData({ grade_level: "12" } as any)
+              }}
+              icon={<GraduationCap size={20} />}
+            />
+          </div>
+        </div>
+
         {/* STUDENT CATEGORY */}
         <div className="space-y-3">
           <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", (errors as any).student_category ? "text-red-500" : "t-text-muted")}>
@@ -576,6 +607,7 @@ export default function Step2Academic() {
               disabled={!isFieldEditable("student_category")}
               icon={<Star size={20} />}
             />
+            {/* Only JHS Graduate and ALS Passer for both G11 and G12 */}
           </div>
           {(errors as any).student_category && (
             <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest flex items-center gap-1 ml-2">
@@ -654,7 +686,7 @@ export default function Step2Academic() {
           )}
         </div>
 
-        {/* GWA — JHS Graduate only */}
+        {/* GWA — JHS Graduate only (G11 or G12) */}
         {selectedCategory === "JHS Graduate" && (
           <div className="relative z-[0] space-y-2 group animate-step-in">
             <div className="flex justify-between items-center">
@@ -833,8 +865,8 @@ export default function Step2Academic() {
             className={cn(
               "w-full min-h-[48px] sm:min-h-[52px] md:h-14 rounded-2xl sm:rounded-[28px]",
               "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-              "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
-              "transition-[background-color,color] duration-300 active:scale-[0.98]",
+              "shadow-[0_20px_50px_rgba(59,130,246,0.4)]",
+              "transition-[background-color,color,box-shadow] duration-300 active:scale-[0.98]",
               "flex items-center justify-center gap-3 sm:gap-4 group touch-manipulation"
             )}
           >

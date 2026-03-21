@@ -37,7 +37,8 @@ export function PredictionControlPanel({ mode, setMode, simulationValue, setSimu
   }
 
   return (
-    <div className={`flex flex-col md:flex-row items-end gap-4 p-4 rounded-xl shadow-sm border ring-1 transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800 ring-slate-800' : 'bg-white border-indigo-100 ring-indigo-50 shadow-indigo-100/50'}`}>
+    <div className={`relative overflow-hidden flex flex-col md:flex-row items-end gap-4 p-4 rounded-xl shadow-sm border ring-1 transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800 ring-slate-800' : 'bg-white border-indigo-100 ring-indigo-50 shadow-indigo-100/50'}`}>
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500" />
       
       <div className="space-y-2">
         <Label className={`text-[10px] uppercase font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Analysis Mode</Label>

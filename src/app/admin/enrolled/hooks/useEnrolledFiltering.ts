@@ -2,38 +2,68 @@
 
 import { useState, useMemo, useEffect, useRef } from "react"
 
+const STORAGE_KEY = "enrolled_filters"
+
+function loadFilters() {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return {}
+}
+
+function saveFilters(data: Record<string, any>) {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  } catch {}
+}
+
 export function useEnrolledFiltering({ students }: { students: any[] }) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [strandFilter, setStrandFilter] = useState<string>("ALL")
-  const [categoryFilter, setCategoryFilter] = useState<string>("ALL")
-  const [sortBy, setSortBy] = useState<string>("alpha")
+  const saved = loadFilters()
+
+  const [searchTerm, setSearchTerm] = useState<string>(saved.searchTerm ?? "")
+  const [strandFilter, setStrandFilter] = useState<string>(saved.strandFilter ?? "ALL")
+  const [gradeLevelFilter, setGradeLevelFilter] = useState<"ALL" | "11" | "12">("ALL")
+  const [categoryFilter, setCategoryFilter] = useState<string>(saved.categoryFilter ?? "ALL")
+  const [sectionFilter, setSectionFilter] = useState<string>(saved.sectionFilter ?? "ALL")
+  const [sortBy, setSortBy] = useState<string>(saved.sortBy ?? "alpha")
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
   const [strandDropdownOpen, setStrandDropdownOpen] = useState(false)
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
+  const [sectionDropdownOpen, setSectionDropdownOpen] = useState(false)
   
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(saved.currentPage ?? 1)
   const itemsPerPage = 10
 
   // Animation state
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set())
   const prevStudentsRef = useRef<Set<string>>(new Set())
 
+  // Persist filter state to sessionStorage on change
+  useEffect(() => {
+    saveFilters({ searchTerm, strandFilter, categoryFilter, sectionFilter, sortBy, currentPage })
+  }, [searchTerm, strandFilter, categoryFilter, sectionFilter, sortBy, currentPage])
+
   const filteredStudents = useMemo(() => {
     const filtered = students.filter(student => {
       // 1. Search Logic (Name, LRN, or UUID)
       const fullName = `${student.first_name} ${student.last_name}`.toLowerCase()
       const lrn = student.lrn || ""
-      const id = student.id || "" // Capture the UUID
+      const id = student.id || ""
       const searchLower = searchTerm.toLowerCase()
 
       const matchesSearch = 
         fullName.includes(searchLower) || 
         lrn.includes(searchLower) ||
-        id.toLowerCase().includes(searchLower) // <-- ADDED: Checks for UUID (Short or Full)
+        id.toLowerCase().includes(searchLower)
 
       // 2. Strand Logic
       const matchesStrand = strandFilter === "ALL" || student.strand === strandFilter
+
+      // 2b. Grade Level Logic (treat null/undefined as '11')
+      const studentGradeLevel = student.grade_level || '11'
+      const matchesGradeLevel = gradeLevelFilter === "ALL" || studentGradeLevel === gradeLevelFilter
 
       // 3. Category Logic (JHS vs ALS)
       let matchesCategory = true
@@ -46,7 +76,10 @@ export function useEnrolledFiltering({ students }: { students: any[] }) {
         }
       }
 
-      return matchesSearch && matchesStrand && matchesCategory
+      // 4. Section Logic
+      const matchesSection = sectionFilter === "ALL" || student.section === sectionFilter
+
+      return matchesSearch && matchesStrand && matchesGradeLevel && matchesCategory && matchesSection
     })
 
     // Sorting logic
@@ -60,7 +93,7 @@ export function useEnrolledFiltering({ students }: { students: any[] }) {
         case 'alpha': default: return a.last_name.localeCompare(b.last_name);
       }
     })
-  }, [students, searchTerm, strandFilter, categoryFilter, sortBy])
+  }, [students, searchTerm, strandFilter, gradeLevelFilter, categoryFilter, sectionFilter, sortBy])
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage)
@@ -74,7 +107,6 @@ export function useEnrolledFiltering({ students }: { students: any[] }) {
     const currentIds = new Set(filteredStudents.map(s => s.id))
     const prevIds = prevStudentsRef.current
     
-    // Detect new students
     const newIds = Array.from(currentIds).filter(id => !prevIds.has(id))
     
     if (newIds.length > 0) {
@@ -84,7 +116,6 @@ export function useEnrolledFiltering({ students }: { students: any[] }) {
         return next
       })
       
-      // Remove animation class after duration
       setTimeout(() => {
         setAnimatingIds(prev => {
           const next = new Set(prev)
@@ -100,12 +131,15 @@ export function useEnrolledFiltering({ students }: { students: any[] }) {
   return {
     searchTerm, setSearchTerm,
     strandFilter, setStrandFilter,
+    gradeLevelFilter, setGradeLevelFilter,
     categoryFilter, setCategoryFilter,
+    sectionFilter, setSectionFilter,
     filteredStudents,
     sortBy, setSortBy,
     sortDropdownOpen, setSortDropdownOpen,
     strandDropdownOpen, setStrandDropdownOpen,
     categoryDropdownOpen, setCategoryDropdownOpen,
+    sectionDropdownOpen, setSectionDropdownOpen,
     paginatedStudents,
     totalPages,
     currentPage, setCurrentPage,

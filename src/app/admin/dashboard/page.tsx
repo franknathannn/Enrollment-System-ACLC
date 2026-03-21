@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState, useMemo, useCallback } from "react"
+import { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import { supabase } from "@/lib/supabase/client"
-import { recordYearlySnapshot, deleteSnapshot } from "@/lib/actions/history" 
+import { deleteSnapshot } from "@/lib/actions/history"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { 
-  TrendingUp, Loader2, TrendingDown, History, FileDown, Users, LineChart
+  TrendingUp, Loader2, TrendingDown, FileDown, Users, LineChart
 } from "lucide-react"
 import { toast } from "sonner"
 import { format, subDays, isSameDay, parseISO } from "date-fns"
@@ -19,56 +19,43 @@ import { ArchivesManager } from "./components/ArchivesManager"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export default function AdminDashboard() {
-  const { isDarkMode: themeDarkMode, mounted } = useTheme()
-  const [isDarkMode, setIsDarkMode] = useState(themeDarkMode)
+  const { isDarkMode, mounted } = useTheme()
   const router = useRouter()
   const [config, setConfig] = useState<any>(null)
   const [history, setHistory] = useState<any[]>([]) 
   const [students, setStudents] = useState<any[]>([]) 
   const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [isCapturing, setIsCapturing] = useState(false)
+  const fetchingRef = useRef(false)
 
-  const [stats, setStats] = useState({
-    totalAccepted: 0,
-    ictAccepted: 0,
-    gasAccepted: 0,
-    pending: 0,
-    ictDeclined: 0,
-    gasDeclined: 0,
-    declinedTotal: 0,
-    males: 0,
-    females: 0,
-    pendingMales: 0,
-    pendingFemales: 0,
-    amShift: 0,
-    pmShift: 0
-  })
-  
   const [system, setSystem] = useState({
     currentCount: 0,
-    capacity: 1000 
+    capacity: 1000
   })
 
-  // Sync with hook on mount/update
+  // Grade 12 toggle — persisted to localStorage, defaults to OFF (G11 only)
+  const [includeG12, setIncludeG12] = useState(false)
   useEffect(() => {
-    setIsDarkMode(themeDarkMode)
-  }, [themeDarkMode])
-
-  // Listen for manual layout toggles for live updates
-  useEffect(() => {
-    const handleThemeChange = (e: any) => {
-      setIsDarkMode(e.detail.mode === 'dark')
-    }
-    window.addEventListener('theme-change', handleThemeChange)
-    return () => window.removeEventListener('theme-change', handleThemeChange)
+    const stored = localStorage.getItem("dashboard_include_g12")
+    if (stored !== null) setIncludeG12(stored === "true")
   }, [])
+  const toggleIncludeG12 = () => {
+    setIncludeG12(prev => {
+      const next = !prev
+      localStorage.setItem("dashboard_include_g12", String(next))
+      return next
+    })
+  }
+
 
   // OPTIMIZED: Separated background updates from initial load
   const fetchStudents = useCallback(async (isBackground = false) => {
+    // Prevent concurrent background fetches — realtime + polling can fire simultaneously
+    if (isBackground && fetchingRef.current) return
+    fetchingRef.current = true
     try {
       const [studentsRes, configRes, sectionsRes, historyRes] = await Promise.all([
-        supabase.from('students').select('id,first_name,last_name,gender,strand,status,student_category,gwa_grade_10,created_at,preferred_shift,last_school_attended').order('created_at', { ascending: false }),
+        supabase.from('students').select('id,first_name,last_name,gender,strand,status,student_category,gwa_grade_10,created_at,preferred_shift,last_school_attended,grade_level,is_archived').order('created_at', { ascending: false }),
         supabase.from('system_config').select('*').maybeSingle(),
         supabase.from('sections').select('capacity'),
         supabase.from('enrollment_history').select('*').order('school_year', { ascending: false })
@@ -84,39 +71,15 @@ export default function AdminDashboard() {
       
       const allStudents = studentsRes.data || []
       
-      // Update students state
+      // Update students state — stats computed reactively in useMemo below
       setStudents(allStudents)
-      
-      // Calculate stats
-      const approved = allStudents.filter((s: any) => s.status === 'Approved' || s.status === 'Accepted')
-      const pendingList = allStudents.filter((s: any) => s.status === 'Pending')
-      const rejectedList = allStudents.filter((s: any) => s.status === 'Rejected' || s.status === 'Declined')
-
-      setStats({
-        totalAccepted: approved.length,
-        ictAccepted: approved.filter((s: any) => s.strand === 'ICT').length,
-        gasAccepted: approved.filter((s: any) => s.strand === 'GAS').length,
-        pending: pendingList.length,
-        ictDeclined: rejectedList.filter((s: any) => s.strand === 'ICT').length,
-        gasDeclined: rejectedList.filter((s: any) => s.strand === 'GAS').length,
-        declinedTotal: rejectedList.length,
-        males: approved.filter((s: any) => s.gender === 'Male').length,
-        females: approved.filter((s: any) => s.gender === 'Female').length,
-        pendingMales: pendingList.filter((s: any) => s.gender === 'Male').length,
-        pendingFemales: pendingList.filter((s: any) => s.gender === 'Female').length,
-        amShift: approved.filter((s: any) => s.preferred_shift === 'AM').length,
-        pmShift: approved.filter((s: any) => s.preferred_shift === 'PM').length
-      })
 
       if (configRes.data) setConfig(configRes.data)
       if (historyRes.data) setHistory(historyRes.data)
       
       if (sectionsRes.data) {
         const totalCapacity = sectionsRes.data.reduce((acc: number, s: any) => acc + (s.capacity || 40), 0) || 1000
-        setSystem({
-          currentCount: approved.length,
-          capacity: totalCapacity
-        })
+        setSystem(prev => ({ ...prev, capacity: totalCapacity }))
       }
 
       if (!isBackground) {
@@ -130,6 +93,8 @@ export default function AdminDashboard() {
       if (!isBackground) {
         toast.error("Failed to sync dashboard data")
       }
+    } finally {
+      fetchingRef.current = false
     }
   }, [])
 
@@ -148,11 +113,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     console.log("🎯 Setting up live update system...")
     
-    // POLLING FALLBACK - Checks every 3 seconds
+    // POLLING FALLBACK - Checks every 15 seconds (realtime handles live events)
     const pollingInterval = setInterval(() => {
       console.log("🔄 Polling for updates...")
       fetchStudents(true)
-    }, 3000)
+    }, 15000)
 
     // REALTIME SUBSCRIPTION - Primary method
     const channel = supabase
@@ -215,6 +180,55 @@ export default function AdminDashboard() {
       supabase.removeChannel(channel)
     }
   }, [fetchStudents])
+
+  // ── Reactive stats — recomputes whenever students load OR includeG12 changes ──
+  const stats = useMemo(() => {
+    // Filter by grade level based on toggle.
+    // Graduated students have grade_level='12' AND section_id=null AND is_archived=true
+    // We exclude those specifically. Regular archived students (e.g. end-of-year archive) 
+    // should still be counted if they're in the current school year — the original dashboard
+    // counted everyone, so we preserve that for G11, and add G12 only when toggled.
+    const base = students.filter((s: any) => {
+      // Exclude graduated records (archived G12 with no section)
+      if (s.is_archived && s.grade_level === "12") return false
+      if (includeG12) return true  // show all non-graduated students
+      // G11-only mode: exclude explicit G12 students
+      return s.grade_level !== "12"
+    })
+    const approved    = base.filter((s: any) => s.status === 'Approved' || s.status === 'Accepted')
+    const pendingList = base.filter((s: any) => s.status === 'Pending')
+    const rejectedList = base.filter((s: any) => s.status === 'Rejected' || s.status === 'Declined')
+    return {
+      totalAccepted:  approved.length,
+      ictAccepted:    approved.filter((s: any) => s.strand === 'ICT').length,
+      gasAccepted:    approved.filter((s: any) => s.strand === 'GAS').length,
+      pending:        pendingList.length,
+      ictDeclined:    rejectedList.filter((s: any) => s.strand === 'ICT').length,
+      gasDeclined:    rejectedList.filter((s: any) => s.strand === 'GAS').length,
+      declinedTotal:  rejectedList.length,
+      males:          approved.filter((s: any) => s.gender === 'Male').length,
+      females:        approved.filter((s: any) => s.gender === 'Female').length,
+      pendingMales:   pendingList.filter((s: any) => s.gender === 'Male').length,
+      pendingFemales: pendingList.filter((s: any) => s.gender === 'Female').length,
+      amShift:        approved.filter((s: any) => s.preferred_shift === 'AM').length,
+      pmShift:        approved.filter((s: any) => s.preferred_shift === 'PM').length,
+      // Grade level breakdown (enrolled/accepted only)
+      g11Count: approved.filter((s: any) => s.grade_level !== '12').length,
+      g12Count: approved.filter((s: any) => s.grade_level === '12').length,
+    }
+  }, [students, includeG12])
+
+  // ── Grade breakdown cards — ALWAYS shows absolute counts, ignores includeG12 toggle ──
+  const gradeBreakdown = useMemo(() => {
+    const enrolled = students.filter((s: any) =>
+      !s.is_archived &&
+      (s.status === "Accepted" || s.status === "Approved")
+    )
+    return {
+      g11: enrolled.filter((s: any) => s.grade_level !== "12").length,
+      g12: enrolled.filter((s: any) => s.grade_level === "12").length,
+    }
+  }, [students]) // Note: NO includeG12 dependency — always absolute
 
   const comparison = useMemo(() => {
     if (history.length === 0) return { diff: 0, status: 'baseline', percent: '0', prevYear: '' };
@@ -364,24 +378,6 @@ export default function AdminDashboard() {
   // const grandTotalEnrollees = totalMaleEnrollees + totalFemaleEnrollees;
   const totalEnrollees = stats.males + stats.females;
 
-  const handleCaptureSnapshot = async () => {
-    const activeYear = config?.school_year || ""; 
-    if (!activeYear) return toast.error("School Year is UNSET.");
-    setIsCapturing(true)
-    try {
-      // Uses TOTAL (Accepted + Pending) for the archive as requested
-      const res = await recordYearlySnapshot(activeYear, totalMaleEnrollees, totalFemaleEnrollees)
-      if (res.success) { 
-        await fetchStudents(true)
-        toast.success(`Matrix Upserted: S.Y. ${activeYear}`)
-      }
-    } catch (error: any) { 
-      toast.error("Sync Failed.") 
-    } finally { 
-      setIsCapturing(false) 
-    }
-  }
-
   const handleDeleteSnapshot = async (id: string) => {
     const res = await deleteSnapshot(id)
     if (res.success) {
@@ -392,14 +388,28 @@ export default function AdminDashboard() {
   }
 
   if (!mounted || loading) return (
-    <div className="h-screen flex flex-col items-center justify-center gap-4 text-slate-400">
-      <Loader2 className="animate-spin text-blue-600 w-12 h-12" />
+    <div className="h-screen flex flex-col items-center justify-center gap-6 text-slate-400">
+      <div className="relative flex items-center justify-center">
+        <span className="absolute w-24 h-24 rounded-full border-2 border-blue-500/15 animate-ping" />
+        <span className="absolute w-16 h-16 rounded-full border-2 border-blue-400/25 animate-ping" style={{ animationDelay: "0.15s" }} />
+        <span className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 shadow-xl shadow-blue-500/30 flex items-center justify-center">
+          <Loader2 className="animate-spin text-white" size={22} />
+        </span>
+      </div>
       <p className="text-[10px] font-black uppercase tracking-[0.3em]">Fetching Data...</p>
     </div>
   )
 
   return (
     <TooltipProvider delayDuration={100}>
+    {/* Thin themed scrollbar — adapts to dark/light mode */}
+    <style>{`
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      ::-webkit-scrollbar-track { background: ${isDarkMode ? 'rgba(51,65,85,0.3)' : 'rgba(226,232,240,0.6)'}; border-radius: 99px; }
+      ::-webkit-scrollbar-thumb { background: ${isDarkMode ? 'rgba(100,116,139,0.7)' : 'rgba(148,163,184,0.8)'}; border-radius: 99px; }
+      ::-webkit-scrollbar-thumb:hover { background: ${isDarkMode ? 'rgba(148,163,184,0.9)' : 'rgba(100,116,139,0.9)'}; }
+      * { scrollbar-width: thin; scrollbar-color: ${isDarkMode ? 'rgba(100,116,139,0.7) rgba(51,65,85,0.3)' : 'rgba(148,163,184,0.8) rgba(226,232,240,0.6)'}; }
+    `}</style>
     <div className="space-y-8 md:space-y-12 animate-in fade-in duration-700 pb-20 p-4 md:p-8 transition-colors duration-500">
       
       {/* HEADER SECTION */}
@@ -420,7 +430,31 @@ export default function AdminDashboard() {
         </div>
         
         <div className="flex flex-wrap gap-3 w-full md:w-auto">
-             {/* NEW BUTTON ADDED HERE */}
+            {/* G12 Include Toggle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleIncludeG12}
+                  className={`flex items-center gap-2 h-14 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest border transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1
+                    ${includeG12
+                      ? "bg-violet-600 hover:bg-violet-500 text-white border-violet-700 shadow-violet-500/20"
+                      : isDarkMode
+                        ? "bg-slate-950 hover:bg-slate-900 text-slate-300 border-slate-800"
+                        : "bg-white hover:bg-slate-50 text-slate-600 border-slate-200"
+                    }`}
+                >
+                  <Users size={14} />
+                  <span>
+                    {includeG12 ? "G11 + G12" : "G11 Only"}
+                  </span>
+                  <span className={`w-2 h-2 rounded-full ${includeG12 ? "bg-violet-300" : isDarkMode ? "bg-slate-600" : "bg-slate-300"}`} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-900 text-white border-slate-800">
+                <p>{includeG12 ? "Currently showing G11 + G12 students. Click to show G11 only." : "Currently showing G11 students only. Click to include G12."}</p>
+              </TooltipContent>
+            </Tooltip>
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button onClick={() => router.push('/admin/predictive-analytics')} variant="outline" className="inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 bg-white text-black border-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900">
@@ -428,15 +462,6 @@ export default function AdminDashboard() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View future enrollment projections</p></TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button onClick={handleCaptureSnapshot} disabled={isCapturing} variant="outline" className="inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 bg-white text-black border-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900">
-                  {isCapturing ? <Loader2 className="animate-spin"/> : <History />} Record Year
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Save current data as historical snapshot</p></TooltipContent>
             </Tooltip>
 
             <ArchivesManager history={history} onDelete={handleDeleteSnapshot} isDarkMode={isDarkMode} />
@@ -453,6 +478,25 @@ export default function AdminDashboard() {
       </div>
       
       <OverviewGrid stats={stats} isDarkMode={isDarkMode} />
+
+      {/* G11 / G12 Enrollment Breakdown */}
+      <div className="grid grid-cols-2 gap-4">
+        {[
+          { label: "Grade 11 Enrolled", value: gradeBreakdown.g11, color: isDarkMode ? "text-blue-400" : "text-blue-600", bg: isDarkMode ? "bg-blue-500/8 border-blue-500/20" : "bg-blue-50 border-blue-200", dot: "bg-blue-500" },
+          { label: "Grade 12 Enrolled", value: gradeBreakdown.g12, color: isDarkMode ? "text-violet-400" : "text-violet-600", bg: isDarkMode ? "bg-violet-500/8 border-violet-500/20" : "bg-violet-50 border-violet-200", dot: "bg-violet-500" },
+        ].map(card => (
+          <div key={card.label} className={`rounded-2xl border p-5 flex items-center gap-4 ${card.bg} relative overflow-hidden`}>
+            <div className={`h-0.5 absolute top-0 left-0 right-0 ${card.dot} opacity-60`} />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isDarkMode ? "bg-white/5" : "bg-white"} shadow-sm`}>
+              <span className={`w-3 h-3 rounded-full ${card.dot} shadow-sm`} />
+            </div>
+            <div>
+              <p className={`text-3xl font-black tabular-nums ${card.color}`}>{card.value}</p>
+              <p className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${card.color} opacity-70`}>{card.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <CensusGrid stats={stats} totalMaleEnrollees={totalMaleEnrollees} totalFemaleEnrollees={totalFemaleEnrollees} isDarkMode={isDarkMode} />
 

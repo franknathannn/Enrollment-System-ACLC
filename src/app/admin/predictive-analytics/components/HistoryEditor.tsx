@@ -157,7 +157,8 @@ export function HistoryEditor({ historyData, isDarkMode }: Props) {
         .db-table-container {
           border: 1px solid rgba(148,163,184,0.07);
           border-radius: 14px;
-          overflow: hidden;
+          overflow-x: auto;
+          overflow-y: hidden;
           box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03);
         }
 
@@ -342,7 +343,7 @@ export function HistoryEditor({ historyData, isDarkMode }: Props) {
             </TooltipContent>
           </Tooltip>
 
-          <DialogContent className="db-dialog max-w-4xl max-h-[88vh] p-0 gap-0 rounded-2xl overflow-hidden">
+          <DialogContent className="db-dialog w-[calc(100vw-24px)] max-w-4xl max-h-[88vh] p-0 gap-0 rounded-2xl overflow-hidden">
 
             {/* HEADER */}
             <div className="db-header px-7 pt-6 pb-5 sticky top-0 z-10">
@@ -389,7 +390,7 @@ export function HistoryEditor({ historyData, isDarkMode }: Props) {
                   </div>
                 ) : (
                   <div className="db-table-container">
-                    <table className="w-full border-collapse">
+                    <table className="w-full border-collapse" style={{minWidth: '560px'}}>
                       <thead className="db-thead">
                         <tr>
                           <th className="db-th text-left text-slate-500">School Year</th>

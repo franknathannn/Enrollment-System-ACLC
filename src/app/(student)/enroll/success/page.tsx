@@ -177,6 +177,7 @@ function SuccessContent() {
       {/* Campus info */}
       <div className={cn("relative z-10 p-8 rounded-[48px] border overflow-hidden transition-[background-color,border-color] duration-300",
         d ? "bg-white/5 border-white/5 hover:bg-white/[0.07]" : "bg-white border-slate-200 hover:border-blue-200 shadow-sm")}>
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/50 via-indigo-500/30 to-transparent" />
         <div className="space-y-6 relative z-10">
           <div className="flex items-center gap-4 justify-center">
             <Building2 className={cn("animate-pulse", d ? "text-blue-500" : "text-blue-600")} size={28} />
@@ -280,11 +281,14 @@ export default function SuccessPage() {
 
       <Suspense fallback={
         <div className="flex flex-col items-center justify-center gap-6 relative z-10">
-          <div className="relative">
-            <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-40 animate-pulse" />
-            <Loader2 className={cn("animate-spin w-16 h-16 relative z-10", d ? "text-blue-500" : "text-blue-600")} />
+          <div className="relative flex items-center justify-center">
+            <span className="absolute w-20 h-20 rounded-full border-2 border-blue-500/20 animate-ping" />
+            <span className="absolute w-14 h-14 rounded-full border-2 border-blue-400/30 animate-ping" style={{ animationDelay: "0.15s" }} />
+            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 shadow-lg shadow-blue-500/30 flex items-center justify-center relative z-10">
+              <Loader2 className="animate-spin text-white" size={18} />
+            </span>
           </div>
-          <p className={cn("text-[10px] font-black uppercase tracking-[0.5em] animate-pulse", d ? "text-blue-400" : "text-blue-600")}>Synchronizing...</p>
+          <p className={cn("text-[10px] font-black uppercase tracking-[0.5em]", d ? "text-blue-400" : "text-blue-600")}>Synchronizing...</p>
         </div>
       }>
         <SuccessContent />

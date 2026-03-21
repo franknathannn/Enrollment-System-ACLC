@@ -295,3 +295,100 @@ export async function toggleEnrollment(status: boolean) {
   revalidatePath("/") 
   return { success: true }
 }
+/**
+ * SCHOOL YEAR ROLLOVER
+ * 
+ * Logic:
+ * - All currently Approved/Accepted G11 students → promoted to G12 (section_id cleared, section cleared)
+ * - Students that would be Grade 13+ (their enrollment school_year start + 2 <= current school_year start)
+ *   are NOT promoted, they simply remain archived (no section assignment)
+ * - The "current school year" is read from system_config
+ * 
+ * Returns counts: promoted, skipped (already G12+), overAge
+ */
+export async function rolloverToGrade12(): Promise<{
+  success: boolean
+  promoted: number
+  overAge: number
+  error?: string
+}> {
+  try {
+    const supabase = await createClient()
+
+    // Get current school year from config
+    const { data: config } = await supabase
+      .from('system_config')
+      .select('school_year')
+      .single()
+
+    if (!config?.school_year) {
+      return { success: false, promoted: 0, overAge: 0, error: 'No school year configured.' }
+    }
+
+    // Parse current school year start (e.g. "2025-2026" -> 2025)
+    const currentSYStart = parseInt(config.school_year.split('-')[0])
+
+    // Fetch all Approved/Accepted G11 students (non-mock)
+    const { data: students, error: fetchErr } = await supabase
+      .from('students')
+      .select('id, school_year, grade_level')
+      .in('status', ['Approved', 'Accepted'])
+      .eq('grade_level', '11')
+      .neq('mock', true)
+
+    if (fetchErr) throw fetchErr
+
+    const toPromote: string[] = []
+    let overAge = 0
+
+    for (const s of (students || [])) {
+      // Parse student's enrollment school year start
+      const studentSYStart = s.school_year ? parseInt(s.school_year.split('-')[0]) : null
+      
+      if (studentSYStart === null) {
+        // No school year data — promote anyway (assume current year)
+        toPromote.push(s.id)
+        continue
+      }
+
+      // How many years have passed since the student enrolled?
+      const yearDiff = currentSYStart - studentSYStart
+
+      if (yearDiff >= 2) {
+        // They would be Grade 13+ (enrolled 2+ years ago, G11 -> G12 = 1 year gap)
+        // Do NOT promote — just count as over age
+        overAge++
+      } else {
+        // Normal G11 -> G12 promotion
+        toPromote.push(s.id)
+      }
+    }
+
+    // Promote in batches
+    if (toPromote.length > 0) {
+      const chunkSize = 50
+      for (let i = 0; i < toPromote.length; i += chunkSize) {
+        const chunk = toPromote.slice(i, i + chunkSize)
+        const { error: updateErr } = await supabase
+          .from('students')
+          .update({
+            grade_level: '12',
+            section_id: null,
+            section: null,
+          })
+          .in('id', chunk)
+        if (updateErr) throw updateErr
+      }
+    }
+
+    revalidatePath('/admin/sections')
+    revalidatePath('/admin/applicants')
+    revalidatePath('/admin/enrolled')
+    revalidatePath('/admin/dashboard')
+
+    return { success: true, promoted: toPromote.length, overAge }
+  } catch (err: any) {
+    console.error('Rollover Error:', err)
+    return { success: false, promoted: 0, overAge: 0, error: err?.message || 'Unknown error' }
+  }
+}

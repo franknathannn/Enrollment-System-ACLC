@@ -12,15 +12,17 @@ export function useSections() {
   const { isDarkMode: themeDarkMode } = useTheme()
   const [isDarkMode, setIsDarkMode] = useState(themeDarkMode)
   const [sections, setSections] = useState<any[]>([])
+  const [allSchedules, setAllSchedules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
   const [selectedSectionName, setSelectedSectionName] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [strandFilter, setStrandFilter] = useState<"ALL" | "ICT" | "GAS">("ALL")
+  const [gradeLevelFilter, setGradeLevelFilter] = useState<"ALL" | "11" | "12">("ALL")
   
   const [sectionSelection, setSectionSelection] = useState<Set<string>>(new Set())
-  const [confirmAdd, setConfirmAdd] = useState<{isOpen: boolean, strand: "ICT" | "GAS" | null}>({isOpen: false, strand: null})
+  const [confirmAdd, setConfirmAdd] = useState<{isOpen: boolean, strand: "ICT" | "GAS" | null, gradeLevel: "11" | "12"}>({isOpen: false, strand: null, gradeLevel: "11"})
   const [confirmDeleteSelect, setConfirmDeleteSelect] = useState(false)
 
   const [ictExpanded, setIctExpanded] = useState(true)
@@ -82,14 +84,17 @@ export function useSections() {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
+  // FIXED: Use sessionStorage (tab-isolated) instead of localStorage so that
+  // opening ICT 11-A in Tab 1 and ICT 11-B in Tab 2 never contaminate each
+  // other. localStorage is shared across all tabs of the same origin.
   useEffect(() => {
-    const saved = localStorage.getItem("registrar_active_matrix")
+    const saved = sessionStorage.getItem("registrar_active_matrix")
     if (saved) setSelectedSectionName(saved)
   }, [])
 
   useEffect(() => {
-    if (selectedSectionName) localStorage.setItem("registrar_active_matrix", selectedSectionName)
-    else localStorage.removeItem("registrar_active_matrix")
+    if (selectedSectionName) sessionStorage.setItem("registrar_active_matrix", selectedSectionName)
+    else sessionStorage.removeItem("registrar_active_matrix")
   }, [selectedSectionName])
 
   useEffect(() => {
@@ -127,11 +132,21 @@ export function useSections() {
   const fetchSections = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoading(true)
     try {
-      const { data, error } = await supabase.from('sections').select(`*, students ( * )`).order('section_name', { ascending: true })
+      // Fetch sections + students — use explicit FK hint because students has two FKs to sections
+      // (section_id = current section, g11_section_id = historical G11 section)
+      const { data, error } = await supabase.from('sections').select(`*, students!students_section_id_fkey ( * )`).order('section_name', { ascending: true })
       if (error) throw error
       setSections(data || [])
-    } catch (err) {
-      if (!isBackground) toast.error("Registrar Sync Error")
+
+      // CRITICAL FIX: fetch ALL schedules across ALL sections so the
+      // auto-scheduler wizard has cross-section room/teacher data.
+      // Without this allSchedules is always [] and ICT 11-B lands on
+      // the same slot as ICT 11-A.
+      const { data: schedData } = await supabase.from('schedules').select('*')
+      setAllSchedules(schedData || [])
+    } catch (err: any) {
+      console.error("Registrar Sync Error:", err?.message || err?.code || JSON.stringify(err) || err)
+      if (!isBackground) toast.error("Registrar Sync Error — check console for details")
     } finally {
       if (!isBackground) setLoading(false)
     }
@@ -140,9 +155,16 @@ export function useSections() {
   useEffect(() => { 
     fetchSections() 
     fetchConfig()
-    const channel = supabase.channel('sections_realtime_complete')
+    // FIXED: Tab-unique channel name to prevent cross-tab event bleed
+    const tabId = Math.random().toString(36).slice(2, 8)
+    const channel = supabase.channel(`sections_realtime_complete_${tabId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, (payload) => {
         setRealtimeStatus(`🔄 ${payload.eventType}`)
+        setLastUpdate(new Date().toLocaleTimeString())
+        fetchSections(true)
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, (payload) => {
+        setRealtimeStatus(`📅 Schedule ${payload.eventType}`)
         setLastUpdate(new Date().toLocaleTimeString())
         fetchSections(true)
       })
@@ -249,7 +271,9 @@ export function useSections() {
 
   const handleViewProfile = useCallback((student: any) => { setActiveProfile(student); setProfileOpen(true) }, [])
   const handleUnenroll = useCallback((student: any) => { setActiveUnenrollStudent(student); setUnenrollOpen(true) }, [])
-  const initiateAdd = useCallback((strand: "ICT" | "GAS") => { setConfirmAdd({ isOpen: true, strand }) }, [])
+  const initiateAdd = useCallback((strand: "ICT" | "GAS") => { 
+    setConfirmAdd({ isOpen: true, strand, gradeLevel: gradeLevelFilter === "ALL" ? "11" : gradeLevelFilter })
+  }, [gradeLevelFilter])
   const toggleSelection = useCallback((id: string) => { setSectionSelection(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next }) }, [])
   const handleSelectAll = useCallback((ids: string[]) => { setSectionSelection(prev => { const next = new Set(prev); const allSelected = ids.every(id => prev.has(id)); if (allSelected) ids.forEach(id => next.delete(id)); else ids.forEach(id => next.add(id)); return next }) }, [])
 
@@ -257,7 +281,7 @@ export function useSections() {
     if (!confirmAdd.strand) return
     setIsProcessing(true)
     try {
-      const result = await addSection(confirmAdd.strand)
+      const result = await addSection(confirmAdd.strand, confirmAdd.gradeLevel || "11")
       toast.success(`Generated ${result.data.section_name}`)
       
       // Optimistic update
@@ -272,10 +296,10 @@ export function useSections() {
       const { data: { user } } = await supabase.auth.getUser()
       supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'APPROVED', student_name: 'N/A', details: `Created new ${confirmAdd.strand} section: ${result.data.section_name}` }]).then()
       
-      setConfirmAdd({ isOpen: false, strand: null }); 
+      setConfirmAdd({ isOpen: false, strand: null, gradeLevel: "11" }); 
       fetchSections(true)
     } catch (err: any) { toast.error(err.message) } finally { setIsProcessing(false) }
-  }, [confirmAdd.strand, fetchSections])
+  }, [confirmAdd.strand, confirmAdd.gradeLevel, fetchSections])
 
   const executeBulkDelete = useCallback(async () => {
     setConfirmDeleteSelect(false);
@@ -286,7 +310,7 @@ export function useSections() {
     setSectionSelection(new Set())
 
     try {
-      for (const t of targets) await deleteAndCollapseSection(t.id, t.strand)
+      for (const t of targets) await deleteAndCollapseSection(t.id, t.strand, t.grade_level)
       const { data: { user } } = await supabase.auth.getUser()
       supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'DELETED', student_name: 'N/A', details: `Bulk deleted ${targets.length} section matrices` }]).then()
       toast.success(`Removed ${targets.length} matrices.`); 
@@ -294,16 +318,16 @@ export function useSections() {
     } catch (e) { toast.error("Bulk delete failed"); fetchSections() }
   }, [sectionSelection, sections, fetchSections])
 
-  const handleDeleteSection = useCallback(async (id: string, name: string, strand: "ICT" | "GAS") => {
-    if (!confirm(`WARNING: Deleting  shifts matrix sequence. Proceed?`)) return
+  const handleDeleteSection = useCallback(async (id: string, name: string, strand: "ICT" | "GAS", gradeLevel?: "11" | "12") => {
+    if (!confirm(`WARNING: Deleting ${name} shifts matrix sequence. Proceed?`)) return
     
     // Optimistic update
     setSections(prev => prev.filter(s => s.id !== id))
 
     try {
-      await deleteAndCollapseSection(id, strand)
+      await deleteAndCollapseSection(id, strand, gradeLevel)
       const { data: { user } } = await supabase.auth.getUser()
-      supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'DELETED', student_name: 'N/A', details: `Deleted section matrix:  ()` }]).then()
+      supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'DELETED', student_name: 'N/A', details: `Deleted section matrix: ${name} (${strand})` }]).then()
       toast.success(`Matrix Sequence Updated.`); 
       fetchSections(true)
     } catch (err: any) { toast.error(err.message); fetchSections() }
@@ -383,11 +407,21 @@ export function useSections() {
     try {
       const targetSec = sections.find(s => s.section_name === newSectionName)
       if (!targetSec) return
+
+      // Find student once — used for both grade validation and activity log
+      const student = sections.flatMap(s => s.students).find((s: any) => s.id === id)
+
+      // Prevent switching into a section of the wrong grade level
+      const studentGrade = student?.grade_level || "11"
+      if (targetSec.grade_level && targetSec.grade_level !== studentGrade) {
+        toast.error(`Cannot move a Grade ${studentGrade} student into a Grade ${targetSec.grade_level} section.`)
+        return
+      }
+
       await updateStudentSection(id, targetSec.id)
       const { data: { user } } = await supabase.auth.getUser()
-      const student = sections.flatMap(s => s.students).find((s: any) => s.id === id)
-      const studentName = student ? `${student.first_name} ${student.last_name}` : 'Unknown Student';
-      const previousSection = student?.section || 'Unassigned';
+      const studentName = student ? `${student.first_name} ${student.last_name}` : 'Unknown Student'
+      const previousSection = student?.section || 'Unassigned'
       await supabase.from('activity_logs').insert([{ 
         admin_id: user?.id, 
         admin_name: user?.user_metadata?.username || 'Admin', 
@@ -395,9 +429,9 @@ export function useSections() {
         student_name: studentName, 
         student_id: id, 
         student_image: student?.two_by_two_url || student?.profile_2x2_url, 
-        details: `Transferred  from  to ` 
+        details: `Transferred from ${previousSection} to ${newSectionName}` 
       }])
-      toast.success(`Moved  to `); fetchSections()
+      toast.success(`Moved ${studentName} to ${newSectionName}`); fetchSections()
     } catch (err) { toast.error("Transfer failed") }
   }, [sections, fetchSections])
 
@@ -445,6 +479,83 @@ export function useSections() {
         (cleanUpdates as any).two_by_two_url = finalProfileUrl;
       }
 
+      // ── Grade level change: auto-assign to correct grade's sections ──────
+      if (cleanUpdates.grade_level) {
+        const newGrade = cleanUpdates.grade_level as string
+
+        if (newGrade === 'GRADUATED') {
+          // Graduating a student: archive and unassign section
+          cleanUpdates.is_archived = true
+          cleanUpdates.section_id  = null
+          cleanUpdates.grade_level = '12' // keep DB constraint happy
+        } else {
+          // Fetch student's strand + gender to auto-assign
+          const { data: student } = await supabase
+            .from('students')
+            .select('strand, gender, grade_level')
+            .eq('id', id)
+            .single()
+
+          if (student) {
+            // Preserve G11 section before clearing (only when going from 11→12)
+            if (student.grade_level === '11' && newGrade === '12') {
+              const { data: cur } = await supabase.from('students').select('section, section_id').eq('id', id).single()
+              if (cur) {
+                cleanUpdates.g11_section    = cur.section || null
+                cleanUpdates.g11_section_id = cur.section_id || null
+              }
+            }
+            // Clear current section first — they're changing grade
+            cleanUpdates.section_id = null
+            cleanUpdates.section    = 'Unassigned'
+
+            // Find best section for new grade level
+            const [sectionsRes, occupiedRes] = await Promise.all([
+              supabase.from('sections')
+                .select('id, section_name, capacity')
+                .eq('strand', student.strand)
+                .eq('grade_level', newGrade)
+                .order('section_name', { ascending: true }),
+              supabase.from('students')
+                .select('section_id, gender')
+                .eq('strand', student.strand)
+                .eq('grade_level', newGrade)
+                .in('status', ['Accepted', 'Approved'])
+                .or('is_archived.is.null,is_archived.eq.false')
+                .not('section_id', 'is', null),
+            ])
+
+            const secs = sectionsRes.data || []
+            if (secs.length > 0) {
+              // Build occupancy map
+              const occ: Record<string, { male: number; female: number; cap: number }> = {}
+              secs.forEach((s: any) => { occ[s.id] = { male: 0, female: 0, cap: s.capacity || 40 } })
+              ;(occupiedRes.data || []).forEach((s: any) => {
+                if (occ[s.section_id]) {
+                  if (s.gender === 'Male') occ[s.section_id].male++
+                  else occ[s.section_id].female++
+                }
+              })
+              // Pick section with most room
+              const best = secs
+                .filter((s: any) => {
+                  const o = occ[s.id]
+                  return o && (o.male + o.female) < o.cap
+                })
+                .sort((a: any, b: any) => {
+                  const oa = occ[a.id], ob = occ[b.id]
+                  return (oa.male + oa.female) - (ob.male + ob.female)
+                })[0]
+
+              if (best) {
+                cleanUpdates.section_id = best.id
+                cleanUpdates.section    = best.section_name
+              }
+            }
+          }
+        }
+      }
+
       const { error } = await supabase.from('students').update(cleanUpdates).eq('id', id)
       if (error) throw error
 
@@ -454,8 +565,8 @@ export function useSections() {
   }, [])
 
   return {
-    config, isDarkMode, sections, loading, isProcessing, selectedSectionName, setSelectedSectionName,
-    searchTerm, setSearchTerm, debouncedSearch, strandFilter, setStrandFilter, sectionSelection,
+    config, isDarkMode, sections, allSchedules, loading, isProcessing, selectedSectionName, setSelectedSectionName,
+    searchTerm, setSearchTerm, debouncedSearch, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter, sectionSelection,
     confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, ictExpanded, setIctExpanded,
     gasExpanded, setGasExpanded, exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
     viewingFile, rotation, setRotation, unenrollOpen, setUnenrollOpen, activeUnenrollStudent, profileOpen, setProfileOpen,

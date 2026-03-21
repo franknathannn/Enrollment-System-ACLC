@@ -107,8 +107,14 @@ export const DossierSections = memo(function DossierSections({
   }
 
   const filteredSections = useMemo(
-    () => sections.filter((s: any) => s.strand === formData.strand),
-    [sections, formData.strand]
+    () => sections.filter((s: any) => {
+      if (s.strand !== formData.strand) return false
+      // Only show sections that match the student's grade level
+      const studentGrade = formData.grade_level || "11"
+      if (s.grade_level && s.grade_level !== studentGrade) return false
+      return true
+    }),
+    [sections, formData.strand, formData.grade_level]
   )
   const canAssignSection = student.status === "Accepted" || student.status === "Approved"
   const isFaceToFace     = formData.preferred_modality === "Face to Face"

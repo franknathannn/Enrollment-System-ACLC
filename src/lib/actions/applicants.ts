@@ -6,31 +6,43 @@ import { revalidatePath } from "next/cache"
 /**
  * 🔥 NUCLEAR OPTION: REDISTRIBUTE STUDENTS
  */
-export async function redistributeStudents(strand: 'ICT' | 'GAS') {
+export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '11' | '12') {
   const supabase = await createClient()
 
   try {
-    console.log(`🚀 Starting redistribution for ${strand}`)
+    console.log(`🚀 Starting redistribution for ${strand} GL${gradeLevel || 'all'}`)
 
-    const { data: sections, error: sectionsError } = await supabase
+    let sectionsQuery = supabase
       .from('sections')
       .select('id, section_name, capacity')
       .eq('strand', strand)
       .order('section_name', { ascending: true })
 
+    if (gradeLevel) {
+      sectionsQuery = sectionsQuery.eq('grade_level', gradeLevel) as any
+    }
+
+    const { data: sections, error: sectionsError } = await sectionsQuery
+
     if (sectionsError) throw sectionsError
     if (!sections || sections.length === 0) {
-      throw new Error(`No sections found for ${strand}`)
+      throw new Error(`No sections found for ${strand}${gradeLevel ? ` G${gradeLevel}` : ''}`)
     }
 
     console.log(`📦 Found ${sections.length} sections:`, sections.map(s => `${s.section_name}(${s.capacity})`).join(', '))
 
-    const { data: students, error: studentsError } = await supabase
+    let studentsQuery = supabase
       .from('students')
       .select('id, gender, first_name, last_name, is_locked, section_id')
       .eq('strand', strand)
       .in('status', ['Accepted', 'Approved'])
       .order('created_at', { ascending: true })
+
+    if (gradeLevel) {
+      studentsQuery = studentsQuery.eq('grade_level', gradeLevel) as any
+    }
+
+    const { data: students, error: studentsError } = await studentsQuery
 
     if (studentsError) throw studentsError
     if (!students || students.length === 0) {
@@ -289,22 +301,25 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
   if (dbStatus === "Approved") {
     const { data: student } = await supabase
       .from('students')
-      .select('strand, gender')
+      .select('strand, gender, grade_level')
       .eq('id', id)
       .single()
 
     if (student) {
-      // 1. Fetch sections and ALL students in this strand in parallel
+      const studentGradeLevel = student.grade_level || "11"
+      // 1. Fetch sections and ALL students in this strand AND grade level in parallel
       const [sectionsRes, studentsRes] = await Promise.all([
         supabase
           .from('sections')
           .select('id, section_name, capacity')
           .eq('strand', student.strand)
+          .eq('grade_level', studentGradeLevel)
           .order('section_name', { ascending: true }),
         supabase
           .from('students')
-          .select('section_id, gender')
+          .select('section_id, gender, grade_level')
           .eq('strand', student.strand)
+          .eq('grade_level', studentGradeLevel)
           .eq('status', 'Approved')
           .not('section_id', 'is', null)
       ])
@@ -419,35 +434,41 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
     // Get all students being updated
     const { data: studentsToUpdate, error: fetchError } = await supabase
       .from('students')
-      .select('id, strand, gender')
+      .select('id, strand, gender, grade_level')
       .in('id', ids)
     
     if (fetchError) throw fetchError
     if (!studentsToUpdate || studentsToUpdate.length === 0) return { success: false, results: [] }
 
-    // Group by strand for efficient section lookup
-    const strandGroups: Record<string, typeof studentsToUpdate> = {}
+    // Group by strand + grade_level for efficient section lookup
+    type GroupKey = string // `${strand}:${gradeLevel}`
+    const strandGroups: Record<GroupKey, typeof studentsToUpdate> = {}
     studentsToUpdate.forEach(s => {
-      if (!strandGroups[s.strand]) strandGroups[s.strand] = []
-      strandGroups[s.strand].push(s)
+      const gl = s.grade_level || "11"
+      const key = `${s.strand}:${gl}`
+      if (!strandGroups[key]) strandGroups[key] = []
+      strandGroups[key].push(s)
     })
 
     const results: any[] = []
     const updatesBySection: Record<string, string[]> = {}
     const sectionNames: Record<string, string> = { 'null': 'Unassigned', 'Unassigned': 'Unassigned' }
 
-    for (const [strand, students] of Object.entries(strandGroups)) {
-      // Fetch sections and existing students for this strand in parallel
+    for (const [groupKey, students] of Object.entries(strandGroups)) {
+      const [strand, gradeLevel] = groupKey.split(":")
+      // Fetch sections and existing students for this strand+grade_level in parallel
       const [sectionsRes, existingStudentsRes] = await Promise.all([
         supabase
           .from('sections')
           .select('id, section_name, capacity')
           .eq('strand', strand)
+          .eq('grade_level', gradeLevel)
           .order('section_name', { ascending: true }),
         supabase
           .from('students')
           .select('section_id, gender')
           .eq('strand', strand)
+          .eq('grade_level', gradeLevel)
           .eq('status', 'Approved')
           .not('section_id', 'is', null)
       ])

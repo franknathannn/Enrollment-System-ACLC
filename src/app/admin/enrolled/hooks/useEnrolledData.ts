@@ -18,8 +18,9 @@ export function useEnrolledData() {
           .from('students')
           .select('*')
           .eq('status', 'Approved')
+          .neq('is_archived', true)
           .order('last_name', { ascending: true }),
-        supabase.from('sections').select('id, section_name, strand').order('section_name')
+        supabase.from('sections').select('id, section_name, strand, grade_level').order('section_name')
       ])
       
       if (studentsRes.error) throw studentsRes.error

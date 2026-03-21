@@ -20,6 +20,7 @@ import { CapacityGuardian } from "./components/CapacityGuardian"
 import { FinancialHub } from "./components/FinancialHub"
 import { SettingsActions } from "./components/SettingsActions"
 import { EnrollmentFormControl } from "./components/EnrollmentFormControl"
+import { GradeOperationsPanel } from "./components/GradeOperationsPanel"
 
 type ConfigState = {
   id: string
@@ -34,8 +35,7 @@ type ConfigState = {
 }
 
 export default function SettingsPage() {
-  const { isDarkMode: themeDarkMode } = useTheme()
-  const [isDarkMode, setIsDarkMode] = useState(themeDarkMode)
+  const { isDarkMode } = useTheme()
   const [_loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -118,18 +118,6 @@ export default function SettingsPage() {
   }, [])
 
   useEffect(() => { loadSettings() }, [loadSettings])
-
-  useEffect(() => {
-    setIsDarkMode(themeDarkMode)
-  }, [themeDarkMode])
-
-  useEffect(() => {
-    const handleThemeChange = (e: CustomEvent) => {
-      setIsDarkMode(e.detail.mode === 'dark')
-    }
-    globalThis.addEventListener('theme-change', handleThemeChange as EventListener)
-    return () => globalThis.removeEventListener('theme-change', handleThemeChange as EventListener)
-  }, [])
 
   // --- LOGIC A: System Mode Toggle (STRICTLY RETAINED) ---
   const handleModeToggle = async (isManual: boolean) => {
@@ -332,6 +320,14 @@ export default function SettingsPage() {
 
   return (
     <TooltipProvider delayDuration={100}>
+    {/* Thin themed scrollbar — adapts to dark/light mode */}
+    <style>{`
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      ::-webkit-scrollbar-track { background: ${isDarkMode ? 'rgba(51,65,85,0.3)' : 'rgba(226,232,240,0.6)'}; border-radius: 99px; }
+      ::-webkit-scrollbar-thumb { background: ${isDarkMode ? 'rgba(100,116,139,0.7)' : 'rgba(148,163,184,0.8)'}; border-radius: 99px; }
+      ::-webkit-scrollbar-thumb:hover { background: ${isDarkMode ? 'rgba(148,163,184,0.9)' : 'rgba(100,116,139,0.9)'}; }
+      * { scrollbar-width: thin; scrollbar-color: ${isDarkMode ? 'rgba(100,116,139,0.7) rgba(51,65,85,0.3)' : 'rgba(148,163,184,0.8) rgba(226,232,240,0.6)'}; }
+    `}</style>
       <div className="relative min-h-screen transition-colors duration-500">
         <StarConstellation />
         <div className="relative z-10 max-w-4xl mx-auto p-4 md:p-8 space-y-12 animate-in fade-in duration-700 pb-32">
@@ -392,6 +388,11 @@ export default function SettingsPage() {
             <EnrollmentFormControl
               configId={config.id}
               isDarkMode={isDarkMode}
+            />
+
+            <GradeOperationsPanel
+              isDarkMode={isDarkMode}
+              schoolYear={config.schoolYear}
             />
 
             <SettingsActions

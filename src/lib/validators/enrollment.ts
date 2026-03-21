@@ -67,6 +67,8 @@ export function createEnrollmentSchema(requirements: FieldRequirements = DEFAULT
       : z.string().max(100, "Max 100 characters").optional(),
 
     // ── Step 2: Academic ──────────────────────────────────────────────────
+    grade_level: z.enum(["11", "12"]).optional(),
+
     lrn: req('lrn')
       ? z.string().length(12, "LRN must be exactly 12 digits").regex(/^\d+$/, "Numbers only")
       : z.string().length(12, "LRN must be exactly 12 digits").regex(/^\d+$/, "Numbers only").optional(),

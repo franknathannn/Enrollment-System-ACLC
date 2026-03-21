@@ -87,9 +87,10 @@ export const DocumentViewerModal = memo(({
             ${isFullscreen ? 'w-screen h-screen rounded-none' : 'w-full h-full rounded-[24px] md:rounded-[32px]'}`}
         >
           {/* HEADER BAR */}
-          <div className={`px-5 py-4 z-30 flex flex-wrap gap-4 items-center justify-between shrink-0 border-b backdrop-blur-xl transition-colors duration-300
+          <div className={`relative px-5 py-4 z-30 flex flex-wrap gap-4 items-center justify-between shrink-0 border-b backdrop-blur-xl transition-colors duration-300
             ${isDarkMode ? 'bg-[#080808]/90 border-white/5' : 'bg-white/90 border-slate-100'}`}
           >
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
             <div className="flex-1 min-w-[200px] flex flex-col justify-center">
               <div className="flex items-center gap-2 mb-1">
                 <Settings2 size={12} className={isDarkMode ? "text-emerald-400" : "text-emerald-600"} />

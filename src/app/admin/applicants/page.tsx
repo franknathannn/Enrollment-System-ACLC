@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useMemo } from "react"
 import { Loader2 } from "lucide-react"
 import { useTheme } from "@/hooks/useTheme"
 import { StarConstellation } from "./components/StarConstellation"
@@ -16,24 +16,11 @@ import { useApplicants } from "./hooks/useApplicants"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 export default function ApplicantsPage() {
- const { isDarkMode: themeDarkMode } = useTheme()
- const [isDarkMode, setIsDarkMode] = useState(themeDarkMode)
-
- useEffect(() => {
-   setIsDarkMode(themeDarkMode)
- }, [themeDarkMode])
-
- useEffect(() => {
-   const handleThemeChange = (e: any) => {
-     setIsDarkMode(e.detail.mode === 'dark')
-   }
-   window.addEventListener('theme-change', handleThemeChange)
-   return () => window.removeEventListener('theme-change', handleThemeChange)
- }, [])
+ const { isDarkMode } = useTheme()
 
  const {
    loading, config, searchTerm, setSearchTerm, fetchStudents, exportToCSV,
-   filter, setFilter, students, setSelectedIds, sortBy, setSortBy,
+   filter, setFilter, gradeLevelFilter, setGradeLevelFilter, students, setSelectedIds, sortBy, setSortBy,
    sortDropdownOpen, setSortDropdownOpen, filteredStudents,
    selectedIds, toggleSelect, toggleSelectAll, hiddenRows, exitingRows,
    animatingIds, setOpenStudentDialog, handleExit, handleStatusChange,
@@ -61,9 +48,15 @@ export default function ApplicantsPage() {
  }, [paginatedStudents, filteredStudents, currentPage])
 
  if (loading && students.length === 0) return (
-  <div className="h-screen flex flex-col items-center justify-center gap-4 text-slate-400">
-   <Loader2 className="animate-spin text-blue-600 w-10 h-10" />
-   <p className="text-[10px] font-black uppercase tracking-widest text-center animate-pulse">Connecting to Database...</p>
+  <div className={`h-screen flex flex-col items-center justify-center gap-6 ${isDarkMode ? 'bg-slate-950' : 'bg-gradient-to-br from-slate-50 to-blue-50'}`}>
+   <div className="relative flex items-center justify-center">
+    <span className="absolute w-24 h-24 rounded-full border-2 border-blue-500/15 animate-ping" />
+    <span className="absolute w-16 h-16 rounded-full border-2 border-blue-400/20 animate-ping" style={{ animationDelay: "0.15s" }} />
+    <span className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 shadow-lg shadow-blue-500/30 flex items-center justify-center relative z-10">
+     <Loader2 className="animate-spin text-white" size={20} />
+    </span>
+   </div>
+   <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Connecting to Database...</p>
   </div>
  )
 
@@ -94,6 +87,8 @@ export default function ApplicantsPage() {
       isDarkMode={isDarkMode}
       filter={filter}
       setFilter={setFilter}
+      gradeLevelFilter={gradeLevelFilter}
+      setGradeLevelFilter={setGradeLevelFilter}
       students={students}
       filteredStudents={visibleStudentsForFilter}
       allFilteredStudents={filteredStudents}

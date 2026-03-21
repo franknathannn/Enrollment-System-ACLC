@@ -174,7 +174,7 @@ export function useApplicants() {
   } = useStudentActions({ students, setStudents, modals })
 
   const { 
-    searchTerm, setSearchTerm, filter, setFilter, sortBy, setSortBy,
+    searchTerm, setSearchTerm, filter, setFilter, gradeLevelFilter, setGradeLevelFilter, sortBy, setSortBy,
     sortDropdownOpen, setSortDropdownOpen, currentPage, setCurrentPage,
     filteredStudents, paginatedStudents, totalPages, animatingIds 
   } = useStudentFiltering({ students, processingIds, processingIdsRef, setHiddenRows, setExitingRows })
@@ -226,7 +226,7 @@ export function useApplicants() {
 
   return {
     loading, config, searchTerm, setSearchTerm, fetchStudents, exportToCSV,
-    filter, setFilter, students, setSelectedIds, sortBy, setSortBy,
+    filter, setFilter, gradeLevelFilter, setGradeLevelFilter, students, setSelectedIds, sortBy, setSortBy,
     sortDropdownOpen, setSortDropdownOpen, filteredStudents,
     selectedIds, toggleSelect, toggleSelectAll, hiddenRows, exitingRows,
     paginatedStudents, totalPages, currentPage, setCurrentPage,

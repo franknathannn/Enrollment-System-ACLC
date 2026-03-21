@@ -45,15 +45,16 @@ export function useStudentData() {
             'guardian_first_name', 'guardian_middle_name', 'guardian_last_name',
             'student_category', 'two_by_two_url', 'guardian_phone',
             'birth_date', 'religion', 'nationality', 'address', 'updated_at',
-            'registrar_feedback', 'section',
+            'registrar_feedback', 'section', 'grade_level',
             // new fields
             'school_type', 'year_completed_jhs', 'last_school_address',
             'facebook_user', 'facebook_link', 'preferred_modality', 'preferred_shift',
           ].join(', '))
+          .neq('is_archived', true)
           .order('created_at', { ascending: false })
           .range(0, 5999),
         supabase.from('system_config').select('school_year').single(),
-        supabase.from('sections').select('id, section_name, strand').order('section_name'),
+        supabase.from('sections').select('id, section_name, strand, grade_level').order('section_name'),
       ])
 
       if (studentsRes.error) throw studentsRes.error

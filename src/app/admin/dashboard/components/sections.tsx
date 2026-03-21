@@ -2,14 +2,14 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { 
   CheckCircle2, Cpu, BookText, Clock, Calendar, Zap, TrendingUp, TrendingDown, 
   Target, Activity, Users, Banknote, Landmark, Timer, Trophy, PieChart as PieIcon, 
-  ChevronRight, User, UserCircle2, Sun, Moon, School
+  ChevronRight, User, UserCircle2, Sun, Moon, School, GraduationCap
 } from "lucide-react"
 import { ThemedText } from "@/components/ThemedText"
 import { themeColors } from "@/lib/themeColors"
@@ -17,18 +17,20 @@ import Link from "next/link"
 import { AnimatedNumber, MetricCard, StatCard, VelocityChart, StrandPieChart } from "./primitives"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-export function OverviewGrid({ stats, isDarkMode }: { stats: any, isDarkMode: boolean }) {
+export const OverviewGrid = memo(function OverviewGrid({ stats, isDarkMode }: { stats: any, isDarkMode: boolean }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
       <StatCard title="Students Enrolled" value={<AnimatedNumber value={stats.totalAccepted} />} icon={<CheckCircle2 />} color="text-emerald-600 dark:text-emerald-400" bg="bg-emerald-50" trend="View Enrolled" isDarkMode={isDarkMode} tooltip="Total number of students officially enrolled" />
       <StatCard title="ICT Enrolled" value={<AnimatedNumber value={stats.ictAccepted} />} icon={<Cpu />} color="text-indigo-600 dark:text-indigo-400" bg="bg-indigo-50" trend="View Applicants" isDarkMode={isDarkMode} tooltip="Students enrolled in Information and Communications Technology" />
       <StatCard title="GAS Enrolled" value={<AnimatedNumber value={stats.gasAccepted} />} icon={<BookText />} color="text-orange-600 dark:text-orange-400" bg="bg-orange-50" trend="View Applicants" isDarkMode={isDarkMode} tooltip="Students enrolled in General Academic Strand" />
       <StatCard title="Pending Applicants" value={<AnimatedNumber value={stats.pending} />} icon={<Clock />} color="text-amber-600 dark:text-amber-400" bg="bg-amber-50" trend="View Applicants" isDarkMode={isDarkMode} tooltip="Applications awaiting review or approval" />
+      {(stats as any).g11Accepted !== undefined && <StatCard title="Grade 11" value={<AnimatedNumber value={(stats as any).g11Accepted} />} icon={<GraduationCap />} color="text-blue-600 dark:text-blue-400" bg="bg-blue-50" trend="View Enrolled" isDarkMode={isDarkMode} tooltip="Students enrolled in Grade 11" />}
+      {(stats as any).g12Accepted !== undefined && <StatCard title="Grade 12" value={<AnimatedNumber value={(stats as any).g12Accepted} />} icon={<GraduationCap />} color="text-purple-600 dark:text-purple-400" bg="bg-purple-50" trend="View Enrolled" isDarkMode={isDarkMode} tooltip="Students enrolled in Grade 12" />}
     </div>
   )
-}
+})
 
-export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, isDarkMode }: any) {
+export const CensusGrid = memo(function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, isDarkMode }: any) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
       <MetricCard 
@@ -87,9 +89,9 @@ export function CensusGrid({ stats, totalMaleEnrollees, totalFemaleEnrollees, is
       />
     </div>
   )
-}
+})
 
-export function AlmaMaterSection({ almaMaterData, isDarkMode }: { almaMaterData: { name: string, count: number }[], isDarkMode: boolean }) {
+export const AlmaMaterSection = memo(function AlmaMaterSection({ almaMaterData, isDarkMode }: { almaMaterData: { name: string, count: number }[], isDarkMode: boolean }) {
   const topSchool = almaMaterData[0]
   const rest = almaMaterData.slice(1)
   const totalContributing = almaMaterData.reduce((acc, s) => acc + s.count, 0)
@@ -99,7 +101,7 @@ export function AlmaMaterSection({ almaMaterData, isDarkMode }: { almaMaterData:
       <TooltipTrigger asChild>
         <div className="w-full cursor-default">
           <Card
-            className="rounded-[32px] md:rounded-[56px] shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden transition-all duration-500 border-2"
+            className="rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 overflow-hidden transition-all duration-500 border-2"
             style={{
               backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
               borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border
@@ -148,7 +150,7 @@ export function AlmaMaterSection({ almaMaterData, isDarkMode }: { almaMaterData:
 
                   <div className="relative z-10 space-y-1">
                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/60">
-                      🏆 Primary Alma Mater
+                      School Feeders
                     </p>
                     <p className="text-xl md:text-3xl font-black text-white tracking-tight leading-tight">
                       {topSchool.name}
@@ -239,14 +241,14 @@ export function AlmaMaterSection({ almaMaterData, isDarkMode }: { almaMaterData:
       </TooltipTrigger>
       <TooltipContent className="bg-slate-900 text-white border-slate-800 max-w-xs">
         <p className="font-medium text-xs leading-relaxed">
-          Shows the top feeder schools of currently enrolled students. The primary Alma Mater is the school with the most enrollees. Ties are broken alphabetically — the first alphabetically becomes the primary Alma Mater.
+        Shows the top feeder schools of currently enrolled students. The primary Alma Mater is the school with the most enrollees.
         </p>
       </TooltipContent>
     </Tooltip>
   )
-}
+})
 
-export function VelocitySection({ trendData, isDarkMode }: any) {
+export const VelocitySection = memo(function VelocitySection({ trendData, isDarkMode }: any) {
   const [visibleData, setVisibleData] = useState<any[]>([])
 
   useEffect(() => {
@@ -267,13 +269,15 @@ export function VelocitySection({ trendData, isDarkMode }: any) {
   }, [trendData])
 
   return (
-    <Card 
-      className="p-6 md:p-10 rounded-[32px] md:rounded-[56px] shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden transition-all duration-500"
+    <Card
+      className="rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 relative overflow-hidden transition-all duration-500"
       style={{
         backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
         borderColor: isDarkMode ? themeColors.dark.border : 'rgba(168, 85, 247, 0.2)'
       }}
     >
+      <div className="h-0.5 w-full bg-gradient-to-r from-blue-600 via-violet-500 to-blue-400 opacity-70" />
+      <div className="p-6 md:p-10">
        <div className="flex flex-col sm:flex-row justify-between items-start mb-10 gap-4">
           <div>
              <ThemedText variant="h3" className="flex items-center gap-3 md:text-2xl" isDarkMode={isDarkMode}>
@@ -283,20 +287,27 @@ export function VelocitySection({ trendData, isDarkMode }: any) {
           </div>
           <Tooltip>
             <TooltipTrigger>
-              <Badge className="bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 border-none font-black text-[9px] uppercase px-4 py-2 cursor-help">LIVE DATA FEED</Badge>
+              <Badge className="bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 font-black text-[9px] uppercase px-4 py-2 cursor-help flex items-center gap-1.5">
+                <span className="relative flex h-1.5 w-1.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500" />
+                </span>
+                LIVE DATA FEED
+              </Badge>
             </TooltipTrigger>
             <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Real-time updates from registrar database</p></TooltipContent>
           </Tooltip>
        </div>
        <VelocityChart data={visibleData} isDarkMode={isDarkMode} />
+      </div>
     </Card>
   )
-}
+})
 
-export function SpikeAnalyticsSection({ spikeAnalysis, stats, system, isDarkMode }: any) {
+export const SpikeAnalyticsSection = memo(function SpikeAnalyticsSection({ spikeAnalysis, stats, system, isDarkMode }: any) {
   return (
     <Card 
-      className="p-6 md:p-10 rounded-[32px] md:rounded-[56px] shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden transition-all duration-500"
+      className="p-6 md:p-10 rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 relative overflow-hidden transition-all duration-500"
       style={{
         backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
         borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border
@@ -328,77 +339,89 @@ export function SpikeAnalyticsSection({ spikeAnalysis, stats, system, isDarkMode
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div 
-          className="p-6 rounded-3xl border transition-all duration-300"
+        <div
+          className="rounded-3xl border overflow-hidden transition-all duration-300"
           style={{
             backgroundColor: isDarkMode ? 'rgb(30, 41, 59)' : 'rgb(241, 245, 249)',
             borderColor: isDarkMode ? 'rgb(51, 65, 85)' : 'rgb(226, 232, 240)'
           }}
         >
-          <div className="flex items-center gap-2 mb-3">
-            {spikeAnalysis.isGrowth ? (
-              <TrendingUp size={16} className="text-emerald-500 dark:text-emerald-400" />
-            ) : (
-              <TrendingDown size={16} className="text-red-500 dark:text-red-400" />
-            )}
-            <ThemedText variant="label" isDarkMode={isDarkMode}>Weekly Change</ThemedText>
+          <div className={`h-0.5 w-full ${spikeAnalysis.isGrowth ? 'bg-emerald-500' : 'bg-red-500'} opacity-70`} />
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-3">
+              {spikeAnalysis.isGrowth ? (
+                <TrendingUp size={16} className="text-emerald-500 dark:text-emerald-400" />
+              ) : (
+                <TrendingDown size={16} className="text-red-500 dark:text-red-400" />
+              )}
+              <ThemedText variant="label" isDarkMode={isDarkMode}>Weekly Change</ThemedText>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <ThemedText variant="h2" className="text-2xl md:text-3xl" isDarkMode={isDarkMode}>
+                {spikeAnalysis.isGrowth ? '+' : ''}{spikeAnalysis.weeklyChange}%
+              </ThemedText>
+            </div>
           </div>
-          <div className="flex items-baseline gap-2">
+        </div>
+
+        <div
+          className="rounded-3xl border overflow-hidden transition-all duration-300"
+          style={{
+            backgroundColor: isDarkMode ? 'rgb(30, 41, 59)' : 'rgb(241, 245, 249)',
+            borderColor: isDarkMode ? 'rgb(51, 65, 85)' : 'rgb(226, 232, 240)'
+          }}
+        >
+          <div className="h-0.5 w-full bg-blue-500 opacity-70" />
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Target size={16} className="text-blue-600 dark:text-blue-400" />
+              <ThemedText variant="label" isDarkMode={isDarkMode}>Avg Daily Intake</ThemedText>
+            </div>
             <ThemedText variant="h2" className="text-2xl md:text-3xl" isDarkMode={isDarkMode}>
-              {spikeAnalysis.isGrowth ? '+' : ''}{spikeAnalysis.weeklyChange}%
+              {spikeAnalysis.avgDaily}
             </ThemedText>
           </div>
         </div>
 
-        <div 
-          className="p-6 rounded-3xl border transition-all duration-300"
+        <div
+          className="rounded-3xl border overflow-hidden transition-all duration-300"
           style={{
             backgroundColor: isDarkMode ? 'rgb(30, 41, 59)' : 'rgb(241, 245, 249)',
             borderColor: isDarkMode ? 'rgb(51, 65, 85)' : 'rgb(226, 232, 240)'
           }}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <Target size={16} className="text-blue-600 dark:text-blue-400" />
-            <ThemedText variant="label" isDarkMode={isDarkMode}>Avg Daily Intake</ThemedText>
+          <div className="h-0.5 w-full bg-purple-500 opacity-70" />
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity size={16} className="text-purple-600 dark:text-purple-400" />
+              <ThemedText variant="label" isDarkMode={isDarkMode}>Peak Day</ThemedText>
+            </div>
+            <ThemedText variant="h2" className="text-xl md:text-2xl" isDarkMode={isDarkMode}>
+              <AnimatedNumber value={spikeAnalysis.peakDay.count} />
+            </ThemedText>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mt-1">
+              {spikeAnalysis.peakDay.date}
+            </p>
           </div>
-          <ThemedText variant="h2" className="text-2xl md:text-3xl" isDarkMode={isDarkMode}>
-            {spikeAnalysis.avgDaily}
-          </ThemedText>
         </div>
 
-        <div 
-          className="p-6 rounded-3xl border transition-all duration-300"
+        <div
+          className="rounded-3xl border overflow-hidden transition-all duration-300"
           style={{
             backgroundColor: isDarkMode ? 'rgb(30, 41, 59)' : 'rgb(241, 245, 249)',
             borderColor: isDarkMode ? 'rgb(51, 65, 85)' : 'rgb(226, 232, 240)'
           }}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <Activity size={16} className="text-purple-600 dark:text-purple-400" />
-            <ThemedText variant="label" isDarkMode={isDarkMode}>Peak Day</ThemedText>
+          <div className="h-0.5 w-full bg-orange-500 opacity-70" />
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Users size={16} className="text-orange-600 dark:text-orange-400" />
+              <ThemedText variant="label" isDarkMode={isDarkMode}>Slots Remaining</ThemedText>
+            </div>
+            <ThemedText variant="h2" className="text-2xl md:text-3xl" isDarkMode={isDarkMode}>
+              <AnimatedNumber value={spikeAnalysis.remainingCapacity} />
+            </ThemedText>
           </div>
-          <ThemedText variant="h2" className="text-xl md:text-2xl" isDarkMode={isDarkMode}>
-            <AnimatedNumber value={spikeAnalysis.peakDay.count} />
-          </ThemedText>
-          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mt-1">
-            {spikeAnalysis.peakDay.date}
-          </p>
-        </div>
-
-        <div 
-          className="p-6 rounded-3xl border transition-all duration-300"
-          style={{
-            backgroundColor: isDarkMode ? 'rgb(30, 41, 59)' : 'rgb(241, 245, 249)',
-            borderColor: isDarkMode ? 'rgb(51, 65, 85)' : 'rgb(226, 232, 240)'
-          }}
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <Users size={16} className="text-orange-600 dark:text-orange-400" />
-            <ThemedText variant="label" isDarkMode={isDarkMode}>Slots Remaining</ThemedText>
-          </div>
-          <ThemedText variant="h2" className="text-2xl md:text-3xl" isDarkMode={isDarkMode}>
-            <AnimatedNumber value={spikeAnalysis.remainingCapacity} />
-          </ThemedText>
         </div>
       </div>
 
@@ -444,13 +467,13 @@ export function SpikeAnalyticsSection({ spikeAnalysis, stats, system, isDarkMode
       </div>
     </Card>
   )
-}
+})
 
-export function RevenueSection({ revenueMatrix, prediction, comparison, isDarkMode }: any) {
+export const RevenueSection = memo(function RevenueSection({ revenueMatrix, prediction, comparison, isDarkMode }: any) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         <Card 
-          className="lg:col-span-2 p-6 md:p-12 rounded-[32px] md:rounded-[56px] shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden group transition-all duration-500"
+          className="lg:col-span-2 p-6 md:p-12 rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 relative overflow-hidden group transition-all duration-500"
           style={{
             backgroundColor: isDarkMode ? themeColors.dark.surface : 'rgba(240, 253, 244, 0.5)',
             borderColor: isDarkMode ? themeColors.dark.border : 'rgba(187, 247, 208, 0.5)'
@@ -506,7 +529,7 @@ export function RevenueSection({ revenueMatrix, prediction, comparison, isDarkMo
         </Card>
 
         <Card 
-          className="p-6 md:p-10 rounded-[32px] md:rounded-[56px] relative overflow-hidden flex flex-col justify-between min-h-[300px] shadow-2xl shadow-blue-100 dark:shadow-none transition-all duration-500"
+          className="p-6 md:p-10 rounded-[32px] md:rounded-[56px] relative overflow-hidden flex flex-col justify-between min-h-[300px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 transition-all duration-500"
           style={{
             background: isDarkMode ? themeColors.dark.surface : 'linear-gradient(135deg, #3b82f6, #2563eb)',
             borderColor: isDarkMode ? themeColors.dark.border : 'transparent'
@@ -533,14 +556,14 @@ export function RevenueSection({ revenueMatrix, prediction, comparison, isDarkMo
         </Card>
     </div>
   )
-}
+})
 
-export function CapacitySection({ capacityPercentage, stats, system, topJHSLeaders, pieData, isDarkMode }: any) {
+export const CapacitySection = memo(function CapacitySection({ capacityPercentage, stats, system, topJHSLeaders, pieData, isDarkMode }: any) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
       <div className="lg:col-span-2 space-y-10">
         <Card 
-          className="p-6 md:p-12 rounded-[32px] md:rounded-[56px] shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden group transition-all duration-500"
+          className="p-6 md:p-12 rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 relative overflow-hidden group transition-all duration-500"
           style={{
             backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
             borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border
@@ -577,7 +600,7 @@ export function CapacitySection({ capacityPercentage, stats, system, topJHSLeade
         </Card>
 
         <Card 
-          className="rounded-[32px] md:rounded-[56px] shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden transition-all duration-500 border-2"
+          className="rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 overflow-hidden transition-all duration-500 border-2"
           style={{
             backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
             borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border
@@ -639,7 +662,7 @@ export function CapacitySection({ capacityPercentage, stats, system, topJHSLeade
       </div>
 
       <Card 
-        className="rounded-[32px] md:rounded-[56px] shadow-2xl shadow-slate-200/50 dark:shadow-none p-6 md:p-10 relative overflow-hidden flex flex-col justify-between transition-all duration-500"
+        className="rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 p-6 md:p-10 relative overflow-hidden flex flex-col justify-between transition-all duration-500"
         style={{
           backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
           borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border
@@ -682,4 +705,4 @@ export function CapacitySection({ capacityPercentage, stats, system, topJHSLeade
       </Card>
     </div>
   )
-}
+})

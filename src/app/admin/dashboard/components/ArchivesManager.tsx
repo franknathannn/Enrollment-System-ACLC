@@ -3,6 +3,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
@@ -47,8 +48,18 @@ export function ArchivesManager({ history, onDelete, isDarkMode }: { history: an
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader className="p-10 text-white bg-slate-900">
-            <DialogTitle className="text-3xl font-black uppercase">Institutional Archives</DialogTitle>
-            <DialogDescription className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-2">Historical Record Archives</DialogDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-3xl font-black uppercase">Institutional Archives</DialogTitle>
+                <DialogDescription className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-2">Historical Record Archives</DialogDescription>
+              </div>
+              <Link
+                href="/admin/archive"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[9px] font-black uppercase tracking-widest transition-colors shrink-0"
+              >
+                <ArrowRight size={12} /> View Students
+              </Link>
+            </div>
           </DialogHeader>
           <div className="p-4 md:p-10 max-h-[60vh] overflow-y-auto custom-scrollbar">
             <Table className="border-separate border-spacing-y-2">
@@ -69,7 +80,13 @@ export function ArchivesManager({ history, onDelete, isDarkMode }: { history: an
                     style={{ backgroundColor: 'rgba(30, 41, 59, 0.3)' }}
                   >
                     <TableCell className="py-6 px-6 font-black uppercase rounded-l-2xl" style={{ color: '#fff' }}>
-                      {record.school_year} 
+                      <Link
+                        href={`/admin/archive?year=${encodeURIComponent(record.school_year)}`}
+                        className="hover:text-blue-400 transition-colors flex items-center gap-2 group"
+                      >
+                        {record.school_year}
+                        <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
+                      </Link>
                       {idx === history.length - 1 && <span className="ml-2 text-[8px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">BASELINE</span>}
                     </TableCell>
                     <TableCell className="text-center font-bold text-blue-400">{record.male_total}</TableCell>

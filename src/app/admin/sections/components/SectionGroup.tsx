@@ -153,7 +153,7 @@ const SectionRow = memo(({ sec, idx, onSelect, onToggleSelect, isSelected, isDar
                   className={`absolute right-0 top-0 bottom-0 h-full bg-gradient-to-l from-pink-600 to-pink-400 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(236,72,153,0.8)] ${animF ? 'brightness-150' : ''}`} 
               />
               <div 
-                  className="absolute top-0 bottom-0 w-[2px] bg-white z-20 transition-all duration-1000 ease-in-out shadow-[0_0_8px_white]" 
+                  className="absolute top-0 bottom-0 w-[2px] bg-white dark:bg-slate-500 z-20 transition-all duration-1000 ease-in-out shadow-sm dark:shadow-slate-500" 
                   style={{ left: linePosition }} 
               />
           </div>
@@ -272,30 +272,34 @@ export const SectionGroup = memo(function SectionGroup({
         </div>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div 
-              className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-3 md:p-5 rounded-[24px] md:rounded-[32px] border-none dark:border-slate-800 shadow-xl shadow-slate-100/50 dark:shadow-none w-full md:w-auto flex-shrink-0 relative bg-white dark:bg-slate-900 cursor-help" 
-              style={{ backgroundColor: isDarkMode ? 'rgb(15 23 42)' : '#ffffff' }}
+            <div
+              className={`relative overflow-hidden flex items-center gap-3 sm:gap-6 p-3 md:p-5 rounded-[24px] md:rounded-[32px] w-full md:w-auto flex-shrink-0 cursor-help border transition-colors duration-300 ${
+                isDarkMode
+                  ? 'bg-slate-800/80 border-white/10 shadow-lg shadow-black/30'
+                  : 'bg-white border-slate-200 shadow-xl shadow-slate-100/50'
+              }`}
             >
-              <div className="flex-1 space-y-2">
-                <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
-                  <span>Strand Capacity </span>
-                  <span>({Math.round(load.percent)}%)</span>
+              {/* Top accent strip on capacity widget */}
+              <div className={`absolute top-0 left-0 right-0 h-[3px] ${color === 'blue' ? 'bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400' : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400'}`} />
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex justify-between gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                  <span>Strand Capacity</span>
+                  <span className={color === 'blue' ? 'text-blue-400' : 'text-orange-400'}>({Math.round(load.percent)}%)</span>
                 </div>
-                <Progress 
-                  value={load.percent} 
+                <Progress
+                  value={load.percent}
                   className={`h-2 [&>div]:transition-all [&>div]:duration-1000 ${
-                    color === 'blue' ? '[&>div]:bg-blue-600' : '[&>div]:bg-orange-600'
-                  }`} 
-                  style={{ backgroundColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(226 232 240)' }} 
+                    color === 'blue' ? '[&>div]:bg-blue-500' : '[&>div]:bg-orange-500'
+                  } bg-slate-200 dark:bg-slate-800`}
                 />
               </div>
-              <div className="text-left sm:text-right border-t sm:border-t-0 sm:border-l pt-4 sm:pt-0 pl-0 sm:pl-6 border-slate-100 dark:border-slate-800 w-full sm:w-auto">
-                <p className="text-sm font-black" style={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+              <div className="text-right border-l pl-3 sm:pl-6 shrink-0" style={{ borderColor: isDarkMode ? 'rgba(51,65,85,0.5)' : 'rgba(226,232,240,1)' }}>
+                <p className={`text-sm font-black whitespace-nowrap ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                   {load.totalEnrolled}/{load.totalCapacity}
                 </p>
-                <p className="text-[8px] font-bold text-slate-400 uppercase">Load Index</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase">Load</p>
               </div>
-              <div className="text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors absolute top-5 right-5 sm:static">
+              <div className={`transition-colors shrink-0 ${isDarkMode ? 'text-slate-400 group-hover:text-white' : 'text-slate-400 group-hover:text-slate-900'}`}>
                 {isExpanded ? <ChevronDown size={20}/> : <ChevronUp size={20}/>}
               </div>
             </div>
@@ -354,26 +358,27 @@ export const SectionGroup = memo(function SectionGroup({
             </div>
 
             {/* DESKTOP: Table */}
-            <div className="hidden md:block animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <Table className="border-separate border-spacing-y-6 px-2">
+            <div className={`hidden md:block animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden rounded-[28px] border ${isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'} shadow-sm`}>
+              <div className={`absolute top-0 left-0 right-0 h-[3px] ${color === 'blue' ? 'bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400' : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400'}`} />
+              <Table className="border-separate border-spacing-y-3 px-4 pt-2">
                 <TableHeader>
-                  <TableRow className="border-none hover:bg-transparent mb-4">
-                    <TableHead className="w-16 pl-8">
+                  <TableRow className={`border-none hover:bg-transparent ${isDarkMode ? 'border-b border-slate-800' : 'border-b border-slate-100'}`}>
+                    <TableHead className="w-16 pl-6 pt-5 pb-3">
                       <button onClick={(e) => { e.stopPropagation(); onSelectAll(allIds); }} className="hover:scale-110 transition-transform">
                           {isAllSelected ? (
-                            <CheckSquare size={18} className={color === 'blue' ? "text-blue-600" : "text-orange-600"} />
+                            <CheckSquare size={16} className={color === 'blue' ? "text-blue-500" : "text-orange-500"} />
                           ) : (
-                            <Square size={18} className="text-slate-300" />
+                            <Square size={16} className={isDarkMode ? "text-slate-600" : "text-slate-300"} />
                           )}
                       </button>
                     </TableHead>
-                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Section Identity</TableHead>
-                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500">Capacity Statistics</TableHead>
-                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 text-center">Male</TableHead>
-                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 text-center">Female</TableHead>
-                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 text-center">JHS</TableHead>
-                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 text-center">ALS</TableHead>
-                    <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 text-right pr-8">Section Status</TableHead>
+                    <TableHead className={`font-black uppercase text-[9px] tracking-[0.15em] pt-5 pb-3 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Section</TableHead>
+                    <TableHead className={`font-black uppercase text-[9px] tracking-[0.15em] pt-5 pb-3 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Capacity</TableHead>
+                    <TableHead className={`font-black uppercase text-[9px] tracking-[0.15em] text-center pt-5 pb-3 text-blue-500/70`}>M</TableHead>
+                    <TableHead className={`font-black uppercase text-[9px] tracking-[0.15em] text-center pt-5 pb-3 text-pink-500/70`}>F</TableHead>
+                    <TableHead className={`font-black uppercase text-[9px] tracking-[0.15em] text-center pt-5 pb-3 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>JHS</TableHead>
+                    <TableHead className={`font-black uppercase text-[9px] tracking-[0.15em] text-center pt-5 pb-3 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>ALS</TableHead>
+                    <TableHead className={`font-black uppercase text-[9px] tracking-[0.15em] text-right pr-8 pt-5 pb-3 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

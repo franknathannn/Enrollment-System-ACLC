@@ -18,9 +18,6 @@ export const getLabelClass = (isDarkMode: boolean) =>
   `text-[9px] uppercase font-black tracking-[0.2em] ${isDarkMode ? "text-slate-500" : "text-slate-500"}`
 
 // ── InfoBlock ──────────────────────────────────────────────────────────────
-// CHANGED: added min-w-0 + overflow-hidden to root div, and to the flex row.
-// Value <p> uses break-all + w-full so long strings (URLs, addresses, names)
-// never push outside their column margin.
 export const InfoBlock = memo(function InfoBlock({
   label, value, icon, isDarkMode, animate = true,
 }: {
@@ -31,13 +28,23 @@ export const InfoBlock = memo(function InfoBlock({
   animate?: boolean
 }) {
   return (
-    <div className="group transition-all duration-300 min-w-0 overflow-hidden">
-      <p className={`text-[9px] md:text-[10px] uppercase font-black tracking-[0.2em] mb-1.5 transition-colors ${isDarkMode ? "text-slate-500 group-hover:text-blue-400" : "text-slate-400 group-hover:text-blue-600"}`}>
+    <div className="group transition-all duration-200 min-w-0 overflow-hidden">
+      <p className={`text-[9px] md:text-[10px] uppercase font-black tracking-[0.2em] mb-1.5 transition-colors duration-200 ${
+        isDarkMode ? "text-slate-600 group-hover:text-blue-400" : "text-slate-400 group-hover:text-blue-600"
+      }`}>
         {label}
       </p>
       <div className="flex items-start gap-2.5 min-w-0 overflow-hidden">
-        {icon && <span className={`shrink-0 mt-0.5 ${isDarkMode ? "text-blue-400/30" : "text-blue-500/40"}`}>{icon}</span>}
-        <p className={`font-bold text-sm md:text-base leading-snug transition-colors duration-500 whitespace-pre-line break-all w-full min-w-0 ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+        {icon && (
+          <span className={`shrink-0 mt-0.5 transition-colors duration-200 ${
+            isDarkMode ? "text-blue-400/35 group-hover:text-blue-400/65" : "text-blue-500/40 group-hover:text-blue-500/70"
+          }`}>
+            {icon}
+          </span>
+        )}
+        <p className={`font-semibold text-sm md:text-base leading-snug transition-colors duration-200 whitespace-pre-line break-all w-full min-w-0 ${
+          isDarkMode ? "text-slate-200 group-hover:text-white" : "text-slate-800 group-hover:text-slate-900"
+        }`}>
           {animate ? <AnimatedText text={value || "—"} className="whitespace-pre-line break-all" /> : (value || "—")}
         </p>
       </div>
@@ -148,9 +155,16 @@ export const SectionTitle = memo(function SectionTitle({
   colorClass: string
 }) {
   return (
-    <h3 className={`flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.3em] border-b pb-4 transition-colors duration-500 ${colorClass} ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
-      {icon} {title}
-    </h3>
+    <div className={`flex items-center gap-3 pb-4 border-b transition-colors duration-300 ${isDarkMode ? "border-slate-800/80" : "border-slate-200"}`}>
+      <span className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-colors duration-300 ${
+        isDarkMode ? "bg-slate-800/80 border-slate-700/80" : "bg-slate-100/80 border-slate-200"
+      } ${colorClass}`}>
+        {icon}
+      </span>
+      <h3 className={`font-black text-[11px] uppercase tracking-[0.3em] transition-colors duration-300 ${colorClass}`}>
+        {title}
+      </h3>
+    </div>
   )
 })
 

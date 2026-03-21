@@ -20,6 +20,7 @@ interface EnrollmentData {
   civil_status?: string;
 
   // Step 2: Academic
+  grade_level?: "11" | "12"; // Grade level for G11/G12 support
   student_category?: "JHS Graduate" | "ALS Passer"; // Matches Select values
   strand?: string;
   last_school_attended?: string;

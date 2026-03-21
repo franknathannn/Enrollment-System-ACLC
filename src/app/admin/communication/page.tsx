@@ -43,28 +43,15 @@ const StarConstellation = memo(function StarConstellation() {
 })
 
 export default function CommunicationPage() {
-  const { isDarkMode: themeDarkMode } = useTheme()
-  const [isDarkMode, setIsDarkMode] = useState(themeDarkMode)
+  const { isDarkMode } = useTheme()
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isConnected, setIsConnected] = useState(false); 
+  const [isConnected, setIsConnected] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setIsDarkMode(themeDarkMode)
-  }, [themeDarkMode])
-
-  useEffect(() => {
-    const handleThemeChange = (e: any) => {
-      setIsDarkMode(e.detail.mode === 'dark')
-    }
-    window.addEventListener('theme-change', handleThemeChange)
-    return () => window.removeEventListener('theme-change', handleThemeChange)
-  }, [])
 
   const fetchMessages = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -189,9 +176,17 @@ export default function CommunicationPage() {
   }, []);
 
   if (loading || !currentUser) return (
-    <div className="h-[70vh] flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-[48px] border border-slate-100 dark:border-white/5 shadow-2xl">
-      <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
-      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Retrieving Chats...</p>
+    <div className="h-[70vh] flex flex-col items-center justify-center rounded-[48px] border shadow-2xl relative overflow-hidden"
+      style={{ backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.85)' : '#ffffff', borderColor: isDarkMode ? 'rgba(30,41,59,0.6)' : '#e2e8f0' }}>
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
+      <div className="relative flex items-center justify-center mb-5">
+        <div className="absolute w-20 h-20 rounded-full border border-blue-500/20 animate-ping" style={{ animationDuration: '2s' }} />
+        <div className="absolute w-14 h-14 rounded-full border border-blue-500/30 animate-ping" style={{ animationDuration: '1.5s', animationDelay: '0.3s' }} />
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 shadow-lg shadow-blue-500/30 flex items-center justify-center">
+          <MessageSquare size={16} className="text-white" />
+        </div>
+      </div>
+      <p className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Retrieving Chats...</p>
     </div>
   );
 
@@ -208,14 +203,23 @@ export default function CommunicationPage() {
       <StarConstellation />
       
       {/* HEADER NODES */}
-      <div 
-        className="flex flex-col md:flex-row items-start md:items-end justify-between backdrop-blur-xl p-8 rounded-[40px] border shadow-2xl transition-colors duration-500"
-        style={{ backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.8)', borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.2)' }}
+      <div
+        className="relative overflow-hidden flex flex-col md:flex-row items-start md:items-end justify-between p-6 md:p-8 rounded-[40px] border shadow-2xl transition-colors duration-500"
+        style={{ backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.85)' : '#ffffff', borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.6)' : '#e2e8f0' }}
       >
-        <div className="flex flex-col">
-          <h1 className="text-4xl font-black tracking-tighter uppercase leading-none italic" style={{ color: isDarkMode ? themeColors.dark.text.primary : themeColors.light.text.primary }}>Enrollment Messenger</h1>
-          <p className="font-medium italic mt-2 text-sm flex items-center gap-2" style={{ color: isDarkMode ? themeColors.dark.text.secondary : themeColors.light.text.secondary }}>
-            <ShieldCheck size={14} className="text-blue-500" />
+        {/* Top accent strip */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
+        {/* Ambient glow */}
+        <div className={`absolute -top-16 -right-16 w-48 h-48 rounded-full blur-[60px] pointer-events-none ${isDarkMode ? 'bg-blue-500/6' : 'bg-blue-400/5'}`} />
+
+        <div className="relative flex flex-col">
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}`} />
+            <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Admin Channel</p>
+          </div>
+          <h1 className={`text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Messenger</h1>
+          <p className={`text-[11px] font-semibold italic mt-1.5 flex items-center gap-2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+            <ShieldCheck size={12} className="text-blue-500 shrink-0" />
             Administrative Chat
           </p>
         </div>

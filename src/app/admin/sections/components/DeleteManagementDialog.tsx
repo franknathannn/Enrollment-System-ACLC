@@ -26,12 +26,13 @@ export const DeleteManagementDialog = memo(function DeleteManagementDialog({ sec
   
   // Logic: Group sections by Strand (RETAINED)
   const groupedSections = useMemo(() => {
+    // Group by "STRAND Grade GX" so G11 and G12 are shown as separate groups
     return sections.reduce((acc: any, sec: any) => {
-      const strand = sec.strand || "Unassigned";
-      if (!acc[strand]) acc[strand] = [];
-      acc[strand].push(sec);
-      return acc;
-    }, {});
+      const key = `${sec.strand || "Unassigned"}__${sec.grade_level || "11"}`
+      if (!acc[key]) acc[key] = { strand: sec.strand || "Unassigned", grade_level: sec.grade_level || "11", sections: [] }
+      acc[key].sections.push(sec)
+      return acc
+    }, {})
   }, [sections]);
 
   const getStrandIcon = (strand: string) => {
@@ -110,30 +111,30 @@ export const DeleteManagementDialog = memo(function DeleteManagementDialog({ sec
                 <div className="py-20 text-center opacity-40 italic text-sm">No active matrices detected in hub.</div>
               ) : (
                 <Accordion type="multiple" defaultValue={Object.keys(groupedSections)} className="space-y-4">
-                  {Object.entries(groupedSections).map(([strand, strandSections]: any) => (
+                  {Object.entries(groupedSections).map(([key, group]: any) => (
                     <AccordionItem 
-                      key={strand} 
-                      value={strand} 
+                      key={key} 
+                      value={key} 
                       className={`border-none rounded-[24px] overflow-hidden transition-all ${theme.itemBg} ${theme.itemHover}`}
                     >
                       <AccordionTrigger className="px-6 py-4 hover:no-underline group">
                         <div className="flex items-center gap-3">
                           <div className={`p-2 rounded-xl shadow-sm border ${isDarkMode ? 'bg-slate-900 border-white/5' : 'bg-white border-slate-100'}`}>
-                            {getStrandIcon(strand)}
+                            {getStrandIcon(group.strand)}
                           </div>
                           <div className="text-left">
                             <p className={`font-black uppercase tracking-tighter text-sm leading-none ${theme.textMain}`}>
-                              {strand} Strand
+                              {group.strand} — Grade {group.grade_level}
                             </p>
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                              {strandSections.length} Active Sections
+                              {group.sections.length} Active Section{group.sections.length !== 1 ? "s" : ""}
                             </p>
                           </div>
                         </div>
                       </AccordionTrigger>
                       
                       <AccordionContent className="px-4 pb-4 space-y-2">
-                        {strandSections.map((sec: any) => (
+                        {group.sections.map((sec: any) => (
                           <div 
                             key={sec.id} 
                             className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
@@ -147,9 +148,14 @@ export const DeleteManagementDialog = memo(function DeleteManagementDialog({ sec
                               <p className={`font-black uppercase tracking-tight text-[11px] ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                                 {sec.section_name}
                               </p>
+                              <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                                group.grade_level === "12"
+                                  ? isDarkMode ? "bg-violet-900/40 text-violet-400" : "bg-violet-50 text-violet-600"
+                                  : isDarkMode ? "bg-blue-900/40 text-blue-400" : "bg-blue-50 text-blue-600"
+                              }`}>G{group.grade_level}</span>
                             </div>
                             <Button 
-                              onClick={() => onDelete(sec.id, sec.section_name, sec.strand)} 
+                              onClick={() => onDelete(sec.id, sec.section_name, sec.strand, sec.grade_level)} 
                               size="sm" 
                               variant="ghost"
                               className="hover:bg-red-500 hover:text-white rounded-xl h-9 w-9 p-0 text-red-500 transition-all duration-300 transform-gpu active:scale-90"

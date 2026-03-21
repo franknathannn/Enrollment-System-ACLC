@@ -210,10 +210,16 @@ export default function EnrollmentPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
   if (loading) return (
     <div className={cn(
-      "min-h-screen flex flex-col items-center justify-center gap-4",
+      "min-h-screen flex flex-col items-center justify-center gap-6",
       isDark ? "bg-[#020617]" : "bg-[#eef2ff]"
     )}>
-      <Loader2 className="animate-spin text-blue-500 w-10 h-10" />
+      <div className="relative flex items-center justify-center">
+        <span className="absolute w-20 h-20 rounded-full border-2 border-blue-500/20 animate-ping" />
+        <span className="absolute w-14 h-14 rounded-full border-2 border-blue-400/30 animate-ping" style={{ animationDelay: "0.15s" }} />
+        <span className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 shadow-lg shadow-blue-500/30 flex items-center justify-center">
+          <Loader2 className="animate-spin text-white" size={18} />
+        </span>
+      </div>
       <p className={cn(
         "font-black text-[10px] uppercase tracking-[0.4em]",
         isDark ? "text-blue-400" : "text-blue-600"
@@ -359,10 +365,10 @@ export default function EnrollmentPage() {
           <div className="flex items-center justify-between">
             <Link href="/">
               <Button variant="ghost" className={cn(
-                "rounded-xl font-black uppercase text-[9px] tracking-[0.2em]",
+                "rounded-xl font-black uppercase text-[9px] tracking-[0.2em] group",
                 isDark ? "text-slate-500 hover:text-white hover:bg-white/5" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
               )}>
-                <ArrowLeft className="mr-2" size={14} /> Go Back
+                <ArrowLeft className="mr-2 group-hover:-translate-x-0.5 transition-transform" size={14} /> Go Back
               </Button>
             </Link>
             <div className="flex items-center gap-3">

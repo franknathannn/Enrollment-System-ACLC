@@ -74,8 +74,8 @@ AnimatedText.displayName = "AnimatedText"
 
 export const MetricCard = memo(({ label, value, colorLight, colorDark, icon, isDarkMode, textColor = "text-white", tooltip }: any) => {
   const content = (
-    <Card 
-        className={`p-6 md:p-10 rounded-[32px] md:rounded-[56px] ${textColor} flex justify-between items-center shadow-2xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-500 border-none`}
+    <Card
+        className={`p-6 md:p-10 rounded-[32px] md:rounded-[56px] ${textColor} flex justify-between items-center shadow-2xl relative overflow-hidden group hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 border-none cursor-default touch-manipulation`}
         style={{
           background: isDarkMode ? colorDark : colorLight
         }}
@@ -111,16 +111,33 @@ MetricCard.displayName = "MetricCard"
 export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode, highlightColor, tooltip }: any) => {
   const isHighlighted = !isDarkMode && highlightColor;
 
+  // Derive a top-accent color from the `color` prop (e.g. "text-emerald-600 dark:text-emerald-400" → emerald)
+  const accentColor = (() => {
+    if (!color) return null
+    if (color.includes('emerald'))  return 'from-emerald-500 to-emerald-400'
+    if (color.includes('indigo'))   return 'from-indigo-500 to-indigo-400'
+    if (color.includes('orange'))   return 'from-orange-500 to-orange-400'
+    if (color.includes('amber'))    return 'from-amber-500 to-amber-400'
+    if (color.includes('blue'))     return 'from-blue-500 to-blue-400'
+    if (color.includes('purple'))   return 'from-purple-500 to-purple-400'
+    if (color.includes('red'))      return 'from-red-500 to-red-400'
+    return 'from-blue-500 to-blue-400'
+  })()
+
   const content = (
-    <Card 
-      className="p-6 md:p-10 rounded-[32px] md:rounded-[48px] flex flex-col justify-between hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 h-full group min-h-[180px]"
+    <Card
+      className="rounded-[32px] md:rounded-[48px] flex flex-col justify-between hover:shadow-2xl hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 h-full group min-h-[180px] touch-manipulation overflow-hidden"
       style={{
         backgroundColor: isDarkMode ? themeColors.dark.surface : (isHighlighted ? highlightColor : themeColors.light.surface),
         borderColor: isDarkMode ? themeColors.dark.border : (isHighlighted ? 'transparent' : themeColors.light.border)
       }}
     >
+      {!isHighlighted && accentColor && (
+        <div className={`h-0.5 w-full bg-gradient-to-r ${accentColor} opacity-70 shrink-0`} />
+      )}
+      <div className="p-6 md:p-10 flex flex-col justify-between flex-1">
       <div className="space-y-4 md:space-y-6">
-        <div className={`w-12 md:w-16 h-12 md:h-16 rounded-2xl md:rounded-3xl flex items-center justify-center text-xl md:text-3xl ${isDarkMode ? 'bg-slate-800' : (isHighlighted ? 'bg-white/20 text-white' : bg)} ${!isHighlighted ? color : ''} transition-transform group-hover:rotate-6 shadow-lg shadow-slate-100 dark:shadow-none`}>{icon}</div>
+        <div className={`w-12 md:w-16 h-12 md:h-16 rounded-2xl md:rounded-3xl flex items-center justify-center text-xl md:text-3xl ${isDarkMode ? 'bg-slate-800' : (isHighlighted ? 'bg-white/20 text-white' : bg)} ${!isHighlighted ? color : ''} transition-transform group-hover:rotate-6 shadow-lg dark:shadow-2xl dark:shadow-slate-900`}>{icon}</div>
         <div>
           <ThemedText variant="h2" className="text-3xl md:text-5xl leading-none" isDarkMode={isDarkMode} style={isHighlighted ? { color: 'white' } : {}}>
             {typeof value === 'number' ? value.toLocaleString() : value ?? 0}
@@ -131,6 +148,7 @@ export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode
       <div className="mt-4 md:mt-8 pt-4 md:pt-6 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between" style={isHighlighted ? { borderColor: 'rgba(255,255,255,0.2)' } : {}}>
          <span className={`text-[8px] md:text-[9px] font-black uppercase tracking-widest ${isHighlighted ? 'text-white/80' : 'text-slate-300 dark:text-slate-600'}`}>{trend}</span>
          <ArrowUpRight size={14} className={`${isHighlighted ? 'text-white/80' : 'text-slate-200 dark:text-slate-600'} group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors`} />
+      </div>
       </div>
     </Card>
   );

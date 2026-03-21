@@ -1,0 +1,14 @@
+name: Supabase Keepalive
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # every 6 hours
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping DB
+        run: |
+          curl -s -o /dev/null -X GET \
+            "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/system_config?limit=1" \
+            -H "apikey: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}"
