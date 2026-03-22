@@ -10,10 +10,10 @@ interface Props {
 }
 
 const LEGEND_ITEMS = [
-  { name: "Enrolled History",            color: "#0ea5e9", dashArray: ""       },
-  { name: "Optimistic Recovery",         color: "#10b981", dashArray: "10 6"   },
-  { name: "Linear Trend (Declining)",    color: "#ef4444", dashArray: "5 5"    },
-  { name: "Realistic Forecast (Wavy)",   color: "#8b5cf6", dashArray: "3 3"    },
+  { name: "Enrolled History",   color: "#0ea5e9", dashArray: ""       },
+  { name: "If Enrollment Grows",  color: "#10b981", dashArray: "10 6"   },
+  { name: "If Enrollment Slows",  color: "#ef4444", dashArray: "5 5"    },
+  { name: "Most Likely",          color: "#8b5cf6", dashArray: "3 3"    },
 ]
 
 export function EnrollmentTrendChart({ data, isDarkMode, mode }: Props) {
@@ -71,7 +71,7 @@ export function EnrollmentTrendChart({ data, isDarkMode, mode }: Props) {
           <Line 
             type="monotone" 
             dataKey="futureStable" 
-            name="Optimistic Recovery"
+            name="If Enrollment Grows"
             stroke="#10b981" // Emerald Green
             strokeWidth={4} 
             strokeDasharray="10 6"
@@ -90,7 +90,7 @@ export function EnrollmentTrendChart({ data, isDarkMode, mode }: Props) {
           <Line 
             type="monotone" 
             dataKey="futureDeclining" 
-            name="Linear Trend (Declining)"
+            name="If Enrollment Slows"
             stroke="#ef4444" // Red
             strokeWidth={4} 
             strokeDasharray="5 5"
@@ -109,7 +109,7 @@ export function EnrollmentTrendChart({ data, isDarkMode, mode }: Props) {
           <Line 
             type="natural" 
             dataKey="futureWavy" 
-            name="Realistic Forecast (Wavy)"
+            name="Most Likely"
             stroke="#8b5cf6" // Violet
             strokeWidth={4} 
             strokeDasharray="3 3"

@@ -228,9 +228,10 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
           start_time:  r.start_time,
           end_time:    r.end_time,
           school_year: r.school_year,
-          teacher:     r.teacher ?? null,
-          room:        r.room    ?? null,
-          notes:       r.notes   ?? null,
+          teacher:     r.teacher     ?? null,
+          teacher_id:  (r as any).teacher_id ?? null,
+          room:        r.room        ?? null,
+          notes:       r.notes       ?? null,
         }))
         .filter(r => !alreadyPlaced.has(`${r.subject}|${r.day}`))
 

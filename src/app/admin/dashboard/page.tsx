@@ -405,10 +405,14 @@ export default function AdminDashboard() {
     {/* Thin themed scrollbar — adapts to dark/light mode */}
     <style>{`
       ::-webkit-scrollbar { width: 4px; height: 4px; }
-      ::-webkit-scrollbar-track { background: ${isDarkMode ? 'rgba(51,65,85,0.3)' : 'rgba(226,232,240,0.6)'}; border-radius: 99px; }
-      ::-webkit-scrollbar-thumb { background: ${isDarkMode ? 'rgba(100,116,139,0.7)' : 'rgba(148,163,184,0.8)'}; border-radius: 99px; }
-      ::-webkit-scrollbar-thumb:hover { background: ${isDarkMode ? 'rgba(148,163,184,0.9)' : 'rgba(100,116,139,0.9)'}; }
-      * { scrollbar-width: thin; scrollbar-color: ${isDarkMode ? 'rgba(100,116,139,0.7) rgba(51,65,85,0.3)' : 'rgba(148,163,184,0.8) rgba(226,232,240,0.6)'}; }
+      ::-webkit-scrollbar-track { background: rgba(226,232,240,0.6); border-radius: 99px; }
+      ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.8); border-radius: 99px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.9); }
+      * { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,0.8) rgba(226,232,240,0.6); }
+      .dark ::-webkit-scrollbar-track { background: rgba(51,65,85,0.3); }
+      .dark ::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.7); }
+      .dark ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.9); }
+      .dark * { scrollbar-color: rgba(100,116,139,0.7) rgba(51,65,85,0.3); }
     `}</style>
     <div className="space-y-8 md:space-y-12 animate-in fade-in duration-700 pb-20 p-4 md:p-8 transition-colors duration-500">
       

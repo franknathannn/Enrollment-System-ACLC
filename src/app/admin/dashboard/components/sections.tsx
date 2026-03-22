@@ -101,7 +101,7 @@ export const AlmaMaterSection = memo(function AlmaMaterSection({ almaMaterData, 
       <TooltipTrigger asChild>
         <div className="w-full cursor-default">
           <Card
-            className="rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 overflow-hidden transition-all duration-500 border-2"
+            className="rounded-[32px] md:rounded-[56px] overflow-hidden transition-colors duration-300 border-2"
             style={{
               backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
               borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border
@@ -270,7 +270,7 @@ export const VelocitySection = memo(function VelocitySection({ trendData, isDark
 
   return (
     <Card
-      className="rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 relative overflow-hidden transition-all duration-500"
+      className="rounded-[32px] md:rounded-[56px] relative overflow-hidden transition-colors duration-300"
       style={{
         backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
         borderColor: isDarkMode ? themeColors.dark.border : 'rgba(168, 85, 247, 0.2)'
@@ -307,7 +307,7 @@ export const VelocitySection = memo(function VelocitySection({ trendData, isDark
 export const SpikeAnalyticsSection = memo(function SpikeAnalyticsSection({ spikeAnalysis, stats, system, isDarkMode }: any) {
   return (
     <Card 
-      className="p-6 md:p-10 rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 relative overflow-hidden transition-all duration-500"
+      className="p-6 md:p-10 rounded-[32px] md:rounded-[56px] relative overflow-hidden transition-colors duration-300"
       style={{
         backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
         borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border
@@ -473,7 +473,7 @@ export const RevenueSection = memo(function RevenueSection({ revenueMatrix, pred
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         <Card 
-          className="lg:col-span-2 p-6 md:p-12 rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 relative overflow-hidden group transition-all duration-500"
+          className="lg:col-span-2 p-6 md:p-12 rounded-[32px] md:rounded-[56px] relative overflow-hidden group transition-colors duration-300"
           style={{
             backgroundColor: isDarkMode ? themeColors.dark.surface : 'rgba(240, 253, 244, 0.5)',
             borderColor: isDarkMode ? themeColors.dark.border : 'rgba(187, 247, 208, 0.5)'
@@ -529,7 +529,7 @@ export const RevenueSection = memo(function RevenueSection({ revenueMatrix, pred
         </Card>
 
         <Card 
-          className="p-6 md:p-10 rounded-[32px] md:rounded-[56px] relative overflow-hidden flex flex-col justify-between min-h-[300px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 transition-all duration-500"
+          className="p-6 md:p-10 rounded-[32px] md:rounded-[56px] relative overflow-hidden flex flex-col justify-between min-h-[300px] transition-colors duration-300"
           style={{
             background: isDarkMode ? themeColors.dark.surface : 'linear-gradient(135deg, #3b82f6, #2563eb)',
             borderColor: isDarkMode ? themeColors.dark.border : 'transparent'
@@ -563,7 +563,7 @@ export const CapacitySection = memo(function CapacitySection({ capacityPercentag
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
       <div className="lg:col-span-2 space-y-10">
         <Card 
-          className="p-6 md:p-12 rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 relative overflow-hidden group transition-all duration-500"
+          className="p-6 md:p-12 rounded-[32px] md:rounded-[56px] relative overflow-hidden group transition-colors duration-300"
           style={{
             backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
             borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border
@@ -600,13 +600,13 @@ export const CapacitySection = memo(function CapacitySection({ capacityPercentag
         </Card>
 
         <Card 
-          className="rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 overflow-hidden transition-all duration-500 border-2"
+          className="rounded-[32px] md:rounded-[56px] overflow-hidden transition-colors duration-300 border-2"
           style={{
             backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
             borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border
           }}
         >
-           <div 
+           <div
             className="p-6 md:p-10 border-b-2 dark:bg-slate-800/30 flex justify-between items-center"
             style={{ 
               borderBottomColor: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : '#939393',
@@ -662,7 +662,7 @@ export const CapacitySection = memo(function CapacitySection({ capacityPercentag
       </div>
 
       <Card 
-        className="rounded-[32px] md:rounded-[56px] shadow-xl dark:shadow-2xl dark:shadow-slate-900 p-6 md:p-10 relative overflow-hidden flex flex-col justify-between transition-all duration-500"
+        className="rounded-[32px] md:rounded-[56px] p-6 md:p-10 relative overflow-hidden flex flex-col justify-between transition-colors duration-300"
         style={{
           backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
           borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border

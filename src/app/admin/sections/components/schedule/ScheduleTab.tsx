@@ -1,6 +1,6 @@
 // sections/components/schedule/ScheduleTab.tsx
 
-import { memo, useState, useEffect } from "react"
+import { memo, useState, useEffect, useRef } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { ScheduleGrid }          from "./ScheduleGrid"
@@ -37,11 +37,21 @@ export const ScheduleTab = memo(function ScheduleTab({
   const [mode,       setMode]    = useState<PanelMode>("none")
   const [editingRow, setEditing] = useState<ScheduleRow | null>(null)
   const [teachers,   setTeachers] = useState<TeacherOption[]>([])
+  const formRef  = useRef<HTMLDivElement>(null)
+  const [editKey, setEditKey]   = useState(0)
 
   useEffect(() => {
-    supabase.from("teachers").select("id, full_name").eq("is_active", true).order("full_name")
+    supabase.from("teachers").select("id, full_name, avatar_url").eq("is_active", true).order("full_name")
       .then(({ data }) => setTeachers(data ?? []))
   }, [])
+
+  // Scroll the form into view every time a new edit is triggered (editKey changes),
+  // even if mode was already "edit" (clicking a different row).
+  useEffect(() => {
+    if (formRef.current) {
+      setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60)
+    }
+  }, [editKey])
 
   const {
     schedules, loading,
@@ -157,7 +167,7 @@ export const ScheduleTab = memo(function ScheduleTab({
           isICT={isICT}
           isDarkMode={isDarkMode}
           loading={loading}
-          onAddEntry={() => setMode(mode === "add" ? "none" : "add")}
+          onAddEntry={() => { setMode(mode === "add" ? "none" : "add"); if (mode !== "add") setEditKey(k => k + 1) }}
           onAutoSchedule={() => setMode(mode === "wizard" ? "none" : "wizard")}
           onImportClick={() => setMode(mode === "import" ? "none" : "import")}
           onRefresh={() => fetchSchedules(false)}
@@ -169,6 +179,7 @@ export const ScheduleTab = memo(function ScheduleTab({
 
       {/* Manual Add / Edit form */}
       {(mode === "add" || mode === "edit") && (
+        <div ref={formRef}>
         <ScheduleEntryForm
           sectionName={sectionName}
           schoolYear={schoolYear}
@@ -176,9 +187,11 @@ export const ScheduleTab = memo(function ScheduleTab({
           isDarkMode={isDarkMode}
           editing={editingRow}
           teachers={teachers}
+          schedules={schedules}
           onSave={handleSave}
           onCancel={close}
         />
+        </div>
       )}
 
       {/* Import panel */}
@@ -212,6 +225,7 @@ export const ScheduleTab = memo(function ScheduleTab({
           isDarkMode={isDarkMode}
           students={students}
           existingSchedules={allSchedules}
+          teachers={teachers}
           onConfirm={handleWizardConfirm}
           onCancel={close}
         />
@@ -224,7 +238,7 @@ export const ScheduleTab = memo(function ScheduleTab({
           isICT={isICT}
           isDarkMode={isDarkMode}
           sectionName={sectionName}
-          onEdit={row => { setEditing(row); setMode("edit") }}
+          onEdit={row => { setEditing(row); setMode("edit"); setEditKey(k => k + 1) }}
           onDelete={handleDelete}
         />
       </div>

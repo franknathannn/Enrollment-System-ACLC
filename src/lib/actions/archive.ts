@@ -188,7 +188,7 @@ export async function exportArchiveCSV(school_year: string): Promise<string> {
 }
 /**
  * Unlock all graduated students — sets graduate_lock=false on all students
- * where grade_level='12' AND is_archived=true AND section_id IS NULL.
+ * where (grade_level='GRADUATED' OR (grade_level='12' AND section_id IS NULL)) AND is_archived=true.
  */
 export async function unlockGraduatedStudents(): Promise<{
   success: boolean; unlocked: number; error?: string
@@ -198,10 +198,9 @@ export async function unlockGraduatedStudents(): Promise<{
     const { data, error: fetchErr } = await supabase
       .from("students")
       .select("id")
-      .eq("grade_level", "12")
       .eq("is_archived", true)
-      .is("section_id", null)
       .eq("graduate_lock", true)
+      .or("grade_level.eq.GRADUATED,and(grade_level.eq.12,section_id.is.null)")
 
     if (fetchErr) throw fetchErr
     if (!data || data.length === 0) return { success: true, unlocked: 0 }
@@ -237,14 +236,15 @@ export async function getGraduateLockState(): Promise<{
   unlockedCount: number; totalGraduated: number
 }> {
   const supabase = await createClient()
-  const baseFilter = supabase.from("students").select("id", { count: "exact", head: true })
-    .eq("grade_level", "12").eq("is_archived", true).is("section_id", null)
 
   const [{ count: total }, { count: unlocked }] = await Promise.all([
-    baseFilter,
     supabase.from("students").select("id", { count: "exact", head: true })
-      .eq("grade_level", "12").eq("is_archived", true).is("section_id", null)
-      .or("graduate_lock.is.null,graduate_lock.eq.false"),
+      .eq("is_archived", true)
+      .or("grade_level.eq.GRADUATED,and(grade_level.eq.12,section_id.is.null)"),
+    supabase.from("students").select("id", { count: "exact", head: true })
+      .eq("is_archived", true)
+      .or("graduate_lock.is.null,graduate_lock.eq.false")
+      .or("grade_level.eq.GRADUATED,and(grade_level.eq.12,section_id.is.null)"),
   ])
 
   return { unlockedCount: unlocked ?? 0, totalGraduated: total ?? 0 }
@@ -254,14 +254,13 @@ export async function lockGraduatedStudents(): Promise<{
 }> {
   const supabase = await createClient()
   try {
-    // Find all graduated students (G12 + archived + no section = graduated)
+    // Find all graduated students (GRADUATED grade_level, OR G12 + archived + no section)
     const { data, error: fetchErr } = await supabase
       .from("students")
       .select("id")
-      .eq("grade_level", "12")
       .eq("is_archived", true)
-      .is("section_id", null)
       .or("graduate_lock.is.null,graduate_lock.eq.false")
+      .or("grade_level.eq.GRADUATED,and(grade_level.eq.12,section_id.is.null)")
 
     if (fetchErr) throw fetchErr
     if (!data || data.length === 0) return { success: true, locked: 0 }

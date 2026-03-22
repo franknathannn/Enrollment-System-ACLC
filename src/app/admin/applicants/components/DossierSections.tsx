@@ -117,7 +117,7 @@ export const DossierSections = memo(function DossierSections({
     [sections, formData.strand, formData.grade_level]
   )
   const canAssignSection = student.status === "Accepted" || student.status === "Approved"
-  const isFaceToFace     = formData.preferred_modality === "Face to Face"
+  const isFaceToFace     = !!formData.preferred_modality
 
   return (
     <>

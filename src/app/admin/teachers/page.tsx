@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Plus, Users, GraduationCap, Eye, Edit2, Trash2, Loader2, Megaphone, Power, BarChart2, CalendarDays } from "lucide-react"
+import { Search, Plus, Users, GraduationCap, Eye, Edit2, Trash2, Loader2, Megaphone, BarChart2, CalendarDays } from "lucide-react"
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useTeachers }         from "./hooks/useTeachers"
 import { TeacherFormDialog }   from "./components/TeacherFormDialog"
@@ -199,6 +199,10 @@ export default function TeachersPage() {
   const totalTeacherPages = Math.max(1, Math.ceil(filtered.length / TEACHERS_PER_PAGE))
   const pagedTeachers = filtered.slice((teachersPage - 1) * TEACHERS_PER_PAGE, teachersPage * TEACHERS_PER_PAGE)
 
+  // Derive live teacher for the drawer from the canonical teachers list so
+  // toggleActive / updateTeacher changes reflect immediately without re-opening.
+  const viewingTeacher = viewing ? (teachers.find(t => t.id === viewing.id) ?? viewing) : null
+
   const openCreate = () => { setEditing(null); setFormOpen(true) }
   const openEdit   = (t: Teacher) => { setEditing(t); setFormOpen(true); setViewing(null) }
   const handleSave = async (data: any) => {
@@ -374,14 +378,21 @@ export default function TeachersPage() {
                       </div>
                       <p className={`text-xs truncate ${sub}`}>{t.email}</p>
                       <p className={`text-xs truncate ${sub}`}>{t.subject_specialization || "—"}</p>
-                      <span className={`inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full w-fit
-                        ${t.is_active
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                          : "bg-slate-500/10 text-slate-400 border border-slate-500/20"
-                        }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${t.is_active ? "bg-emerald-400 animate-pulse" : "bg-slate-500"}`} />
-                        {t.is_active ? "Active" : "Inactive"}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => handleToggle(t.id, t.is_active)} disabled={toggling.has(t.id)}
+                          role="switch" aria-checked={t.is_active}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 disabled:opacity-50
+                            ${t.is_active ? "bg-emerald-500" : dm ? "bg-slate-600" : "bg-slate-300"}`}>
+                          {toggling.has(t.id)
+                            ? <span className="absolute inset-0 flex items-center justify-center"><Loader2 size={10} className="animate-spin text-white" /></span>
+                            : <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200 ${t.is_active ? "translate-x-[18px]" : "translate-x-[3px]"}`} />
+                          }
+                        </button>
+                        <span className={`text-[9px] font-black uppercase tracking-widest
+                          ${t.is_active ? "text-emerald-400" : dm ? "text-slate-500" : "text-slate-400"}`}>
+                          {t.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </div>
                       <div className="flex items-center gap-1 justify-end">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -394,19 +405,6 @@ export default function TeachersPage() {
                             <button onClick={() => openEdit(t)} className={`p-2 rounded-xl transition-colors ${dm ? "hover:bg-slate-700 text-slate-400 hover:text-white" : "hover:bg-slate-100 text-slate-400 hover:text-slate-700"}`}><Edit2 size={13} /></button>
                           </TooltipTrigger>
                           <TooltipContent>Edit</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button onClick={() => handleToggle(t.id, t.is_active)} disabled={toggling.has(t.id)}
-                              className={`p-2 rounded-xl transition-all active:scale-90 disabled:opacity-50
-                                ${t.is_active
-                                  ? (dm ? "hover:bg-red-500/10 text-emerald-500 hover:text-red-400" : "hover:bg-red-50 text-emerald-500 hover:text-red-400")
-                                  : (dm ? "hover:bg-emerald-500/10 text-slate-500 hover:text-emerald-400" : "hover:bg-emerald-50 text-slate-400 hover:text-emerald-500")
-                                }`}>
-                              {toggling.has(t.id) ? <Loader2 size={13} className="animate-spin" /> : <Power size={13} />}
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>{t.is_active ? "Deactivate" : "Reactivate"}</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -441,13 +439,14 @@ export default function TeachersPage() {
                         <div className="flex items-center gap-0.5 shrink-0">
                           <button onClick={() => setViewing(t)} className={`p-2.5 rounded-xl transition-colors ${dm ? "hover:bg-slate-700 text-slate-400 hover:text-blue-400" : "hover:bg-blue-50 text-slate-400 hover:text-blue-500"}`}><Eye size={15} /></button>
                           <button onClick={() => openEdit(t)} className={`p-2.5 rounded-xl transition-colors ${dm ? "hover:bg-slate-700 text-slate-400" : "hover:bg-slate-100 text-slate-400"}`}><Edit2 size={15} /></button>
-                          <button onClick={() => handleToggle(t.id, t.is_active)} disabled={toggling.has(t.id)}
-                            className={`p-2.5 rounded-xl transition-all disabled:opacity-50
-                              ${t.is_active
-                                ? (dm ? "text-emerald-500 hover:bg-red-500/10 hover:text-red-400" : "text-emerald-500 hover:bg-red-50 hover:text-red-400")
-                                : (dm ? "text-slate-500 hover:bg-emerald-500/10 hover:text-emerald-400" : "text-slate-400 hover:bg-emerald-50 hover:text-emerald-500")
-                              }`}>
-                            {toggling.has(t.id) ? <Loader2 size={15} className="animate-spin" /> : <Power size={15} />}
+                          <button type="button" onClick={() => handleToggle(t.id, t.is_active)} disabled={toggling.has(t.id)}
+                            role="switch" aria-checked={t.is_active}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 disabled:opacity-50
+                              ${t.is_active ? "bg-emerald-500" : dm ? "bg-slate-600" : "bg-slate-300"}`}>
+                            {toggling.has(t.id)
+                              ? <span className="absolute inset-0 flex items-center justify-center"><Loader2 size={10} className="animate-spin text-white" /></span>
+                              : <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${t.is_active ? "translate-x-6" : "translate-x-1"}`} />
+                            }
                           </button>
                         </div>
                       </div>
@@ -534,7 +533,7 @@ export default function TeachersPage() {
       </div>
 
       <TeacherFormDialog open={formOpen} editing={editing} isDarkMode={dm} onSave={handleSave} onClose={() => setFormOpen(false)} />
-      <TeacherDetailDrawer teacher={viewing} isDarkMode={dm} onClose={() => setViewing(null)} onEdit={openEdit} onDelete={deleteTeacher} onToggle={toggleActive} />
+      <TeacherDetailDrawer teacher={viewingTeacher} isDarkMode={dm} onClose={() => setViewing(null)} onEdit={openEdit} onDelete={deleteTeacher} onToggle={handleToggle} />
     </div>
     </TooltipProvider>
   )

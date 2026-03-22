@@ -1,15 +1,16 @@
 // sections/components/schedule/ScheduleEntryForm.tsx
 
-import { memo, useState, useEffect, useRef, useCallback } from "react"
-import { X, Save, Clock, ChevronDown } from "lucide-react"
+import { memo, useState, useEffect, useRef, useMemo } from "react"
+import { X, Save, Clock, ChevronDown, Search, User, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DAYS } from "./types"
 import type { ScheduleRow } from "./types"
 import { ROOMS } from "./autoScheduler"
 
 export interface TeacherOption {
-  id:        string
-  full_name: string
+  id:         string
+  full_name:  string
+  avatar_url?: string | null
 }
 
 interface ScheduleEntryFormProps {
@@ -19,6 +20,7 @@ interface ScheduleEntryFormProps {
   isDarkMode:  boolean
   editing:     ScheduleRow | null
   teachers:    TeacherOption[]
+  schedules:   ScheduleRow[]
   onSave:      (data: Omit<ScheduleRow, "id" | "created_at"> & { teacher_id?: string | null }) => Promise<void>
   onCancel:    () => void
 }
@@ -43,7 +45,7 @@ function normalizeTime(t: string) {
   return t ? t.slice(0, 5) : ""
 }
 
-// ── Reusable pretty time picker ───────────────────────────────────────────────
+// ── TimePicker ────────────────────────────────────────────────────────────────
 interface TimePickerProps {
   value: string
   onChange: (val: string) => void
@@ -54,182 +56,340 @@ interface TimePickerProps {
 }
 
 function TimePicker({ value, onChange, isDarkMode, isICT, placeholder = "Select time", error }: TimePickerProps) {
-  const [open, setOpen]       = useState(false)
-  const [search, setSearch]   = useState("")
-  const containerRef          = useRef<HTMLDivElement>(null)
-  const searchRef             = useRef<HTMLInputElement>(null)
-  const listRef               = useRef<HTMLDivElement>(null)
+  const [open, setOpen]     = useState(false)
+  const [search, setSearch] = useState("")
+  const containerRef        = useRef<HTMLDivElement>(null)
+  const searchRef           = useRef<HTMLInputElement>(null)
 
   const selected = TIME_OPTIONS.find(o => o.value === value)
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-        setSearch("")
+        setOpen(false); setSearch("")
       }
     }
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  // Focus search input when dropdown opens
   useEffect(() => {
     if (open) setTimeout(() => searchRef.current?.focus(), 50)
   }, [open])
 
-  // Filter options by search — accepts "7", "7:30", "730", "7am", "1pm" etc.
   const filtered = TIME_OPTIONS.filter(o => {
     if (!search) return true
     const s = search.toLowerCase().replace(/\s/g, "")
-    const label = o.label.toLowerCase().replace(/\s/g, "")
-    const val   = o.value.replace(":", "")
-    return label.includes(s) || val.includes(s)
-  }).slice(0, 8) // max 8 visible at once
+    return o.label.toLowerCase().replace(/\s/g, "").includes(s) || o.value.replace(":", "").includes(s)
+  }).slice(0, 8)
 
-  const handleSelect = (val: string) => {
-    onChange(val)
-    setOpen(false)
-    setSearch("")
-  }
-
-  const accent      = isICT ? "blue"   : "orange"
-  const accentRing  = isICT ? "ring-blue-500/40 border-blue-500" : "ring-orange-500/40 border-orange-500"
-  const accentHover = isICT ? "hover:bg-blue-500/10 hover:text-blue-400" : "hover:bg-orange-500/10 hover:text-orange-400"
-  const accentActive= isICT ? "bg-blue-600 text-white" : "bg-orange-600 text-white"
-
-  const triggerClass = `w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all cursor-pointer select-none
-    ${isDarkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200 text-slate-900"}
-    ${open ? `ring-2 ${accentRing}` : ""}
-    ${error ? "border-red-500/60" : ""}`
-
-  const dropdownClass = `absolute z-50 mt-2 w-full rounded-2xl border shadow-2xl overflow-hidden
-    ${isDarkMode ? "bg-slate-800 border-slate-700 shadow-black/60" : "bg-white border-slate-200 shadow-slate-200/80"}`
+  const accentRing   = isICT ? "ring-blue-500/40 border-blue-500"   : "ring-orange-500/40 border-orange-500"
+  const accentHover  = isICT ? "hover:bg-blue-500/10 hover:text-blue-400" : "hover:bg-orange-500/10 hover:text-orange-400"
+  const accentActive = isICT ? "bg-blue-600 text-white"              : "bg-orange-600 text-white"
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Trigger button */}
-      <button type="button" onClick={() => setOpen(v => !v)} className={triggerClass}>
+      <button type="button" onClick={() => setOpen(v => !v)}
+        className={`w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all cursor-pointer select-none
+          ${isDarkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200 text-slate-900"}
+          ${open ? `ring-2 ${accentRing}` : ""}
+          ${error ? "border-red-500/60" : ""}`}>
         <div className="flex items-center gap-2 min-w-0">
           <Clock size={13} className={selected
             ? (isICT ? "text-blue-400" : "text-orange-400")
             : (isDarkMode ? "text-slate-500" : "text-slate-400")} />
           {selected ? (
             <div className="flex items-baseline gap-1.5">
-              <span className="font-black text-sm">
-                {selected.label.split(" ")[0]}
-              </span>
+              <span className="font-black text-sm">{selected.label.split(" ")[0]}</span>
               <span className={`text-[10px] font-black uppercase tracking-widest
-                ${selected.period === "AM"
-                  ? "text-sky-400"
-                  : "text-amber-400"
-                }`}>
+                ${selected.period === "AM" ? "text-sky-400" : "text-amber-400"}`}>
                 {selected.period}
               </span>
             </div>
           ) : (
-            <span className={`text-sm ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
-              {placeholder}
-            </span>
+            <span className={`text-sm ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{placeholder}</span>
           )}
         </div>
-        <ChevronDown size={14}
-          className={`flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""} ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+        <ChevronDown size={14} className={`flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""} ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
       </button>
 
-      {/* Dropdown */}
       {open && (
-        <div className={dropdownClass}>
-          {/* Search input */}
+        <div className={`absolute z-[100] mt-2 w-full rounded-2xl border shadow-2xl overflow-hidden
+          ${isDarkMode ? "bg-slate-800 border-slate-700 shadow-black/60" : "bg-white border-slate-200 shadow-slate-200/80"}`}>
           <div className={`px-3 py-2.5 border-b ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50"}`}>
             <div className="relative">
               <Clock size={12} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
-              <input
-                ref={searchRef}
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+              <input ref={searchRef} type="text" value={search} onChange={e => setSearch(e.target.value)}
                 placeholder='Search "7:30" or "1pm"…'
                 className={`w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium outline-none transition-all
-                  ${isDarkMode
-                    ? "bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:border-slate-500"
-                    : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-slate-300"
-                  }`}
-              />
+                  ${isDarkMode ? "bg-slate-800 border border-slate-700 text-white placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
             </div>
           </div>
-
-          {/* Options list — max 8 items, scrollable */}
-          <div ref={listRef} className="max-h-56 overflow-y-auto py-1.5">
-            {/* AM group */}
-            {filtered.some(o => o.period === "AM") && (
-              <>
-                <div className={`px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em]
-                  ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>
-                  Morning
+          <div className="max-h-56 overflow-y-auto py-1.5" style={{ scrollbarWidth: "none" }}>
+            {["AM", "PM"].map(period => {
+              const opts = filtered.filter(o => o.period === period)
+              if (!opts.length) return null
+              return (
+                <div key={period}>
+                  <div className={`px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>
+                    {period === "AM" ? "Morning" : "Afternoon / Evening"}
+                  </div>
+                  {opts.map(o => (
+                    <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false); setSearch("") }}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors
+                        ${o.value === value ? accentActive : `${isDarkMode ? "text-white" : "text-slate-900"} ${accentHover}`}`}>
+                      <span className="font-bold">{o.label.split(" ")[0]}</span>
+                      <span className={`text-[10px] font-black uppercase tracking-widest
+                        ${o.value === value ? "text-white/70" : period === "AM" ? "text-sky-400" : "text-amber-400"}`}>
+                        {period}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                {filtered.filter(o => o.period === "AM").map(o => (
-                  <button
-                    key={o.value}
-                    type="button"
-                    onClick={() => handleSelect(o.value)}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors
-                      ${o.value === value
-                        ? accentActive
-                        : `${isDarkMode ? "text-white" : "text-slate-900"} ${accentHover}`
-                      }`}
-                  >
-                    <span className="font-bold">{o.label.split(" ")[0]}</span>
-                    <span className={`text-[10px] font-black uppercase tracking-widest
-                      ${o.value === value ? "text-white/70" : "text-sky-400"}`}>
-                      AM
-                    </span>
-                  </button>
-                ))}
-              </>
-            )}
-
-            {/* PM group */}
-            {filtered.some(o => o.period === "PM") && (
-              <>
-                <div className={`px-3 pt-2 pb-1 text-[9px] font-black uppercase tracking-[0.2em]
-                  ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>
-                  Afternoon / Evening
-                </div>
-                {filtered.filter(o => o.period === "PM").map(o => (
-                  <button
-                    key={o.value}
-                    type="button"
-                    onClick={() => handleSelect(o.value)}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors
-                      ${o.value === value
-                        ? accentActive
-                        : `${isDarkMode ? "text-white" : "text-slate-900"} ${accentHover}`
-                      }`}
-                  >
-                    <span className="font-bold">{o.label.split(" ")[0]}</span>
-                    <span className={`text-[10px] font-black uppercase tracking-widest
-                      ${o.value === value ? "text-white/70" : "text-amber-400"}`}>
-                      PM
-                    </span>
-                  </button>
-                ))}
-              </>
-            )}
-
+              )
+            })}
             {filtered.length === 0 && (
-              <div className={`px-3 py-6 text-center text-xs ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>
-                No times match
-              </div>
+              <div className={`px-3 py-6 text-center text-xs ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>No times match</div>
             )}
           </div>
         </div>
       )}
-
       {error && <p className="text-[9px] text-red-400 mt-1 font-bold">{error}</p>}
     </div>
   )
+}
+
+// ── DayPicker — pill buttons ──────────────────────────────────────────────────
+const DAY_META: { key: string; abbr: string }[] = [
+  { key: "Monday",    abbr: "Mon" },
+  { key: "Tuesday",  abbr: "Tue" },
+  { key: "Wednesday",abbr: "Wed" },
+  { key: "Thursday", abbr: "Thu" },
+  { key: "Friday",   abbr: "Fri" },
+  { key: "Saturday", abbr: "Sat" },
+]
+
+function DayPicker({ value, onChange, isDarkMode, isICT }: {
+  value: string; onChange: (d: string) => void; isDarkMode: boolean; isICT: boolean
+}) {
+  const activeClass = isICT
+    ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/30"
+    : "bg-orange-600 border-orange-600 text-white shadow-lg shadow-orange-500/30"
+  const inactiveClass = isDarkMode
+    ? "bg-slate-800/70 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white hover:bg-slate-700"
+    : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800 hover:bg-slate-50"
+
+  return (
+    <div className="flex gap-1.5">
+      {DAY_META.map(({ key, abbr }) => (
+        <button key={key} type="button" onClick={() => onChange(key)}
+          className={`flex-1 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-wide transition-all active:scale-95
+            ${value === key ? activeClass : inactiveClass}`}>
+          {abbr}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── TeacherSelect — searchable with initials avatar ───────────────────────────
+function getInitials(name: string) {
+  return name.split(" ").filter(Boolean).map(p => p[0]).join("").slice(0, 2).toUpperCase()
+}
+
+function TeacherSelect({ value, teachers, onChange, isDarkMode, isICT, error }: {
+  value: string; teachers: TeacherOption[]; onChange: (id: string) => void
+  isDarkMode: boolean; isICT: boolean; error?: string
+}) {
+  const [open, setOpen]   = useState(false)
+  const [query, setQuery] = useState("")
+  const ref               = useRef<HTMLDivElement>(null)
+  const selected          = teachers.find(t => t.id === value)
+  const filtered          = query.trim()
+    ? teachers.filter(t => t.full_name.toLowerCase().includes(query.toLowerCase()))
+    : teachers
+
+  const accentRing   = isICT ? "ring-blue-500/40 border-blue-500"   : "ring-orange-500/40 border-orange-500"
+  const accentActive = isICT ? "bg-blue-600 text-white"              : "bg-orange-600 text-white"
+  const avatarBg     = isICT ? "bg-blue-600 text-white"              : "bg-orange-600 text-white"
+  const avatarBgIdle = isICT ? "bg-blue-500/15 text-blue-400"        : "bg-orange-500/15 text-orange-400"
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setQuery("") }
+    }
+    document.addEventListener("mousedown", h)
+    return () => document.removeEventListener("mousedown", h)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => { setOpen(v => !v); setQuery("") }}
+        className={`w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all cursor-pointer select-none
+          ${isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}
+          ${open ? `ring-2 ${accentRing}` : ""}
+          ${error ? "border-red-500/60" : ""}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          {selected ? (
+            <>
+              {selected.avatar_url ? (
+                <img src={selected.avatar_url} alt={selected.full_name}
+                  className="w-6 h-6 rounded-lg object-cover flex-shrink-0" />
+              ) : (
+                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[9px] font-black flex-shrink-0 ${avatarBg}`}>
+                  {getInitials(selected.full_name)}
+                </div>
+              )}
+              <span className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                {selected.full_name}
+              </span>
+            </>
+          ) : (
+            <>
+              <User size={13} className={isDarkMode ? "text-slate-500" : "text-slate-400"} />
+              <span className={`text-sm ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>— Select a teacher —</span>
+            </>
+          )}
+        </div>
+        <ChevronDown size={14} className={`flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""} ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+      </button>
+
+      {open && (
+        <div className={`absolute z-[100] mt-2 w-full rounded-2xl border shadow-2xl overflow-hidden
+          ${isDarkMode ? "bg-slate-800 border-slate-700 shadow-black/60" : "bg-white border-slate-200 shadow-slate-200/80"}`}>
+          <div className={`px-3 py-2.5 border-b ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50"}`}>
+            <div className="relative">
+              <Search size={12} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+              <input autoFocus type="text" value={query} onChange={e => setQuery(e.target.value)}
+                placeholder="Search teacher…"
+                className={`w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium outline-none border
+                  ${isDarkMode ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500" : "bg-white border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+            </div>
+          </div>
+          <div className="max-h-52 overflow-y-auto py-1" style={{ scrollbarWidth: "none" }}>
+            {filtered.length === 0 && (
+              <div className={`px-3 py-6 text-center text-xs ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>No teachers found</div>
+            )}
+            {filtered.map(t => (
+              <button key={t.id} type="button"
+                onClick={() => { onChange(t.id); setOpen(false); setQuery("") }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 transition-colors
+                  ${t.id === value ? accentActive : isDarkMode ? "text-white hover:bg-slate-700/50" : "text-slate-900 hover:bg-slate-50"}`}>
+                {t.avatar_url ? (
+                  <img src={t.avatar_url} alt={t.full_name}
+                    className="w-7 h-7 rounded-xl object-cover flex-shrink-0" />
+                ) : (
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center text-[10px] font-black flex-shrink-0
+                    ${t.id === value ? "bg-white/20 text-white" : avatarBgIdle}`}>
+                    {getInitials(t.full_name)}
+                  </div>
+                )}
+                <span className="text-sm font-medium">{t.full_name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {error && <p className="text-[9px] text-red-400 mt-1 font-bold">{error}</p>}
+    </div>
+  )
+}
+
+// ── RoomSelect — searchable ───────────────────────────────────────────────────
+function RoomSelect({ value, onChange, isDarkMode, isICT, error }: {
+  value: string; onChange: (v: string) => void; isDarkMode: boolean; isICT: boolean; error?: string
+}) {
+  const [open, setOpen]   = useState(false)
+  const [query, setQuery] = useState("")
+  const ref               = useRef<HTMLDivElement>(null)
+  const filtered          = query.trim()
+    ? [...ROOMS].filter(r => r.toLowerCase().includes(query.toLowerCase()))
+    : [...ROOMS]
+
+  const accentRing   = isICT ? "ring-blue-500/40 border-blue-500" : "ring-orange-500/40 border-orange-500"
+  const accentActive = isICT ? "bg-blue-600 text-white"           : "bg-orange-600 text-white"
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setQuery("") }
+    }
+    document.addEventListener("mousedown", h)
+    return () => document.removeEventListener("mousedown", h)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => { setOpen(v => !v); setQuery("") }}
+        className={`w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all cursor-pointer select-none
+          ${isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}
+          ${open ? `ring-2 ${accentRing}` : ""}
+          ${error ? "border-red-500/60" : ""}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <MapPin size={13} className={value ? (isICT ? "text-blue-400" : "text-orange-400") : (isDarkMode ? "text-slate-500" : "text-slate-400")} />
+          <span className={value ? (isDarkMode ? "text-white" : "text-slate-900") : (isDarkMode ? "text-slate-500" : "text-slate-400")}>
+            {value || "— None —"}
+          </span>
+        </div>
+        <ChevronDown size={14} className={`flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""} ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+      </button>
+
+      {open && (
+        <div className={`absolute z-[100] mt-2 w-full rounded-2xl border shadow-2xl overflow-hidden
+          ${isDarkMode ? "bg-slate-800 border-slate-700 shadow-black/60" : "bg-white border-slate-200 shadow-slate-200/80"}`}>
+          <div className={`px-3 py-2.5 border-b ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50"}`}>
+            <div className="relative">
+              <Search size={12} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+              <input autoFocus type="text" value={query} onChange={e => setQuery(e.target.value)}
+                placeholder="Search room…"
+                className={`w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium outline-none border
+                  ${isDarkMode ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500" : "bg-white border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+            </div>
+          </div>
+          <div className="max-h-44 overflow-y-auto py-1" style={{ scrollbarWidth: "none" }}>
+            <button type="button" onClick={() => { onChange(""); setOpen(false) }}
+              className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors
+                ${isDarkMode ? "text-slate-500 hover:bg-slate-700/40" : "text-slate-400 hover:bg-slate-50"}`}>
+              — None —
+            </button>
+            {filtered.map(r => (
+              <button key={r} type="button" onClick={() => { onChange(r); setOpen(false); setQuery("") }}
+                className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors
+                  ${r === value ? accentActive : isDarkMode ? "text-white hover:bg-slate-700/50" : "text-slate-900 hover:bg-slate-50"}`}>
+                {r}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div className={`px-3 py-6 text-center text-xs ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>No rooms found</div>
+            )}
+          </div>
+        </div>
+      )}
+      {error && <p className="text-[9px] text-red-400 mt-1 font-bold">{error}</p>}
+    </div>
+  )
+}
+
+// ── Subject color palette (matches ScheduleGrid colors) ──────────────────────
+const SUBJECT_PALETTE = [
+  { dot: "bg-blue-500",    label: "text-blue-400",    ring: "ring-blue-500/30"    },
+  { dot: "bg-violet-500",  label: "text-violet-400",  ring: "ring-violet-500/30"  },
+  { dot: "bg-emerald-500", label: "text-emerald-400", ring: "ring-emerald-500/30" },
+  { dot: "bg-amber-500",   label: "text-amber-400",   ring: "ring-amber-500/30"   },
+  { dot: "bg-rose-500",    label: "text-rose-400",    ring: "ring-rose-500/30"    },
+  { dot: "bg-cyan-500",    label: "text-cyan-400",    ring: "ring-cyan-500/30"    },
+  { dot: "bg-fuchsia-500", label: "text-fuchsia-400", ring: "ring-fuchsia-500/30" },
+  { dot: "bg-teal-500",    label: "text-teal-400",    ring: "ring-teal-500/30"    },
+  { dot: "bg-orange-500",  label: "text-orange-400",  ring: "ring-orange-500/30"  },
+  { dot: "bg-lime-500",    label: "text-lime-400",    ring: "ring-lime-500/30"    },
+  { dot: "bg-sky-500",     label: "text-sky-400",     ring: "ring-sky-500/30"     },
+  { dot: "bg-pink-500",    label: "text-pink-400",    ring: "ring-pink-500/30"    },
+]
+
+function subjectColorIndex(subject: string): number {
+  if (!subject.trim()) return 0
+  let h = 5381
+  for (let i = 0; i < subject.length; i++) { h = ((h << 5) + h) + subject.charCodeAt(i); h = h & h }
+  return Math.abs(h) % SUBJECT_PALETTE.length
 }
 
 // ── Main form ─────────────────────────────────────────────────────────────────
@@ -240,7 +400,7 @@ const EMPTY = {
 }
 
 export const ScheduleEntryForm = memo(function ScheduleEntryForm({
-  sectionName, schoolYear, isICT, isDarkMode, editing, teachers, onSave, onCancel,
+  sectionName, schoolYear, isICT, isDarkMode, editing, teachers, schedules, onSave, onCancel,
 }: ScheduleEntryFormProps) {
   const [form, setForm]     = useState({ ...EMPTY })
   const [saving, setSaving] = useState(false)
@@ -277,6 +437,7 @@ export const ScheduleEntryForm = memo(function ScheduleEntryForm({
     if (form.start_time && form.end_time && form.start_time >= form.end_time)
       e.end_time = "End time must be after start time"
     if (!(form as any).teacher_id) e.teacher_id = "Assign a teacher"
+    if (!form.room)            e.room       = "Room is required"
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -303,32 +464,37 @@ export const ScheduleEntryForm = memo(function ScheduleEntryForm({
     }
   }
 
-  const accentFocus = isICT
-    ? "focus:ring-blue-500/40 focus:border-blue-500"
-    : "focus:ring-orange-500/40 focus:border-orange-500"
-  const accentBtn = isICT ? "bg-blue-600 hover:bg-blue-500" : "bg-orange-600 hover:bg-orange-500"
-
-  const inputClass = `w-full rounded-xl border px-3 py-2 text-sm font-medium transition-all outline-none ring-0 focus:ring-2
-    ${isDarkMode
-      ? `bg-slate-800 border-slate-700 text-white placeholder-slate-500 ${accentFocus}`
-      : `bg-white border-slate-200 text-slate-900 placeholder-slate-400 ${accentFocus}`}`
-
-  const selectClass = `w-full rounded-xl border px-3 py-2 text-sm font-medium transition-all outline-none cursor-pointer
-    ${isDarkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200 text-slate-900"}`
-
-  const labelClass = `block text-[9px] font-black uppercase tracking-widest mb-1.5
+  const accentBtn  = isICT ? "bg-blue-600 hover:bg-blue-500 shadow-blue-500/25" : "bg-orange-600 hover:bg-orange-500 shadow-orange-500/25"
+  const labelClass = `block text-[9px] font-black uppercase tracking-widest mb-2
     ${isDarkMode ? "text-slate-400" : "text-slate-500"}`
 
+  // Build color map same way as ScheduleGrid (insertion order of unique subjects)
+  const subjColorMap = useMemo(() => {
+    const unique = [...new Set(schedules.map(s => s.subject))]
+    return Object.fromEntries(unique.map((sub, i) => [sub, SUBJECT_PALETTE[i % SUBJECT_PALETTE.length]]))
+  }, [schedules])
+
+  // Use grid color if this subject already exists; hash-based fallback for new subjects
+  const subjColor = subjColorMap[form.subject.trim()] ?? SUBJECT_PALETTE[subjectColorIndex(form.subject)]
+  const inputClass = `w-full rounded-xl border px-3 py-2 text-sm font-medium transition-all outline-none ring-0 focus:ring-2
+    ${isDarkMode
+      ? `bg-slate-800 border-slate-700 text-white placeholder-slate-500 ${isICT ? "focus:ring-blue-500/40 focus:border-blue-500" : "focus:ring-orange-500/40 focus:border-orange-500"}`
+      : `bg-white border-slate-200 text-slate-900 placeholder-slate-400 ${isICT ? "focus:ring-blue-500/40 focus:border-blue-500" : "focus:ring-orange-500/40 focus:border-orange-500"}`}`
+
   return (
-    <div className={`rounded-3xl border overflow-visible animate-in slide-in-from-top-2 fade-in duration-300
-      ${isDarkMode ? "bg-slate-900/80 border-slate-700" : "bg-white border-slate-200 shadow-lg"}`}>
+    <div className={`rounded-3xl border overflow-visible animate-in slide-in-from-top-3 fade-in duration-300 relative
+      ${isDarkMode ? "bg-slate-900/80 border-slate-700" : "bg-white border-slate-200 shadow-xl"}`}>
+      {/* Subject color strip */}
+      {form.subject.trim() && (
+        <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-3xl ${subjColor.dot}`} />
+      )}
 
       {/* Header */}
       <div className={`flex items-center justify-between px-6 py-4 border-b
         ${isDarkMode ? "border-slate-700 bg-slate-800/60" : "border-slate-100 bg-slate-50"}`}>
         <div>
           <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isICT ? "text-blue-400" : "text-orange-400"}`}>
-            {editing ? "Edit Entry" : "New Schedule Entry"}
+            {editing ? "Edit Schedule Entry" : "New Schedule Entry"}
           </p>
           <p className={`text-[9px] mt-0.5 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
             {sectionName} · {schoolYear}
@@ -341,79 +507,68 @@ export const ScheduleEntryForm = memo(function ScheduleEntryForm({
       </div>
 
       {/* Form body */}
-      <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 overflow-visible">
+      <div className="p-6 space-y-5 overflow-visible">
 
         {/* Subject */}
-        <div className="sm:col-span-2 lg:col-span-1">
-          <label className={labelClass}>Subject *</label>
-          <input className={inputClass} placeholder="e.g. Oral Communication"
+        <div>
+          <label className={`${labelClass} flex items-center gap-2`}>
+            {form.subject.trim() && (
+              <span className={`inline-block w-2 h-2 rounded-full ${subjColor.dot}`} />
+            )}
+            Subject *
+          </label>
+          <input className={`${inputClass} ${errors.subject ? "border-red-500/60" : ""} ${form.subject.trim() ? `ring-1 ${subjColor.ring}` : ""}`}
+            placeholder="e.g. Oral Communication"
             value={form.subject} onChange={e => set("subject", e.target.value)} />
           {errors.subject && <p className="text-[9px] text-red-400 mt-1 font-bold">{errors.subject}</p>}
         </div>
 
-        {/* Day */}
+        {/* Day — pill picker */}
         <div>
           <label className={labelClass}>Day *</label>
-          <select className={selectClass} value={form.day} onChange={e => set("day", e.target.value)}>
-            {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
+          <DayPicker value={form.day} onChange={d => set("day", d)} isDarkMode={isDarkMode} isICT={isICT} />
         </div>
 
-        {/* Start Time */}
-        <div className="relative z-20">
-          <label className={labelClass}>Start Time *</label>
-          <TimePicker
-            value={form.start_time}
-            onChange={v => set("start_time", v)}
-            isDarkMode={isDarkMode}
-            isICT={isICT}
-            placeholder="Select start time"
-            error={errors.start_time}
-          />
-        </div>
-
-        {/* End Time */}
-        <div className="relative z-10">
-          <label className={labelClass}>End Time *</label>
-          <TimePicker
-            value={form.end_time}
-            onChange={v => set("end_time", v)}
-            isDarkMode={isDarkMode}
-            isICT={isICT}
-            placeholder="Select end time"
-            error={errors.end_time}
-          />
+        {/* Start + End time */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Start Time *</label>
+            <TimePicker value={form.start_time} onChange={v => set("start_time", v)}
+              isDarkMode={isDarkMode} isICT={isICT} placeholder="Start" error={errors.start_time} />
+          </div>
+          <div>
+            <label className={labelClass}>End Time *</label>
+            <TimePicker value={form.end_time} onChange={v => set("end_time", v)}
+              isDarkMode={isDarkMode} isICT={isICT} placeholder="End" error={errors.end_time} />
+          </div>
         </div>
 
         {/* Teacher */}
         <div>
           <label className={labelClass}>Teacher *</label>
-          <select
-            className={`${selectClass} ${errors.teacher_id ? "border-red-400 focus:ring-red-400/30" : ""}`}
+          <TeacherSelect
             value={(form as any).teacher_id ?? ""}
-            onChange={e => { set("teacher_id", e.target.value); setErrors(p => ({ ...p, teacher_id: "" })) }}>
-            <option value="">— Select a teacher —</option>
-            {teachers.map(t => (
-              <option key={t.id} value={t.id}>{t.full_name}</option>
-            ))}
-          </select>
-          {errors.teacher_id && <p className="text-[9px] text-red-400 font-bold mt-1">{errors.teacher_id}</p>}
+            teachers={teachers}
+            onChange={id => set("teacher_id", id)}
+            isDarkMode={isDarkMode}
+            isICT={isICT}
+            error={errors.teacher_id}
+          />
         </div>
 
-        {/* Room */}
-        <div>
-          <label className={labelClass}>Room <span className="opacity-40 normal-case font-bold">(optional)</span></label>
-          <select className={selectClass} value={form.room} onChange={e => set("room", e.target.value)}>
-            <option value="">— None —</option>
-            {ROOMS.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-        </div>
-
-        {/* Notes */}
-        <div className="sm:col-span-2 lg:col-span-1">
-          <label className={labelClass}>Notes <span className="opacity-40 normal-case font-bold">(optional)</span></label>
-          <input className={inputClass} placeholder="Any additional notes..."
-            value={form.notes} onChange={e => set("notes", e.target.value)} />
+        {/* Room + Notes */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Room *</label>
+            <RoomSelect value={form.room} onChange={v => set("room", v)} isDarkMode={isDarkMode} isICT={isICT} error={errors.room} />
+          </div>
+          <div>
+            <label className={labelClass}>
+              Notes <span className="opacity-40 normal-case font-bold">(optional)</span>
+            </label>
+            <input className={inputClass} placeholder="Additional notes…"
+              value={form.notes} onChange={e => set("notes", e.target.value)} />
+          </div>
         </div>
       </div>
 

@@ -75,7 +75,7 @@ AnimatedText.displayName = "AnimatedText"
 export const MetricCard = memo(({ label, value, colorLight, colorDark, icon, isDarkMode, textColor = "text-white", tooltip }: any) => {
   const content = (
     <Card
-        className={`p-6 md:p-10 rounded-[32px] md:rounded-[56px] ${textColor} flex justify-between items-center shadow-2xl relative overflow-hidden group hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 border-none cursor-default touch-manipulation`}
+        className={`p-6 md:p-10 rounded-[32px] md:rounded-[56px] ${textColor} flex justify-between items-center relative overflow-hidden group hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 border-none cursor-default touch-manipulation`}
         style={{
           background: isDarkMode ? colorDark : colorLight
         }}
@@ -137,7 +137,7 @@ export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode
       )}
       <div className="p-6 md:p-10 flex flex-col justify-between flex-1">
       <div className="space-y-4 md:space-y-6">
-        <div className={`w-12 md:w-16 h-12 md:h-16 rounded-2xl md:rounded-3xl flex items-center justify-center text-xl md:text-3xl ${isDarkMode ? 'bg-slate-800' : (isHighlighted ? 'bg-white/20 text-white' : bg)} ${!isHighlighted ? color : ''} transition-transform group-hover:rotate-6 shadow-lg dark:shadow-2xl dark:shadow-slate-900`}>{icon}</div>
+        <div className={`w-12 md:w-16 h-12 md:h-16 rounded-2xl md:rounded-3xl flex items-center justify-center text-xl md:text-3xl ${isDarkMode ? 'bg-slate-800' : (isHighlighted ? 'bg-white/20 text-white' : bg)} ${!isHighlighted ? color : ''} transition-transform group-hover:rotate-6 shadow-sm`}>{icon}</div>
         <div>
           <ThemedText variant="h2" className="text-3xl md:text-5xl leading-none" isDarkMode={isDarkMode} style={isHighlighted ? { color: 'white' } : {}}>
             {typeof value === 'number' ? value.toLocaleString() : value ?? 0}

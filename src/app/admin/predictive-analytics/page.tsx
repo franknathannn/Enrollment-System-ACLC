@@ -21,6 +21,7 @@ import { PredictionControlPanel } from "./components/PredictionControlPanel"
 import { InsightMetrics } from "./components/InsightMetrics"
 import { HistoryEditor } from "./components/HistoryEditor"
 import { AnalyticPoint, HistoryRecord } from "./types"
+import { computeEnsemble, EnsembleResult } from "@/lib/utils/ensemble"
 
 
 // ─── THIS YEAR SPOTLIGHT ──────────────────────────────────────────────────────
@@ -270,6 +271,158 @@ function ThisYearSpotlight({
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── ENSEMBLE ENGINE PANEL ────────────────────────────────────────────────────
+function PythonEnginePanel({
+  result, isDarkMode, currentCount, pendingCount,
+}: {
+  result: EnsembleResult | null
+  isDarkMode: boolean
+  currentCount: number
+  pendingCount: number
+}) {
+  if (!result) return (
+    <div className={`rounded-2xl border p-8 flex items-center justify-center gap-3 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+      <AlertCircle className="w-4 h-4 text-slate-400" />
+      <span className={`text-sm font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>No historical data available for ensemble prediction.</span>
+    </div>
+  )
+
+  const models   = Object.values(result.models) as any[]
+  const bestMape = result.accuracy.best_mape
+  const accuracy = bestMape < 5  ? { label: 'Very Accurate', color: 'text-emerald-500' }
+                 : bestMape < 10 ? { label: 'Accurate',      color: 'text-blue-500'    }
+                 : bestMape < 20 ? { label: 'Moderate',      color: 'text-amber-500'   }
+                 :                 { label: 'Low Confidence', color: 'text-red-500'    }
+
+  return (
+    <div className={`relative rounded-2xl border-2 overflow-hidden shadow-lg ${isDarkMode ? 'bg-slate-900 border-emerald-800/40' : 'bg-white border-emerald-200'}`}>
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+
+      <div className="p-5 space-y-5">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Wand2 className="w-4 h-4 text-emerald-500" />
+            <h3 className={`text-sm font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+              Ensemble Engine
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${isDarkMode ? 'bg-emerald-950/40 border-emerald-800/40 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+              {result.n_records} records · {result.target_year}
+            </span>
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${isDarkMode ? 'bg-blue-950/30 border-blue-800/30 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
+              Works on Vercel
+            </span>
+          </div>
+        </div>
+
+        {/* Enrolled so far */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className={`rounded-xl p-4 col-span-1 ${isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
+            <p className={`text-[10px] uppercase font-bold tracking-widest mb-1.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Enrolled So Far</p>
+            <p className={`text-3xl font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{currentCount.toLocaleString()}</p>
+            {pendingCount > 0 && (
+              <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>+{pendingCount.toLocaleString()} pending</p>
+            )}
+          </div>
+          <div className={`rounded-xl p-4 col-span-2 ${isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
+            {(() => {
+              const barScale   = result.optimistic > 0 ? result.optimistic : 1
+              const fillPct    = Math.min(100, Math.round((currentCount / barScale) * 100))
+              const declPct    = Math.round((result.declining  / barScale) * 100)
+              const realPct    = Math.round((result.realistic  / barScale) * 100)
+              const remaining  = Math.max(0, result.realistic - currentCount)
+              const passed     = currentCount >= result.realistic
+              return (
+                <>
+                  <div className="flex justify-between items-center mb-2">
+                    <p className={`text-[10px] uppercase font-bold tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Progress within projection range</p>
+                    <p className={`text-sm font-black ${passed ? 'text-emerald-500' : isDarkMode ? 'text-white' : 'text-slate-900'}`}>{fillPct}%</p>
+                  </div>
+                  <div className={`relative h-3 rounded-full overflow-hidden ${isDarkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                    <div className="absolute top-0 bottom-0 w-px bg-rose-400/70 z-10" style={{ left: `${declPct}%` }} />
+                    <div className="absolute top-0 bottom-0 w-px bg-blue-400/80 z-10"  style={{ left: `${realPct}%` }} />
+                    <div className={`absolute top-0 left-0 bottom-0 rounded-full transition-all duration-700 ${passed ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-blue-500 to-violet-500'}`} style={{ width: `${Math.min(fillPct, 100)}%` }} />
+                  </div>
+                  <div className="relative h-4 mt-1.5">
+                    <span className="absolute text-[9px] text-rose-400 font-semibold -translate-x-1/2" style={{ left: `${declPct}%` }}>▲ {result.declining.toLocaleString()}</span>
+                    <span className="absolute text-[9px] font-semibold -translate-x-1/2" style={{ left: `${realPct}%`, color: isDarkMode ? '#93c5fd' : '#2563eb' }}>▲ {result.realistic.toLocaleString()}</span>
+                    <span className="absolute right-0 text-[9px] text-emerald-500 font-semibold">{result.optimistic.toLocaleString()} ▲</span>
+                  </div>
+                  {!passed && (
+                    <p className={`text-[10px] mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{remaining.toLocaleString()} more students to hit the most likely target</p>
+                  )}
+                </>
+              )
+            })()}
+          </div>
+        </div>
+
+        {/* Big numbers */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className={`rounded-xl p-4 ${isDarkMode ? 'bg-emerald-950/30' : 'bg-emerald-50'}`}>
+            <p className="text-[10px] uppercase font-bold tracking-widest mb-1.5 text-emerald-500">Expected Enrollment</p>
+            <p className={`text-3xl font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              {result.ensemble.toLocaleString()}
+            </p>
+            <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>S.Y. {result.target_year}</p>
+          </div>
+          <div className={`rounded-xl p-4 ${isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
+            <p className={`text-[10px] uppercase font-bold tracking-widest mb-1.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Likely Range</p>
+            <p className={`text-lg font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              {result.ci_lo.toLocaleString()} – {result.ci_hi.toLocaleString()}
+            </p>
+            <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>where enrollment will likely land</p>
+          </div>
+          <div className={`rounded-xl p-4 ${isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
+            <p className={`text-[10px] uppercase font-bold tracking-widest mb-1.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Prediction Quality</p>
+            <p className={`text-2xl font-black ${accuracy.color}`}>{accuracy.label}</p>
+            <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>avg. miss: ~{result.accuracy.avg_mae} students</p>
+          </div>
+        </div>
+
+        {/* Scenarios */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'If enrollment slows', value: result.declining,  color: isDarkMode ? 'text-rose-400 bg-rose-950/30 border-rose-900/40'        : 'text-rose-600 bg-rose-50 border-rose-200'      },
+            { label: 'Most likely',          value: result.realistic,  color: isDarkMode ? 'text-blue-300 bg-blue-950/30 border-blue-800/40'         : 'text-blue-700 bg-blue-50 border-blue-200', bold: true },
+            { label: 'If enrollment grows',  value: result.optimistic, color: isDarkMode ? 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40' : 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+          ].map(s => (
+            <div key={s.label} className={`rounded-xl border p-3 text-center ${s.color}`}>
+              <p className="text-[9px] uppercase font-bold tracking-widest opacity-70 mb-1">{s.label}</p>
+              <p className={`font-black tabular-nums ${s.bold ? 'text-xl' : 'text-lg'}`}>{s.value.toLocaleString()}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Model breakdown */}
+        <div className={`rounded-xl border overflow-hidden ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+          <div className={`px-4 py-2.5 text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
+            How the prediction was made — 4 methods combined
+          </div>
+          {models.map((m: any, i: number) => (
+            <div key={i} className={`flex items-center justify-between px-4 py-3 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+              <span className={`text-xs font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{m.label}</span>
+              <div className="flex items-center gap-4 text-xs">
+                <span className={`font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{Math.round(m.pred).toLocaleString()} students</span>
+                <span className={`font-medium ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>~{m.mape}% off historically</span>
+                <span className={`font-bold px-2 py-0.5 rounded-full text-[10px] ${isDarkMode ? 'bg-emerald-950/50 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                  {m.weight}% influence
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p className={`text-[10px] ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>
+          Based on {result.n_records} years of past enrollment data · More historical data improves accuracy · Final numbers may vary as enrollment is ongoing
+        </p>
       </div>
     </div>
   )
@@ -532,6 +685,8 @@ export default function PredictiveAnalytics() {
   const [alsLiveCount, setAlsLiveCount] = useState<number>(0)
   const fetchingRef = useRef(false)
 
+  // Ensemble engine toggle
+  const [predEngine, setPredEngine] = useState<'js' | 'ensemble'>('js')
 
   // Market data predictor — uses recent growth rates from past JHS and ALS
   // data to estimate next year's feeder pool size
@@ -636,23 +791,16 @@ export default function PredictiveAnalytics() {
 
       if (isPrevMissing) {
          const { predictedJHS, predictedALS, predictedOthers } = predictMarketDataRef.current(sortedHistory)
-         const prevYearTotals = sortedHistory.map((h: { total_enrolled: number }) => h.total_enrolled).filter((t: number) => t != null && t > 0)
-         let prevYearExpected = liveEnrolled
-         if (prevYearTotals.length >= 2) {
-           const rates: number[] = []
-           for (let i = 1; i < prevYearTotals.length; i++) {
-             if (prevYearTotals[i - 1] > 0) rates.push((prevYearTotals[i] - prevYearTotals[i - 1]) / prevYearTotals[i - 1])
-           }
-           const avgG = rates.length > 0 ? rates.reduce((a: number, b: number) => a + b, 0) / rates.length : 0.05
-           prevYearExpected = Math.round(prevYearTotals[prevYearTotals.length - 1] * (1 + avgG))
-         }
 
+         // Always use the real enrolled count — students are still in the DB at this point
+         // with Accepted/Approved status, so liveEnrolled is the actual figure for the
+         // previous year. Growth-rate projections belong in future forecasts, not archives.
          const newRecord = {
-            id: crypto.randomUUID(), 
+            id: crypto.randomUUID(),
             school_year: prevYearStr,
-            total_enrolled: prevYearExpected, 
-            jhs_graduates_count: predictedJHS, 
-            als_passers_count: predictedALS,   
+            total_enrolled: liveEnrolled,
+            jhs_graduates_count: predictedJHS,
+            als_passers_count: predictedALS,
             others_count: predictedOthers,
             created_at: new Date().toISOString()
          }
@@ -729,6 +877,15 @@ export default function PredictiveAnalytics() {
       .subscribe()
     return () => { clearInterval(pollingInterval); supabase.removeChannel(channel) }
   }, [fetchData])
+
+  // Ensemble result — predicts the current active SY (same scope as Standard)
+  const ensembleResult = useMemo(() => {
+    if (history.length === 0) return null
+    const totals     = history.map((h: any) => h.total_enrolled)
+    const targetYear = activeConfig?.school_year || '2025-2026'
+    return computeEnsemble(totals, targetYear)
+  }, [history, activeConfig?.school_year])
+
 
   const pivotYearStr = selectedSchoolYear || activeConfig?.school_year || '2025-2026'
 
@@ -839,8 +996,14 @@ export default function PredictiveAnalytics() {
         marketJHS: predictedJHS,
         marketALS: predictedALS,
         marketTransferees: predictedOthers,
-        gap: !passedOptimistic && anchorOptimistic > pivotTotal
-            ? [pivotTotal, anchorOptimistic]
+        gap: passedOptimistic
+            ? [scenarioOptimistic, pivotTotal] as [number, number]
+            : passedRealistic
+            ? [scenarioRealistic, pivotTotal] as [number, number]
+            : passedDeclining
+            ? [scenarioDeclining, pivotTotal] as [number, number]
+            : anchorOptimistic > pivotTotal
+            ? [pivotTotal, anchorOptimistic] as [number, number]
             : null,
         type: 'current'
     })
@@ -921,6 +1084,7 @@ export default function PredictiveAnalytics() {
   }, [analyticsData, chartFocus, pivotYearStr])
 
   const metrics = useMemo(() => {
+
     const historicalPoints = analyticsData.filter(d => d.type === 'historical')
     const currentPoint = analyticsData.find(d => d.type === 'current')
     const lastYear = analyticsData.find(d => d.type === 'historical' && d.sortYear === (currentPoint?.sortYear || 0) - 1)
@@ -975,6 +1139,62 @@ export default function PredictiveAnalytics() {
       enrollmentCeiling: ceilingM,
     }
   }, [analyticsData, mode, simulationValue, effectiveLiveCount])
+
+  // Ensemble-driven metrics — declared after analyticsData & chartData are initialized
+  const ensembleMetrics = useMemo(() => {
+    if (!ensembleResult) return null
+    const totals = history.map((h: any) => h.total_enrolled)
+    const [startYear] = (activeConfig?.school_year || '2025-2026').split('-').map(Number)
+    const nextYearStr = `${startYear + 1}-${startYear + 2}`
+    // If live/simulated count already exceeds the prediction, use it as the basis for next year
+    const currentLive    = mode === 'simulation' ? simulationValue : effectiveLiveCount
+    const currentBasis   = Math.max(ensembleResult.realistic, currentLive)
+    const nextResult  = computeEnsemble([...totals, currentBasis], nextYearStr)
+    const lastYearPt  = analyticsData.find(d => d.type === 'historical' && d.sortYear === startYear - 1)
+    const growth = lastYearPt?.total
+      ? (((ensembleResult.ensemble - lastYearPt.total) / lastYearPt.total) * 100).toFixed(1)
+      : '0'
+    return {
+      growth,
+      expectedOutcome: ensembleResult.realistic,
+      nextTotal:       nextResult?.realistic ?? ensembleResult.realistic,
+      lowestPossible:  ensembleResult.declining,
+      highestPossible: ensembleResult.optimistic,
+      hasHistory:      true,
+    }
+  }, [ensembleResult, history, activeConfig?.school_year, analyticsData, mode, simulationValue, effectiveLiveCount])
+
+  // Chart data with ensemble scenarios injected for the current-year node
+  // and the first future node (so the graph matches the InsightMetrics next-year card)
+  const ensembleChartData = useMemo(() => {
+    if (!ensembleResult || !ensembleMetrics) return null
+    let firstFutureSeen = false
+    return chartData.map(point => {
+      // ── current year: re-anchor scenarios to live count when passed ──
+      if (point.type === 'current') {
+        const liveCount        = point.historicalTotal ?? 0
+        const passedEnsOpt     = liveCount >= ensembleResult.optimistic
+        const passedEnsReal    = liveCount >= ensembleResult.realistic
+        const passedEnsDecl    = liveCount >= ensembleResult.declining
+        const anchorEnsOpt     = passedEnsOpt  ? liveCount : ensembleResult.optimistic
+        const anchorEnsReal    = passedEnsReal ? liveCount : ensembleResult.realistic
+        const anchorEnsDecl    = passedEnsDecl ? liveCount : ensembleResult.declining
+        const ensGap: [number, number] | null =
+          passedEnsOpt  ? [ensembleResult.optimistic, liveCount]
+          : passedEnsReal ? [ensembleResult.realistic,  liveCount]
+          : passedEnsDecl ? [ensembleResult.declining,  liveCount]
+          : anchorEnsOpt > liveCount ? [liveCount, anchorEnsOpt]
+          : null
+        return { ...point, futureStable: anchorEnsOpt, futureDeclining: anchorEnsDecl, futureWavy: anchorEnsReal, gap: ensGap }
+      }
+      // ── first future year: sync "Most Likely" with ensemble's next-year prediction ──
+      if (point.type === 'future' && !firstFutureSeen) {
+        firstFutureSeen = true
+        return { ...point, futureWavy: ensembleMetrics.nextTotal }
+      }
+      return point
+    })
+  }, [ensembleResult, ensembleMetrics, chartData])
 
   const effectiveCurrentCount = useMemo(() => {
     if (pivotYearStr === activeConfig?.school_year) {
@@ -1064,11 +1284,34 @@ export default function PredictiveAnalytics() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-wrap">
                     <p className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         Enrollment Analyzing
                     </p>
                     <HistoryEditor historyData={history} isDarkMode={isDarkMode} />
+                    {/* Prediction engine toggle */}
+                    <div className={`flex rounded-xl border overflow-hidden text-xs font-bold shadow-sm ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
+                      <button
+                        onClick={() => setPredEngine('js')}
+                        className={`px-3.5 py-2 flex items-center gap-1.5 transition-all ${
+                          predEngine === 'js'
+                            ? 'bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-inner'
+                            : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-white'
+                        }`}
+                      >
+                        <BarChart2 className="w-3 h-3" /> Standard
+                      </button>
+                      <button
+                        onClick={() => setPredEngine('ensemble')}
+                        className={`px-3.5 py-2 flex items-center gap-1.5 transition-all ${
+                          predEngine === 'ensemble'
+                            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-inner'
+                            : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-white'
+                        }`}
+                      >
+                        <Wand2 className="w-3 h-3" /> Ensemble
+                      </button>
+                    </div>
                 </div>
             </div>
 
@@ -1082,8 +1325,11 @@ export default function PredictiveAnalytics() {
             />
         </div>
 
-        {/* ── THIS YEAR SPOTLIGHT ── */}
-        {isViewingActiveYear && (
+        {/* ── THIS YEAR SPOTLIGHT / PYTHON ENGINE ── */}
+        {predEngine === 'ensemble' && (
+          <PythonEnginePanel result={ensembleResult} isDarkMode={isDarkMode} currentCount={effectiveCurrentCount} pendingCount={pendingCount} />
+        )}
+        {isViewingActiveYear && predEngine === 'js' && (
           <ThisYearSpotlight
             schoolYear={activeConfig.school_year}
             currentCount={effectiveCurrentCount}
@@ -1099,15 +1345,15 @@ export default function PredictiveAnalytics() {
         )}
 
         {/* ── INSIGHT METRICS ── */}
-        <InsightMetrics 
-            projectedGrowth={metrics.growth}
-            expectedOutcome={metrics.expectedOutcome}
+        <InsightMetrics
+            projectedGrowth={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.growth           : metrics.growth}
+            expectedOutcome={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.expectedOutcome  : metrics.expectedOutcome}
             currentCount={effectiveCurrentCount}
-            nextYearTotal={metrics.nextTotal}
-            lowestPossible={metrics.lowestPossible}
-            highestPossible={metrics.highestPossible}
+            nextYearTotal={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.nextTotal         : metrics.nextTotal}
+            lowestPossible={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.lowestPossible   : metrics.lowestPossible}
+            highestPossible={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.highestPossible : metrics.highestPossible}
             isSimulation={mode === 'simulation'}
-            hasHistory={metrics.hasHistory}
+            hasHistory={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.hasHistory           : metrics.hasHistory}
             isDarkMode={isDarkMode}
         />
 
@@ -1157,7 +1403,7 @@ export default function PredictiveAnalytics() {
                   </button>
                 </div>
               </div>
-              <EnrollmentTrendChart data={chartData} isDarkMode={isDarkMode} mode={mode as any} />
+              <EnrollmentTrendChart data={predEngine === 'ensemble' && ensembleChartData ? ensembleChartData : chartData} isDarkMode={isDarkMode} mode={mode as any} />
             </div>
         </div>
 
@@ -1270,23 +1516,6 @@ export default function PredictiveAnalytics() {
             </div>
         </div>
 
-        {/* ── STATISTICAL ENGINE PANEL ── */}
-        {metrics.hasHistory && (
-          <StatInsightsPanel
-            historicalTotals={metrics.historicalTotals}
-            projectionBaseline={metrics.expectedOutcome}
-            stdDev={metrics.stdDev}
-            holtPrediction={metrics.holtPrediction}
-            meanRevPrediction={metrics.meanRevPrediction}
-            weightedRegPrediction={metrics.weightedRegPrediction}
-            cyclePhase={metrics.cyclePhase}
-            longRunMean={metrics.longRunMean}
-            dampening={metrics.dampening}
-            enrollmentFloor={metrics.enrollmentFloor}
-            enrollmentCeiling={metrics.enrollmentCeiling}
-            isDarkMode={isDarkMode}
-          />
-        )}
     </div>
     </TooltipProvider>
   )

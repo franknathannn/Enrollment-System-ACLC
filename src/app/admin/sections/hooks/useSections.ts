@@ -334,14 +334,15 @@ export function useSections() {
   }, [fetchSections])
 
   const handleBalance = useCallback(async (strand: "ICT" | "GAS" | "ALL") => {
-    const toastId = toast.loading(`Balancing ${strand} sections...`);
+    const gradeLabel = gradeLevelFilter === "ALL" ? "All Grades" : `Grade ${gradeLevelFilter}`
+    const toastId = toast.loading(`Balancing ${strand} ${gradeLabel} sections...`);
     try {
-      await balanceGenderAcrossSections(strand);
-      toast.success(`${strand} sections have been re-balanced.`, { id: toastId });
+      await balanceGenderAcrossSections(strand, gradeLevelFilter);
+      toast.success(`${strand} ${gradeLabel} sections have been re-balanced.`, { id: toastId });
     } catch (error: any) {
       toast.error(`Failed to balance ${strand}: ${error.message}`, { id: toastId });
     }
-  }, []);
+  }, [gradeLevelFilter]);
 
   const handleClearAllStudents = useCallback(async () => {
     const confirmName = prompt("Type 'DELETE ALL' to PERMANENTLY wipe the student database.")

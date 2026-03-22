@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { CalendarDays, Bell, QrCode, BarChart2, AlertTriangle, Calendar } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
+import { toast } from "sonner"
 
 import { DashboardNav }            from "./components/DashboardNav"
 import { ProfileCard }             from "./components/ProfileCard"
@@ -109,16 +110,23 @@ export default function TeacherDashboard() {
       })
       setSchedules(merged)
 
-      const sections = [...new Set(merged.map(s => s.section))].filter(Boolean)
-      if (sections.length > 0) {
+      const sectionNames = [...new Set(merged.map(s => s.section))].filter(Boolean)
+      if (sectionNames.length > 0) {
         setStudLoad(true)
-        const { data: studData, error: studErr } = await supabase
-          .from("students")
-          .select("id, first_name, last_name, middle_name, lrn, gender, section, strand, status, profile_picture, two_by_two_url")
-          .in("section", sections)
-          
-          .not("status", "eq", "Pending")
-        if (!studErr) setStudents(studData ?? [])
+        // Resolve section names → section IDs so that renames don't break the lookup
+        const { data: sectionRows } = await supabase
+          .from("sections")
+          .select("id")
+          .in("section_name", sectionNames)
+        const sectionIds = (sectionRows ?? []).map(s => s.id)
+        if (sectionIds.length > 0) {
+          const { data: studData, error: studErr } = await supabase
+            .from("students")
+            .select("id, first_name, last_name, middle_name, lrn, gender, section, strand, status, profile_picture, two_by_two_url")
+            .in("section_id", sectionIds)
+            .not("status", "eq", "Pending")
+          if (!studErr) setStudents(studData ?? [])
+        }
         setStudLoad(false)
       }
 
@@ -142,6 +150,22 @@ export default function TeacherDashboard() {
       .on("postgres_changes", { event: "*", schema: "public", table: "schedules" },             () => loadData(session))
       .on("postgres_changes", { event: "*", schema: "public", table: "students" },              () => loadData(session))
       .on("postgres_changes", { event: "*", schema: "public", table: "teacher_announcements" }, () => loadData(session))
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "teachers", filter: `id=eq.${session.id}` },
+        (payload) => {
+          const updated = payload.new as { is_active?: boolean }
+          if (updated.is_active === false) {
+            toast.error("Your account has been deactivated by the administrator.", { duration: 4000 })
+            setTimeout(() => {
+              sessionStorage.removeItem("teacher_session")
+              router.replace("/teacher/login")
+            }, 2000)
+          } else if (updated.is_active === true) {
+            toast.success("Your account has been reactivated.")
+          }
+        }
+      )
       .subscribe(status => setOnline(status === "SUBSCRIBED"))
     return () => { supabase.removeChannel(chan) }
   }, [session, loadData])

@@ -77,9 +77,6 @@ export const StudentDossier = memo(function StudentDossier({
         next.section    = value !== student.strand ? "Unassigned" : student.section
         next.section_id = value !== student.strand ? null         : student.section_id
       }
-      if (field === "preferred_modality" && value !== "Face to Face") {
-        next.preferred_shift = ""
-      }
       return next
     })
   }
@@ -170,6 +167,9 @@ export const StudentDossier = memo(function StudentDossier({
       let docXml    = await zip.file("word/document.xml")?.async("string")
       if (!docXml) throw new Error("Invalid .docx: missing document.xml")
 
+      // For Grade 12 students, swap every "Grade 11" label to "Grade 12"
+      if (student.grade_level === "12") docXml = docXml.replaceAll("Grade 11", "Grade 12")
+
       const x = (str: string) =>
         (str || "").replace(/[<>&'"]/g, (c) => (({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" } as any)[c] ?? c))
 
@@ -188,22 +188,22 @@ export const StudentDossier = memo(function StudentDossier({
 
       const fillRectByName = (xml: string, name: string, text: string) => {
         if (!text) return xml
-        const mi = xml.indexOf(`name=""`)
+        const mi = xml.indexOf(`name="${name}"`)
         if (mi === -1) return xml
         const wspEnd = xml.indexOf("</wps:wsp>", mi)
         let tx = xml.indexOf("<w:txbxContent>", mi); if (wspEnd !== -1 && tx > wspEnd) tx = -1
         let bp = xml.indexOf("<wps:bodyPr",     mi); if (wspEnd !== -1 && bp > wspEnd) bp = -1
-        const run = `<w:r><w:t xml:space="preserve"></w:t></w:r>`
+        const run = `<w:r><w:t xml:space="preserve">${text}</w:t></w:r>`
         if (tx !== -1 && (bp === -1 || tx < bp)) {
           const ps = xml.indexOf("<w:p", tx); if (ps === -1 || (wspEnd !== -1 && ps > wspEnd)) return xml
           return expandPara(xml, ps, run)
         }
-        if (bp !== -1) return xml.slice(0, bp) + `<wps:txbx><w:txbxContent><w:p></w:p></w:txbxContent></wps:txbx>` + xml.slice(bp)
+        if (bp !== -1) return xml.slice(0, bp) + `<wps:txbx><w:txbxContent><w:p>${run}</w:p></w:txbxContent></wps:txbx>` + xml.slice(bp)
         return xml
       }
 
       const checkRect = (xml: string, name: string) => {
-        const mi = xml.indexOf(`name=""`)
+        const mi = xml.indexOf(`name="${name}"`)
         if (mi === -1) return xml
         const wspEnd = xml.indexOf("</wps:wsp>", mi)
         let tx = xml.indexOf("<w:txbxContent>", mi); if (wspEnd !== -1 && tx > wspEnd) tx = -1
@@ -214,7 +214,7 @@ export const StudentDossier = memo(function StudentDossier({
           const ps = xml.indexOf("<w:p", tx); if (ps === -1 || (wspEnd !== -1 && ps > wspEnd)) return xml
           return expandPara(xml, ps, ppr + cr)
         }
-        if (bp !== -1) return xml.slice(0, bp) + `<wps:txbx><w:txbxContent><w:p></w:p></w:txbxContent></wps:txbx>` + xml.slice(bp)
+        if (bp !== -1) return xml.slice(0, bp) + `<wps:txbx><w:txbxContent><w:p>${ppr}${cr}</w:p></w:txbxContent></wps:txbx>` + xml.slice(bp)
         return xml
       }
 
@@ -250,6 +250,14 @@ export const StudentDossier = memo(function StudentDossier({
       docXml = checkRect(docXml, student.gender === "Female" ? "Rectangle 29" : "Rectangle 21")
       docXml = checkRect(docXml, student.civil_status === "Married" ? "Rectangle 31" : "Rectangle 30")
       docXml = checkRect(docXml, student.strand?.toUpperCase() === "GAS" ? "Rectangle 4" : "Rectangle 5")
+
+      // Modality: Face to Face (R8) or Online (R6)
+      if (student.preferred_modality === "Face to Face") docXml = checkRect(docXml, "Rectangle 8")
+      else if (student.preferred_modality === "Online")  docXml = checkRect(docXml, "Rectangle 6")
+
+      // Shift: AM (R11) or PM (R7)
+      if (student.preferred_shift === "AM")      docXml = checkRect(docXml, "Rectangle 11")
+      else if (student.preferred_shift === "PM") docXml = checkRect(docXml, "Rectangle 7")
 
       zip.file("word/document.xml", docXml)
       const out = await zip.generateAsync({

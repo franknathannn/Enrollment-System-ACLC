@@ -77,9 +77,6 @@ export const StudentDossier = memo(function StudentDossier({
         next.section    = value !== student.strand ? "Unassigned" : student.section
         next.section_id = value !== student.strand ? null         : student.section_id
       }
-      if (field === "preferred_modality" && value !== "Face to Face") {
-        next.preferred_shift = ""
-      }
       return next
     })
   }
@@ -191,10 +188,11 @@ export const StudentDossier = memo(function StudentDossier({
 //   Rectangle 30  = Single
 //   Rectangle 31  = Married
 //
-// NOTE: There are NO checkboxes for Face to Face / Online / AM Shift / PM Shift.
-//       Those option labels are pre-printed inside Rectangle 28's text content.
-//       The student circles the applicable option manually on the printed form.
-//       Rectangle 28 should only receive the student's full printed name.
+// Rectangle 8  = Face to Face (modality checkbox)
+// Rectangle 6  = Online       (modality checkbox)
+// Rectangle 11 = AM Shift     (shift checkbox)
+// Rectangle 7  = PM Shift     (shift checkbox)
+// Rectangle 28 = Student's Signature over Printed Name ← name ONLY
 
 const handleDownloadForm = async () => {
   const toastId = toast.loading("Preparing Registration Form...")
@@ -203,16 +201,16 @@ const handleDownloadForm = async () => {
     const fileSaver = await import("file-saver")
     const saveAs    = fileSaver.saveAs || (fileSaver as any).default
 
-    const templateFile = student.grade_level === "12"
-      ? "/REGISTRATION - GAS & ICT - G12.docx"
-      : "/REGISTRATION - GAS & ICT.docx"
-    const response = await fetch(templateFile)
+    const response = await fetch("/REGISTRATION - GAS & ICT.docx")
     if (!response.ok) throw new Error("Template not found in /public folder")
 
     const content = await response.arrayBuffer()
     const zip     = await JSZip.loadAsync(content)
     let docXml    = await zip.file("word/document.xml")?.async("string")
     if (!docXml) throw new Error("Invalid .docx: missing document.xml")
+
+    // For Grade 12 students, swap every "Grade 11" label to "Grade 12"
+    if (student.grade_level === "12") docXml = docXml.replaceAll("Grade 11", "Grade 12")
 
     const x = (str: string) =>
       (str || "").replace(/[<>&'"]/g, (c) =>
@@ -328,6 +326,14 @@ const handleDownloadForm = async () => {
 
     // Strand
     docXml = checkRect(docXml, student.strand?.toUpperCase() === "GAS" ? "Rectangle 4" : "Rectangle 5")
+
+    // Modality: Face to Face (R8) or Online (R6)
+    if (student.preferred_modality === "Face to Face") docXml = checkRect(docXml, "Rectangle 8")
+    else if (student.preferred_modality === "Online")  docXml = checkRect(docXml, "Rectangle 6")
+
+    // Shift: AM (R11) or PM (R7)
+    if (student.preferred_shift === "AM")      docXml = checkRect(docXml, "Rectangle 11")
+    else if (student.preferred_shift === "PM") docXml = checkRect(docXml, "Rectangle 7")
 
     // ── Generate and save ────────────────────────────────────────────────
     zip.file("word/document.xml", docXml)

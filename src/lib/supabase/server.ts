@@ -1,5 +1,17 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+
+/**
+ * Admin client using the service role key — bypasses RLS.
+ * Use only in trusted server actions that require unrestricted DB access.
+ */
+export function createAdminClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
 
 export async function createClient() {
   // NEXT.JS 15/16 FIX: You MUST await cookies() before using it

@@ -185,11 +185,11 @@ export function createEnrollmentSchema(requirements: FieldRequirements = DEFAULT
     updated_at: z.string().optional(),
 
   }).superRefine((data, ctx) => {
-    // Shift is required when modality is Face to Face (mirrors Step2Academic logic)
-    if (data.preferred_modality === "Face to Face" && !data.preferred_shift) {
+    // Shift is required whenever a modality is selected
+    if (data.preferred_modality && !data.preferred_shift) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Shift is required for Face to Face",
+        message: "Please select a shift",
         path: ["preferred_shift"],
       })
     }

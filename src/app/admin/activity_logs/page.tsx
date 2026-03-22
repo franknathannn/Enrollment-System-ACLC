@@ -349,13 +349,14 @@ export default function ActivityLogsPage() {
         {/* PAGINATION — TOP */}
         {totalLogsPages > 1 && (
           <div className="flex items-center justify-between px-2">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
               {filteredLogs.length} log{filteredLogs.length !== 1 ? "s" : ""} · Page {logsPage} of {totalLogsPages}
             </span>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setLogsPage(p => Math.max(1, p - 1))} disabled={logsPage <= 1}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
+                style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
               >‹</button>
               {Array.from({ length: totalLogsPages }, (_, i) => i + 1)
                 .filter(p => p === 1 || p === totalLogsPages || Math.abs(p - logsPage) <= 1)
@@ -367,12 +368,16 @@ export default function ActivityLogsPage() {
                   <span key={`e${i}`} className="text-[10px] px-1 text-slate-400">…</span>
                 ) : (
                   <button key={p} onClick={() => setLogsPage(p as number)}
-                    className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all shadow-sm border ${logsPage === p ? "bg-blue-600 text-white border-blue-600 shadow-blue-500/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
+                    className="w-9 h-9 rounded-xl text-[10px] font-black transition-all shadow-sm border"
+                    style={logsPage === p
+                      ? { backgroundColor: '#2563eb', color: '#ffffff', borderColor: '#2563eb' }
+                      : { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#94a3b8' : '#64748b' }}
                   >{p}</button>
                 ))}
               <button
                 onClick={() => setLogsPage(p => Math.min(totalLogsPages, p + 1))} disabled={logsPage >= totalLogsPages}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
+                style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
               >›</button>
             </div>
           </div>
@@ -405,13 +410,14 @@ export default function ActivityLogsPage() {
         {/* PAGINATION */}
         {totalLogsPages > 1 && (
           <div className="flex items-center justify-between px-2">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
               {filteredLogs.length} log{filteredLogs.length !== 1 ? "s" : ""} · Page {logsPage} of {totalLogsPages}
             </span>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setLogsPage(p => Math.max(1, p - 1))} disabled={logsPage <= 1}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
+                style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
               >‹</button>
               {Array.from({ length: totalLogsPages }, (_, i) => i + 1)
                 .filter(p => p === 1 || p === totalLogsPages || Math.abs(p - logsPage) <= 1)
@@ -423,16 +429,16 @@ export default function ActivityLogsPage() {
                   <span key={`e${i}`} className="text-[10px] px-1 text-slate-400">…</span>
                 ) : (
                   <button key={p} onClick={() => setLogsPage(p as number)}
-                    className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all shadow-sm border
-                      ${logsPage === p
-                        ? "bg-blue-600 text-white border-blue-600 shadow-blue-500/20"
-                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-                      }`}
+                    className="w-9 h-9 rounded-xl text-[10px] font-black transition-all shadow-sm border"
+                    style={logsPage === p
+                      ? { backgroundColor: '#2563eb', color: '#ffffff', borderColor: '#2563eb' }
+                      : { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#94a3b8' : '#64748b' }}
                   >{p}</button>
                 ))}
               <button
                 onClick={() => setLogsPage(p => Math.min(totalLogsPages, p + 1))} disabled={logsPage >= totalLogsPages}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
+                style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
               >›</button>
             </div>
           </div>

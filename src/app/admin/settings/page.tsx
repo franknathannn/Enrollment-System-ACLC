@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { supabase } from "@/lib/supabase/client"
-import { 
-  toggleEnrollment, 
+import {
+  toggleEnrollment,
   forceSyncCapacities,
-  updateCapacity 
+  updateCapacity
 } from "@/lib/actions/settings"
+import { snapshotCurrentYearData } from "@/lib/actions/history"
 import { toast } from "sonner"
 import { useTheme } from "@/hooks/useTheme"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -32,14 +33,18 @@ type ConfigState = {
   controlMode: "automatic" | "manual"
   voucherValue: string | number
   isPreEnrollment: boolean
+  grade12Enabled: boolean
 }
 
 export default function SettingsPage() {
   const { isDarkMode } = useTheme()
+  // Tracks what school year was last saved to DB — used to detect changes on save
+  const originalSchoolYearRef = useRef<string>("")
   const [_loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isCommittingMatrix, setIsCommittingMatrix] = useState(false)
   const [currentAccepted, setCurrentAccepted] = useState(0)
 
   // capacity and voucherValue are string | number to handle blank states
@@ -52,7 +57,8 @@ export default function SettingsPage() {
     endDate: "",
     controlMode: "automatic",
     voucherValue: 22500,
-    isPreEnrollment: false
+    isPreEnrollment: false,
+    grade12Enabled: true,
   })
 
   const loadSettings = useCallback(async () => {
@@ -93,10 +99,10 @@ export default function SettingsPage() {
         .or('status.eq.Accepted,status.eq.Approved')
       
       if (configData) {
-        const controlMode = (configData.control_mode === 'manual' || configData.control_mode === 'automatic') 
-          ? configData.control_mode 
+        const controlMode = (configData.control_mode === 'manual' || configData.control_mode === 'automatic')
+          ? configData.control_mode
           : 'automatic' as "automatic" | "manual"
-        
+
         setConfig({
           id: configData.id,
           isOpen: configData.is_portal_active,
@@ -106,8 +112,11 @@ export default function SettingsPage() {
           endDate: configData.enrollment_end || "",
           controlMode,
           voucherValue: configData.voucher_value ?? 22500,
-          isPreEnrollment: configData.is_pre_enrollment ?? false
+          isPreEnrollment: configData.is_pre_enrollment ?? false,
+          grade12Enabled: configData.grade12_enabled ?? true,
         })
+        // Lock in the DB-loaded school year so we can detect changes at save time
+        originalSchoolYearRef.current = configData.school_year || ""
         setCurrentAccepted(count || 0)
       }
     } catch (err) {
@@ -213,6 +222,25 @@ export default function SettingsPage() {
     }
   }
 
+  // --- LOGIC B.3: Grade 12 Toggle ---
+  const handleGrade12Toggle = async (checked: boolean) => {
+    setUpdating(true)
+    const prev = config.grade12Enabled
+    setConfig(p => ({ ...p, grade12Enabled: checked }))
+    try {
+      const { error } = await supabase.from('system_config')
+        .update({ grade12_enabled: checked })
+        .eq('id', config.id)
+      if (error) throw error
+      toast.success(`Grade 12 enrollment ${checked ? 'ENABLED' : 'DISABLED'}`)
+    } catch {
+      setConfig(p => ({ ...p, grade12Enabled: prev }))
+      toast.error("Failed to update Grade 12 setting")
+    } finally {
+      setUpdating(false)
+    }
+  }
+
   // --- LOGIC C: Capacity Guardian (STRICTLY RETAINED) ---
   const runCapacityGuardian = async () => {
     setUpdating(true)
@@ -257,6 +285,22 @@ export default function SettingsPage() {
 
     setIsSaving(true)
     try {
+      // AUTO-ARCHIVE: if the school year is being advanced, snapshot the current year
+      // into both enrollment_history and enrollment_predictions_data BEFORE committing
+      // the new year — so neither the dashboard archives nor predictive analytics lose data.
+      const originalYear = originalSchoolYearRef.current
+      if (originalYear && config.schoolYear && config.schoolYear !== originalYear) {
+        const snapToastId = toast.loading(`Auto-archiving S.Y. ${originalYear} before advancing...`)
+        const snapRes = await snapshotCurrentYearData(originalYear)
+        if (snapRes.success) {
+          toast.success(`S.Y. ${originalYear} auto-archived — ${snapRes.total} student(s) recorded.`, { id: snapToastId, duration: 4000 })
+        } else {
+          toast.dismiss(snapToastId)
+        }
+        // Update ref so re-saving the same new year doesn't re-trigger
+        originalSchoolYearRef.current = config.schoolYear
+      }
+
       let calculatedStatus = config.isOpen
       if (config.controlMode === 'automatic') {
         if (!config.startDate || !config.endDate) {
@@ -301,6 +345,59 @@ export default function SettingsPage() {
       toast.error("Schema Mismatch. Please refresh browser and try again.")
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // --- MATRIX COMMIT: saves only school year + dates, with auto-archive if year changed ---
+  const handleMatrixCommit = async () => {
+    if (!config.schoolYear) return toast.error("School year cannot be blank.")
+    setIsCommittingMatrix(true)
+    try {
+      // Auto-archive current year before advancing school year
+      const originalYear = originalSchoolYearRef.current
+      if (originalYear && config.schoolYear !== originalYear) {
+        const snapToastId = toast.loading(`Auto-archiving S.Y. ${originalYear} before advancing...`)
+        const snapRes = await snapshotCurrentYearData(originalYear)
+        if (snapRes.success) {
+          toast.success(`S.Y. ${originalYear} auto-archived — ${snapRes.total} student(s) recorded.`, { id: snapToastId, duration: 4000 })
+        } else {
+          toast.dismiss(snapToastId)
+        }
+        originalSchoolYearRef.current = config.schoolYear
+      }
+
+      // Recalculate portal status when in automatic mode
+      let calculatedStatus = config.isOpen
+      if (config.controlMode === 'automatic') {
+        if (!config.startDate || !config.endDate) {
+          calculatedStatus = false
+        } else {
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const start = new Date(config.startDate)
+          const end = new Date(config.endDate)
+          end.setHours(23, 59, 59, 999)
+          calculatedStatus = today >= start && today <= end
+        }
+      }
+
+      const { error } = await supabase.from('system_config')
+        .update({
+          school_year:      config.schoolYear,
+          enrollment_start: config.startDate || null,
+          enrollment_end:   config.endDate || null,
+          is_portal_active: calculatedStatus,
+        })
+        .eq('id', config.id)
+
+      if (error) throw error
+      setConfig(prev => ({ ...prev, isOpen: calculatedStatus }))
+      toast.success("Enrollment Matrix committed.")
+    } catch (err: unknown) {
+      console.error(err)
+      toast.error("Commit failed. Please try again.")
+    } finally {
+      setIsCommittingMatrix(false)
     }
   }
 
@@ -357,16 +454,49 @@ export default function SettingsPage() {
               onToggle={handlePreEnrollmentToggle}
             />
 
+            {/* Grade 12 Toggle */}
+            <div className={`p-6 rounded-[32px] border transition-all duration-500 ${isDarkMode ? "bg-slate-900 border-slate-700/60" : "bg-white border-slate-200"}`}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-2xl ${config.grade12Enabled ? "bg-emerald-500/10" : isDarkMode ? "bg-slate-800" : "bg-slate-100"}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={config.grade12Enabled ? "text-emerald-400" : "text-slate-400"}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                  </div>
+                  <div>
+                    <p className={`text-xs font-black uppercase tracking-[0.2em] ${isDarkMode ? "text-white" : "text-slate-900"}`}>Grade 12 Enrollment</p>
+                    <p className={`text-[9px] mt-0.5 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                      {config.grade12Enabled
+                        ? "Grade 12 option is visible in the enrollment form"
+                        : "Only Grade 11 is available — Grade 12 is hidden from applicants"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={updating}
+                  onClick={() => handleGrade12Toggle(!config.grade12Enabled)}
+                  role="switch"
+                  aria-checked={config.grade12Enabled}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 flex-shrink-0 disabled:opacity-50
+                    ${config.grade12Enabled ? "bg-emerald-500" : isDarkMode ? "bg-slate-600" : "bg-slate-300"}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200
+                    ${config.grade12Enabled ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
+              </div>
+            </div>
+
             <EnrollmentMatrix
               schoolYear={config.schoolYear}
               startDate={config.startDate}
               endDate={config.endDate}
               controlMode={config.controlMode}
               isDarkMode={isDarkMode}
+              isCommitting={isCommittingMatrix}
               onSchoolYearChange={(value) => setConfig({...config, schoolYear: value})}
               onStartDateChange={(value) => setConfig({...config, startDate: value})}
               onEndDateChange={(value) => setConfig({...config, endDate: value})}
               onClearFields={() => setConfig({...config, schoolYear: "", startDate: "", endDate: ""})}
+              onCommit={handleMatrixCommit}
             />
 
             <CapacityGuardian

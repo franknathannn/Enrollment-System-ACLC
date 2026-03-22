@@ -1,0 +1,262 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activity_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone DEFAULT now(),
+  admin_id uuid,
+  action_type text NOT NULL,
+  student_name text NOT NULL,
+  details text,
+  admin_name text,
+  student_image text,
+  student_id uuid,
+  CONSTRAINT activity_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT activity_logs_admin_id_fkey FOREIGN KEY (admin_id) REFERENCES auth.users(id),
+  CONSTRAINT activity_logs_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id)
+);
+CREATE TABLE public.admin_messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  sender_id uuid NOT NULL,
+  content text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT admin_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT admin_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.admin_profiles(id)
+);
+CREATE TABLE public.admin_profiles (
+  id uuid NOT NULL,
+  full_name text,
+  avatar_url text,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT admin_profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT admin_profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.attendance (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL,
+  lrn character varying NOT NULL,
+  student_name text NOT NULL,
+  section text NOT NULL,
+  strand text NOT NULL,
+  subject text NOT NULL,
+  date date NOT NULL DEFAULT CURRENT_DATE,
+  time time without time zone NOT NULL DEFAULT CURRENT_TIME,
+  status USER-DEFINED NOT NULL DEFAULT 'Present'::attendance_status,
+  school_year character varying NOT NULL,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT attendance_pkey PRIMARY KEY (id),
+  CONSTRAINT attendance_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id)
+);
+CREATE TABLE public.attendance_excuses (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL,
+  attendance_date date NOT NULL,
+  subject text,
+  reason text NOT NULL,
+  excused_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT attendance_excuses_pkey PRIMARY KEY (id),
+  CONSTRAINT attendance_excuses_excused_by_fkey FOREIGN KEY (excused_by) REFERENCES public.teachers(id),
+  CONSTRAINT attendance_excuses_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id)
+);
+CREATE TABLE public.class_suspensions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  teacher_id uuid NOT NULL,
+  section text NOT NULL,
+  subject text,
+  suspension_date date NOT NULL,
+  reason text NOT NULL,
+  school_year character varying NOT NULL DEFAULT '2025-2026'::character varying,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT class_suspensions_pkey PRIMARY KEY (id),
+  CONSTRAINT class_suspensions_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public.teachers(id)
+);
+CREATE TABLE public.edit_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL,
+  reason text NOT NULL,
+  status text NOT NULL DEFAULT 'Pending'::text CHECK (status = ANY (ARRAY['Pending'::text, 'Approved'::text, 'Rejected'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT edit_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT edit_requests_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id)
+);
+CREATE TABLE public.enrollment_history (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  school_year text NOT NULL UNIQUE,
+  male_total integer DEFAULT 0,
+  female_total integer DEFAULT 0,
+  recorded_at timestamp with time zone DEFAULT now(),
+  total_combined bigint DEFAULT 0,
+  CONSTRAINT enrollment_history_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.enrollment_predictions_data (
+  id uuid NOT NULL,
+  school_year text,
+  total_enrolled integer,
+  jhs_graduates_count integer,
+  created_at timestamp without time zone,
+  als_passers_count integer,
+  others_count integer DEFAULT 0,
+  CONSTRAINT enrollment_predictions_data_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.message_reads (
+  message_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  read_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT message_reads_pkey PRIMARY KEY (message_id, user_id),
+  CONSTRAINT message_reads_message_id_fkey FOREIGN KEY (message_id) REFERENCES public.admin_messages(id),
+  CONSTRAINT message_reads_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.admin_profiles(id)
+);
+CREATE TABLE public.schedules (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  section text NOT NULL,
+  subject text NOT NULL,
+  day text NOT NULL,
+  start_time time without time zone NOT NULL,
+  end_time time without time zone NOT NULL,
+  school_year character varying NOT NULL DEFAULT '2025-2026'::character varying,
+  created_at timestamp with time zone DEFAULT now(),
+  teacher text,
+  room text,
+  notes text,
+  teacher_id uuid,
+  CONSTRAINT schedules_pkey PRIMARY KEY (id),
+  CONSTRAINT schedules_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public.teachers(id)
+);
+CREATE TABLE public.school_calendar_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  description text,
+  event_date date NOT NULL,
+  end_date date,
+  event_type text NOT NULL DEFAULT 'event'::text CHECK (event_type = ANY (ARRAY['holiday'::text, 'event'::text, 'meeting'::text, 'exam'::text, 'suspension'::text])),
+  school_year text NOT NULL DEFAULT '2025-2026'::text,
+  color text DEFAULT '#3b82f6'::text,
+  is_all_day boolean DEFAULT true,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT school_calendar_events_pkey PRIMARY KEY (id),
+  CONSTRAINT school_calendar_events_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.sections (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  section_name text NOT NULL UNIQUE,
+  strand USER-DEFINED NOT NULL,
+  capacity integer DEFAULT 40,
+  male_count integer DEFAULT 0,
+  female_count integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  grade_level text NOT NULL DEFAULT '11'::text CHECK (grade_level = ANY (ARRAY['11'::text, '12'::text])),
+  CONSTRAINT sections_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.students (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  lrn character varying NOT NULL UNIQUE,
+  first_name text NOT NULL,
+  last_name text NOT NULL,
+  middle_name text,
+  gender USER-DEFINED NOT NULL,
+  strand USER-DEFINED NOT NULL,
+  contact_no character varying,
+  email text,
+  gwa_grade_10 numeric DEFAULT 0,
+  profile_picture text,
+  status USER-DEFINED DEFAULT 'Pending'::enrollment_status,
+  decline_reason text,
+  guardian_name text,
+  guardian_contact character varying,
+  section_id uuid,
+  school_year character varying NOT NULL,
+  form_138_url text,
+  good_moral_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  cor_url text,
+  af5_url text,
+  diploma_url text,
+  age integer,
+  civil_status text,
+  last_school_attended text,
+  guardian_first_name text,
+  guardian_middle_name text,
+  guardian_last_name text,
+  student_category text,
+  two_by_two_url text,
+  guardian_phone text,
+  phone text,
+  birth_date date,
+  religion text,
+  address text,
+  updated_at timestamp with time zone DEFAULT now(),
+  registrar_feedback text,
+  section text DEFAULT 'Unassigned'::text,
+  is_locked boolean NOT NULL DEFAULT false,
+  nationality text,
+  birth_certificate_url text,
+  school_type text,
+  year_completed_jhs character varying,
+  last_school_address text,
+  facebook_user text,
+  facebook_link text,
+  preferred_modality text,
+  preferred_shift text,
+  mock boolean,
+  grade_level text NOT NULL DEFAULT '11'::text CHECK (grade_level = ANY (ARRAY['11'::text, '12'::text, 'GRADUATED'::text])),
+  is_archived boolean NOT NULL DEFAULT false,
+  graduate_lock boolean NOT NULL DEFAULT false,
+  g11_section text,
+  g11_section_id uuid,
+  CONSTRAINT students_pkey PRIMARY KEY (id),
+  CONSTRAINT students_g11_section_id_fkey FOREIGN KEY (g11_section_id) REFERENCES public.sections(id),
+  CONSTRAINT students_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.sections(id)
+);
+CREATE TABLE public.system_config (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  enrollment_start date,
+  enrollment_end date,
+  school_year text DEFAULT '2025-2026'::text,
+  capacity integer DEFAULT 1000 CHECK (capacity >= 1),
+  is_portal_active boolean DEFAULT true,
+  updated_at timestamp with time zone DEFAULT now(),
+  control_mode text DEFAULT 'automatic'::text,
+  voucher_value integer DEFAULT 22500,
+  field_requirements jsonb,
+  is_pre_enrollment boolean DEFAULT false,
+  CONSTRAINT system_config_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.system_settings (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  setting_key text NOT NULL UNIQUE,
+  value_bool boolean DEFAULT true,
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  value_text text,
+  value_int integer DEFAULT 1000,
+  CONSTRAINT system_settings_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.teacher_announcements (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  body text NOT NULL,
+  posted_by text NOT NULL DEFAULT 'Admin'::text,
+  target text NOT NULL DEFAULT 'ALL'::text,
+  is_pinned boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT teacher_announcements_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.teachers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  full_name text NOT NULL,
+  email text NOT NULL UNIQUE,
+  password_hash text NOT NULL,
+  phone text,
+  subject_specialization text,
+  avatar_url text,
+  is_active boolean NOT NULL DEFAULT true,
+  school_year character varying NOT NULL DEFAULT '2025-2026'::character varying,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT teachers_pkey PRIMARY KEY (id)
+);

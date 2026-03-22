@@ -129,7 +129,6 @@ function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
   const [guardianOpen, setGuardianOpen] = useState(false)
   const tc = isDarkMode ? themeColors.dark : themeColors.light
 
-  // Lock background scroll while drawer is open
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = "hidden"
@@ -139,7 +138,12 @@ function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
   const isGraduated = student.grade_level === "12" && !student.section_id
   const isJHS = student.student_category === "JHS Graduate"
   const isALS = student.student_category === "ALS Passer"
-  const pfp = student.two_by_two_url || student.profile_picture || null
+  const photo = student.two_by_two_url || null
+  const pfpFallback = student.profile_picture || null
+
+  // G11 section: use saved g11_section field if student was promoted; else current section
+  const g11SectionName = student.g11_section || (student.grade_level === "11" ? student.section : null)
+  const g12SectionName = student.grade_level === "12" ? (isGraduated ? (student.section || "Unassigned") : (student.section || "Unassigned")) : null
 
   const allDocs: { url: string; label: string }[] = []
   if (isJHS) {
@@ -173,266 +177,309 @@ function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
     } finally { setUnarchiving(false) }
   }
 
+  // Accent colors based on status
+  const accentFrom = isGraduated ? "rgba(251,191,36,0.18)" : "rgba(59,130,246,0.14)"
+  const accentTo   = isGraduated ? "rgba(245,158,11,0.04)" : "rgba(139,92,246,0.04)"
+  const photoBorder = isGraduated ? "rgba(251,191,36,0.55)" : "rgba(99,102,241,0.45)"
+
   return (<>
-    {/* Full-screen overlay — same pattern as TeacherDetailDrawer */}
     <div className="fixed inset-0 z-40 flex">
-      {/* Blurred dark left panel — click to close */}
       <div className="flex-1 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Drawer panel — right side */}
-      <div
-        className="w-full sm:max-w-lg h-full flex flex-col overflow-hidden shadow-2xl"
-        style={{ backgroundColor: isDarkMode ? "rgb(8,12,24)" : "#ffffff" }}
-      >
+      {/* Drawer */}
+      <div className="w-full sm:max-w-[440px] h-full flex flex-col overflow-hidden shadow-2xl"
+        style={{ backgroundColor: isDarkMode ? "rgb(6,9,20)" : "#f8fafc" }}>
 
-      <div className="flex-1 overflow-y-auto flex flex-col">
-        {/* ── Hero header with gradient tint ── */}
-        <div className="relative overflow-hidden" style={{
-          background: isGraduated
-            ? isDarkMode ? "linear-gradient(160deg,rgba(251,191,36,0.12) 0%,rgba(8,12,24,0) 60%)" : "linear-gradient(160deg,rgba(251,191,36,0.10) 0%,rgba(255,255,255,0) 60%)"
-            : isDarkMode ? "linear-gradient(160deg,rgba(59,130,246,0.12) 0%,rgba(8,12,24,0) 60%)"  : "linear-gradient(160deg,rgba(219,234,254,0.6) 0%,rgba(255,255,255,0) 60%)"
-        }}>
-          {/* Top bar */}
-          <div className="px-5 pt-5 pb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${isGraduated ? "bg-gradient-to-br from-amber-400 to-yellow-500" : "bg-blue-600"}`}>
-                {isGraduated ? <Award className="text-white w-4 h-4" /> : <Archive className="text-white w-4 h-4" />}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+
+          {/* ── HERO: gradient banner + 2x2 focal point ── */}
+          <div className="relative overflow-hidden flex flex-col items-center pb-6"
+            style={{ background: `linear-gradient(175deg, ${accentFrom} 0%, ${accentTo} 55%, transparent 100%)` }}>
+
+            {/* Top control bar */}
+            <div className="w-full px-5 pt-5 pb-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`w-7 h-7 rounded-xl flex items-center justify-center shadow ${isGraduated ? "bg-gradient-to-br from-amber-400 to-yellow-500" : "bg-blue-600"}`}>
+                  {isGraduated ? <Award className="text-white w-3.5 h-3.5" /> : <Archive className="text-white w-3.5 h-3.5" />}
+                </div>
+                <div>
+                  <p className="text-[7.5px] font-black uppercase tracking-[0.22em] leading-none" style={{ color: tc.text.muted }}>
+                    {isGraduated ? "Graduated Record" : "Archived Record"}
+                  </p>
+                  <p className="text-[10px] font-black leading-none mt-0.5" style={{ color: tc.text.secondary }}>{student.school_year}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-[8px] font-black uppercase tracking-[0.2em]" style={{ color: tc.text.muted }}>
-                  {isGraduated ? "Graduated Record" : "Archived Record"}
-                </p>
-                <p className="text-[11px] font-black" style={{ color: tc.text.secondary }}>{student.school_year}</p>
-              </div>
+              <button onClick={onClose}
+                className="w-8 h-8 rounded-2xl flex items-center justify-center transition-all hover:scale-105"
+                style={{ backgroundColor: isDarkMode ? "rgba(51,65,85,0.55)" : "rgba(0,0,0,0.07)" }}>
+                <X size={14} style={{ color: tc.text.muted }} />
+              </button>
             </div>
-            <button onClick={onClose} className="w-9 h-9 rounded-2xl flex items-center justify-center transition-all hover:scale-105"
-              style={{ backgroundColor: isDarkMode ? "rgba(51,65,85,0.6)" : "rgba(0,0,0,0.06)" }}>
-              <X size={15} style={{ color: tc.text.muted }} />
-            </button>
-          </div>
 
-          {/* Profile row */}
-          <div className="px-5 pb-6 flex items-end gap-4">
-            <div className="relative shrink-0">
-              <div className="w-[72px] h-[72px] rounded-3xl overflow-hidden shadow-xl border-2"
-                style={{ borderColor: isGraduated ? "rgba(251,191,36,0.45)" : "rgba(59,130,246,0.35)", backgroundColor: isDarkMode ? "rgba(30,41,59,0.8)" : "#e2e8f0" }}>
-                {pfp
-                  ? <img src={pfp} alt="Profile" className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300" onClick={() => openDoc(pfp, "2x2 Photo")} />
-                  : <div className="w-full h-full flex items-center justify-center"><User size={26} className="text-slate-400" /></div>
+            {/* 2x2 Photo — primary focal point */}
+            <div className="mt-4 relative">
+              {/* Glow ring */}
+              <div className="absolute inset-0 rounded-3xl blur-xl opacity-40"
+                style={{ background: isGraduated ? "radial-gradient(circle, rgba(251,191,36,0.7), transparent 70%)" : "radial-gradient(circle, rgba(99,102,241,0.6), transparent 70%)" }} />
+              <div
+                className="relative w-[120px] h-[150px] rounded-3xl overflow-hidden border-[2.5px] shadow-2xl cursor-pointer group"
+                style={{ borderColor: photoBorder, backgroundColor: isDarkMode ? "rgba(30,41,59,0.9)" : "#e2e8f0" }}
+                onClick={() => { const url = photo || pfpFallback; if (url) openDoc(url, "2x2 Photo") }}
+              >
+                {photo || pfpFallback
+                  ? <img src={photo || pfpFallback!} alt="2x2 Photo"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  : <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                      <User size={32} className="text-slate-400" />
+                      <p className="text-[7px] font-black uppercase tracking-widest text-slate-500">No Photo</p>
+                    </div>
                 }
+                {/* Hover overlay */}
+                {(photo || pfpFallback) && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <ZoomIn size={22} className="text-white" />
+                  </div>
+                )}
               </div>
+
+              {/* Graduate star badge */}
               {isGraduated && (
-                <div className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-lg border-2"
-                  style={{ borderColor: isDarkMode ? "rgb(8,12,24)" : "#fff" }}>
-                  <Star size={11} className="text-white fill-white" />
+                <div className="absolute -top-2.5 -right-2.5 w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-lg border-2"
+                  style={{ borderColor: isDarkMode ? "rgb(6,9,20)" : "#f8fafc" }}>
+                  <Star size={14} className="text-white fill-white" />
                 </div>
               )}
             </div>
-            <div className="flex-1 min-w-0 pb-0.5">
-              <p className="text-[17px] font-black uppercase leading-tight truncate" style={{ color: tc.text.primary }}>
-                {student.last_name}, {student.first_name}{student.middle_name ? ` ${student.middle_name[0]}.` : ""}
+
+            {/* Identity */}
+            <div className="mt-4 text-center px-5">
+              <h2 className="text-[19px] font-black uppercase leading-tight" style={{ color: tc.text.primary }}>
+                {student.last_name},
+              </h2>
+              <h2 className="text-[19px] font-black uppercase leading-tight" style={{ color: tc.text.primary }}>
+                {student.first_name}{student.middle_name ? ` ${student.middle_name[0]}.` : ""}
+              </h2>
+              <p className="font-mono text-[9px] font-bold tracking-[0.2em] mt-1.5" style={{ color: tc.text.muted }}>
+                LRN: {student.lrn}
               </p>
-              <p className="font-mono text-[10px] font-bold tracking-widest mt-0.5" style={{ color: tc.text.muted }}>LRN: {student.lrn}</p>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {isGraduated
-                  ? <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-400"><Award size={9} /> Graduated</span>
-                  : <Badge className="text-[9px] font-black uppercase border-none bg-emerald-500/15 text-emerald-500">{student.status === "Approved" ? "Accepted" : student.status}</Badge>
-                }
-                <Badge className={`text-[9px] font-black uppercase border-none ${student.gender === "Male" ? "bg-blue-500/10 text-blue-400" : "bg-pink-500/10 text-pink-400"}`}>{student.gender}</Badge>
-                <Badge className="text-[9px] font-black uppercase border-none bg-violet-500/10 text-violet-400">{student.strand}</Badge>
-              </div>
+            </div>
+
+            {/* Status badges */}
+            <div className="flex flex-wrap gap-1.5 justify-center mt-3 px-5">
+              {isGraduated
+                ? <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[8px] font-black uppercase bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-400 tracking-widest">
+                    <Award size={9} /> Graduated
+                  </span>
+                : <Badge className="text-[8px] font-black uppercase border-none bg-emerald-500/15 text-emerald-500 px-3 py-1">
+                    {student.status === "Approved" ? "Accepted" : student.status}
+                  </Badge>
+              }
+              <Badge className={`text-[8px] font-black uppercase border-none px-3 py-1 ${student.gender === "Male" ? "bg-blue-500/10 text-blue-400" : "bg-pink-500/10 text-pink-400"}`}>
+                {student.gender}
+              </Badge>
+              <Badge className="text-[8px] font-black uppercase border-none bg-violet-500/10 text-violet-400 px-3 py-1">
+                {student.strand}
+              </Badge>
+              {isGraduated && student.graduate_lock && (
+                <Badge className="text-[8px] font-black uppercase border-none bg-red-500/10 text-red-400 px-3 py-1 flex items-center gap-1">
+                  <Lock size={8} /> Locked
+                </Badge>
+              )}
             </div>
           </div>
-        </div>
 
-        <div className="px-5 py-4 space-y-3">
+          {/* ── Body ── */}
+          <div className="px-4 py-4 space-y-3">
 
-          {/* ── Action button ── */}
-          {!isGraduated ? (
-            <button onClick={handleUnarchive} disabled={unarchiving}
-              className="w-full h-12 rounded-2xl flex items-center justify-center gap-2 font-black text-[11px] uppercase tracking-widest transition-all bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-60 text-white shadow-lg shadow-emerald-500/20">
-              {unarchiving ? <Loader2 size={15} className="animate-spin" /> : <ArchiveRestore size={15} />}
-              {unarchiving ? "Restoring..." : "Restore to Active Enrollment"}
-            </button>
-          ) : student.graduate_lock ? (
-            <div className="w-full h-12 rounded-2xl flex items-center justify-center gap-2 border border-amber-500/30 cursor-not-allowed" style={{ background: "rgba(251,191,36,0.06)" }}>
-              <Award size={14} className="text-amber-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Locked Graduate — Cannot Restore</span>
-            </div>
-          ) : (
-            <div className="w-full h-12 rounded-2xl flex items-center justify-center gap-2 border border-amber-500/25" style={{ background: "rgba(251,191,36,0.04)" }}>
-              <Sparkles size={14} className="text-amber-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Completed Senior High School</span>
-            </div>
-          )}
-
-          {/* ── Section History ── */}
-          <div className="rounded-2xl border overflow-hidden" style={{ borderColor: tc.border }}>
-            {/* Header */}
-            <div className="px-4 py-3 flex items-center gap-2 border-b" style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#f8fafc", borderColor: tc.border }}>
-              <BookOpen size={12} style={{ color: tc.text.muted }} />
-              <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Section History</p>
-            </div>
-            <div className="px-4 py-2">
-              {/* G11 row */}
-              <div className="flex items-center gap-3 py-3">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[9px] font-black border
-                  ${student.grade_level === "11"
-                    ? isDarkMode ? "bg-blue-500/15 text-blue-300 border-blue-500/25" : "bg-blue-50 text-blue-600 border-blue-200"
-                    : isDarkMode ? "bg-slate-800/60 text-slate-600 border-slate-700/40" : "bg-slate-50 text-slate-300 border-slate-200"}`}>
-                  G11
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>Grade 11 Section</p>
-                  <p className="text-[14px] font-black mt-0.5 truncate" style={{ color: student.grade_level === "11" ? tc.text.primary : tc.text.muted }}>
-                    {student.grade_level === "11" ? (student.section || "Unassigned") : "—"}
-                  </p>
-                </div>
-                {student.grade_level === "11" && (
-                  <span className="shrink-0 text-[8px] font-black px-2 py-1 rounded-full bg-blue-500/15 text-blue-400">Current</span>
-                )}
+            {/* Action button */}
+            {!isGraduated ? (
+              <button onClick={handleUnarchive} disabled={unarchiving}
+                className="w-full h-11 rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-widest transition-all bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-60 text-white shadow-lg shadow-emerald-500/20">
+                {unarchiving ? <Loader2 size={14} className="animate-spin" /> : <ArchiveRestore size={14} />}
+                {unarchiving ? "Restoring..." : "Restore to Active Enrollment"}
+              </button>
+            ) : student.graduate_lock ? (
+              <div className="w-full h-11 rounded-2xl flex items-center justify-center gap-2 border border-amber-500/30 cursor-not-allowed"
+                style={{ background: "rgba(251,191,36,0.05)" }}>
+                <Lock size={12} className="text-amber-400" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-amber-400">Locked Graduate — Cannot Restore</span>
               </div>
-
-              {/* Connector line */}
-              <div className="ml-4 flex items-center gap-1 py-0.5">
-                <div className="w-[1px] h-5 rounded-full mx-[16px]" style={{ backgroundColor: tc.border }} />
-              </div>
-
-              {/* G12 row */}
-              <div className="flex items-center gap-3 py-3">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[9px] font-black border
-                  ${student.grade_level === "12"
-                    ? isGraduated
-                      ? "bg-gradient-to-br from-amber-500/20 to-yellow-500/10 text-amber-400 border-amber-500/25"
-                      : isDarkMode ? "bg-violet-500/15 text-violet-300 border-violet-500/25" : "bg-violet-50 text-violet-600 border-violet-200"
-                    : isDarkMode ? "bg-slate-800/60 text-slate-600 border-slate-700/40" : "bg-slate-50 text-slate-300 border-slate-200"}`}>
-                  G12
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>Grade 12 Section</p>
-                  <p className="text-[14px] font-black mt-0.5 truncate" style={{ color: student.grade_level === "12" ? tc.text.primary : tc.text.muted }}>
-                    {student.grade_level === "11" ? "—" : (student.section || "Unassigned")}
-                  </p>
-                </div>
-                {student.grade_level === "12" && !isGraduated && (
-                  <span className="shrink-0 text-[8px] font-black px-2 py-1 rounded-full bg-violet-500/15 text-violet-400">Current</span>
-                )}
-                {isGraduated && (
-                  <span className="shrink-0 text-[8px] font-black px-2 py-1 rounded-full bg-amber-500/15 text-amber-400">Graduated</span>
-                )}
-              </div>
-            </div>
-            {/* Note */}
-            {(isGraduated || student.grade_level === "12") && (
-              <div className="px-4 pb-3 pt-0">
-                <p className="text-[8px] italic" style={{ color: tc.text.muted }}>
-                  G11 section is not retained after promotion to G12.
-                </p>
+            ) : (
+              <div className="w-full h-11 rounded-2xl flex items-center justify-center gap-2 border border-amber-500/25"
+                style={{ background: "rgba(251,191,36,0.04)" }}>
+                <Sparkles size={12} className="text-amber-400" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-amber-400">Completed Senior High School</span>
               </div>
             )}
-          </div>
 
-          {/* ── Enrollment Details ── */}
-          <div className="rounded-2xl border overflow-hidden" style={{ borderColor: tc.border }}>
-            <div className="px-4 py-3 flex items-center gap-2 border-b" style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#f8fafc", borderColor: tc.border }}>
-              <GraduationCap size={12} style={{ color: tc.text.muted }} />
-              <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Enrollment Details</p>
-            </div>
-            <div className="px-4 py-4 grid grid-cols-2 gap-x-4 gap-y-3">
-              {[
-                { label: "School Year",  val: student.school_year },
-                { label: "Grade Level",  val: isGraduated ? "Graduated (G12)" : `Grade ${student.grade_level || "11"}` },
-                { label: "Category",     val: student.student_category || "—" },
-                { label: "GWA (G10)",    val: student.gwa_grade_10 ? String(student.gwa_grade_10) : "—" },
-                { label: "Shift",        val: student.preferred_shift || "—" },
-                { label: "Modality",     val: student.preferred_modality || "—" },
-              ].map(({ label, val }) => (
-                <div key={label}>
-                  <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>{label}</p>
-                  <p className="text-[12px] font-black mt-0.5" style={{ color: tc.text.primary }}>{val}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── Personal Info (collapsible) ── */}
-          <div className="rounded-2xl border overflow-hidden" style={{ borderColor: tc.border }}>
-            <button onClick={() => setInfoOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-3 transition-colors"
-              style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#f8fafc" }}>
-              <div className="flex items-center gap-2">
-                <User size={12} style={{ color: tc.text.muted }} />
-                <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Personal Info</p>
+            {/* ── Section History ── */}
+            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: tc.border }}>
+              <div className="px-4 py-3 flex items-center gap-2 border-b"
+                style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#ffffff", borderColor: tc.border }}>
+                <BookOpen size={11} style={{ color: tc.text.muted }} />
+                <p className="text-[8.5px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Section History</p>
               </div>
-              {infoOpen ? <ChevronUp size={14} style={{ color: tc.text.muted }} /> : <ChevronDown size={14} style={{ color: tc.text.muted }} />}
-            </button>
-            {infoOpen && (
-              <div className="px-4 pb-4 pt-3 space-y-3">
+              <div className="px-4 py-1" style={{ backgroundColor: isDarkMode ? "rgba(15,23,42,0.4)" : "#fafafa" }}>
+
+                {/* G11 row */}
+                <div className="flex items-center gap-3 py-3.5">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[8px] font-black border ${
+                    g11SectionName
+                      ? isDarkMode ? "bg-blue-500/15 text-blue-300 border-blue-500/25" : "bg-blue-50 text-blue-600 border-blue-200"
+                      : isDarkMode ? "bg-slate-800/50 text-slate-600 border-slate-700/30" : "bg-slate-50 text-slate-300 border-slate-200"
+                  }`}>G11</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[7.5px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>Grade 11 Section</p>
+                    <p className="text-[13px] font-black mt-0.5 truncate" style={{ color: g11SectionName ? tc.text.primary : tc.text.muted }}>
+                      {g11SectionName || "—"}
+                    </p>
+                  </div>
+                  {g11SectionName && student.grade_level === "11" && (
+                    <span className="shrink-0 text-[7px] font-black px-2 py-1 rounded-full bg-blue-500/15 text-blue-400 tracking-widest">Current</span>
+                  )}
+                  {g11SectionName && student.grade_level === "12" && (
+                    <span className="shrink-0 text-[7px] font-black px-2 py-1 rounded-full bg-slate-500/10 text-slate-400 tracking-widest">Prev.</span>
+                  )}
+                </div>
+
+                <div className="flex items-center pl-4 py-0.5">
+                  <div className="w-[1px] h-5 rounded-full" style={{ backgroundColor: tc.border, marginLeft: "14px" }} />
+                </div>
+
+                {/* G12 row */}
+                <div className="flex items-center gap-3 py-3.5">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[8px] font-black border ${
+                    g12SectionName
+                      ? isGraduated
+                        ? "bg-gradient-to-br from-amber-500/20 to-yellow-500/10 text-amber-400 border-amber-500/25"
+                        : isDarkMode ? "bg-violet-500/15 text-violet-300 border-violet-500/25" : "bg-violet-50 text-violet-600 border-violet-200"
+                      : isDarkMode ? "bg-slate-800/50 text-slate-600 border-slate-700/30" : "bg-slate-50 text-slate-300 border-slate-200"
+                  }`}>G12</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[7.5px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>Grade 12 Section</p>
+                    <p className="text-[13px] font-black mt-0.5 truncate" style={{ color: g12SectionName ? tc.text.primary : tc.text.muted }}>
+                      {g12SectionName || "—"}
+                    </p>
+                  </div>
+                  {isGraduated && (
+                    <span className="shrink-0 text-[7px] font-black px-2 py-1 rounded-full bg-amber-500/15 text-amber-400 tracking-widest">Grad</span>
+                  )}
+                  {!isGraduated && g12SectionName && (
+                    <span className="shrink-0 text-[7px] font-black px-2 py-1 rounded-full bg-violet-500/15 text-violet-400 tracking-widest">Current</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Enrollment Details ── */}
+            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: tc.border }}>
+              <div className="px-4 py-3 flex items-center gap-2 border-b"
+                style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#ffffff", borderColor: tc.border }}>
+                <GraduationCap size={11} style={{ color: tc.text.muted }} />
+                <p className="text-[8.5px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Enrollment Details</p>
+              </div>
+              <div className="px-4 py-4 grid grid-cols-2 gap-x-4 gap-y-3.5"
+                style={{ backgroundColor: isDarkMode ? "rgba(15,23,42,0.4)" : "#fafafa" }}>
                 {[
-                  { icon: <Calendar size={12} />, label: "Birth Date", val: student.birth_date ? new Date(student.birth_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : null },
-                  { icon: <Shield size={12} />,   label: "Civil Status", val: student.civil_status },
-                  { icon: <BookMarked size={12} />,label: "Religion", val: student.religion },
-                  { icon: <MapPin size={12} />,   label: "Address", val: student.address },
-                  { icon: <Mail size={12} />,     label: "Email", val: student.email },
-                  { icon: <Phone size={12} />,    label: "Phone", val: student.phone || student.contact_no },
-                  { icon: <School size={12} />,   label: "Last School Attended", val: student.last_school_attended },
-                ].filter(f => f.val).map(({ icon, label, val }) => (
-                  <div key={label} className="flex items-start gap-3">
-                    <span className="mt-0.5 shrink-0" style={{ color: tc.text.muted }}>{icon}</span>
-                    <div>
-                      <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>{label}</p>
-                      <p className="text-[12px] font-bold mt-0.5 break-words leading-snug" style={{ color: tc.text.secondary }}>{val}</p>
-                    </div>
+                  { label: "School Year", val: student.school_year },
+                  { label: "Grade Level", val: isGraduated ? "Graduated (G12)" : `Grade ${student.grade_level || "11"}` },
+                  { label: "Category",    val: student.student_category || "—" },
+                  { label: "GWA (G10)",   val: student.gwa_grade_10 ? String(student.gwa_grade_10) : "—" },
+                  { label: "Shift",       val: student.preferred_shift || "—" },
+                  { label: "Modality",    val: student.preferred_modality || "—" },
+                ].map(({ label, val }) => (
+                  <div key={label}>
+                    <p className="text-[7.5px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>{label}</p>
+                    <p className="text-[12px] font-black mt-0.5" style={{ color: tc.text.primary }}>{val}</p>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* ── Guardian Info (collapsible) ── */}
-          {(student.guardian_first_name || student.guardian_last_name || student.guardian_phone) && (
+            {/* ── Personal Info (collapsible) ── */}
             <div className="rounded-2xl border overflow-hidden" style={{ borderColor: tc.border }}>
-              <button onClick={() => setGuardianOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-3 transition-colors"
-                style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#f8fafc" }}>
+              <button onClick={() => setInfoOpen(v => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 transition-colors"
+                style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#ffffff" }}>
                 <div className="flex items-center gap-2">
-                  <Users size={12} style={{ color: tc.text.muted }} />
-                  <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Guardian / Parent</p>
+                  <User size={11} style={{ color: tc.text.muted }} />
+                  <p className="text-[8.5px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Personal Info</p>
                 </div>
-                {guardianOpen ? <ChevronUp size={14} style={{ color: tc.text.muted }} /> : <ChevronDown size={14} style={{ color: tc.text.muted }} />}
+                {infoOpen ? <ChevronUp size={13} style={{ color: tc.text.muted }} /> : <ChevronDown size={13} style={{ color: tc.text.muted }} />}
               </button>
-              {guardianOpen && (
-                <div className="px-4 pb-4 pt-3 space-y-3">
+              {infoOpen && (
+                <div className="px-4 pb-4 pt-3 space-y-3"
+                  style={{ backgroundColor: isDarkMode ? "rgba(15,23,42,0.4)" : "#fafafa" }}>
                   {[
-                    { label: "Full Name", val: [student.guardian_first_name, student.guardian_middle_name, student.guardian_last_name].filter(Boolean).join(" ") },
-                    { label: "Phone / Contact", val: student.guardian_phone || student.guardian_contact },
-                  ].filter(f => f.val).map(({ label, val }) => (
-                    <div key={label}>
-                      <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>{label}</p>
-                      <p className="text-[12px] font-black mt-0.5" style={{ color: tc.text.primary }}>{val}</p>
+                    { icon: <Calendar size={11} />, label: "Birth Date", val: student.birth_date ? new Date(student.birth_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : null },
+                    { icon: <Shield size={11} />,   label: "Civil Status", val: student.civil_status },
+                    { icon: <BookMarked size={11} />, label: "Religion", val: student.religion },
+                    { icon: <MapPin size={11} />,   label: "Address", val: student.address },
+                    { icon: <Mail size={11} />,     label: "Email", val: student.email },
+                    { icon: <Phone size={11} />,    label: "Phone", val: student.phone || student.contact_no },
+                    { icon: <School size={11} />,   label: "Last School Attended", val: student.last_school_attended },
+                  ].filter(f => f.val).map(({ icon, label, val }) => (
+                    <div key={label} className="flex items-start gap-3">
+                      <span className="mt-0.5 shrink-0" style={{ color: tc.text.muted }}>{icon}</span>
+                      <div>
+                        <p className="text-[7.5px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>{label}</p>
+                        <p className="text-[12px] font-bold mt-0.5 break-words leading-snug" style={{ color: tc.text.secondary }}>{val}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          )}
 
-          {/* ── Documents ── */}
-          {allDocs.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <FileText size={12} style={{ color: tc.text.muted }} />
-                <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Documents ({allDocs.length})</p>
+            {/* ── Guardian Info (collapsible) ── */}
+            {(student.guardian_first_name || student.guardian_last_name || student.guardian_phone) && (
+              <div className="rounded-2xl border overflow-hidden" style={{ borderColor: tc.border }}>
+                <button onClick={() => setGuardianOpen(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-3 transition-colors"
+                  style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#ffffff" }}>
+                  <div className="flex items-center gap-2">
+                    <Users size={11} style={{ color: tc.text.muted }} />
+                    <p className="text-[8.5px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Guardian / Parent</p>
+                  </div>
+                  {guardianOpen ? <ChevronUp size={13} style={{ color: tc.text.muted }} /> : <ChevronDown size={13} style={{ color: tc.text.muted }} />}
+                </button>
+                {guardianOpen && (
+                  <div className="px-4 pb-4 pt-3 space-y-3"
+                    style={{ backgroundColor: isDarkMode ? "rgba(15,23,42,0.4)" : "#fafafa" }}>
+                    {[
+                      { label: "Full Name", val: [student.guardian_first_name, student.guardian_middle_name, student.guardian_last_name].filter(Boolean).join(" ") },
+                      { label: "Phone / Contact", val: student.guardian_phone || student.guardian_contact },
+                    ].filter(f => f.val).map(({ label, val }) => (
+                      <div key={label}>
+                        <p className="text-[7.5px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>{label}</p>
+                        <p className="text-[12px] font-black mt-0.5" style={{ color: tc.text.primary }}>{val}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="grid grid-cols-3 gap-2.5">
-                {allDocs.map(doc => <DocCard key={doc.label} label={doc.label} url={doc.url} onOpen={openDoc} isDarkMode={isDarkMode} />)}
-              </div>
-            </div>
-          )}
+            )}
 
-          <div className="h-6" />
+            {/* ── Documents ── */}
+            {allDocs.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3 px-0.5">
+                  <FileText size={11} style={{ color: tc.text.muted }} />
+                  <p className="text-[8.5px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>
+                    Documents ({allDocs.length})
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {allDocs.map(doc => <DocCard key={doc.label} label={doc.label} url={doc.url} onOpen={openDoc} isDarkMode={isDarkMode} />)}
+                </div>
+              </div>
+            )}
+
+            <div className="h-6" />
+          </div>
         </div>
-      </div>{/* end overflow-y-auto */}
-      </div>{/* end drawer panel */}
-    </div>{/* end full-screen overlay */}
+      </div>
+    </div>
     {viewerOpen && <DocViewerModal url={viewerUrl} label={viewerLabel} isDarkMode={isDarkMode} onClose={() => setViewerOpen(false)} allDocs={viewerDocs} initialIndex={viewerIndex} />}
   </>)
 }

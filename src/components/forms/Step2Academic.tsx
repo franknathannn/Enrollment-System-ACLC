@@ -418,9 +418,10 @@ const YearJhsInput = memo(function YearJhsInput({
 export default function Step2Academic() {
   const { formData, updateFormData, setStep } = useEnrollmentStore()
   const { isFieldRequired, isFieldEditable }  = useEnrollmentValidation()
-  const [dbSchoolYear, setDbSchoolYear] = useState<string>("")
-  const [fetchingYear, setFetchingYear] = useState(true)
-  const [checking, setChecking]         = useState(false)
+  const [dbSchoolYear, setDbSchoolYear]     = useState<string>("")
+  const [fetchingYear, setFetchingYear]     = useState(true)
+  const [checking, setChecking]             = useState(false)
+  const [grade12Enabled, setGrade12Enabled] = useState(true)
 
   const {
     register, handleSubmit, setValue, watch, control, getValues,
@@ -472,7 +473,21 @@ export default function Step2Academic() {
         setFetchingYear(false)
       }
     }
+    async function fetchGrade12Setting() {
+      try {
+        const { data } = await supabase.from("system_config").select("grade12_enabled").single()
+        const g12 = data?.grade12_enabled ?? true
+        setGrade12Enabled(g12)
+        if (!g12 && (formData as any).grade_level === "12") {
+          setValue("grade_level", "11", { shouldValidate: true })
+          updateFormData({ grade_level: "11" } as any)
+        }
+      } catch {
+        // column may not exist yet — default stays true
+      }
+    }
     fetchActiveYear()
+    fetchGrade12Setting()
   }, [setValue])
 
   const onSubmit = useCallback(async (data: any) => {
@@ -564,7 +579,7 @@ export default function Step2Academic() {
             Grade Level <span className="text-red-500">*</span>
           </Label>
           <input type="hidden" {...register("grade_level")} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid gap-3 ${grade12Enabled ? "grid-cols-2" : "grid-cols-1"}`}>
             <CheckCard
               label="Grade 11" sublabel="New SHS Student"
               checked={selectedGradeLevel === "11"}
@@ -574,15 +589,17 @@ export default function Step2Academic() {
               }}
               icon={<GraduationCap size={20} />}
             />
-            <CheckCard
-              label="Grade 12" sublabel="Continuing Student"
-              checked={selectedGradeLevel === "12"}
-              onClick={() => {
-                setValue("grade_level", "12", { shouldValidate: true })
-                updateFormData({ grade_level: "12" } as any)
-              }}
-              icon={<GraduationCap size={20} />}
-            />
+            {grade12Enabled && (
+              <CheckCard
+                label="Grade 12" sublabel="Continuing Student"
+                checked={selectedGradeLevel === "12"}
+                onClick={() => {
+                  setValue("grade_level", "12", { shouldValidate: true })
+                  updateFormData({ grade_level: "12" } as any)
+                }}
+                icon={<GraduationCap size={20} />}
+              />
+            )}
           </div>
         </div>
 
@@ -821,7 +838,7 @@ export default function Step2Academic() {
               onClick={() => setValue("preferred_modality", "Face to Face", { shouldValidate: true })}
               disabled={!isFieldEditable("preferred_modality")} icon={<Monitor size={18} />} />
             <CheckCard label="Online" checked={selectedModality === "Online"}
-              onClick={() => { setValue("preferred_modality", "Online", { shouldValidate: true }); setValue("preferred_shift", "", { shouldValidate: true }) }}
+              onClick={() => { setValue("preferred_modality", "Online", { shouldValidate: true }) }}
               disabled={!isFieldEditable("preferred_modality")} icon={<Monitor size={18} />} />
           </div>
           {(errors as any).preferred_modality && (
@@ -831,13 +848,13 @@ export default function Step2Academic() {
           )}
         </div>
 
-        {/* PREFERRED SHIFT — Face to Face only */}
-        {selectedModality === "Face to Face" && (
+        {/* PREFERRED SHIFT */}
+        {selectedModality && (
           <div className="space-y-3 animate-step-in">
             <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", (errors as any).preferred_shift ? "text-red-500" : "t-text-muted")}>
               Preferred Shift <span className="text-red-500">*</span>
             </Label>
-            <input type="hidden" {...register("preferred_shift", { required: selectedModality === "Face to Face" ? "Please select a shift" : false })} />
+            <input type="hidden" {...register("preferred_shift", { required: selectedModality ? "Please select a shift" : false })} />
             <div className="grid grid-cols-2 gap-3">
               <CheckCard label="AM Shift" sublabel="Morning" checked={selectedShift === "AM"}
                 onClick={() => setValue("preferred_shift", "AM", { shouldValidate: true })}

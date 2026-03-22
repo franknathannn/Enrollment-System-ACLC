@@ -4,11 +4,13 @@
 // TimePicker for all time fields, SearchableSelect for Room/Teacher.
 
 import { memo, useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import {
   CalendarDays, Plus, Trash2, ChevronRight, ChevronLeft,
-  AlertTriangle, CheckCircle2, X, RefreshCw, Info, Clock,
-  ChevronDown, Search, GripVertical,
+  AlertTriangle, CheckCircle2, X, Info, Clock,
+  ChevronDown, Search, User,
 } from "lucide-react"
+import type { TeacherOption } from "./ScheduleEntryForm"
 import { Button } from "@/components/ui/button"
 import {
   ROOMS, DURATION_OPTIONS, REPETITION_OPTIONS,
@@ -26,6 +28,7 @@ interface AutoScheduleWizardProps {
   isDarkMode:        boolean
   students:          { preferred_shift?: string | null }[]
   existingSchedules: ScheduleRow[]
+  teachers:          TeacherOption[]
   onConfirm:         (rows: Omit<ScheduleRow, "id" | "created_at">[]) => Promise<void>
   onCancel:          () => void
 }
@@ -60,6 +63,33 @@ function dropStyles(isDarkMode: boolean) {
   }
 }
 
+// ── Portal positioning — fixes z-index clipping inside overflow:auto containers ─
+function usePortalPos(
+  btnRef: React.RefObject<HTMLButtonElement | null>,
+  open: boolean
+): { top: number; left: number; width: number } | null {
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null)
+
+  useEffect(() => {
+    if (!open || !btnRef.current) { setPos(null); return }
+    const update = () => {
+      if (btnRef.current) {
+        const r = btnRef.current.getBoundingClientRect()
+        setPos({ top: r.bottom + 4, left: r.left, width: r.width })
+      }
+    }
+    update()
+    window.addEventListener("scroll", update, true)
+    window.addEventListener("resize", update)
+    return () => {
+      window.removeEventListener("scroll", update, true)
+      window.removeEventListener("resize", update)
+    }
+  }, [open]) // eslint-disable-line
+
+  return pos
+}
+
 // ── TimePicker (same design as ScheduleEntryForm) ─────────────────────────────
 function TimePicker({
   value, onChange, isDarkMode, isICT, placeholder = "Select time", label: labelTxt, error,
@@ -70,14 +100,19 @@ function TimePicker({
 }) {
   const [open,   setOpen]   = useState(false)
   const [search, setSearch] = useState("")
-  const ref = useRef<HTMLDivElement>(null)
+  const ref      = useRef<HTMLDivElement>(null)
+  const btnRef   = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const pos      = usePortalPos(btnRef, open)
 
   const selected = TIME_OPTIONS.find(o => o.value === value)
   const ds = dropStyles(isDarkMode)
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setSearch("") }
+      const inTrigger = ref.current?.contains(e.target as Node)
+      const inPanel   = panelRef.current?.contains(e.target as Node)
+      if (!inTrigger && !inPanel) { setOpen(false); setSearch("") }
     }
     document.addEventListener("mousedown", h)
     return () => document.removeEventListener("mousedown", h)
@@ -93,9 +128,52 @@ function TimePicker({
   const accentActive= isICT ? "bg-blue-600 text-white" : "bg-orange-600 text-white"
   const accentHover = isICT ? "hover:bg-blue-500/10 hover:text-blue-400" : "hover:bg-orange-500/10 hover:text-orange-400"
 
+  const dropdown = pos && (
+    <div ref={panelRef} style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+      className={`rounded-2xl border shadow-2xl overflow-hidden ${ds.overlay}`}>
+      <div className={`px-3 py-2.5 border-b ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50"}`}>
+        <div className="relative">
+          <Clock size={11} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+          <input autoFocus type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder='Search "7:30" or "1pm"…'
+            className={`w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium outline-none border ${ds.input}`}
+          />
+        </div>
+      </div>
+      <div className="max-h-52 overflow-y-auto py-1.5" style={{ scrollbarWidth: "none" }}>
+        {["AM", "PM"].map(period => {
+          const opts = filtered.filter(o => o.period === period)
+          if (!opts.length) return null
+          return (
+            <div key={period}>
+              <div className={`px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] ${ds.group}`}>
+                {period === "AM" ? "Morning" : "Afternoon / Evening"}
+              </div>
+              {opts.map(o => (
+                <button key={o.value} type="button"
+                  onClick={() => { onChange(o.value); setOpen(false); setSearch("") }}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors
+                    ${o.value === value ? accentActive : `${isDarkMode ? "text-white" : "text-slate-900"} ${accentHover}`}`}
+                >
+                  <span className="font-bold">{o.label.split(" ")[0]}</span>
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${o.value === value ? "text-white/70" : period === "AM" ? "text-sky-400" : "text-amber-400"}`}>
+                    {period}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )
+        })}
+        {!filtered.length && (
+          <div className={`px-3 py-6 text-center text-xs ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>No times match</div>
+        )}
+      </div>
+    </div>
+  )
+
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <button
+      <button ref={btnRef}
         type="button"
         onClick={() => { setOpen(o => !o); setSearch("") }}
         className={`w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all cursor-pointer
@@ -118,48 +196,7 @@ function TimePicker({
         </div>
         <ChevronDown size={13} className={`flex-shrink-0 transition-transform ${open ? "rotate-180" : ""} ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
       </button>
-
-      {open && (
-        <div className={`absolute z-[500] mt-2 w-full rounded-2xl border shadow-2xl overflow-hidden ${ds.overlay}`}>
-          <div className={`px-3 py-2.5 border-b ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50"}`}>
-            <div className="relative">
-              <Clock size={11} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
-              <input autoFocus type="text" value={search} onChange={e => setSearch(e.target.value)}
-                placeholder='Search "7:30" or "1pm"…'
-                className={`w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium outline-none border ${ds.input}`}
-              />
-            </div>
-          </div>
-          <div className="max-h-52 overflow-y-auto py-1.5" style={{ scrollbarWidth: "none" }}>
-            {["AM", "PM"].map(period => {
-              const opts = filtered.filter(o => o.period === period)
-              if (!opts.length) return null
-              return (
-                <div key={period}>
-                  <div className={`px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] ${ds.group}`}>
-                    {period === "AM" ? "Morning" : "Afternoon / Evening"}
-                  </div>
-                  {opts.map(o => (
-                    <button key={o.value} type="button"
-                      onClick={() => { onChange(o.value); setOpen(false); setSearch("") }}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors
-                        ${o.value === value ? accentActive : `${isDarkMode ? "text-white" : "text-slate-900"} ${accentHover}`}`}
-                    >
-                      <span className="font-bold">{o.label.split(" ")[0]}</span>
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${o.value === value ? "text-white/70" : period === "AM" ? "text-sky-400" : "text-amber-400"}`}>
-                        {period}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )
-            })}
-            {!filtered.length && (
-              <div className={`px-3 py-6 text-center text-xs ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>No times match</div>
-            )}
-          </div>
-        </div>
-      )}
+      {typeof document !== "undefined" && open && dropdown && createPortal(dropdown, document.body)}
       {error && <p className="text-[9px] text-red-400 mt-1 font-bold">{error}</p>}
     </div>
   )
@@ -175,7 +212,10 @@ function SearchableSelect({
 }) {
   const [open,  setOpen]  = useState(false)
   const [query, setQuery] = useState("")
-  const ref = useRef<HTMLDivElement>(null)
+  const ref      = useRef<HTMLDivElement>(null)
+  const btnRef   = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const pos      = usePortalPos(btnRef, open)
 
   const ds = dropStyles(isDarkMode)
   const filtered = query.trim() ? options.filter(o => o.toLowerCase().includes(query.toLowerCase())) : options
@@ -186,15 +226,48 @@ function SearchableSelect({
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setQuery("") }
+      const inTrigger = ref.current?.contains(e.target as Node)
+      const inPanel   = panelRef.current?.contains(e.target as Node)
+      if (!inTrigger && !inPanel) { setOpen(false); setQuery("") }
     }
     document.addEventListener("mousedown", h)
     return () => document.removeEventListener("mousedown", h)
   }, [])
 
+  const dropdown = pos && (
+    <div ref={panelRef} style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+      className={`rounded-2xl border shadow-2xl overflow-hidden ${ds.overlay}`}>
+      <div className={`px-3 py-2.5 border-b ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50"}`}>
+        <div className="relative">
+          <Search size={11} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+          <input autoFocus type="text" value={query} onChange={e => setQuery(e.target.value)}
+            placeholder="Search…"
+            className={`w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium outline-none border ${ds.input}`}
+          />
+        </div>
+      </div>
+      <div className="max-h-48 overflow-y-auto py-1.5" style={{ scrollbarWidth: "none" }}>
+        <button type="button" onClick={() => { onChange(""); setOpen(false) }}
+          className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${isDarkMode ? "text-slate-500 hover:bg-slate-700/40" : "text-slate-400 hover:bg-slate-50"}`}>
+          {emptyLabel}
+        </button>
+        {filtered.map(opt => (
+          <button key={opt} type="button"
+            onClick={() => { onChange(opt); setOpen(false); setQuery("") }}
+            className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors
+              ${opt === value ? accentActive : `${isDarkMode ? "text-white" : "text-slate-900"} ${accentHover} ${isDarkMode ? "hover:text-white" : ""}`}`}
+          >
+            {opt}
+          </button>
+        ))}
+        {!filtered.length && <div className={`px-3 py-6 text-center text-xs ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>No results</div>}
+      </div>
+    </div>
+  )
+
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <button type="button"
+      <button ref={btnRef} type="button"
         onClick={() => { setOpen(o => !o); setQuery("") }}
         className={`w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all cursor-pointer
           ${ds.trigger} ${open ? `ring-2 ${accentRing}` : ""}`}
@@ -204,41 +277,12 @@ function SearchableSelect({
         </span>
         <ChevronDown size={13} className={`flex-shrink-0 transition-transform ${open ? "rotate-180" : ""} ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
       </button>
-
-      {open && (
-        <div className={`absolute z-[500] mt-2 w-full rounded-2xl border shadow-2xl overflow-hidden ${ds.overlay}`}>
-          <div className={`px-3 py-2.5 border-b ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50"}`}>
-            <div className="relative">
-              <Search size={11} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
-              <input autoFocus type="text" value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="Search…"
-                className={`w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium outline-none border ${ds.input}`}
-              />
-            </div>
-          </div>
-          <div className="max-h-48 overflow-y-auto py-1.5" style={{ scrollbarWidth: "none" }}>
-            <button type="button" onClick={() => { onChange(""); setOpen(false) }}
-              className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${isDarkMode ? "text-slate-500 hover:bg-slate-700/40" : "text-slate-400 hover:bg-slate-50"}`}>
-              {emptyLabel}
-            </button>
-            {filtered.map(opt => (
-              <button key={opt} type="button"
-                onClick={() => { onChange(opt); setOpen(false); setQuery("") }}
-                className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors
-                  ${opt === value ? accentActive : `${isDarkMode ? "text-white" : "text-slate-900"} ${accentHover} ${isDarkMode ? "hover:text-white" : ""}`}`}
-              >
-                {opt}
-              </button>
-            ))}
-            {!filtered.length && <div className={`px-3 py-6 text-center text-xs ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>No results</div>}
-          </div>
-        </div>
-      )}
+      {typeof document !== "undefined" && open && dropdown && createPortal(dropdown, document.body)}
     </div>
   )
 }
 
-// ── OptionSelect (for Duration, Repetition, Shift — option list with value+label) ──
+// ── OptionSelect (Duration, Repetition, Shift) — portal + searchable ──────────
 function OptionSelect<T extends string | number>({
   value, options, isDarkMode, isICT, onChange,
 }: {
@@ -247,30 +291,72 @@ function OptionSelect<T extends string | number>({
   isDarkMode: boolean; isICT: boolean
   onChange: (v: T) => void
 }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const ds = dropStyles(isDarkMode)
+  const [open,  setOpen]  = useState(false)
+  const [query, setQuery] = useState("")
+  const ref      = useRef<HTMLDivElement>(null)
+  const btnRef   = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const pos      = usePortalPos(btnRef, open)
+  const ds       = dropStyles(isDarkMode)
 
   const selected = options.find(o => o.value === value)
+  const filtered = query.trim()
+    ? options.filter(o => o.label.toLowerCase().includes(query.toLowerCase()) || (o.description ?? "").toLowerCase().includes(query.toLowerCase()))
+    : options
   const accentRing   = isICT ? "ring-blue-500/30 border-blue-500" : "ring-orange-500/30 border-orange-500"
   const accentActive = isICT ? "bg-blue-600 text-white" : "bg-orange-600 text-white"
   const accentHover  = isICT ? "hover:bg-blue-500/10" : "hover:bg-orange-500/10"
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const inTrigger = ref.current?.contains(e.target as Node)
+      const inPanel   = panelRef.current?.contains(e.target as Node)
+      if (!inTrigger && !inPanel) { setOpen(false); setQuery("") }
     }
     document.addEventListener("mousedown", h)
     return () => document.removeEventListener("mousedown", h)
   }, [])
 
+  const dropdown = pos && (
+    <div ref={panelRef} style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+      className={`rounded-2xl border shadow-2xl overflow-hidden ${ds.overlay}`}>
+      {options.length > 4 && (
+        <div className={`px-3 py-2.5 border-b ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50"}`}>
+          <div className="relative">
+            <Search size={11} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+            <input autoFocus type="text" value={query} onChange={e => setQuery(e.target.value)}
+              placeholder="Search…"
+              className={`w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium outline-none border ${ds.input}`} />
+          </div>
+        </div>
+      )}
+      <div className="max-h-52 overflow-y-auto py-1.5" style={{ scrollbarWidth: "none" }}>
+        {filtered.map(opt => (
+          <button key={String(opt.value)} type="button"
+            onClick={() => { onChange(opt.value); setOpen(false); setQuery("") }}
+            className={`w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors
+              ${opt.value === value ? accentActive : `${isDarkMode ? "text-white" : "text-slate-900"} ${accentHover}`}`}>
+            <span className="font-medium">{opt.label}</span>
+            {opt.description && (
+              <span className={`text-[10px] font-normal ml-2 ${opt.value === value ? "text-white/70" : isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                {opt.description}
+              </span>
+            )}
+          </button>
+        ))}
+        {!filtered.length && (
+          <div className={`px-3 py-4 text-center text-xs ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>No results</div>
+        )}
+      </div>
+    </div>
+  )
+
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <button type="button"
-        onClick={() => setOpen(o => !o)}
+      <button ref={btnRef} type="button"
+        onClick={() => { setOpen(o => !o); setQuery("") }}
         className={`w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all cursor-pointer
-          ${ds.trigger} ${open ? `ring-2 ${accentRing}` : ""}`}
-      >
+          ${ds.trigger} ${open ? `ring-2 ${accentRing}` : ""}`}>
         <div className="flex flex-col items-start min-w-0">
           <span className={isDarkMode ? "text-white" : "text-slate-900"}>{selected?.label ?? "Select…"}</span>
           {selected?.description && (
@@ -279,27 +365,7 @@ function OptionSelect<T extends string | number>({
         </div>
         <ChevronDown size={13} className={`flex-shrink-0 transition-transform ${open ? "rotate-180" : ""} ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
       </button>
-
-      {open && (
-        <div className={`absolute z-[500] mt-2 w-full rounded-2xl border shadow-2xl overflow-hidden ${ds.overlay}`}>
-          <div className="max-h-52 overflow-y-auto py-1.5" style={{ scrollbarWidth: "none" }}>
-            {options.map(opt => (
-              <button key={String(opt.value)} type="button"
-                onClick={() => { onChange(opt.value); setOpen(false) }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors
-                  ${opt.value === value ? accentActive : `${isDarkMode ? "text-white" : "text-slate-900"} ${accentHover}`}`}
-              >
-                <span className="font-medium">{opt.label}</span>
-                {opt.description && (
-                  <span className={`text-[10px] font-normal ml-2 ${opt.value === value ? "text-white/70" : isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
-                    {opt.description}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {typeof document !== "undefined" && open && dropdown && createPortal(dropdown, document.body)}
     </div>
   )
 }
@@ -313,12 +379,122 @@ function FieldLabel({ children, isDarkMode }: { children: React.ReactNode; isDar
   )
 }
 
+// ── WizardTeacherSelect — searchable teacher picker for wizard cards ──────────
+function getInitials(name: string) {
+  return name.split(" ").filter(Boolean).map(p => p[0]).join("").slice(0, 2).toUpperCase()
+}
+
+function WizardTeacherSelect({ value, teachers, onChange, isDarkMode, isICT, error }: {
+  value: string; teachers: TeacherOption[]
+  onChange: (id: string, name: string) => void
+  isDarkMode: boolean; isICT: boolean; error?: boolean
+}) {
+  const [open, setOpen]   = useState(false)
+  const [query, setQuery] = useState("")
+  const ref      = useRef<HTMLDivElement>(null)
+  const btnRef   = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const pos      = usePortalPos(btnRef, open)
+  const ds       = dropStyles(isDarkMode)
+
+  const selected = teachers.find(t => t.id === value)
+  const filtered = query.trim()
+    ? teachers.filter(t => t.full_name.toLowerCase().includes(query.toLowerCase()))
+    : teachers
+
+  const accentRing   = isICT ? "ring-blue-500/30 border-blue-500" : "ring-orange-500/30 border-orange-500"
+  const accentActive = isICT ? "bg-blue-600 text-white"           : "bg-orange-600 text-white"
+  const avatarBg     = isICT ? "bg-blue-600 text-white"           : "bg-orange-600 text-white"
+  const avatarIdle   = isICT ? "bg-blue-500/15 text-blue-400"     : "bg-orange-500/15 text-orange-400"
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      const inTrigger = ref.current?.contains(e.target as Node)
+      const inPanel   = panelRef.current?.contains(e.target as Node)
+      if (!inTrigger && !inPanel) { setOpen(false); setQuery("") }
+    }
+    document.addEventListener("mousedown", h)
+    return () => document.removeEventListener("mousedown", h)
+  }, [])
+
+  const dropdown = pos && (
+    <div ref={panelRef} style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+      className={`rounded-2xl border shadow-2xl overflow-hidden ${ds.overlay}`}>
+      <div className={`px-3 py-2.5 border-b ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50"}`}>
+        <div className="relative">
+          <Search size={11} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+          <input autoFocus type="text" value={query} onChange={e => setQuery(e.target.value)}
+            placeholder="Search teacher…"
+            className={`w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium outline-none border ${ds.input}`} />
+        </div>
+      </div>
+      <div className="max-h-48 overflow-y-auto py-1" style={{ scrollbarWidth: "none" }}>
+        {filtered.length === 0 && (
+          <div className={`px-3 py-6 text-center text-xs ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>No teachers found</div>
+        )}
+        {filtered.map(t => (
+          <button key={t.id} type="button"
+            onClick={() => { onChange(t.id, t.full_name); setOpen(false); setQuery("") }}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 transition-colors
+              ${t.id === value ? accentActive : `${isDarkMode ? "text-white hover:bg-slate-700/50" : "text-slate-900 hover:bg-slate-50"}`}`}>
+            <div className={`w-6 h-6 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center text-[9px] font-black
+              ${t.id === value ? "bg-white/20 text-white" : avatarIdle}`}>
+              {t.avatar_url
+                ? <img src={t.avatar_url} alt={t.full_name} className="w-full h-full object-cover" />
+                : getInitials(t.full_name)
+              }
+            </div>
+            <span className="text-sm font-medium">{t.full_name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button ref={btnRef} type="button"
+        onClick={() => { setOpen(o => !o); setQuery("") }}
+        className={`w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all cursor-pointer
+          ${ds.trigger}
+          ${open ? `ring-2 ${accentRing}` : ""}
+          ${error ? "border-red-500/60" : ""}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          {selected ? (
+            <>
+              <div className={`w-6 h-6 rounded-lg overflow-hidden flex items-center justify-center text-[9px] font-black flex-shrink-0 ${avatarBg}`}>
+                {selected.avatar_url
+                  ? <img src={selected.avatar_url} alt={selected.full_name} className="w-full h-full object-cover" />
+                  : getInitials(selected.full_name)
+                }
+              </div>
+              <span className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                {selected.full_name}
+              </span>
+            </>
+          ) : (
+            <>
+              <User size={13} className={isDarkMode ? "text-slate-500" : "text-slate-400"} />
+              <span className={`text-sm ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>— Select teacher —</span>
+            </>
+          )}
+        </div>
+        <ChevronDown size={13} className={`flex-shrink-0 transition-transform ${open ? "rotate-180" : ""} ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+      </button>
+      {typeof document !== "undefined" && open && dropdown && createPortal(dropdown, document.body)}
+      {error && <p className="text-[9px] text-red-400 mt-1 font-bold">Assign a teacher</p>}
+    </div>
+  )
+}
+
 // ── Subject Card (replaces table row — mobile-friendly) ───────────────────────
 function SubjectCard({
-  subj, idx, count, isDarkMode, isICT, onChange, onRemove,
+  subj, idx, count, isDarkMode, isICT, teachers, onChange, onRemove,
 }: {
-  subj: SubjectInput; idx: number; count: number; isDarkMode: boolean; isICT: boolean
-  onChange: (id: string, key: keyof SubjectInput, val: any) => void
+  subj: SubjectInput & { teacher_id?: string }
+  idx: number; count: number; isDarkMode: boolean; isICT: boolean
+  teachers: TeacherOption[]
+  onChange: (id: string, key: string, val: any) => void
   onRemove: (id: string) => void
 }) {
   const accentColor = isICT ? (isDarkMode ? "text-blue-400" : "text-blue-600") : (isDarkMode ? "text-amber-400" : "text-amber-600")
@@ -366,6 +542,19 @@ function SubjectCard({
             ${isDarkMode
               ? "bg-slate-800 border-slate-700 text-white placeholder-slate-600 focus:border-blue-500/60"
               : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-400"}`}
+        />
+      </div>
+
+      {/* Teacher — required */}
+      <div className="mb-4">
+        <FieldLabel isDarkMode={isDarkMode}>Teacher *</FieldLabel>
+        <WizardTeacherSelect
+          value={(subj as any).teacher_id ?? ""}
+          teachers={teachers}
+          onChange={(id, name) => { onChange(subj.id, "teacher_id", id); onChange(subj.id, "teacher", name) }}
+          isDarkMode={isDarkMode}
+          isICT={isICT}
+          error={!!(subj as any)._teacherError}
         />
       </div>
 
@@ -459,9 +648,10 @@ function SettingRow({ label, children }: { label: string; children: React.ReactN
 
 // ── ID counter ────────────────────────────────────────────────────────────────
 let uid = 0
-const newSubject = (shift: "AM" | "PM"): SubjectInput => ({
-  id: String(++uid), subject: "", room: "", duration: 60,
-  preferred_shift: shift, repetition: "ONCE",
+const newSubject = (shift: "AM" | "PM") => ({
+  id: String(++uid), subject: "", room: "", teacher: null as string | null,
+  teacher_id: "" as string, duration: 60 as number,
+  preferred_shift: shift as "AM" | "PM", repetition: "ONCE" as RepetitionMode,
 })
 
 // ── SPREAD OPTIONS ─────────────────────────────────────────────────────────────
@@ -479,7 +669,7 @@ const LUNCH_END_OPTS    = ["12:00","12:30","13:00","13:30","14:00"].map(t => ({ 
 // ── Main Wizard ───────────────────────────────────────────────────────────────
 export const AutoScheduleWizard = memo(function AutoScheduleWizard({
   sectionName, schoolYear, isICT, isDarkMode,
-  students, existingSchedules, onConfirm, onCancel,
+  students, existingSchedules, teachers, onConfirm, onCancel,
 }: AutoScheduleWizardProps) {
 
   const majorityShift = getMajorityShift(students)
@@ -505,7 +695,13 @@ export const AutoScheduleWizard = memo(function AutoScheduleWizard({
   const [saving,     setSaving]  = useState(false)
   const [stepError,  setStepErr] = useState("")
 
-  const addSubject    = () => setSubjects(p => [...p, newSubject(majorityShift)])
+  const subjectListEndRef = useRef<HTMLDivElement>(null)
+
+  const addSubject = () => {
+    setSubjects(p => [...p, newSubject(majorityShift)])
+    // scroll to newly added card after render
+    setTimeout(() => subjectListEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 60)
+  }
   const removeSubject = (id: string) => setSubjects(p => p.filter(s => s.id !== id))
   const updateSubject = (id: string, key: keyof SubjectInput, val: any) =>
     setSubjects(p => p.map(s => s.id === id ? { ...s, [key]: val } : s))
@@ -514,6 +710,8 @@ export const AutoScheduleWizard = memo(function AutoScheduleWizard({
     if (!subjects.length) return "Please add at least one subject."
     const empty = subjects.find(s => !s.subject.trim())
     if (empty) return "All subjects require a name."
+    const noTeacher = subjects.find(s => !(s as any).teacher_id)
+    if (noTeacher) return `"${noTeacher.subject || "A subject"}" does not have a teacher assigned.`
     const noRoom = subjects.find(s => !s.room)
     if (noRoom) return `"${noRoom.subject}" does not have a room assigned.`
     return ""
@@ -539,8 +737,19 @@ export const AutoScheduleWizard = memo(function AutoScheduleWizard({
   const handleConfirm = async () => {
     if (!result) return
     setSaving(true)
-    try { await onConfirm(result.rows) }
-    finally { setSaving(false) }
+    try {
+      // Map teacher_id from subjects onto the generated rows by matching teacher name
+      const teacherIdByName = new Map(
+        subjects.map(s => [s.teacher?.trim().toLowerCase() ?? "", (s as any).teacher_id ?? null])
+      )
+      const rowsWithTeacherId = result.rows.map(row => ({
+        ...row,
+        teacher_id: teacherIdByName.get(row.teacher?.trim().toLowerCase() ?? "") ?? null,
+      }))
+      await onConfirm(rowsWithTeacherId as any)
+    } finally {
+      setSaving(false)
+    }
   }
 
   // Theme tokens
@@ -686,11 +895,13 @@ export const AutoScheduleWizard = memo(function AutoScheduleWizard({
                 {subjects.map((s, i) => (
                   <SubjectCard
                     key={s.id}
-                    subj={s} idx={i} count={subjects.length}
+                    subj={s as any} idx={i} count={subjects.length}
                     isDarkMode={isDarkMode} isICT={isICT}
+                    teachers={teachers}
                     onChange={updateSubject} onRemove={removeSubject}
                   />
                 ))}
+                <div ref={subjectListEndRef} />
               </div>
             </div>
 

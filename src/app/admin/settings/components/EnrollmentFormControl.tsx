@@ -95,8 +95,7 @@ const DEFAULT_REQUIREMENTS: FieldRequirements = {
   // FIX 4: school_type was missing — was hardcoded required in Step2
   school_type:          { required: true,  editable: true },
   preferred_modality:   { required: true,  editable: true },
-  // preferred_shift is conditionally required (only when modality = Face to Face).
-  // The panel defaults it to false; the form itself enforces the conditional rule.
+  // preferred_shift is required whenever a modality is selected.
   preferred_shift:      { required: false, editable: true },
   
   // Step 3
@@ -151,7 +150,7 @@ const STEP_GROUPS = [
       { key: "school_year",          label: "School Year" },
       { key: "preferred_modality",   label: "Preferred Modality" },
       // Note displayed as locked-ish: conditional logic lives in the form itself
-      { key: "preferred_shift",      label: "Preferred Shift (Face to Face only)" },
+      { key: "preferred_shift",      label: "Preferred Shift" },
       { key: "facebook_user",        label: "Facebook Username" },
       { key: "facebook_link",        label: "Facebook Profile Link" },
     ]

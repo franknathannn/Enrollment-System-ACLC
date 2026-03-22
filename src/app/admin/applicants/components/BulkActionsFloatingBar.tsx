@@ -19,7 +19,7 @@ export const BulkActionsFloatingBar = memo(({
   return (
     <div className="fixed bottom-4 md:bottom-10 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 animate-in slide-in-from-bottom-10 duration-500 max-w-4xl md:mx-auto">
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white px-4 md:px-8 py-3 md:py-4 rounded-[32px] shadow-2xl shadow-blue-500/20 flex flex-col md:flex-row items-center gap-4 md:gap-8 border border-white/20 backdrop-blur-xl ring-2 ring-blue-500/10">
-        <div className="flex flex-col text-center md:text-left"><span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Batch Matrix control</span><span className="text-sm font-black tracking-tight">{selectedIds.length} Selected</span></div>
+        <div className="flex flex-col text-center md:text-left"><span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Applicants Status Control</span><span className="text-sm font-black tracking-tight">{selectedIds.length} Selected</span></div>
         <div className="hidden md:block h-8 w-[1px] bg-white/10" />
         <div className="flex items-center gap-2 flex-wrap justify-center md:justify-start">
           {filter === 'Pending' && (
@@ -37,11 +37,9 @@ export const BulkActionsFloatingBar = memo(({
               <ListRestart size={14} className="mr-1 md:mr-2"/> <span className="hidden sm:inline">Reset to Pending</span><span className="sm:hidden">Reset</span>
             </Button>
           )}
-          {filter === 'Rejected' && (
-            <Button onClick={() => setBulkDeleteModalOpen(true)} className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-2xl font-black text-[10px] uppercase h-10 md:h-11 px-4 md:px-6 shadow-lg shadow-red-500/20 transition-all transform hover:scale-105">
-              <Trash2 size={14} className="mr-1 md:mr-2"/> <span className="hidden sm:inline">Mass Deletion</span><span className="sm:hidden">Delete</span>
-            </Button>
-          )}
+          <Button onClick={() => setBulkDeleteModalOpen(true)} className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-2xl font-black text-[10px] uppercase h-10 md:h-11 px-4 md:px-6 shadow-lg shadow-red-500/20 transition-all transform hover:scale-105">
+            <Trash2 size={14} className="mr-1 md:mr-2"/> <span className="hidden sm:inline">Mass Deletion</span><span className="sm:hidden">Delete</span>
+          </Button>
           <Button onClick={() => setSelectedIds([])} variant="ghost" className="text-slate-400 hover:text-white font-black text-[10px] uppercase h-10 md:h-11 px-4 transition-all hover:bg-white/10">Cancel</Button>
         </div>
       </div>

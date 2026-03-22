@@ -48,8 +48,8 @@ export function ThemedText({
     : (muted || variant === 'caption' || variant === 'label' ? themeColors.light.text.secondary : themeColors.light.text.primary)
 
   return (
-    <Component 
-      className={cn(baseStyles[variant], className)}
+    <Component
+      className={cn(baseStyles[variant], 'transition-colors duration-300', className)}
       style={{
         color: style?.color || defaultColor,
         ...style

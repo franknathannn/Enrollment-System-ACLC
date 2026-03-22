@@ -5,6 +5,7 @@ import {
   Archive, ArchiveRestore, TrendingUp, TrendingDown,
   AlertTriangle, CheckCircle2, Loader2, ArrowRight,
   GraduationCap, BookMarked, ChevronDown, ChevronUp,
+  Rocket, Trophy,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -13,6 +14,7 @@ import {
   unarchiveCurrentYear,
   increaseGradeLevel,
   decreaseGradeLevel,
+  advanceSchoolYear,
 } from "@/lib/actions/gradeOperations"
 
 interface Props {
@@ -20,7 +22,7 @@ interface Props {
   schoolYear: string
 }
 
-type OperationKey = "archive" | "unarchive" | "increase" | "decrease"
+type OperationKey = "archive" | "unarchive" | "increase" | "decrease" | "advance"
 
 interface Operation {
   key: OperationKey
@@ -150,6 +152,12 @@ export function GradeOperationsPanel({ isDarkMode, schoolYear }: Props) {
         if (!res.success) throw new Error(res.error)
         msg = `${res.demoted} student(s) moved back to Grade 11.`
         setResults((r) => ({ ...r, decrease: msg }))
+
+      } else if (confirmOp === "advance") {
+        const res = await advanceSchoolYear()
+        if (!res.success) throw new Error(res.error)
+        msg = `Advanced to S.Y. ${res.nextYear}. ${res.graduatedG12} graduated, ${res.promotedToG12} promoted to G12${res.archivedOverAge > 0 ? `, ${res.archivedOverAge} overage archived` : ""}.`
+        setResults((r) => ({ ...r, advance: msg }))
       }
 
       toast.success(msg, { id: toastId, duration: 7000 })
@@ -161,6 +169,7 @@ export function GradeOperationsPanel({ isDarkMode, schoolYear }: Props) {
   }
 
   const activeOp = ops.find((o) => o.key === confirmOp)
+  const isAdvanceConfirm = confirmOp === "advance"
 
   return (
     <div className={`rounded-[32px] border p-6 md:p-8 space-y-5 transition-colors duration-500 ${bg}`}>
@@ -211,6 +220,58 @@ export function GradeOperationsPanel({ isDarkMode, schoolYear }: Props) {
             </p>
           </div>
 
+          {/* Advance to Next School Year — Primary CTA */}
+          <div className={`rounded-2xl p-5 border-2 space-y-4 ${
+            isDarkMode
+              ? "bg-gradient-to-br from-indigo-950/60 to-slate-900/60 border-indigo-500/40"
+              : "bg-gradient-to-br from-indigo-50 to-white border-indigo-300"
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30 shrink-0">
+                <Rocket className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <p className={`text-[11px] font-black uppercase tracking-widest ${text}`}>
+                  Advance to Next School Year
+                </p>
+                <p className={`text-[9px] font-bold mt-0.5 ${sub}`}>
+                  Graduate G12 · Promote G11→G12 · Increment year · Close portal
+                </p>
+              </div>
+            </div>
+
+            <div className={`rounded-xl p-3 text-[9px] font-bold uppercase tracking-wider leading-relaxed space-y-1.5 ${
+              isDarkMode ? "bg-slate-800/60 text-slate-400" : "bg-white/80 text-slate-500 border border-indigo-100"
+            }`}>
+              <p className="flex items-start gap-1.5"><Trophy size={10} className="text-yellow-500 mt-0.5 shrink-0" /><span>Snapshots current year data to history &amp; analytics</span></p>
+              <p className="flex items-start gap-1.5"><ArrowRight size={10} className="text-indigo-400 mt-0.5 shrink-0" /><span>Archives all G12 as <span className="text-yellow-400">graduates</span> (locked, permanent)</span></p>
+              <p className="flex items-start gap-1.5"><ArrowRight size={10} className="text-violet-400 mt-0.5 shrink-0" /><span>Promotes eligible G11 → G12 (auto-assigns sections)</span></p>
+              <p className="flex items-start gap-1.5"><ArrowRight size={10} className="text-amber-400 mt-0.5 shrink-0" /><span>Archives overage G11 (enrolled 2+ years ago)</span></p>
+              <p className="flex items-start gap-1.5"><ArrowRight size={10} className="text-emerald-400 mt-0.5 shrink-0" /><span>Increments school year · closes portal · clears enrollment dates</span></p>
+            </div>
+
+            {results["advance"] && (
+              <div className={`rounded-xl p-2.5 flex items-start gap-2 ${
+                isDarkMode ? "bg-slate-700/50" : "bg-white border border-slate-200"
+              }`}>
+                <CheckCircle2 size={12} className="text-green-500 shrink-0 mt-0.5" />
+                <p className={`text-[9px] font-bold ${sub}`}>{results["advance"]}</p>
+              </div>
+            )}
+
+            <Button
+              onClick={() => setConfirmOp("advance")}
+              disabled={loading !== null || !schoolYear}
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 transition-all"
+            >
+              {loading === "advance" ? (
+                <><Loader2 size={14} className="animate-spin" /> Processing...</>
+              ) : (
+                <><Rocket size={14} /> Advance School Year</>
+              )}
+            </Button>
+          </div>
+
           {/* Operation Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {ops.map((op) => (
@@ -257,6 +318,57 @@ export function GradeOperationsPanel({ isDarkMode, schoolYear }: Props) {
             ))}
           </div>
         </>
+      )}
+
+      {/* Advance Confirm Dialog */}
+      {isAdvanceConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`rounded-[32px] p-8 max-w-md w-full mx-4 shadow-2xl border space-y-6 ${
+            isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/30">
+                <Rocket className="text-white w-6 h-6" />
+              </div>
+              <div>
+                <h4 className={`font-black text-sm uppercase tracking-widest ${text}`}>
+                  Advance to Next School Year
+                </h4>
+                <p className={`text-[10px] mt-0.5 ${sub}`}>This is a major, irreversible operation.</p>
+              </div>
+            </div>
+
+            <div className={`rounded-2xl p-4 text-[11px] font-bold leading-relaxed space-y-2 ${
+              isDarkMode ? "bg-slate-800/50 text-slate-300" : "bg-slate-50 text-slate-600"
+            }`}>
+              <div className="flex items-start gap-2 mb-3">
+                <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                <span className="text-amber-500 font-black text-[10px] uppercase tracking-widest">This cannot be undone</span>
+              </div>
+              <p>Current S.Y. <span className={emphasisClass}>{schoolYear}</span> will be advanced to <span className="text-indigo-400">{(() => { const [s, e] = (schoolYear || "0-0").split("-").map(Number); return `${s+1}-${e+1}` })()}</span>.</p>
+              <p><span className="text-yellow-400">Grade 12</span> students will be <span className={emphasisClass}>permanently locked as graduates</span> and cannot be unarchived.</p>
+              <p><span className="text-violet-400">Grade 11</span> students will be promoted to Grade 12 with new section assignments.</p>
+              <p>The enrollment portal will be <span className="text-red-400">closed</span> and dates cleared.</p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setConfirmOp(null)}
+                variant="outline"
+                className="flex-1 h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirm}
+                className="flex-1 h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-[10px] uppercase tracking-widest shadow-lg flex items-center justify-center gap-2"
+              >
+                <Rocket size={14} />
+                Advance
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Confirm Dialog */}

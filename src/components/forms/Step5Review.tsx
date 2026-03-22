@@ -73,7 +73,7 @@ export default function Step5Review() {
         school_type: formData.school_type || null, year_completed_jhs: formData.year_completed_jhs || null,
         last_school_address: formData.last_school_address || null, facebook_user: formData.facebook_user || null,
         facebook_link: formData.facebook_link || null, preferred_modality: formData.preferred_modality || null,
-        preferred_shift: formData.preferred_modality === "Face to Face" ? (formData.preferred_shift || null) : null,
+        preferred_shift: formData.preferred_shift || null,
       }
 
       const { data, error } = await supabase.from('students').upsert({ ...(formData.id ? { id: formData.id } : {}), ...studentData }, { onConflict: 'lrn' }).select().single()
@@ -142,13 +142,14 @@ export default function Step5Review() {
             ]} />
             <ReviewSection icon={<GraduationCap className="text-blue-400" size={16} />} title="Academic Background" isDark={isDark} details={[
               { label: "LRN", value: formData.lrn, fullWidth: true }, { label: "Student Category", value: formData.student_category },
-              { label: "Strand Preference", value: formData.strand }, { label: "Previous School Type", value: formData.school_type },
+              { label: "Grade Level", value: formData.grade_level ? `Grade ${formData.grade_level}` : null }, { label: "Strand Preference", value: formData.strand },
+              { label: "Previous School Type", value: formData.school_type },
               { label: "School Year", value: activeSY }, { label: "Year Completed JHS", value: formData.year_completed_jhs },
               { label: "Last School Attended", value: formData.last_school_attended, fullWidth: true },
               { label: "School Address", value: formData.last_school_address, fullWidth: true },
               ...(isJHS ? [{ label: "Grade 10 GWA", value: formData.gwa_grade_10 ? `${formData.gwa_grade_10}` : "N/A" }] : []),
               { label: "Preferred Modality", value: formData.preferred_modality },
-              ...(formData.preferred_modality === "Face to Face" ? [{ label: "Preferred Shift", value: formData.preferred_shift }] : []),
+              ...(formData.preferred_modality ? [{ label: "Preferred Shift", value: formData.preferred_shift }] : []),
               { label: "Facebook Username", value: formData.facebook_user }, { label: "Facebook Link", value: formData.facebook_link, fullWidth: true },
             ]} />
             <ReviewSection icon={<Users className="text-blue-400" size={16} />} title="Guardian Information" isDark={isDark} details={[
