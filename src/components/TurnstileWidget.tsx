@@ -19,37 +19,44 @@ export function TurnstileWidget({ onVerify, onExpire, theme = "auto" }: Props) {
   const rendered = useRef(false)
 
   useEffect(() => {
-    if (rendered.current || !ref.current) return
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
-    if (!siteKey) return
+    if (!siteKey || rendered.current || !ref.current) return
 
-    const doRender = () => {
-      if (rendered.current || !ref.current) return
+    const tryRender = () => {
+      if (rendered.current || !ref.current || !window.turnstile) return
       rendered.current = true
       window.turnstile.render(ref.current, {
         sitekey: siteKey,
         callback: onVerify,
         "expired-callback": onExpire ?? (() => {}),
         theme,
-        appearance: "interaction-only",
+        appearance: "always",
       })
     }
 
     if (window.turnstile) {
-      doRender()
-    } else {
-      const existing = document.querySelector('script[src*="turnstile"]')
-      if (existing) {
-        existing.addEventListener("load", doRender)
-      } else {
-        const script = document.createElement("script")
-        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"
-        script.async = true
-        script.onload = doRender
-        document.head.appendChild(script)
-      }
+      tryRender()
+      return
     }
-  }, []) // render once on mount only
+
+    // Load script if not already loading
+    if (!document.querySelector('script[src*="turnstile"]')) {
+      const script = document.createElement("script")
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"
+      script.async = true
+      document.head.appendChild(script)
+    }
+
+    // Poll until turnstile is ready — more reliable than onload in production
+    const interval = setInterval(() => {
+      if (window.turnstile) {
+        clearInterval(interval)
+        tryRender()
+      }
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={ref} />
 }
