@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { Lock, Loader2, GraduationCap, ShieldCheck, Eye, EyeOff } from "lucide-react"
+import { TurnstileWidget } from "@/components/TurnstileWidget"
+import { verifyTurnstile } from "@/lib/actions/turnstile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -93,6 +95,7 @@ export default function TeacherLoginPage() {
   const [password, setPassword] = useState("")
   const [showPass, setShowPass] = useState(false)
   const [loading,  setLoading]  = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   useEffect(() => {
     document.body.style.overflow = "hidden"
@@ -116,8 +119,18 @@ export default function TeacherLoginPage() {
       toast.error("Enter your email and password", { style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
       return
     }
+    if (!turnstileToken) {
+      toast.error("Security check pending. Please wait a moment and try again.", { style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+      return
+    }
     setLoading(true)
     const toastId = toast.loading("Authenticating credentials...", { style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+    const isHuman = await verifyTurnstile(turnstileToken)
+    if (!isHuman) {
+      toast.error("Security check failed. Please refresh and try again.", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+      setLoading(false)
+      return
+    }
     try {
       const { data: teacher, error } = await supabase
         .from("teachers")
@@ -196,6 +209,11 @@ export default function TeacherLoginPage() {
                 className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
                 {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-3 py-2">
+              <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme="light" />
             </div>
           </div>
           <Button type="submit" disabled={loading}

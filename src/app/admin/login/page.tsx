@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { toast } from "sonner"
 import { Lock, Loader2, GraduationCap, ShieldCheck } from "lucide-react"
+import { TurnstileWidget } from "@/components/TurnstileWidget"
+import { verifyTurnstile } from "@/lib/actions/turnstile"
 
 // --- OPTIMIZED CONSTELLATION ENGINE ---
 const LoginConstellation = memo(function LoginConstellation() {
@@ -123,6 +125,7 @@ function LoginContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const searchParams = useSearchParams()
 
   const redirectTo = searchParams.get('redirect') || '/admin/dashboard'
@@ -181,10 +184,28 @@ function LoginContent() {
       return
     }
 
+    if (!turnstileToken) {
+      toast.error("Security check pending. Please wait a moment and try again.", {
+        duration: 3000,
+        style: { fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }
+      })
+      return
+    }
+
     setLoading(true)
     const toastId = toast.loading("Authenticating credentials...", {
       style: { fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }
     })
+
+    const isHuman = await verifyTurnstile(turnstileToken)
+    if (!isHuman) {
+      toast.error("Security check failed. Please refresh and try again.", {
+        id: toastId,
+        style: { fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }
+      })
+      setLoading(false)
+      return
+    }
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -274,8 +295,14 @@ function LoginContent() {
             />
           </div>
 
-          <Button 
-            type="submit" 
+          <div className="flex justify-center">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-3 py-2">
+              <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme="light" />
+            </div>
+          </div>
+
+          <Button
+            type="submit"
             disabled={loading}
             className="w-full h-16 bg-slate-900 dark:bg-blue-600 hover:bg-black dark:hover:bg-blue-700 text-white rounded-[24px] text-xs font-black uppercase tracking-[0.2em] gap-3 shadow-2xl transition-all active:scale-95 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
           >

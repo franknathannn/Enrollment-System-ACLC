@@ -1,9 +1,45 @@
 // src/middleware.ts
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
+
+let ratelimit: Ratelimit | null = null
+
+function getRatelimit(): Ratelimit | null {
+  if (ratelimit) return ratelimit
+  const url   = process.env.UPSTASH_REDIS_REST_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN
+  if (!url || !token) return null
+  ratelimit = new Ratelimit({
+    redis: new Redis({ url, token }),
+    limiter: Ratelimit.slidingWindow(10, '1 m'),
+    analytics: false,
+  })
+  return ratelimit
+}
+
+const LOGIN_PATHS = ['/admin/login', '/teacher/login']
 
 export async function middleware(request: NextRequest) {
   try {
+    // Rate limit login page requests
+    if (LOGIN_PATHS.includes(request.nextUrl.pathname)) {
+      const rl = getRatelimit()
+      if (rl) {
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim()
+          ?? request.headers.get('x-real-ip')
+          ?? 'anonymous'
+        const { success } = await rl.limit(`login:${ip}`)
+        if (!success) {
+          return new NextResponse(
+            '<html><body style="font-family:sans-serif;text-align:center;padding:4rem"><h2>Too Many Attempts</h2><p>Please wait a moment before trying again.</p></body></html>',
+            { status: 429, headers: { 'Content-Type': 'text/html' } }
+          )
+        }
+      }
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -71,12 +107,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Only run middleware on /admin routes
-     * This prevents middleware from interfering with other routes like /, /enroll, /status
-     * Using proper Next.js matcher pattern - matches all paths starting with /admin
-     */
-    '/admin/:path*',
-  ],
+  matcher: ['/admin/:path*', '/teacher/:path*'],
 }

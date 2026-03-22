@@ -14,6 +14,8 @@ import {
 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { getEnrollmentStatus } from "@/lib/actions/settings"
+import { verifyTurnstile } from "@/lib/actions/turnstile"
+import { TurnstileWidget } from "@/components/TurnstileWidget"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
@@ -26,6 +28,7 @@ export default function Step5Review() {
   const formData = rawFormData as any
   const [loading, setLoading] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [activeSY, setActiveSY] = useState("...")
   const router = useRouter()
   const isJHS = formData.student_category === "JHS Graduate"
@@ -36,9 +39,19 @@ export default function Step5Review() {
   }, [])
 
   const handleFinalSubmit = async () => {
+    if (!turnstileToken) {
+      toast.error("Security check pending. Please wait a moment and try again.")
+      return
+    }
     setLoading(true)
     const toastId = toast.loading(formData.id ? "Syncing corrections..." : "Transmitting application...")
     try {
+      const isHuman = await verifyTurnstile(turnstileToken)
+      if (!isHuman) {
+        toast.error("Security check failed. Please refresh and try again.", { id: toastId })
+        setLoading(false)
+        return
+      }
       const isSystemOpen = await getEnrollmentStatus()
       if (!isSystemOpen && !formData.id) { toast.error("Admissions window is currently closed.", { id: toastId }); return }
 
@@ -186,8 +199,14 @@ export default function Step5Review() {
         </Card>
       </div>
 
+      <div className="flex justify-center my-6">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-3 py-2">
+          <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme="light" />
+        </div>
+      </div>
+
       {/* STICKY BOTTOM BAR */}
-      <div className="sticky bottom-0 z-20 left-0 right-0 pt-4 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12 px-4 sm:px-6 md:px-8 lg:px-12 mt-6 backdrop-blur-md border-t flex flex-col-reverse sm:flex-row gap-3 sm:gap-5"
+      <div className="sticky bottom-0 z-20 left-0 right-0 pt-4 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12 px-4 sm:px-6 md:px-8 lg:px-12 mt-2 backdrop-blur-md border-t flex flex-col-reverse sm:flex-row gap-3 sm:gap-5"
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))", backgroundColor: isDark ? "rgba(2, 6, 23, 0.95)" : "rgba(255, 255, 255, 0.95)", borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(226,232,240,1)" }}>
         <Button variant="ghost" onClick={() => setStep(4)} className={cn("w-full sm:w-auto min-h-[44px] sm:min-h-[52px] px-6 rounded-2xl sm:rounded-[24px] font-bold uppercase text-[10px] tracking-[0.3em] transition-[color,background-color] touch-manipulation active:scale-[0.98] order-2 sm:order-1", isDark ? "text-slate-500 lg:hover:text-white lg:hover:bg-white/5" : "text-slate-500 lg:hover:text-slate-900 lg:hover:bg-slate-100")}>
           <ChevronLeft className="mr-2 h-4 w-4 shrink-0" /> Edit
