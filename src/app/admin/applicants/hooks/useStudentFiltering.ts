@@ -15,7 +15,7 @@ export function useStudentFiltering({ students, processingIds, processingIdsRef,
   const [sortBy, setSortBy] = useState<string>("alpha")
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const itemsPerPage = 5
 
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set())
   

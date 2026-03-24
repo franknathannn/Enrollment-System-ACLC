@@ -20,6 +20,14 @@ Required in `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+
+# Cloudflare Turnstile — bot protection on the enrollment form
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+
+# Upstash Redis — rate limiting on /admin/login and /teacher/login (optional; skipped if absent)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
 ```
 
 ## Architecture Overview
@@ -102,6 +110,23 @@ src/
 ### Path Alias
 
 `@/*` resolves to `src/*`.
+
+### Middleware (`src/middleware.ts`)
+
+Runs on `/admin/:path*` and `/teacher/:path*`:
+- Redirects unauthenticated requests to `/admin/login` (checks Supabase session cookie)
+- Rate-limits `/admin/login` and `/teacher/login` to 10 requests/minute per IP via Upstash Redis sliding window; returns HTTP 429 if exceeded. Rate limiting is silently skipped when Upstash env vars are absent.
+
+### Teacher Dashboard
+
+`/teacher/dashboard` is a tabbed interface with:
+- **Schedule** — teacher's assigned periods
+- **Attendance** — QR-code scanner (`jsqr`) for marking Present/Late/Absent/Excused; manual fallback; realtime sync via Supabase
+- **Cutting Class Detector** — flags students with repeated absences
+- **Student Detail** — per-student attendance breakdown
+- **Reports** — exportable attendance reports
+- **Announcements** — reads announcements posted from the admin portal
+- **Academic Calendar** — shared calendar view
 
 ### Notable Patterns
 

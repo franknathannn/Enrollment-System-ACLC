@@ -328,51 +328,60 @@ export function EditModal({
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 50,
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
-        background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)",
-        padding: 0,
+        display: "flex",
+        background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
       }}
-      // On md+ align center with padding
-      className="sm:items-center sm:p-4"
+      className="items-end justify-center sm:items-center sm:p-4"
       onClick={onClose}
     >
+      <style>{`
+        @keyframes sheetUp {
+          from { opacity:0; transform:translateY(32px) }
+          to   { opacity:1; transform:translateY(0)    }
+        }
+        @keyframes modalPop {
+          from { opacity:0; transform:scale(0.96) translateY(10px) }
+          to   { opacity:1; transform:scale(1)    translateY(0)    }
+        }
+        @keyframes backdropIn {
+          from { opacity:0 }
+          to   { opacity:1 }
+        }
+        .edit-modal-sheet { animation: sheetUp 0.28s cubic-bezier(0.16,1,0.3,1) both; }
+        @media (min-width:640px) {
+          .edit-modal-sheet { animation: modalPop 0.24s cubic-bezier(0.16,1,0.3,1) both; }
+        }
+        .edit-modal-drag-handle {
+          width: 36px; height: 4px; border-radius: 99px;
+          margin: 10px auto 2px;
+          background: rgba(148,163,184,0.35);
+        }
+        @media (min-width:640px) { .edit-modal-drag-handle { display: none; } }
+      `}</style>
+
       <div
         style={{
-          width: "100%", maxWidth: 460,
+          width: "100%", maxWidth: 480,
           background: surf, border: `1px solid ${bdr}`,
-          // Mobile: bottom sheet style (rounded top only)
-          borderRadius: "24px 24px 0 0",
           boxShadow: isDarkMode
-            ? "0 -20px 60px -12px rgba(0,0,0,0.8)"
-            : "0 -20px 60px -12px rgba(0,0,0,0.18)",
+            ? "0 32px 80px -12px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06)"
+            : "0 32px 80px -12px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.04)",
           overflow: "hidden",
           maxHeight: "92dvh",
           display: "flex", flexDirection: "column",
-          animation: "modalIn 0.22s cubic-bezier(0.16,1,0.3,1)",
         }}
-        // On md+ fully rounded
-        className="sm:rounded-[28px] sm:max-h-[95dvh]"
+        className="edit-modal-sheet rounded-t-[28px] sm:rounded-[28px] sm:max-h-[95dvh]"
         onClick={e => e.stopPropagation()}
       >
-        <style>{`
-          @keyframes modalIn {
-            from { opacity:0; transform:translateY(20px) }
-            to   { opacity:1; transform:translateY(0)    }
-          }
-          @media (min-width:640px) {
-            @keyframes modalIn {
-              from { opacity:0; transform:scale(0.95) translateY(8px) }
-              to   { opacity:1; transform:scale(1)    translateY(0)   }
-            }
-          }
-        `}</style>
+        {/* Drag handle — mobile only */}
+        <div className="edit-modal-drag-handle" />
 
-        {/* Header — sticky inside modal */}
+        {/* Header */}
         <div style={{
-          padding: "18px 20px 16px",
+          padding: "14px 20px 16px",
           borderBottom: `1px solid ${bdr}`,
-          background: isDarkMode ? "rgba(30,41,59,0.6)" : "#f8fafc",
-          borderRadius: "28px 28px 0 0",
+          background: isDarkMode ? "rgba(15,23,42,0.6)" : "rgba(248,250,252,0.9)",
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

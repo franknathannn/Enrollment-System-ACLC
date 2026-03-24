@@ -3,9 +3,9 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CheckCircle2, FlaskConical, Users, Layers, UserPlus } from "lucide-react"
+import { FlaskConical, Layers, UserPlus, Zap, Settings2 } from "lucide-react"
 import { toast } from "sonner"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface Props {
   mode: string
@@ -37,46 +37,63 @@ export function PredictionControlPanel({ mode, setMode, simulationValue, setSimu
   }
 
   return (
-    <div className={`relative overflow-hidden flex flex-col md:flex-row items-end gap-4 p-4 rounded-xl shadow-sm border ring-1 transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800 ring-slate-800' : 'bg-white border-indigo-100 ring-indigo-50 shadow-indigo-100/50'}`}>
-      <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500" />
+    <div className={`relative overflow-hidden flex flex-col md:flex-row items-end gap-8 p-8 rounded-[2rem] shadow-2xl border transition-all duration-500 ${
+      isDarkMode 
+        ? 'bg-slate-900/80 border-slate-800/50 backdrop-blur-xl' 
+        : 'bg-white/80 border-slate-100 backdrop-blur-xl shadow-slate-200/40'
+    }`}>
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-blue-500 to-emerald-500 opacity-50" />
       
-      <div className="space-y-2">
-        <Label className={`text-[10px] uppercase font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Analysis Mode</Label>
+      <div className="space-y-4 flex-1">
+        <div className="flex items-center gap-2">
+          <Settings2 className={`w-3.5 h-3.5 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
+          <Label className={`text-[10px] font-black uppercase tracking-[0.25em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+            Analytical Perspective
+          </Label>
+        </div>
+        
         <Select value={mode} onValueChange={(v: any) => setMode(v)}>
+          <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <SelectTrigger className={`w-[200px] font-semibold ${isDarkMode ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+              <SelectTrigger className={`w-full md:w-[260px] h-12 font-black rounded-2xl transition-all duration-300 ${
+                isDarkMode 
+                  ? 'bg-slate-950/50 border-slate-800 text-white focus:ring-indigo-500/40 hover:border-indigo-500/30' 
+                  : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-indigo-500/20 shadow-sm hover:border-indigo-300'
+              }`}>
                 <SelectValue />
               </SelectTrigger>
             </TooltipTrigger>
-            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Choose between live data or simulation mode</p></TooltipContent>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800 p-2 rounded-lg shadow-xl"><p className="text-xs font-medium">Toggle between live stream data and hypothetical scenarios</p></TooltipContent>
           </Tooltip>
-          <SelectContent className={isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'}>
-            <SelectItem value="live_enrolled" className={`cursor-pointer ${isDarkMode ? 'focus:bg-slate-800 text-white' : 'focus:bg-slate-100 text-slate-900'}`}>
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
+          </TooltipProvider>
+          
+          <SelectContent className={`rounded-2xl overflow-hidden shadow-2xl p-1 ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-900'}`}>
+            <SelectItem value="live_enrolled" className="rounded-xl cursor-pointer py-3 focus:bg-emerald-500/10">
+              <div className="flex items-center gap-3">
+                <div className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                Live Enrolled
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                </div>
+                <span className="font-bold tracking-tight">Live Enrolled</span>
               </div>
             </SelectItem>
-            <SelectItem value="live_enrollees" className={`cursor-pointer ${isDarkMode ? 'focus:bg-slate-800 text-white' : 'focus:bg-slate-100 text-slate-900'}`}>
-              <div className="flex items-center gap-2">
-                <UserPlus className="w-3 h-3 text-blue-500" />
-                Live Enrollees
+            <SelectItem value="live_enrollees" className="rounded-xl cursor-pointer py-3 focus:bg-blue-500/10">
+              <div className="flex items-center gap-3">
+                <UserPlus className="w-4 h-4 text-blue-500" />
+                <span className="font-bold tracking-tight">Live Enrollees</span>
               </div>
             </SelectItem>
-            <SelectItem value="live_full" className={`cursor-pointer ${isDarkMode ? 'focus:bg-slate-800 text-white' : 'focus:bg-slate-100 text-slate-900'}`}>
-              <div className="flex items-center gap-2">
-                <Layers className="w-3 h-3 text-indigo-500" />
-                Live Full Data
+            <SelectItem value="live_full" className="rounded-xl cursor-pointer py-3 focus:bg-indigo-500/10">
+              <div className="flex items-center gap-3">
+                <Layers className="w-4 h-4 text-indigo-500" />
+                <span className="font-bold tracking-tight">Full Data</span>
               </div>
             </SelectItem>
-            <SelectItem value="simulation" className={`cursor-pointer ${isDarkMode ? 'focus:bg-slate-800 text-white' : 'focus:bg-slate-100 text-slate-900'}`}>
-              <div className="flex items-center gap-2">
-                <FlaskConical className="w-3 h-3 text-purple-500" />
-                Simulation / What-If
+            <SelectItem value="simulation" className="rounded-xl cursor-pointer py-3 focus:bg-purple-500/10">
+              <div className="flex items-center gap-3">
+                <FlaskConical className="w-4 h-4 text-purple-500" />
+                <span className="font-bold tracking-tight">Simulation / What If</span>
               </div>
             </SelectItem>
           </SelectContent>
@@ -84,27 +101,29 @@ export function PredictionControlPanel({ mode, setMode, simulationValue, setSimu
       </div>
 
       {mode === 'simulation' && (
-        <div className="space-y-2 animate-in fade-in slide-in-from-left-4 duration-300">
-           <Label className="text-[10px] uppercase font-bold text-purple-500">Simulate Total Enrollees</Label>
-           <div className="flex items-center gap-2">
-             <Tooltip>
-                <TooltipTrigger asChild>
-                   <Input 
-                      type="number" 
-                      // Fix: Show empty string if 0 so user doesn't see "01000"
-                      value={simulationValue === 0 ? '' : simulationValue}
-                      onChange={handleInputChange}
-                      onBlur={handleBlur}
-                      placeholder="Enter value..."
-                      className={`w-32 font-bold focus-visible:ring-purple-500 ${isDarkMode ? 'text-purple-400 border-purple-900/50 bg-slate-950 placeholder:text-purple-700' : 'text-purple-600 border-purple-200 bg-white placeholder:text-purple-300'}`}
-                   />
-                </TooltipTrigger>
-                <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Enter a hypothetical enrollment number</p></TooltipContent>
-             </Tooltip>
-             <span className={`text-xs whitespace-nowrap ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                (Real: {currentRealValue})
-             </span>
-           </div>
+        <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-700 ease-out">
+          <div className="flex items-center gap-2">
+            <Zap className="w-3.5 h-3.5 text-purple-500 fill-purple-500/20" />
+            <Label className="text-[10px] font-black uppercase tracking-[0.25em] text-purple-500">
+              Hypothetical Input
+            </Label>
+          </div>
+          
+          <div className="relative group">
+             <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+             <Input 
+               type="number" 
+               value={simulationValue === 0 ? '' : simulationValue}
+               onChange={handleInputChange}
+               onBlur={handleBlur}
+               placeholder="0"
+               className={`relative w-40 h-12 font-black text-xl rounded-2xl transition-all tabular-nums text-center ${
+                 isDarkMode 
+                   ? 'text-purple-400 border-purple-900/50 bg-slate-950 placeholder:text-purple-900/30 focus:border-purple-500' 
+                   : 'text-purple-600 border-purple-100 bg-white placeholder:text-purple-200 focus:border-purple-400 shadow-sm'
+               }`}
+             />
+          </div>
         </div>
       )}
     </div>

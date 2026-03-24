@@ -276,8 +276,8 @@ function ThisYearSpotlight({
   )
 }
 
-// ─── ENSEMBLE ENGINE PANEL ────────────────────────────────────────────────────
-function PythonEnginePanel({
+// ─── LOV-CV (PYTHON ENGINE) PANEL ──────────────────────────────────────────────
+function LovCvPythonEnginePanel({
   result, isDarkMode, currentCount, pendingCount,
 }: {
   result: EnsembleResult | null
@@ -286,7 +286,7 @@ function PythonEnginePanel({
   pendingCount: number
 }) {
   if (!result) return (
-    <div className={`rounded-2xl border p-8 flex items-center justify-center gap-3 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+    <div className={`rounded-2xl border p-8 flex items-center justify-center gap-3 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
       <AlertCircle className="w-4 h-4 text-slate-400" />
       <span className={`text-sm font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>No historical data available for ensemble prediction.</span>
     </div>
@@ -300,38 +300,45 @@ function PythonEnginePanel({
                  :                 { label: 'Low Confidence', color: 'text-red-500'    }
 
   return (
-    <div className={`relative rounded-2xl border-2 overflow-hidden shadow-lg ${isDarkMode ? 'bg-slate-900 border-emerald-800/40' : 'bg-white border-emerald-200'}`}>
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+    <div className={`relative rounded-3xl border overflow-hidden shadow-2xl transition-all duration-500 ${isDarkMode ? 'bg-slate-900/50 border-emerald-500/20 backdrop-blur-xl' : 'bg-white border-emerald-100 shadow-emerald-100/20'}`}>
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 opacity-90" />
 
-      <div className="p-5 space-y-5">
+      <div className="p-6 md:p-8 space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <Wand2 className="w-4 h-4 text-emerald-500" />
-            <h3 className={`text-sm font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-              Ensemble Engine
-            </h3>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-2xl ${isDarkMode ? 'bg-emerald-500/10' : 'bg-emerald-50'}`}>
+              <Wand2 className="w-5 h-5 text-emerald-500" />
+            </div>
+            <div>
+              <h3 className={`text-sm font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-emerald-400' : 'text-slate-600'}`}>
+                LOV-CV (PYTHON ENGINE)
+              </h3>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${isDarkMode ? 'bg-emerald-950/40 border-emerald-800/40 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${isDarkMode ? 'bg-emerald-950/40 border-emerald-800/40 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
               {result.n_records} records · {result.target_year}
             </span>
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${isDarkMode ? 'bg-blue-950/30 border-blue-800/30 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
+            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${isDarkMode ? 'bg-blue-950/30 border-blue-800/30 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
               Works on Vercel
             </span>
           </div>
         </div>
 
         {/* Enrolled so far */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className={`rounded-xl p-4 col-span-1 ${isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
-            <p className={`text-[10px] uppercase font-bold tracking-widest mb-1.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Enrolled So Far</p>
-            <p className={`text-3xl font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{currentCount.toLocaleString()}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className={`rounded-2xl p-6 col-span-1 border transition-all ${isDarkMode ? 'bg-slate-800/40 border-slate-700/50 hover:border-emerald-500/30' : 'bg-slate-50 border-slate-100 hover:border-emerald-200'}`}>
+            <p className={`text-[10px] uppercase font-black tracking-[0.2em] mb-3 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Enrolled So Far</p>
+            <p className={`text-4xl font-black tabular-nums tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{currentCount.toLocaleString()}</p>
             {pendingCount > 0 && (
-              <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>+{pendingCount.toLocaleString()} pending</p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <p className={`text-xs font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>+{pendingCount.toLocaleString()} pending</p>
+              </div>
             )}
           </div>
-          <div className={`rounded-xl p-4 col-span-2 ${isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
+          <div className={`rounded-2xl p-6 col-span-2 border transition-all ${isDarkMode ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}>
             {(() => {
               const barScale   = result.optimistic > 0 ? result.optimistic : 1
               const fillPct    = Math.min(100, Math.round((currentCount / barScale) * 100))
@@ -340,89 +347,114 @@ function PythonEnginePanel({
               const remaining  = Math.max(0, result.realistic - currentCount)
               const passed     = currentCount >= result.realistic
               return (
-                <>
-                  <div className="flex justify-between items-center mb-2">
-                    <p className={`text-[10px] uppercase font-bold tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Progress within projection range</p>
-                    <p className={`text-sm font-black ${passed ? 'text-emerald-500' : isDarkMode ? 'text-white' : 'text-slate-900'}`}>{fillPct}%</p>
+                <div className="h-full flex flex-col justify-center">
+                  <div className="flex justify-between items-end mb-3">
+                    <div>
+                      <p className={`text-[10px] uppercase font-black tracking-[0.2em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Progress within projection range</p>
+                    </div>
+                    <p className={`text-2xl font-black tabular-nums tracking-tighter ${passed ? 'text-emerald-500' : isDarkMode ? 'text-white' : 'text-slate-900'}`}>{fillPct}%</p>
                   </div>
-                  <div className={`relative h-3 rounded-full overflow-hidden ${isDarkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                    <div className="absolute top-0 bottom-0 w-px bg-rose-400/70 z-10" style={{ left: `${declPct}%` }} />
-                    <div className="absolute top-0 bottom-0 w-px bg-blue-400/80 z-10"  style={{ left: `${realPct}%` }} />
-                    <div className={`absolute top-0 left-0 bottom-0 rounded-full transition-all duration-700 ${passed ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-blue-500 to-violet-500'}`} style={{ width: `${Math.min(fillPct, 100)}%` }} />
+                  <div className={`relative h-4 rounded-full overflow-hidden p-0.5 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-200'}`}>
+                    <div className="absolute top-0 bottom-0 w-0.5 bg-rose-500/50 z-10" style={{ left: `${declPct}%` }} />
+                    <div className="absolute top-0 bottom-0 w-0.5 bg-blue-500/60 z-10"  style={{ left: `${realPct}%` }} />
+                    <div className={`absolute top-0 left-0 bottom-0 rounded-full transition-all duration-1000 ease-out ${passed ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'}`} style={{ width: `${Math.min(fillPct, 100)}%` }} />
                   </div>
-                  <div className="relative h-4 mt-1.5">
-                    <span className="absolute text-[9px] text-rose-400 font-semibold -translate-x-1/2" style={{ left: `${declPct}%` }}>▲ {result.declining.toLocaleString()}</span>
-                    <span className="absolute text-[9px] font-semibold -translate-x-1/2" style={{ left: `${realPct}%`, color: isDarkMode ? '#93c5fd' : '#2563eb' }}>▲ {result.realistic.toLocaleString()}</span>
-                    <span className="absolute right-0 text-[9px] text-emerald-500 font-semibold">{result.optimistic.toLocaleString()} ▲</span>
+                  <div className="relative h-5 mt-2">
+                    <span className="absolute text-[10px] text-rose-500 font-black -translate-x-1/2" style={{ left: `${declPct}%` }}>▲ {result.declining.toLocaleString()}</span>
+                    <span className="absolute text-[10px] font-black -translate-x-1/2" style={{ left: `${realPct}%`, color: isDarkMode ? '#60a5fa' : '#2563eb' }}>▲ {result.realistic.toLocaleString()}</span>
+                    <span className="absolute right-0 text-[10px] text-emerald-500 font-black">{result.optimistic.toLocaleString()} ▲</span>
                   </div>
-                  {!passed && (
-                    <p className={`text-[10px] mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{remaining.toLocaleString()} more students to hit the most likely target</p>
-                  )}
-                </>
+                </div>
               )
             })()}
           </div>
         </div>
 
         {/* Big numbers */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className={`rounded-xl p-4 ${isDarkMode ? 'bg-emerald-950/30' : 'bg-emerald-50'}`}>
-            <p className="text-[10px] uppercase font-bold tracking-widest mb-1.5 text-emerald-500">Expected Enrollment</p>
-            <p className={`text-3xl font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className={`rounded-2xl p-6 border transition-all ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50/50 border-emerald-100 shadow-sm'}`}>
+            <p className="text-[10px] uppercase font-black tracking-[0.2em] mb-2.5 text-emerald-500">Expected Enrollment</p>
+            <p className={`text-4xl font-black tabular-nums tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
               {result.ensemble.toLocaleString()}
             </p>
-            <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>S.Y. {result.target_year}</p>
+            <p className={`text-[10px] font-bold mt-2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>S.Y. {result.target_year}</p>
           </div>
-          <div className={`rounded-xl p-4 ${isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
-            <p className={`text-[10px] uppercase font-bold tracking-widest mb-1.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Likely Range</p>
-            <p className={`text-lg font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+          <div className={`rounded-2xl p-6 border transition-all ${isDarkMode ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}>
+            <p className={`text-[10px] uppercase font-black tracking-[0.2em] mb-2.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Likely Range</p>
+            <p className={`text-xl font-black tabular-nums tracking-tight ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
               {result.ci_lo.toLocaleString()} – {result.ci_hi.toLocaleString()}
             </p>
-            <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>where enrollment will likely land</p>
+            <p className={`text-[10px] font-bold mt-2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>where enrollment will likely land</p>
           </div>
-          <div className={`rounded-xl p-4 ${isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
-            <p className={`text-[10px] uppercase font-bold tracking-widest mb-1.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Prediction Quality</p>
-            <p className={`text-2xl font-black ${accuracy.color}`}>{accuracy.label}</p>
-            <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>avg. miss: ~{result.accuracy.avg_mae} students</p>
+          <div className={`rounded-2xl p-6 border transition-all ${isDarkMode ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}>
+            <p className={`text-[10px] uppercase font-black tracking-[0.2em] mb-2.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Prediction Quality</p>
+            <p className={`text-3xl font-black tracking-tight ${accuracy.color}`}>{accuracy.label}</p>
+            <p className={`text-[10px] font-bold mt-2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>avg. miss: ~{result.accuracy.avg_mae} students</p>
           </div>
         </div>
 
         {/* Scenarios */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
-            { label: 'If enrollment slows', value: result.declining,  color: isDarkMode ? 'text-rose-400 bg-rose-950/30 border-rose-900/40'        : 'text-rose-600 bg-rose-50 border-rose-200'      },
-            { label: 'Most likely',          value: result.realistic,  color: isDarkMode ? 'text-blue-300 bg-blue-950/30 border-blue-800/40'         : 'text-blue-700 bg-blue-50 border-blue-200', bold: true },
-            { label: 'If enrollment grows',  value: result.optimistic, color: isDarkMode ? 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40' : 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+            { label: 'If enrollment slows', value: result.declining,  color: isDarkMode ? 'text-rose-400 bg-rose-500/5 border-rose-500/20' : 'text-rose-600 bg-rose-50 border-rose-100' },
+            { label: 'Most likely',  value: result.realistic,  color: isDarkMode ? 'text-blue-300 bg-blue-500/5 border-blue-500/20' : 'text-blue-700 bg-blue-50 border-blue-100', bold: true },
+            { label: 'If enrollment grows',  value: result.optimistic, color: isDarkMode ? 'text-emerald-400 bg-emerald-500/5 border-emerald-500/20' : 'text-emerald-700 bg-emerald-50 border-emerald-100' },
           ].map(s => (
-            <div key={s.label} className={`rounded-xl border p-3 text-center ${s.color}`}>
-              <p className="text-[9px] uppercase font-bold tracking-widest opacity-70 mb-1">{s.label}</p>
-              <p className={`font-black tabular-nums ${s.bold ? 'text-xl' : 'text-lg'}`}>{s.value.toLocaleString()}</p>
+            <div key={s.label} className={`rounded-2xl border p-5 text-center transition-all hover:scale-[1.02] cursor-default ${s.color}`}>
+              <p className="text-[10px] uppercase font-black tracking-[0.2em] opacity-80 mb-2">{s.label}</p>
+              <p className={`font-black tabular-nums tracking-tight ${s.bold ? 'text-3xl' : 'text-2xl'}`}>{s.value.toLocaleString()}</p>
             </div>
           ))}
         </div>
 
         {/* Model breakdown */}
-        <div className={`rounded-xl border overflow-hidden ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
-          <div className={`px-4 py-2.5 text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
+        <div className={`rounded-2xl border overflow-hidden transition-all ${isDarkMode ? 'border-slate-800 bg-slate-900/40' : 'border-slate-100 bg-slate-50/30 shadow-sm'}`}>
+          <div className={`px-5 py-4 text-[10px] font-black uppercase tracking-[0.2em] border-b ${isDarkMode ? 'bg-slate-800/50 text-slate-400 border-slate-700/50' : 'bg-slate-100/50 text-slate-500 border-slate-100'}`}>
             How the prediction was made — 4 methods combined
           </div>
-          {models.map((m: any, i: number) => (
-            <div key={i} className={`flex items-center justify-between px-4 py-3 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-              <span className={`text-xs font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{m.label}</span>
-              <div className="flex items-center gap-4 text-xs">
-                <span className={`font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{Math.round(m.pred).toLocaleString()} students</span>
-                <span className={`font-medium ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>~{m.mape}% off historically</span>
-                <span className={`font-bold px-2 py-0.5 rounded-full text-[10px] ${isDarkMode ? 'bg-emerald-950/50 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
-                  {m.weight}% influence
-                </span>
-              </div>
-            </div>
-          ))}
+          <div className="divide-y divide-slate-800/20 dark:divide-slate-800/50">
+            {models.map((m: any, i: number) => {
+              const explanations = [
+                "Projects a steady path by fitting a line to all historical data points. It provides a baseline for long-term growth patterns.",
+                "Weighs recent data points more heavily to capture current momentum. It is more sensitive to recent shifts in enrollment trends.",
+                "Fits a quadratic curve to capture non-linear patterns like rapid growth or slowing trends. It helps identify acceleration or deceleration in the data.",
+                "Uses exponential smoothing to prioritize the most recent level while reducing historical noise. It 'carries forward' the current state into the next period."
+              ];
+              return (
+                <Tooltip key={i}>
+                  <TooltipTrigger asChild>
+                    <div className={`flex items-center justify-between px-6 py-4 hover:bg-slate-500/5 transition-colors cursor-help`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-indigo-500' : i === 2 ? 'bg-purple-500' : 'bg-emerald-500'}`} />
+                        <span className={`text-xs font-black uppercase tracking-wider ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{m.label}</span>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <p className={`text-sm font-black tabular-nums tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{Math.round(m.pred).toLocaleString()}</p>
+                          <p className={`text-[9px] font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>PREDICTED</p>
+                        </div>
+                        <div className="text-right min-w-[60px]">
+                          <p className={`text-sm font-black tabular-nums ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{m.weight}%</p>
+                          <p className={`text-[9px] font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>influence</p>
+                        </div>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="bg-slate-900 text-white border-slate-800 max-w-xs p-3 rounded-xl shadow-2xl">
+                    <p className="text-xs leading-relaxed font-medium">{explanations[i]}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
         </div>
 
-        <p className={`text-[10px] ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>
-          Based on {result.n_records} years of past enrollment data · More historical data improves accuracy · Final numbers may vary as enrollment is ongoing
-        </p>
+        <div className={`flex items-center gap-2 p-4 rounded-xl border ${isDarkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50/50 border-slate-100'}`}>
+          <AlertCircle className="w-3.5 h-3.5 text-slate-500" />
+          <p className={`text-[10px] font-medium leading-relaxed ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>
+            Based on {result.n_records} years of past enrollment data · More historical data improves accuracy · Final numbers may vary as enrollment is ongoing
+          </p>
+        </div>
       </div>
     </div>
   )
@@ -467,74 +499,70 @@ function StatInsightsPanel({
   const cycleLabel = cyclePhase === 'up' ? '↑ Upturn expected' : cyclePhase === 'down' ? '↓ Dip expected' : '→ Holding steady'
 
   return (
-    <Card className={`border shadow-sm relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-      <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-indigo-500 to-purple-400" />
-      <CardHeader className="pb-3">
-        <CardTitle className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          <span className="w-2 h-5 rounded-full bg-gradient-to-b from-violet-500 to-indigo-500" />
-          How the Prediction Model Works
-        </CardTitle>
-        <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
-          How the model reads your enrollment history and builds each scenario
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5">
+    <div className={`relative rounded-3xl border overflow-hidden shadow-xl transition-all duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-slate-100/50'}`}>
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-violet-500 via-indigo-500 to-purple-400 opacity-90" />
+      <div className="p-6 md:p-8 space-y-6">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-2xl ${isDarkMode ? 'bg-violet-500/10' : 'bg-violet-50'}`}>
+            <Settings2 className="w-5 h-5 text-violet-500" />
+          </div>
+          <div>
+            <h3 className={`text-sm font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-violet-400' : 'text-slate-600'}`}>
+              How the Prediction Model Works
+            </h3>
+            <p className={`text-[10px] font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>How the model reads your enrollment history and builds each scenario</p>
+          </div>
+        </div>
 
         {/* Cycle + convergence row */}
-        <div className="grid grid-cols-4 gap-3">
-          <div className={`rounded-xl p-3 ${isDarkMode ? 'bg-slate-800/60' : 'bg-slate-50'}`}>
-            <p className={`text-[9px] uppercase font-bold tracking-widest mb-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Cycle Phase</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className={`rounded-2xl p-4 border transition-all ${isDarkMode ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+            <p className={`text-[9px] uppercase font-black tracking-[0.2em] mb-2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Cycle Phase</p>
             <p className={`text-base font-black ${cycleColor}`}>{cycleLabel}</p>
-            <p className={`text-[10px] mt-0.5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-              {dampening < 0.6 ? 'Swings shrinking fast' : dampening < 0.85 ? 'Swings shrinking gradually' : 'Swings barely changing'}
-            </p>
           </div>
-          <div className={`rounded-xl p-3 ${isDarkMode ? 'bg-slate-800/60' : 'bg-slate-50'}`}>
-            <p className={`text-[9px] uppercase font-bold tracking-widest mb-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Long-Run Mean</p>
+          <div className={`rounded-2xl p-4 border transition-all ${isDarkMode ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+            <p className={`text-[9px] uppercase font-black tracking-[0.2em] mb-2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Long-Run Mean</p>
             <p className={`text-base font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{Math.round(longRunMean).toLocaleString()}</p>
-            <p className={`text-[10px] mt-0.5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Where enrollment is settling</p>
           </div>
-          <div className={`rounded-xl p-3 border ${isDarkMode ? 'bg-rose-950/20 border-rose-900/40' : 'bg-rose-50 border-rose-200'}`}>
-            <p className={`text-[9px] uppercase font-bold tracking-widest mb-1 text-rose-500`}>Structural Floor</p>
+          <div className={`rounded-2xl p-4 border transition-all ${isDarkMode ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50 border-rose-100 shadow-sm'}`}>
+            <p className={`text-[9px] uppercase font-black tracking-[0.2em] mb-2 text-rose-500`}>Structural Floor</p>
             <p className={`text-base font-black text-rose-500`}>{enrollmentFloor.toLocaleString()}</p>
-            <p className={`text-[10px] mt-0.5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Lowest realistic outcome</p>
           </div>
-          <div className={`rounded-xl p-3 border ${isDarkMode ? 'bg-emerald-950/20 border-emerald-900/40' : 'bg-emerald-50 border-emerald-200'}`}>
-            <p className={`text-[9px] uppercase font-bold tracking-widest mb-1 text-emerald-500`}>Growth Ceiling</p>
+          <div className={`rounded-2xl p-4 border transition-all ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
+            <p className={`text-[9px] uppercase font-black tracking-[0.2em] mb-2 text-emerald-500`}>Growth Ceiling</p>
             <p className={`text-base font-black text-emerald-500`}>{enrollmentCeiling.toLocaleString()}</p>
-            <p className={`text-[10px] mt-0.5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Highest realistic outcome</p>
           </div>
         </div>
 
         {/* Method breakdown */}
-        <div className="space-y-2">
-          <p className={`text-[9px] uppercase font-bold tracking-widest ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+        <div className={`rounded-2xl border overflow-hidden ${isDarkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/30 border-slate-100'}`}>
+          <div className={`px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] border-b ${isDarkMode ? 'bg-slate-800/50 text-slate-500 border-slate-700/50' : 'bg-slate-100/50 text-slate-400 border-slate-100'}`}>
             How each approach reads the data — final baseline: <span className={isDarkMode ? 'text-violet-400' : 'text-violet-600'}>{projectionBaseline.toLocaleString()}</span>
-          </p>
-          {methods.map((m, idx) => {
-            const barWidth = projectionBaseline > 0 ? Math.min(100, Math.round((m.value / projectionBaseline) * 100)) : 0
-            const colors = ['bg-violet-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500']
-            return (
-              <div key={m.name} className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${colors[idx]}`} />
-                    <span className={`text-xs font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{m.name}</span>
-                    <span className={`text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>({m.weight})</span>
+          </div>
+          <div className="p-5 space-y-5">
+            {methods.map((m, idx) => {
+              const barWidth = projectionBaseline > 0 ? Math.min(100, Math.round((m.value / projectionBaseline) * 100)) : 0
+              const colors = ['bg-violet-500', 'bg-blue-500', 'bg-emerald-500']
+              return (
+                <div key={m.name} className="group">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-1.5 h-1.5 rounded-full ${colors[idx]}`} />
+                      <span className={`text-[11px] font-black uppercase tracking-wider ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{m.name}</span>
+                    </div>
+                    <span className={`text-xs font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{m.value.toLocaleString()}</span>
                   </div>
-                  <span className={`text-xs font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{m.value.toLocaleString()}</span>
+                  <div className={`h-1.5 rounded-full overflow-hidden ${isDarkMode ? 'bg-slate-900' : 'bg-slate-200'}`}>
+                    <div className={`h-full rounded-full ${colors[idx]} opacity-70 transition-all duration-1000`} style={{ width: `${barWidth}%` }} />
+                  </div>
+                  <p className={`text-[10px] font-bold mt-2 leading-relaxed ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>{m.desc}</p>
                 </div>
-                <div className={`h-1.5 rounded-full ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                  <div className={`h-full rounded-full ${colors[idx]} opacity-70`} style={{ width: `${barWidth}%` }} />
-                </div>
-                <p className={`text-[9px] ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>{m.desc}</p>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
-
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 
@@ -685,7 +713,7 @@ export default function PredictiveAnalytics() {
   const [alsLiveCount, setAlsLiveCount] = useState<number>(0)
   const fetchingRef = useRef(false)
 
-  // Ensemble engine toggle
+  // LOV-CV engine toggle
   const [predEngine, setPredEngine] = useState<'js' | 'ensemble'>('js')
 
   // Market data predictor — uses recent growth rates from past JHS and ALS
@@ -766,7 +794,7 @@ export default function PredictiveAnalytics() {
       setJhsLiveCount(jhsRes.count || 0)
       setAlsLiveCount(alsRes.count || 0)
 
-      let rawHistory = historyRes.data || []
+      const rawHistory = historyRes.data || []
       let sortedHistory = [...rawHistory].sort((a: any, b: any) => parseInt(a.school_year) - parseInt(b.school_year))
 
       // When school year changes (forward or backward), clean up stale records:
@@ -1285,32 +1313,10 @@ export default function PredictiveAnalytics() {
                 </div>
 
                 <div className="flex items-center gap-4 flex-wrap">
-                    <p className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        Enrollment Analyzing
-                    </p>
                     <HistoryEditor historyData={history} isDarkMode={isDarkMode} />
-                    {/* Prediction engine toggle */}
-                    <div className={`flex rounded-xl border overflow-hidden text-xs font-bold shadow-sm ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
-                      <button
-                        onClick={() => setPredEngine('js')}
-                        className={`px-3.5 py-2 flex items-center gap-1.5 transition-all ${
-                          predEngine === 'js'
-                            ? 'bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-inner'
-                            : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-white'
-                        }`}
-                      >
-                        <BarChart2 className="w-3 h-3" /> Standard
-                      </button>
-                      <button
-                        onClick={() => setPredEngine('ensemble')}
-                        className={`px-3.5 py-2 flex items-center gap-1.5 transition-all ${
-                          predEngine === 'ensemble'
-                            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-inner'
-                            : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-white'
-                        }`}
-                      >
-                        <Wand2 className="w-3 h-3" /> Ensemble
-                      </button>
+                    <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border shadow-sm transition-all ${isDarkMode ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+                      <Wand2 className="w-3.5 h-3.5 animate-pulse" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">LOV-CV (PYTHON ENGINE)</span>
                     </div>
                 </div>
             </div>
@@ -1325,41 +1331,24 @@ export default function PredictiveAnalytics() {
             />
         </div>
 
-        {/* ── THIS YEAR SPOTLIGHT / PYTHON ENGINE ── */}
-        {predEngine === 'ensemble' && (
-          <PythonEnginePanel result={ensembleResult} isDarkMode={isDarkMode} currentCount={effectiveCurrentCount} pendingCount={pendingCount} />
-        )}
-        {isViewingActiveYear && predEngine === 'js' && (
-          <ThisYearSpotlight
-            schoolYear={activeConfig.school_year}
-            currentCount={effectiveCurrentCount}
-            expectedOutcome={metrics.expectedOutcome}
-            lowestPossible={metrics.lowestPossible}
-            highestPossible={metrics.highestPossible}
-            pendingCount={pendingCount}
-            isSimulation={mode === 'simulation'}
-            isDarkMode={isDarkMode}
-            jhsCount={jhsLiveCount}
-            alsCount={alsLiveCount}
-          />
-        )}
+        {/* ── LOV-CV ENGINE PANEL ── */}
+        <LovCvPythonEnginePanel result={ensembleResult} isDarkMode={isDarkMode} currentCount={effectiveCurrentCount} pendingCount={pendingCount} />
 
         {/* ── INSIGHT METRICS ── */}
         <InsightMetrics
-            projectedGrowth={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.growth           : metrics.growth}
-            expectedOutcome={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.expectedOutcome  : metrics.expectedOutcome}
+            projectedGrowth={ensembleMetrics ? ensembleMetrics.growth : "0"}
+            expectedOutcome={ensembleMetrics ? ensembleMetrics.expectedOutcome : 0}
             currentCount={effectiveCurrentCount}
-            nextYearTotal={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.nextTotal         : metrics.nextTotal}
-            lowestPossible={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.lowestPossible   : metrics.lowestPossible}
-            highestPossible={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.highestPossible : metrics.highestPossible}
+            nextYearTotal={ensembleMetrics ? ensembleMetrics.nextTotal : 0}
+            lowestPossible={ensembleMetrics ? ensembleMetrics.lowestPossible : 0}
+            highestPossible={ensembleMetrics ? ensembleMetrics.highestPossible : 0}
             isSimulation={mode === 'simulation'}
-            hasHistory={predEngine === 'ensemble' && ensembleMetrics ? ensembleMetrics.hasHistory           : metrics.hasHistory}
+            hasHistory={ensembleMetrics ? ensembleMetrics.hasHistory : false}
             isDarkMode={isDarkMode}
         />
 
         {/* ── ENROLLMENT CHART ── */}
         <div className={`rounded-2xl border shadow-sm transition-all duration-300 hover:shadow-md overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-            {/* Accent bar */}
             <div className="h-1 bg-gradient-to-r from-blue-500 via-violet-500 to-purple-500" />
             <div className="p-6">
               <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
@@ -1371,15 +1360,13 @@ export default function PredictiveAnalytics() {
                               Enrollment Graph
                           </h3>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Historical data and future scenario projections</p></TooltipContent>
+                      <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Historical and projected scenarios</p></TooltipContent>
                   </Tooltip>
                   <p className={`text-sm mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                     {mode === 'simulation' ? "Simulating future outcomes" : mode === 'live_enrollees' ? "LIVE · Pending Applicants" : mode === 'live_full' ? "LIVE · Total Volume" : "LIVE · Enrolled Students"}
-                     {chartFocus === 'this_year' && <span className={`ml-2 text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>· ±2 Year Focus</span>}
+                     {mode === 'simulation' ? "Simulation Mode" : "Live Enrollment Data"}
                   </p>
                 </div>
 
-                {/* Chart focus toggle */}
                 <div className={`flex rounded-xl border overflow-hidden text-xs font-bold shadow-sm ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
                   <button
                     onClick={() => setChartFocus('this_year')}
@@ -1389,7 +1376,7 @@ export default function PredictiveAnalytics() {
                         : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-white'
                     }`}
                   >
-                    <Target className="w-3 h-3" /> This Year
+                    <Target className="w-3 h-3" /> Focus View
                   </button>
                   <button
                     onClick={() => setChartFocus('full')}
@@ -1399,11 +1386,11 @@ export default function PredictiveAnalytics() {
                         : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-white'
                     }`}
                   >
-                    <BarChart2 className="w-3 h-3" /> Full View
+                    <BarChart2 className="w-3 h-3" /> Full History
                   </button>
                 </div>
               </div>
-              <EnrollmentTrendChart data={predEngine === 'ensemble' && ensembleChartData ? ensembleChartData : chartData} isDarkMode={isDarkMode} mode={mode as any} />
+              <EnrollmentTrendChart data={ensembleChartData || []} isDarkMode={isDarkMode} mode={mode as any} />
             </div>
         </div>
 

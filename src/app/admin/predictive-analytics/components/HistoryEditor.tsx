@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Pencil, Save, X, Trash2, Database, Calendar, UserPlus, GraduationCap, BookOpen, Users } from "lucide-react"
+import { Pencil, Save, X, Trash2, Database, Calendar, UserPlus, GraduationCap, BookOpen, Users, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 import { 
   Dialog, 
@@ -16,7 +16,7 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { HistoryRecord } from "../types"
 
 interface Props {
@@ -83,258 +83,70 @@ export function HistoryEditor({ historyData, isDarkMode }: Props) {
     else toast.success("Record removed")
   }
 
-  const columns = [
-    { label: "School Year", icon: Calendar, color: "text-slate-300" },
-    { label: "Total Enrolled", icon: Users, color: "text-sky-400" },
-    { label: "JHS Graduates", icon: GraduationCap, color: "text-violet-400" },
-    { label: "ALS Passers", icon: BookOpen, color: "text-amber-400" },
-    { label: "Payees", icon: UserPlus, color: "text-emerald-400" },
-  ]
-
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
-
-        .db-manager * { font-family: 'DM Sans', sans-serif; }
-        .db-mono { font-family: 'DM Mono', monospace !important; }
-
         .db-trigger-btn {
-          position: relative;
-          overflow: hidden;
-          background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-          border: 1px solid rgba(148,163,184,0.15);
+          background: ${isDarkMode ? 'linear-gradient(135deg, #334155 0%, #1e293b 100%)' : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)'};
+          border: 1px solid ${isDarkMode ? 'rgba(148,163,184,0.3)' : 'rgba(148,163,184,0.2)'};
           transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .db-trigger-btn::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(139,92,246,0.1) 100%);
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        }
-        .db-trigger-btn:hover::before { opacity: 1; }
         .db-trigger-btn:hover { 
           border-color: rgba(99,102,241,0.4);
           transform: translateY(-1px);
-          box-shadow: 0 8px 25px rgba(99,102,241,0.2), 0 0 0 1px rgba(99,102,241,0.1);
-        }
-        .db-trigger-btn:active { transform: translateY(0) scale(0.98); }
-
-        .db-dialog-overlay {
-          background: rgba(2, 6, 23, 0.92);
-          backdrop-filter: blur(12px);
+          box-shadow: 0 8px 25px rgba(99,102,241,0.15);
         }
 
         .db-dialog {
-          background: #060c1a;
-          border: 1px solid rgba(148,163,184,0.08);
-          box-shadow: 
-            0 0 0 1px rgba(99,102,241,0.08),
-            0 40px 80px rgba(0,0,0,0.8),
-            inset 0 1px 0 rgba(255,255,255,0.04);
+          background: ${isDarkMode ? '#0f172a' : '#ffffff'};
+          border: 1px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'};
+          box-shadow: 0 40px 80px rgba(0,0,0,0.4);
         }
 
         .db-header {
-          background: linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(10,16,35,0.98) 100%);
-          border-bottom: 1px solid rgba(148,163,184,0.06);
+          background: ${isDarkMode ? 'rgba(15,23,42,0.8)' : 'rgba(255,255,255,0.8)'};
           backdrop-filter: blur(20px);
-        }
-
-        .db-icon-glow {
-          background: linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(139,92,246,0.15) 100%);
-          box-shadow: 0 0 20px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
-          border: 1px solid rgba(99,102,241,0.2);
-        }
-
-        .db-stats-bar {
-          background: rgba(15,23,42,0.6);
-          border: 1px solid rgba(148,163,184,0.06);
-          border-radius: 12px;
+          border-bottom: 1px solid ${isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'};
         }
 
         .db-table-container {
-          border: 1px solid rgba(148,163,184,0.07);
-          border-radius: 14px;
-          overflow-x: auto;
-          overflow-y: hidden;
-          box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03);
-        }
-
-        .db-thead {
-          background: linear-gradient(180deg, rgba(10,16,35,1) 0%, rgba(8,13,28,1) 100%);
-        }
-
-        .db-th {
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          padding: 14px 16px;
-          border-bottom: 1px solid rgba(148,163,184,0.08);
-          white-space: nowrap;
+          border: 1px solid ${isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'};
+          border-radius: 16px;
+          overflow: hidden;
         }
 
         .db-row {
-          border-bottom: 1px solid rgba(148,163,184,0.04);
           transition: all 0.2s ease;
-          position: relative;
         }
-        .db-row:last-child { border-bottom: none; }
-        .db-row:hover { background: rgba(99,102,241,0.04); }
-        .db-row.editing { background: rgba(99,102,241,0.06); }
-        .db-row.editing td { border-top: 1px solid rgba(99,102,241,0.15); border-bottom: 1px solid rgba(99,102,241,0.15); }
-
-        .db-td { padding: 13px 16px; }
-
-        .db-year-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 4px 10px 4px 8px;
-          border-radius: 8px;
-          background: rgba(15,23,42,0.8);
-          border: 1px solid rgba(148,163,184,0.1);
-          font-size: 13px;
-          font-weight: 600;
-          color: #e2e8f0;
-          white-space: nowrap;
-        }
-
-        .db-number { 
-          font-family: 'DM Mono', monospace;
-          font-size: 14px;
-          font-weight: 500;
+        .db-row:hover {
+          background: ${isDarkMode ? 'rgba(99,102,241,0.05)' : 'rgba(99,102,241,0.03)'};
         }
 
         .db-input {
-          height: 36px;
-          width: 110px;
-          border-radius: 8px;
-          font-family: 'DM Mono', monospace;
-          font-size: 13px;
-          font-weight: 500;
-          transition: all 0.2s ease;
-          background: rgba(10,16,35,0.8) !important;
-          border: 1px solid rgba(148,163,184,0.12) !important;
-          color: white !important;
+          background: ${isDarkMode ? 'rgba(2, 6, 23, 0.5)' : 'rgba(255, 255, 255, 0.8)'} !important;
+          border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'} !important;
+          color: ${isDarkMode ? 'white' : 'black'} !important;
         }
         .db-input:focus {
-          border-color: rgba(99,102,241,0.5) !important;
-          box-shadow: 0 0 0 3px rgba(99,102,241,0.1) !important;
-          outline: none !important;
-        }
-        .db-input-highlight {
-          border-color: rgba(99,102,241,0.3) !important;
-          color: #818cf8 !important;
-        }
-        .db-input-emerald {
-          border-color: rgba(52,211,153,0.2) !important;
-          color: #34d399 !important;
+          border-color: #6366f1 !important;
+          box-shadow: 0 0 0 2px rgba(99,102,241,0.2) !important;
         }
 
-        .db-save-btn {
-          height: 34px; width: 34px; padding: 0;
-          border-radius: 9px;
-          background: linear-gradient(135deg, #059669, #047857);
-          border: none;
-          box-shadow: 0 4px 12px rgba(5,150,105,0.35);
-          transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
-          display: flex; align-items: center; justify-content: center;
+        .db-year-badge {
+          background: ${isDarkMode ? 'rgba(30,41,59,0.5)' : 'rgba(241,245,249,0.8)'};
+          border: 1px solid ${isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'};
         }
-        .db-save-btn:hover { 
-          background: linear-gradient(135deg, #10b981, #059669);
-          transform: scale(1.1);
-          box-shadow: 0 6px 16px rgba(5,150,105,0.5);
-        }
-
-        .db-cancel-btn {
-          height: 34px; width: 34px; padding: 0;
-          border-radius: 9px;
-          background: rgba(30,41,59,0.8);
-          border: 1px solid rgba(148,163,184,0.12);
-          transition: all 0.2s ease;
-          display: flex; align-items: center; justify-content: center;
-        }
-        .db-cancel-btn:hover {
-          background: rgba(51,65,85,0.8);
-          border-color: rgba(148,163,184,0.25);
-        }
-
-        .db-edit-btn {
-          height: 32px; width: 32px; padding: 0;
-          border-radius: 8px;
-          background: transparent;
-          border: 1px solid transparent;
-          transition: all 0.2s ease;
-          display: flex; align-items: center; justify-content: center;
-          color: #64748b;
-        }
-        .db-edit-btn:hover {
-          background: rgba(99,102,241,0.12);
-          border-color: rgba(99,102,241,0.2);
-          color: #818cf8;
-          transform: scale(1.05);
-        }
-
-        .db-delete-btn {
-          height: 32px; width: 32px; padding: 0;
-          border-radius: 8px;
-          background: transparent;
-          border: 1px solid transparent;
-          transition: all 0.2s ease;
-          display: flex; align-items: center; justify-content: center;
-          color: #64748b;
-        }
-        .db-delete-btn:hover {
-          background: rgba(239,68,68,0.1);
-          border-color: rgba(239,68,68,0.2);
-          color: #f87171;
-          transform: scale(1.05);
-        }
-
-        .db-dot {
-          width: 6px; height: 6px;
-          border-radius: 50%;
-          background: #22d3ee;
-          box-shadow: 0 0 8px rgba(34,211,238,0.6);
-          animation: db-pulse 2s ease-in-out infinite;
-        }
-        @keyframes db-pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(0.85); }
-        }
-
-        .db-scrollbar::-webkit-scrollbar { width: 5px; }
-        .db-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .db-scrollbar::-webkit-scrollbar-thumb { 
-          background: rgba(99,102,241,0.3); 
-          border-radius: 10px;
-        }
-        .db-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.5); }
-
-        .db-empty-state {
-          padding: 60px 20px;
-          text-align: center;
-          color: #334155;
-        }
-
-        .db-col-sky { color: #38bdf8; }
-        .db-col-violet { color: #a78bfa; }
-        .db-col-amber { color: #fbbf24; }
-        .db-col-emerald { color: #34d399; }
-        .db-col-muted { color: #475569; }
       `}</style>
 
       <div className="db-manager">
         <Dialog>
+          <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <DialogTrigger asChild>
-                <button className="db-trigger-btn inline-flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm font-semibold text-slate-200">
-                  <Database className="w-4 h-4 text-indigo-400" />
-                  <span className="hidden sm:inline">Manage Database</span>
+                <button className={`db-trigger-btn inline-flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm font-bold shadow-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                  <Database className="w-4 h-4 text-indigo-500" />
+                  <span className="hidden sm:inline uppercase tracking-widest text-[10px]">Manage History</span>
                 </button>
               </DialogTrigger>
             </TooltipTrigger>
@@ -342,210 +154,170 @@ export function HistoryEditor({ historyData, isDarkMode }: Props) {
               View and edit historical enrollment records
             </TooltipContent>
           </Tooltip>
+          </TooltipProvider>
 
           <DialogContent className="db-dialog w-[calc(100vw-24px)] max-w-4xl max-h-[88vh] p-0 gap-0 rounded-2xl overflow-hidden">
-
             {/* HEADER */}
-            <div className="db-header px-7 pt-6 pb-5 sticky top-0 z-10">
-              <div className="flex items-start justify-between">
+            <div className="db-header px-8 py-6 sticky top-0 z-10">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="db-icon-glow w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Database className="w-5 h-5 text-indigo-400" />
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-inner ${isDarkMode ? 'bg-indigo-500/10 border border-indigo-500/20' : 'bg-indigo-50 border border-indigo-100'}`}>
+                    <Database className="w-6 h-6 text-indigo-500" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2.5 mb-1">
-                      <DialogTitle className="text-[17px] font-700 text-white tracking-tight" style={{fontWeight: 700}}>
-                        Historical Data Manager
-                      </DialogTitle>
-                      <div className="db-dot" />
-                    </div>
-                    <DialogDescription className="text-[13px] text-slate-500 leading-snug">
-                      Edit past enrollment records · Changes retrain the prediction model
+                    <DialogTitle className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      Historical Data
+                    </DialogTitle>
+                    <DialogDescription className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Manage past records to refine prediction accuracy
                     </DialogDescription>
                   </div>
                 </div>
 
-                {/* Stats Pills */}
-                <div className="hidden md:flex items-center gap-2">
-                  <div className="db-stats-bar px-3 py-1.5 flex items-center gap-2">
-                    <span className="text-[11px] font-500 text-slate-500 uppercase tracking-wider">Records</span>
-                    <span className="db-mono text-sm font-600 text-indigo-400" style={{fontFamily: "'DM Mono', monospace", fontWeight: 600}}>
-                      {historyData.length}
-                    </span>
-                  </div>
+                <div className={`px-4 py-2 rounded-xl flex items-center gap-3 border ${isDarkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Records</span>
+                  <span className={`text-sm font-black tabular-nums ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                    {historyData.length}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* CONTENT */}
-            <div className="db-scrollbar overflow-y-auto" style={{maxHeight: 'calc(88vh - 110px)'}}>
-              <div className="px-7 pb-7 pt-4">
-
-                {historyData.length === 0 ? (
-                  <div className="db-table-container">
-                    <div className="db-empty-state">
-                      <Database className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                      <p className="text-slate-500 text-sm">No records found</p>
-                    </div>
+            <div className="overflow-y-auto max-h-[calc(88vh-100px)] px-8 pb-8 pt-4">
+              {historyData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                    <Database className="w-8 h-8 opacity-20" />
                   </div>
-                ) : (
-                  <div className="db-table-container">
-                    <table className="w-full border-collapse" style={{minWidth: '560px'}}>
-                      <thead className="db-thead">
-                        <tr>
-                          <th className="db-th text-left text-slate-500">School Year</th>
-                          <th className="db-th text-left db-col-sky">Total Enrolled</th>
-                          <th className="db-th text-left db-col-violet">JHS Graduates</th>
-                          <th className="db-th text-left db-col-amber">ALS Passers</th>
-                          <th className="db-th text-left db-col-emerald">Payees</th>
-                          <th className="db-th text-right text-slate-600">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {historyData.map((record) => (
-                          <tr
-                            key={record.id}
-                            className={`db-row ${editingId === record.id ? 'editing' : ''}`}
-                            onMouseEnter={() => setHoveredRow(record.id)}
-                            onMouseLeave={() => setHoveredRow(null)}
-                            style={{background: editingId === record.id ? 'rgba(99,102,241,0.05)' : undefined}}
-                          >
-                            {editingId === record.id ? (
-                              <>
-                                <td className="db-td">
-                                  <div className="db-year-badge">
-                                    <Calendar className="w-3 h-3 text-slate-500" />
-                                    {record.school_year}
-                                  </div>
-                                </td>
-                                <td className="db-td">
-                                  <input
-                                    type="number"
-                                    value={editValues.total_enrolled}
-                                    onChange={e => setEditValues({...editValues, total_enrolled: e.target.value})}
-                                    className="db-input db-input-highlight"
-                                  />
-                                </td>
-                                <td className="db-td">
-                                  <input
-                                    type="number"
-                                    value={editValues.jhs_graduates_count}
-                                    onChange={e => setEditValues({...editValues, jhs_graduates_count: e.target.value})}
-                                    className="db-input"
-                                    style={{color: '#a78bfa'}}
-                                  />
-                                </td>
-                                <td className="db-td">
-                                  <input
-                                    type="number"
-                                    value={editValues.als_passers_count}
-                                    onChange={e => setEditValues({...editValues, als_passers_count: e.target.value})}
-                                    className="db-input"
-                                    style={{color: '#fbbf24'}}
-                                  />
-                                </td>
-                                <td className="db-td">
-                                  <input
-                                    type="number"
-                                    value={editValues.others_count}
-                                    onChange={e => setEditValues({...editValues, others_count: e.target.value})}
-                                    className="db-input db-input-emerald"
-                                  />
-                                </td>
-                                <td className="db-td">
-                                  <div className="flex justify-end items-center gap-2">
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button className="db-save-btn" onClick={handleSave} disabled={isSaving}>
-                                          <Save className="w-3.5 h-3.5 text-white" />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent className="bg-slate-900 text-white border-slate-800 text-xs">Save changes</TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button className="db-cancel-btn" onClick={() => setEditingId(null)}>
-                                          <X className="w-3.5 h-3.5 text-slate-400" />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent className="bg-slate-900 text-white border-slate-800 text-xs">Cancel</TooltipContent>
-                                    </Tooltip>
-                                  </div>
-                                </td>
-                              </>
-                            ) : (
-                              <>
-                                <td className="db-td">
-                                  <div className="db-year-badge">
-                                    <Calendar className="w-3 h-3 text-slate-500" />
-                                    {record.school_year}
-                                  </div>
-                                </td>
-                                <td className="db-td">
-                                  <span className="db-number db-col-sky font-semibold">
-                                    {record.total_enrolled.toLocaleString()}
-                                  </span>
-                                </td>
-                                <td className="db-td">
-                                  <span className="db-number db-col-violet">
-                                    {record.jhs_graduates_count?.toLocaleString() ?? '—'}
-                                  </span>
-                                </td>
-                                <td className="db-td">
-                                  <span className="db-number db-col-amber">
-                                    {record.als_passers_count?.toLocaleString() ?? '—'}
-                                  </span>
-                                </td>
-                                <td className="db-td">
-                                  <div className="flex items-center gap-2">
-                                    <div style={{width:6, height:6, borderRadius:'50%', background:'#34d399', boxShadow:'0 0 6px rgba(52,211,153,0.5)', flexShrink:0}} />
-                                    <span className="db-number db-col-emerald font-semibold">
-                                      {(record.others_count || 0).toLocaleString()}
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="db-td">
-                                  <div
-                                    className="flex justify-end items-center gap-1"
-                                    style={{opacity: hoveredRow === record.id ? 1 : 0, transition: 'opacity 0.15s ease'}}
-                                  >
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button className="db-edit-btn" onClick={() => handleEdit(record)}>
-                                          <Pencil className="w-3.5 h-3.5" />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent className="bg-slate-900 text-white border-slate-800 text-xs">Edit record</TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button className="db-delete-btn" onClick={() => handleDelete(record.id)}>
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent className="bg-red-950 text-red-200 border-red-900 text-xs">Delete record</TooltipContent>
-                                    </Tooltip>
-                                  </div>
-                                </td>
-                              </>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                  <p className="text-slate-500 font-medium">No historical records found</p>
+                </div>
+              ) : (
+                <div className="db-table-container">
+                  <Table>
+                    <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
+                      <TableRow className="hover:bg-transparent border-none">
+                        <TableHead className={`text-[10px] font-black uppercase tracking-widest py-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>School Year</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase tracking-widest py-4 text-sky-500">Total Enrolled</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase tracking-widest py-4 text-violet-500">JHS Grads</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase tracking-widest py-4 text-amber-500">ALS Passers</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase tracking-widest py-4 text-emerald-500">Payees</TableHead>
+                        <TableHead className="text-right py-4"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {historyData.map((record) => (
+                        <TableRow 
+                          key={record.id} 
+                          className={`db-row border-slate-500/5 ${editingId === record.id ? 'bg-indigo-500/5' : ''}`}
+                          onMouseEnter={() => setHoveredRow(record.id)}
+                          onMouseLeave={() => setHoveredRow(null)}
+                        >
+                          {editingId === record.id ? (
+                            <>
+                              <TableCell className="py-4">
+                                <div className={`db-year-badge inline-flex items-center gap-2 px-2.5 py-1 rounded-lg font-mono text-xs font-bold ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                                  {record.school_year}
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-4">
+                                <Input
+                                  type="number"
+                                  value={editValues.total_enrolled}
+                                  onChange={e => setEditValues({...editValues, total_enrolled: e.target.value})}
+                                  className="db-input h-9 w-24 font-black tabular-nums"
+                                />
+                              </TableCell>
+                              <TableCell className="py-4">
+                                <Input
+                                  type="number"
+                                  value={editValues.jhs_graduates_count}
+                                  onChange={e => setEditValues({...editValues, jhs_graduates_count: e.target.value})}
+                                  className="db-input h-9 w-24 font-black tabular-nums text-violet-500"
+                                />
+                              </TableCell>
+                              <TableCell className="py-4">
+                                <Input
+                                  type="number"
+                                  value={editValues.als_passers_count}
+                                  onChange={e => setEditValues({...editValues, als_passers_count: e.target.value})}
+                                  className="db-input h-9 w-24 font-black tabular-nums text-amber-500"
+                                />
+                              </TableCell>
+                              <TableCell className="py-4">
+                                <Input
+                                  type="number"
+                                  value={editValues.others_count}
+                                  onChange={e => setEditValues({...editValues, others_count: e.target.value})}
+                                  className="db-input h-9 w-24 font-black tabular-nums text-emerald-500"
+                                />
+                              </TableCell>
+                              <TableCell className="py-4 text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button size="sm" onClick={handleSave} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 h-8 w-8 p-0 rounded-lg">
+                                    <Save className="w-4 h-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="h-8 w-8 p-0 rounded-lg">
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell className="py-4">
+                                <div className={`db-year-badge inline-flex items-center gap-2 px-2.5 py-1 rounded-lg font-mono text-xs font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                                  <Calendar className="w-3 h-3 opacity-50" />
+                                  {record.school_year}
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-4">
+                                <span className="text-sm font-black tabular-nums text-sky-500">
+                                  {record.total_enrolled.toLocaleString()}
+                                </span>
+                              </TableCell>
+                              <TableCell className="py-4">
+                                <span className={`text-sm font-bold tabular-nums ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                                  {record.jhs_graduates_count?.toLocaleString() ?? '—'}
+                                </span>
+                              </TableCell>
+                              <TableCell className="py-4">
+                                <span className={`text-sm font-bold tabular-nums ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                                  {record.als_passers_count?.toLocaleString() ?? '—'}
+                                </span>
+                              </TableCell>
+                              <TableCell className="py-4">
+                                <span className="text-sm font-black tabular-nums text-emerald-500">
+                                  {(record.others_count || 0).toLocaleString()}
+                                </span>
+                              </TableCell>
+                              <TableCell className="py-4 text-right">
+                                <div className={`flex justify-end gap-1 transition-opacity duration-200 ${hoveredRow === record.id ? 'opacity-100' : 'opacity-0'}`}>
+                                  <Button size="sm" variant="ghost" onClick={() => handleEdit(record)} className={`h-8 w-8 p-0 rounded-lg hover:bg-indigo-500/10 ${isDarkMode ? 'text-slate-300 hover:text-indigo-400' : 'text-slate-600 hover:text-indigo-600'}`}>
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => handleDelete(record.id)} className={`h-8 w-8 p-0 rounded-lg hover:bg-red-500/10 ${isDarkMode ? 'text-slate-300 hover:text-red-400' : 'text-slate-600 hover:text-red-600'}`}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
 
-                {/* Footer note */}
-                <p className="mt-4 text-[11px] text-slate-600 text-center tracking-wide">
-                  {editingId 
-                    ? <span>Press <kbd style={{background:'rgba(99,102,241,0.15)', color:'#818cf8', border:'1px solid rgba(99,102,241,0.25)', borderRadius:4, padding:'1px 6px', fontFamily:"'DM Mono', monospace", fontSize:10}}>Enter</kbd> to save · <kbd style={{background:'rgba(148,163,184,0.08)', color:'#64748b', border:'1px solid rgba(148,163,184,0.12)', borderRadius:4, padding:'1px 6px', fontFamily:"'DM Mono', monospace", fontSize:10}}>Esc</kbd> to cancel</span>
-                    : "Changes are saved directly to the database and affect AI prediction accuracy"
-                  }
+              <div className={`mt-6 p-4 rounded-xl flex items-start gap-3 border ${isDarkMode ? 'bg-amber-500/5 border-amber-500/10' : 'bg-amber-50 border-amber-100'}`}>
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <p className={`text-[10px] leading-relaxed font-medium ${isDarkMode ? 'text-amber-200/70' : 'text-amber-700'}`}>
+                  Historical data directly influences the AI model&apos;s training set. 
+                  Ensure accuracy when making modifications as they will trigger a re-calculation of all projections.
                 </p>
               </div>
             </div>
-
           </DialogContent>
         </Dialog>
       </div>

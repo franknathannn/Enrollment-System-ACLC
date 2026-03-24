@@ -39,9 +39,9 @@ export default function ApplicantsPage() {
 
  // Calculate visible students for the current page (for the filter component)
  const visibleStudentsForFilter = useMemo(() => {
-   if (paginatedStudents.length > 10 || (paginatedStudents.length === filteredStudents.length && filteredStudents.length > 10)) {
-     const startIndex = (currentPage - 1) * 10
-     const endIndex = startIndex + 10
+   if (paginatedStudents.length > 5 || (paginatedStudents.length === filteredStudents.length && filteredStudents.length > 5)) {
+     const startIndex = (currentPage - 1) * 5
+     const endIndex = startIndex + 5
      return filteredStudents.slice(startIndex, endIndex)
    }
    return paginatedStudents

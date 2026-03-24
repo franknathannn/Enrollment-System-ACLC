@@ -1,5 +1,5 @@
 // src/app/admin/applicants/components/ApplicantsTable.tsx
-import { memo, useMemo, useEffect, useRef, useState } from "react"
+import { memo, useMemo, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { CheckSquare, Square, Eye, RotateCcw, Trash2, ChevronLeft, ChevronRight, Copy, Shield, Activity, Star } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -250,6 +250,16 @@ const MobileApplicantRow = memo(({
 })
 MobileApplicantRow.displayName = "MobileApplicantRow"
 
+// Renders name in one line — sized uniformly per page by ApplicantsTable's useLayoutEffect
+function ShrinkName({ text, middleInitial, className }: { text: string; middleInitial?: string; className?: string }) {
+  return (
+    <div data-shrink-name className={className} style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
+      {text}
+      {middleInitial && <span style={{ fontSize: '0.65em', opacity: 0.4, fontStyle: 'italic', marginLeft: 3 }}>{middleInitial}.</span>}
+    </div>
+  )
+}
+
 const DesktopApplicantRow = memo(({
   student, isSelected, isHidden, isExiting, isAnimatingIn, animIndex, isStrandFull, isDarkMode,
   toggleSelect, setOpenStudentDialog, handleExit, handleStatusChange,
@@ -290,8 +300,8 @@ const DesktopApplicantRow = memo(({
         </button>
       </TableCell>
       <TableCell className="px-3 md:px-6 py-5 relative">
-        <div 
-          onClick={() => setOpenStudentDialog(student.id)} 
+        <div
+          onClick={() => setOpenStudentDialog(student.id)}
           className="flex items-center gap-3 md:gap-4 cursor-pointer hover:opacity-90 transition-opacity group/name"
         >
           <Tooltip>
@@ -336,9 +346,11 @@ const DesktopApplicantRow = memo(({
           </TooltipContent>
           </Tooltip>
           <div className="min-w-0">
-            <div className={`font-black text-sm md:text-base uppercase leading-none tracking-tight transition-colors duration-500 ${isDarkMode ? 'text-white group-hover/name:text-blue-400' : 'text-slate-900 group-hover/name:text-blue-600'}`}>
-              <AnimatedText text={`${student.last_name}, ${student.first_name}`} /> <span className="text-[10px] opacity-40 font-black italic">{student.middle_name?.[0]}.</span>
-            </div>
+            <ShrinkName
+              text={`${student.last_name}, ${student.first_name}`}
+              middleInitial={student.middle_name?.[0]}
+              className={`font-black text-sm md:text-base uppercase leading-none tracking-tight transition-colors duration-500 ${isDarkMode ? 'text-white group-hover/name:text-blue-400' : 'text-slate-900 group-hover/name:text-blue-600'}`}
+            />
             <div className="flex items-center gap-2 mt-2">
                <Shield size={10} className="text-slate-400" />
                <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">LRN:{student.lrn}</p>
@@ -502,15 +514,150 @@ const DesktopApplicantRow = memo(({
 })
 DesktopApplicantRow.displayName = "DesktopApplicantRow"
 
+// ── Modern 5-window Pagination ─────────────────────────────────────────────
+function PaginationBar({
+  currentPage, totalPages, setCurrentPage, isDarkMode,
+  totalShowing, totalCount, compact = false,
+}: {
+  currentPage: number
+  totalPages: number
+  setCurrentPage: (p: number) => void
+  isDarkMode: boolean
+  totalShowing?: number
+  totalCount?: number
+  compact?: boolean
+}) {
+  const canPrev = currentPage > 1
+  const canNext = currentPage < totalPages
+
+  // 5-page sliding window centered on currentPage
+  const getPages = (): number[] => {
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1)
+    let start = Math.max(1, currentPage - 2)
+    let end = start + 4
+    if (end > totalPages) { end = totalPages; start = Math.max(1, end - 4) }
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+  }
+
+  const pages = getPages()
+  const showFirstPage  = pages[0] > 1
+  const showLastPage   = pages[pages.length - 1] < totalPages
+  const showStartDots  = pages[0] > 2
+  const showEndDots    = pages[pages.length - 1] < totalPages - 1
+
+  const c = isDarkMode
+    ? { border: 'rgba(51,65,85,0.7)', text: '#94a3b8', hover: 'rgba(51,65,85,0.45)', activeBg: 'rgba(59,130,246,0.18)', activeBorder: '#3b82f6', activeText: '#93c5fd', dots: '#475569' }
+    : { border: '#e2e8f0',            text: '#64748b', hover: '#f1f5f9',              activeBg: '#eff6ff',               activeBorder: '#2563eb',  activeText: '#2563eb',  dots: '#94a3b8' }
+
+  const base: React.CSSProperties = {
+    height: 36, minWidth: 36, borderRadius: 10,
+    border: `1.5px solid ${c.border}`, background: 'transparent',
+    color: c.text, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 12, fontWeight: 700, transition: 'all 0.14s ease',
+    padding: '0 10px', userSelect: 'none' as const,
+  }
+  const active: React.CSSProperties = {
+    ...base, background: c.activeBg, border: `1.5px solid ${c.activeBorder}`,
+    color: c.activeText, fontWeight: 900,
+  }
+  const nav = (enabled: boolean): React.CSSProperties => ({
+    ...base,
+    gap: 5, padding: '0 13px',
+    fontSize: 11, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' as const,
+    ...(enabled ? {} : { opacity: 0.32, cursor: 'not-allowed' as const }),
+  })
+  const dot: React.CSSProperties = {
+    height: 36, minWidth: 24,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 13, color: c.dots, fontWeight: 700, userSelect: 'none' as const,
+    letterSpacing: 1,
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: compact ? 'center' : 'space-between', gap: 8, width: '100%' }}>
+      {!compact && totalShowing !== undefined && (
+        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: c.text }}>
+          Showing {totalShowing} of {totalCount}
+        </span>
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+
+        {/* ← Prev */}
+        <button
+          style={nav(canPrev)}
+          disabled={!canPrev}
+          onClick={() => canPrev && setCurrentPage(currentPage - 1)}
+          onMouseEnter={e => { if (canPrev) (e.currentTarget as HTMLElement).style.background = c.hover }}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+        >
+          <ChevronLeft size={13} strokeWidth={2.5} />
+          {!compact && <span>Prev</span>}
+        </button>
+
+        {/* First page anchor */}
+        {showFirstPage && (
+          <>
+            <button style={base} onClick={() => setCurrentPage(1)}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = c.hover}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+              1
+            </button>
+            {showStartDots && <span style={dot}>···</span>}
+          </>
+        )}
+
+        {/* 5-page window */}
+        {pages.map(p => (
+          <button
+            key={p}
+            style={p === currentPage ? active : base}
+            onClick={() => setCurrentPage(p)}
+            onMouseEnter={e => { if (p !== currentPage) (e.currentTarget as HTMLElement).style.background = c.hover }}
+            onMouseLeave={e => { if (p !== currentPage) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+          >
+            {p}
+          </button>
+        ))}
+
+        {/* Last page anchor */}
+        {showLastPage && (
+          <>
+            {showEndDots && <span style={dot}>···</span>}
+            <button style={base} onClick={() => setCurrentPage(totalPages)}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = c.hover}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+              {totalPages}
+            </button>
+          </>
+        )}
+
+        {/* Next → */}
+        <button
+          style={nav(canNext)}
+          disabled={!canNext}
+          onClick={() => canNext && setCurrentPage(currentPage + 1)}
+          onMouseEnter={e => { if (canNext) (e.currentTarget as HTMLElement).style.background = c.hover }}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+        >
+          {!compact && <span>Next</span>}
+          <ChevronRight size={13} strokeWidth={2.5} />
+        </button>
+
+      </div>
+    </div>
+  )
+}
+
 export const ApplicantsTable = memo(({
   isDarkMode, filteredStudents, selectedIds, toggleSelect, toggleSelectAll, hiddenRows, exitingRows, animatingIds,
   setOpenStudentDialog, handleExit, handleStatusChange, setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen, strandStats,
   totalFilteredCount, currentPage, totalPages, setCurrentPage
 }: ApplicantsTableProps) => {
   const visibleStudents = useMemo(() => {
-    if (filteredStudents.length > 10 || (filteredStudents.length === totalFilteredCount && totalFilteredCount > 10)) {
-      const startIndex = (currentPage - 1) * 10
-      const endIndex = startIndex + 10
+    if (filteredStudents.length > 5 || (filteredStudents.length === totalFilteredCount && totalFilteredCount > 5)) {
+      const startIndex = (currentPage - 1) * 5
+      const endIndex = startIndex + 5
       return filteredStudents.slice(startIndex, endIndex)
     }
     return filteredStudents
@@ -535,6 +682,50 @@ export const ApplicantsTable = memo(({
 
   const pageIds = useMemo(() => visibleStudents.map(s => s.id), [visibleStudents])
   const isPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id))
+
+  // Normalize name font sizes across the page — all names share the same size.
+  // Minimum: 11px. If a name still overflows at 11px, it wraps instead of clipping.
+  const MIN_NAME_SIZE = 11
+  const desktopTableRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const container = desktopTableRef.current
+    if (!container) return
+    const els = Array.from(container.querySelectorAll<HTMLElement>('[data-shrink-name]'))
+    if (!els.length) return
+
+    // 1. Reset all to natural CSS size and enforce single line
+    els.forEach(el => {
+      el.style.fontSize = ''
+      el.style.whiteSpace = 'nowrap'
+    })
+
+    // 2. Find the tightest fit ratio across all names on this page
+    let minRatio = 1
+    els.forEach(el => {
+      if (el.scrollWidth > el.clientWidth) {
+        minRatio = Math.min(minRatio, el.clientWidth / el.scrollWidth)
+      }
+    })
+
+    if (minRatio < 1) {
+      const base = parseFloat(getComputedStyle(els[0]).fontSize)
+      const shared = base * minRatio
+
+      if (shared >= MIN_NAME_SIZE) {
+        // All names fit on one line at this shared size — apply uniformly
+        els.forEach(el => { el.style.fontSize = `${shared}px` })
+      } else {
+        // Shared size would be too small — apply minimum to all,
+        // then let any name that still overflows wrap to a new line
+        els.forEach(el => { el.style.fontSize = `${MIN_NAME_SIZE}px` })
+        els.forEach(el => {
+          if (el.scrollWidth > el.clientWidth) {
+            el.style.whiteSpace = 'normal'
+          }
+        })
+      }
+    }
+  }, [visibleStudents])
 
   return (
     <>
@@ -628,41 +819,20 @@ export const ApplicantsTable = memo(({
 
           {/* Mobile Pagination */}
           {totalPages > 1 && (
-            <div className={`
-              flex items-center justify-center gap-3 sm:gap-4 
-              pt-3 sm:pt-4 
-              border-t 
-              ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}
-            `}>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} 
-                disabled={currentPage === 1} 
-                className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-xl active:scale-95"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-              >
-                <ChevronLeft size={18} />
-              </Button>
-              <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-widest text-slate-500 min-w-[100px] text-center">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} 
-                disabled={currentPage === totalPages} 
-                className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-xl active:scale-95"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-              >
-                <ChevronRight size={18} />
-              </Button>
+            <div className={`pt-3 sm:pt-4 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+              <PaginationBar
+                currentPage={currentPage}
+                totalPages={totalPages}
+                setCurrentPage={setCurrentPage}
+                isDarkMode={isDarkMode}
+                compact
+              />
             </div>
           )}
         </div>
 
         {/* DESKTOP TABLE VIEW */}
-        <div className="hidden md:block relative">
+        <div className="hidden md:block relative" ref={desktopTableRef}>
           <Table className="min-w-full table-fixed">
             <TableHeader>
               <TableRow className={`border-none hover:bg-transparent ${isDarkMode ? 'bg-slate-900/80' : 'bg-slate-50/80'}`}>
@@ -717,21 +887,15 @@ export const ApplicantsTable = memo(({
 
           {/* Desktop Pagination */}
           {totalPages > 1 && (
-            <div className={`flex items-center justify-between px-6 py-4 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Showing {visibleStudents.length} of {totalFilteredCount}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
-                  <ChevronLeft size={14} />
-                </Button>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mx-2">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button variant="ghost" size="sm" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
-                  <ChevronRight size={14} />
-                </Button>
-              </div>
+            <div className={`px-6 py-4 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+              <PaginationBar
+                currentPage={currentPage}
+                totalPages={totalPages}
+                setCurrentPage={setCurrentPage}
+                isDarkMode={isDarkMode}
+                totalShowing={visibleStudents.length}
+                totalCount={totalFilteredCount}
+              />
             </div>
           )}
         </div>
