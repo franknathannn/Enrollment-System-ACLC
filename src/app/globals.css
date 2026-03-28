@@ -65,7 +65,7 @@ html.theme-transitioning *::after {
     --ring: 221.2 83.2% 53.3%;
 
     /* ── Enrollment theme tokens (light) ── */
-    --t-bg:                  #eef2ff;
+    --t-bg:                  #f8fafc;
     --t-surface:             #ffffff;
     --t-border:              rgba(226, 232, 240, 1);
     --t-text:                #0f172a;
@@ -77,10 +77,10 @@ html.theme-transitioning *::after {
     --t-input-filled-border: rgba(147, 197, 253, 0.4);
     --t-input-filled-text:   #1e3a8a;
     --t-sticky-bg:           rgba(255, 255, 255, 0.95);
-    --t-glow-1:              rgba(96, 165, 250, 0.15);
-    --t-glow-2:              rgba(165, 180, 252, 0.15);
-    --t-aurora-1-opacity:    0.15;
-    --t-aurora-2-opacity:    0.10;
+    --t-glow-1:              rgba(96, 165, 250, 0.05);
+    --t-glow-2:              rgba(165, 180, 252, 0.05);
+    --t-aurora-1-opacity:    0;
+    --t-aurora-2-opacity:    0;
     --t-card-bg:             rgba(255, 255, 255, 0.9);
     --t-card-border:         rgba(219, 234, 254, 1);
     --t-card-shadow:         0 30px 80px rgba(99, 102, 241, 0.15);
@@ -106,9 +106,9 @@ html.theme-transitioning *::after {
      Triggered by a single DOM write: document.documentElement.setAttribute("data-theme","dark")
      Zero React re-renders — CSS cascade handles everything. */
   [data-theme="dark"] {
-    --t-bg:                  #020617;
-    --t-surface:             rgba(15, 20, 51, 0.8);
-    --t-border:              rgba(255, 255, 255, 0.1);
+    --t-bg:                  #030712;
+    --t-surface:             rgba(15, 17, 26, 0.8);
+    --t-border:              rgba(255, 255, 255, 0.05);
     --t-text:                #ffffff;
     --t-text-muted:          #64748b;
     --t-text-faint:          #475569;
@@ -118,15 +118,15 @@ html.theme-transitioning *::after {
     --t-input-filled-border: rgba(30, 58, 138, 0.4);
     --t-input-filled-text:   #bfdbfe;
     --t-sticky-bg:           rgba(2, 6, 23, 0.95);
-    --t-glow-1:              rgba(37, 99, 235, 0.10);
-    --t-glow-2:              rgba(79, 70, 229, 0.10);
-    --t-aurora-1-opacity:    0.12;
-    --t-aurora-2-opacity:    0.08;
-    --t-card-bg:             linear-gradient(to bottom, rgba(13, 20, 51, 0.8), rgba(2, 6, 23, 0.9));
+    --t-glow-1:              rgba(220, 38, 38, 0.05);
+    --t-glow-2:              rgba(37, 99, 235, 0.05);
+    --t-aurora-1-opacity:    0;
+    --t-aurora-2-opacity:    0;
+    --t-card-bg:             linear-gradient(to bottom, rgba(15, 17, 26, 0.8), rgba(3, 7, 18, 0.9));
     --t-card-border:         rgba(255, 255, 255, 0.10);
     --t-card-shadow:         0 40px 80px -15px rgba(0, 0, 0, 0.9);
-    --t-header-bg:           rgba(37, 99, 235, 0.10);
-    --t-header-border:       rgba(59, 130, 246, 0.20);
+    --t-header-bg:           rgba(220, 38, 38, 0.08);
+    --t-header-border:       rgba(220, 38, 38, 0.20);
     --t-shield-color:        rgba(255, 255, 255, 0.02);
   }
 
@@ -215,11 +215,11 @@ html.theme-transitioning *::after {
 /* Aurora bands — opacity driven by CSS var, no JS */
 .aurora-1 {
   opacity: var(--t-aurora-1-opacity);
-  background: linear-gradient(135deg, #3b82f6, #6366f1, #7c3aed);
+  background: linear-gradient(135deg, #1d4ed8, #2563eb, #1e40af);
 }
 .aurora-2 {
   opacity: var(--t-aurora-2-opacity);
-  background: linear-gradient(225deg, #06b6d4, #3b82f6, #6366f1);
+  background: linear-gradient(225deg, #b91c1c, #dc2626, #991b1b);
 }
 
 /* Theme toggle button */
@@ -294,6 +294,15 @@ html.theme-transitioning *::after {
 @keyframes shimmerSlide {
   from { transform: translateX(-100%); }
   to   { transform: translateX(300%); }
+}
+
+/* Shimmer animation for buttons and cards */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.animate-shimmer {
+  animation: shimmer 2s infinite;
 }
 
 /* Kill aurora blur animation on mobile — expensive on low-end devices */
@@ -385,24 +394,24 @@ body::-webkit-scrollbar { display: none; }
 /* ── Mobile CSS starfield (replaces canvas) ──────────────────────────────── */
 .mobile-starfield {
   background-image:
-    radial-gradient(1px   1px   at 10% 15%, rgba(147,197,253,0.50) 0%, transparent 100%),
-    radial-gradient(1px   1px   at 25% 40%, rgba(165,180,252,0.40) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 50% 20%, rgba(224,242,254,0.50) 0%, transparent 100%),
-    radial-gradient(1px   1px   at 70% 60%, rgba(147,197,253,0.35) 0%, transparent 100%),
-    radial-gradient(1px   1px   at 85% 30%, rgba(165,180,252,0.40) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 35% 75%, rgba(224,242,254,0.30) 0%, transparent 100%),
-    radial-gradient(1px   1px   at 90% 85%, rgba(147,197,253,0.40) 0%, transparent 100%),
-    radial-gradient(1px   1px   at 15% 90%, rgba(165,180,252,0.30) 0%, transparent 100%);
+    radial-gradient(1px   1px   at 10% 15%, rgba(255,255,255,0.15) 0%, transparent 100%),
+    radial-gradient(1px   1px   at 25% 40%, rgba(255,255,255,0.10) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 50% 20%, rgba(255,255,255,0.20) 0%, transparent 100%),
+    radial-gradient(1px   1px   at 70% 60%, rgba(255,255,255,0.10) 0%, transparent 100%),
+    radial-gradient(1px   1px   at 85% 30%, rgba(255,255,255,0.10) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 35% 75%, rgba(255,255,255,0.15) 0%, transparent 100%),
+    radial-gradient(1px   1px   at 90% 85%, rgba(255,255,255,0.10) 0%, transparent 100%),
+    radial-gradient(1px   1px   at 15% 90%, rgba(255,255,255,0.10) 0%, transparent 100%);
   background-repeat: no-repeat;
   background-size: 100% 100%;
 }
 .mobile-starfield-light {
   background-image:
-    radial-gradient(1px   1px   at 10% 15%, rgba(37,99,235,0.25)  0%, transparent 100%),
-    radial-gradient(1px   1px   at 25% 40%, rgba(79,70,229,0.20)  0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 50% 20%, rgba(14,165,233,0.25) 0%, transparent 100%),
-    radial-gradient(1px   1px   at 70% 60%, rgba(37,99,235,0.20)  0%, transparent 100%),
-    radial-gradient(1px   1px   at 85% 30%, rgba(79,70,229,0.20)  0%, transparent 100%);
+    radial-gradient(1px   1px   at 10% 15%, rgba(0,0,0,0.10)  0%, transparent 100%),
+    radial-gradient(1px   1px   at 25% 40%, rgba(0,0,0,0.05)  0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 50% 20%, rgba(0,0,0,0.10) 0%, transparent 100%),
+    radial-gradient(1px   1px   at 70% 60%, rgba(0,0,0,0.08)  0%, transparent 100%),
+    radial-gradient(1px   1px   at 85% 30%, rgba(0,0,0,0.05)  0%, transparent 100%);
   background-repeat: no-repeat;
   background-size: 100% 100%;
 }

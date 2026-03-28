@@ -18,6 +18,7 @@
 import { useEffect, useState, useMemo, useRef, useCallback, memo } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { useEnrollmentStore } from "@/store/useEnrollmentStore"
+import { useThemeStore } from "@/store/useThemeStore"
 import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,7 +26,7 @@ import { Label } from "@/components/ui/label"
 import {
   ArrowRight, ChevronLeft, GraduationCap, CalendarDays, Loader2,
   Fingerprint, Star, Sparkles, AlertTriangle, MapPin,
-  Facebook, Monitor, Clock, Search, X,
+  Facebook, Monitor, Clock, Search, X, Globe,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -72,10 +73,15 @@ function buildFieldClass(opts: { hasError: boolean; filled: boolean; isLRN?: boo
   const { hasError, filled, isLRN } = opts
   return cn(
     "min-h-[44px] h-11 md:h-12 rounded-xl border-2",
-    "transition-[border-color,background-color] duration-150",
+    "transition-all duration-300",
     "font-medium outline-none t-input",
     isLRN ? "font-mono text-sm md:text-base tracking-[0.15em] md:tracking-[0.3em]" : "text-xs md:text-sm",
-    hasError ? "error" : filled ? "filled" : ""
+    hasError
+      ? "error shadow-[0_0_20px_rgba(239,68,68,0.15)]"
+      : cn(
+          "focus:shadow-[0_0_20px_rgba(59,130,246,0.2)]",
+          filled ? "filled shadow-sm" : "lg:hover:border-blue-500/30"
+        )
   )
 }
 
@@ -103,30 +109,35 @@ const CheckCard = memo(function CheckCard({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex items-center gap-3 sm:gap-4 w-full rounded-xl border-2 px-4 py-3 sm:py-4",
-        "transition-[border-color,background-color,box-shadow] duration-200",
-        "text-left touch-manipulation active:scale-[0.98]",
+        "group flex items-center gap-4 sm:gap-6 w-full rounded-[32px] border-2 px-6 py-5 sm:py-6",
+        "transition-all duration-300",
+        "text-left touch-manipulation active:scale-[0.98] lg:hover:-translate-y-1 relative overflow-hidden",
         checked
-          ? "border-blue-500 bg-blue-600/15 shadow-[0_0_18px_rgba(59,130,246,0.2)]"
-          : "t-gender-inactive lg:hover:border-blue-500/40",
+          ? "border-blue-500/50 bg-blue-600/20 shadow-[0_20px_40px_rgba(59,130,246,0.2)]"
+          : "t-gender-inactive lg:hover:border-blue-500/30 lg:hover:bg-blue-600/5",
         disabled && "opacity-50 cursor-not-allowed"
       )}
     >
       <div className={cn(
-        "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
-        "transition-[border-color,background-color] duration-150",
-        checked ? "border-blue-400 bg-blue-500" : "border-slate-600 bg-transparent"
+        "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0",
+        "transition-all duration-300",
+        checked ? "border-blue-400 bg-blue-400/20" : "border-slate-600"
       )}>
-        {checked && <div className="w-2 h-2 rounded-full bg-white" />}
+        {checked && <div className="w-2.5 h-2.5 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.8)] animate-pulse" />}
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 relative z-10">
         <p className={cn(
-          "font-bold text-xs sm:text-sm uppercase tracking-wider",
+          "font-black text-xs sm:text-sm uppercase tracking-[0.2em]",
           checked ? "text-blue-400" : "t-text-muted"
         )}>{label}</p>
-        {sublabel && <p className="text-[10px] text-slate-500 mt-0.5">{sublabel}</p>}
+        {sublabel && <p className="text-[10px] text-slate-500 mt-1 font-medium tracking-wide leading-relaxed">{sublabel}</p>}
       </div>
-      {icon && <div className={cn("shrink-0", checked ? "text-blue-400" : "text-slate-600")}>{icon}</div>}
+      {icon && <div className={cn("shrink-0 transition-all duration-300", checked ? "text-blue-400 scale-110" : "text-slate-700")}>{icon}</div>}
+      
+      {/* Visual Impact Flare */}
+      {checked && (
+        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-600 blur-3xl opacity-20 animate-pulse" />
+      )}
     </button>
   )
 })
@@ -416,6 +427,7 @@ const YearJhsInput = memo(function YearJhsInput({
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Step2Academic() {
+  const { isDark }                          = useThemeStore()
   const { formData, updateFormData, setStep } = useEnrollmentStore()
   const { isFieldRequired, isFieldEditable }  = useEnrollmentValidation()
   const [dbSchoolYear, setDbSchoolYear]     = useState<string>("")
@@ -427,6 +439,7 @@ export default function Step2Academic() {
     register, handleSubmit, setValue, watch, control, getValues,
     formState: { errors },
   } = useForm({
+    shouldFocusError: false,
     defaultValues: {
       lrn:                  formData.lrn                       || "",
       school_year:          formData.school_year               || "",
@@ -500,45 +513,89 @@ export default function Step2Academic() {
         .maybeSingle()
       if (existingLrn) { toast.error("LRN is already registered in the database."); setChecking(false); return }
       updateFormData(data); setStep(3)
-      toast.success("Academic Background Submitted", { icon: <Sparkles className="text-blue-400" /> })
+      toast.success("Academic Background Submitted", { icon: <img src="/logo-aclc.png" className="w-5 h-5" alt="" /> })
     } catch (e) {
       console.error("Validation check failed:", e)
       toast.error("System validation failed. Please try again.")
     } finally { setChecking(false) }
   }, [formData.id, updateFormData, setStep])
 
+  const onError = (errors: any) => {
+    const errorKeys = Object.keys(errors); if (errorKeys.length === 0) return
+    const firstError = errorKeys[0]
+    const el = document.getElementById(`${firstError}_container`) || document.getElementsByName(firstError)[0]
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" })
+      toast.error(`Missing or invalid: ${firstError.replace(/_/g, " ")}`, { duration: 4000 })
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="animate-step-in">
+    <form onSubmit={handleSubmit(onSubmit, onError)} className="animate-step-in">
       <style>{`
         @keyframes stepIn {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes float {
+          0%, 100% { transform: translate3d(-50%, -50%, 0); }
+          50% { transform: translate3d(-50%, calc(-50% - 15px), 0); }
+        }
         .animate-step-in {
           animation: stepIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
           will-change: opacity, transform;
         }
+        .animate-float {
+          animation: float 8s ease-in-out infinite;
+          will-change: transform;
+        }
         @media (prefers-reduced-motion: reduce) { .animate-step-in { animation: none; } }
       `}</style>
 
-      <div className="space-y-6 md:space-y-8 pb-[160px]">
+      {/* BACKGROUND BRANDING */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className={cn(
+          "absolute top-1/2 left-1/2 w-[clamp(280px,80vw,500px)] aspect-square transition-opacity duration-1000 animate-float",
+          isDark ? "opacity-[0.05] brightness-150" : "opacity-[0.10]"
+        )}>
+          <img src="/logo-aclc.png" alt="" className="w-full h-full object-contain" />
+        </div>
+        <div className={cn(
+          "absolute top-0 right-0 w-1/3 h-1/3 blur-[120px] rounded-full",
+          isDark ? "bg-blue-600/10" : "bg-blue-600/5"
+        )} />
+        <div className={cn(
+          "absolute bottom-0 left-0 w-1/3 h-1/3 blur-[120px] rounded-full",
+          isDark ? "bg-red-600/10" : "bg-red-600/5"
+        )} />
+      </div>
+
+      <div className="space-y-6 md:space-y-8 pb-[140px] min-[480px]:pb-[160px]">
 
         {/* HEADER */}
-        <div className="rounded-2xl sm:rounded-[32px] p-4 sm:p-6 border flex items-center gap-3 sm:gap-5 shadow-2xl relative overflow-hidden t-header-block">
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
-          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
-            <GraduationCap className="text-white w-6 h-6 sm:w-7 sm:h-7 drop-shadow-[0_1px_4px_rgba(255,255,255,0.3)]" />
+        <div className={cn(
+          "rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border flex items-center gap-4 sm:gap-6 shadow-2xl relative overflow-hidden",
+          isDark ? "bg-blue-600/10 border-white/10 text-white" : "bg-white/95 border-blue-100 text-slate-900"
+        )}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-blue-400 to-red-500" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl sm:rounded-[24px] flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform duration-500">
+            <GraduationCap className="text-white w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_2px_10px_rgba(255,255,255,0.4)]" />
           </div>
           <div className="min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-[0.3em] sm:tracking-[0.4em] text-blue-400 mb-0.5 sm:mb-1">Step 02</p>
-            <h2 className="text-base sm:text-xl md:text-2xl font-bold tracking-tight uppercase italic leading-tight t-text">
-              Academic Background
-            </h2>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 rounded-md bg-blue-600/20 text-blue-400 text-[8px] font-black uppercase tracking-[0.2em] border border-blue-500/20">Step 02</span>
+              <div className="h-px w-8 bg-blue-500/20" />
+              <Sparkles size={10} className="text-blue-400 animate-pulse" />
+            </div>
+            <h2 className={cn(
+              "text-lg sm:text-2xl md:text-3xl font-black tracking-tighter uppercase italic leading-none",
+              isDark ? "text-white" : "text-slate-900"
+            )}>Academic <span className="text-blue-600">Background</span></h2>
           </div>
         </div>
 
         {/* LRN */}
-        <div className="relative z-[100] space-y-2 group">
+        <div className="relative z-[100] space-y-2 group" id="lrn_container">
           <Label htmlFor="lrn" className={cn(
             "font-bold text-[10px] uppercase tracking-[0.3em] ml-2 transition-colors group-focus-within:text-blue-400",
             errors.lrn ? "text-red-500" : "t-text-muted"
@@ -574,7 +631,7 @@ export default function Step2Academic() {
         </div>
 
         {/* GRADE LEVEL */}
-        <div className="space-y-3">
+        <div className="space-y-3" id="grade_level_container">
           <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", "t-text-muted")}>
             Grade Level <span className="text-red-500">*</span>
           </Label>
@@ -604,7 +661,7 @@ export default function Step2Academic() {
         </div>
 
         {/* STUDENT CATEGORY */}
-        <div className="space-y-3">
+        <div className="space-y-3" id="student_category_container">
           <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", (errors as any).student_category ? "text-red-500" : "t-text-muted")}>
             Junior High School Completer Category {isFieldRequired("student_category") && <span className="text-red-500">*</span>}
           </Label>
@@ -634,7 +691,7 @@ export default function Step2Academic() {
         </div>
 
         {/* SCHOOL TYPE */}
-        <div className="space-y-3">
+        <div className="space-y-3" id="school_type_container">
           <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", (errors as any).school_type ? "text-red-500" : "t-text-muted")}>
             Previous School Type {isFieldRequired("school_type") && <span className="text-red-500">*</span>}
           </Label>
@@ -651,7 +708,7 @@ export default function Step2Academic() {
         </div>
 
         {/* YEAR COMPLETED JHS */}
-        <div className="relative z-[80] space-y-2 group">
+        <div className="relative z-[80] space-y-2 group" id="year_completed_jhs_container">
           <div className="flex justify-between items-center">
             <Label htmlFor="year_completed_jhs" className={cn(
               "font-bold text-[10px] uppercase tracking-[0.3em] ml-2 transition-colors group-focus-within:text-blue-400",
@@ -679,7 +736,7 @@ export default function Step2Academic() {
         </div>
 
         {/* STRAND */}
-        <div className="space-y-3">
+        <div className="space-y-3" id="strand_container">
           <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", errors.strand ? "text-red-500" : "t-text-muted")}>
             Strand Preference {isFieldRequired("strand") && <span className="text-red-500">*</span>}
           </Label>
@@ -705,7 +762,7 @@ export default function Step2Academic() {
 
         {/* GWA — JHS Graduate only (G11 or G12) */}
         {selectedCategory === "JHS Graduate" && (
-          <div className="relative z-[0] space-y-2 group animate-step-in">
+          <div className="relative z-[0] space-y-2 group animate-step-in" id="gwa_grade_10_container">
             <div className="flex justify-between items-center">
               <Label htmlFor="gwa" className={cn(
                 "font-bold text-[10px] uppercase tracking-[0.3em] ml-2 transition-colors group-focus-within:text-blue-400",
@@ -735,7 +792,7 @@ export default function Step2Academic() {
         )}
 
         {/* LAST SCHOOL ATTENDED */}
-        <div className="space-y-2">
+        <div className="space-y-2" id="last_school_attended_container">
           <Label className={cn(
             "font-bold text-[10px] uppercase tracking-[0.3em] ml-2",
             errors.last_school_attended ? "text-red-500" : "t-text-muted"
@@ -755,7 +812,7 @@ export default function Step2Academic() {
         </div>
 
         {/* PREVIOUS SCHOOL ADDRESS */}
-        <div className="space-y-2">
+        <div className="space-y-2" id="last_school_address_container">
           <div className="flex justify-between items-center">
             <Label htmlFor="last_school_address" className={cn(
               "font-bold text-[10px] uppercase tracking-[0.3em] ml-2",
@@ -783,7 +840,7 @@ export default function Step2Academic() {
         </div>
 
         {/* FACEBOOK USERNAME */}
-        <div className="space-y-2">
+        <div className="space-y-2" id="facebook_user_container">
           <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", (errors as any).facebook_user ? "text-red-500" : "t-text-muted")}>
             Facebook Username {isFieldRequired("facebook_user") && <span className="text-red-500">*</span>}
           </Label>
@@ -804,7 +861,7 @@ export default function Step2Academic() {
         </div>
 
         {/* FACEBOOK LINK */}
-        <div className="space-y-2">
+        <div className="space-y-2" id="facebook_link_container">
           <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", (errors as any).facebook_link ? "text-red-500" : "t-text-muted")}>
             Facebook Profile Link {isFieldRequired("facebook_link") && <span className="text-red-500">*</span>}
           </Label>
@@ -828,18 +885,28 @@ export default function Step2Academic() {
         </div>
 
         {/* PREFERRED MODALITY */}
-        <div className="space-y-3">
-          <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", (errors as any).preferred_modality ? "text-red-500" : "t-text-muted")}>
+        <div className="space-y-3" id="preferred_modality_container">
+          <Label className={cn("font-black text-[10px] uppercase tracking-[0.3em] ml-2", (errors as any).preferred_modality ? "text-red-500" : "t-text-muted")}>
             Preferred Learning Modality {isFieldRequired("preferred_modality") && <span className="text-red-500">*</span>}
           </Label>
           <input type="hidden" {...register("preferred_modality", { required: isFieldRequired("preferred_modality") ? "Required" : false })} />
-          <div className="grid grid-cols-2 gap-3">
-            <CheckCard label="Face to Face" checked={selectedModality === "Face to Face"}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <CheckCard 
+              label="Face to Face" 
+              checked={selectedModality === "Face to Face"}
               onClick={() => setValue("preferred_modality", "Face to Face", { shouldValidate: true })}
-              disabled={!isFieldEditable("preferred_modality")} icon={<Monitor size={18} />} />
-            <CheckCard label="Online" checked={selectedModality === "Online"}
+              disabled={!isFieldEditable("preferred_modality")} 
+              icon={<Monitor size={20} />} 
+              sublabel="On-campus sessions"
+            />
+            <CheckCard 
+              label="Online" 
+              checked={selectedModality === "Online"}
               onClick={() => { setValue("preferred_modality", "Online", { shouldValidate: true }) }}
-              disabled={!isFieldEditable("preferred_modality")} icon={<Monitor size={18} />} />
+              disabled={!isFieldEditable("preferred_modality")} 
+              icon={<Globe size={20} />} 
+              sublabel="Remote learning"
+            />
           </div>
           {(errors as any).preferred_modality && (
             <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest flex items-center gap-1 ml-2">
@@ -850,18 +917,28 @@ export default function Step2Academic() {
 
         {/* PREFERRED SHIFT */}
         {selectedModality && (
-          <div className="space-y-3 animate-step-in">
-            <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", (errors as any).preferred_shift ? "text-red-500" : "t-text-muted")}>
+          <div className="space-y-3 animate-step-in" id="preferred_shift_container">
+            <Label className={cn("font-black text-[10px] uppercase tracking-[0.3em] ml-2", (errors as any).preferred_shift ? "text-red-500" : "t-text-muted")}>
               Preferred Shift <span className="text-red-500">*</span>
             </Label>
             <input type="hidden" {...register("preferred_shift", { required: selectedModality ? "Please select a shift" : false })} />
-            <div className="grid grid-cols-2 gap-3">
-              <CheckCard label="AM Shift" sublabel="Morning" checked={selectedShift === "AM"}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <CheckCard 
+                label="AM Shift" 
+                sublabel="Morning sessions" 
+                checked={selectedShift === "AM"}
                 onClick={() => setValue("preferred_shift", "AM", { shouldValidate: true })}
-                disabled={!isFieldEditable("preferred_shift")} icon={<Clock size={18} />} />
-              <CheckCard label="PM Shift" sublabel="Afternoon" checked={selectedShift === "PM"}
+                disabled={!isFieldEditable("preferred_shift")} 
+                icon={<Clock size={20} />} 
+              />
+              <CheckCard 
+                label="PM Shift" 
+                sublabel="Afternoon sessions" 
+                checked={selectedShift === "PM"}
                 onClick={() => setValue("preferred_shift", "PM", { shouldValidate: true })}
-                disabled={!isFieldEditable("preferred_shift")} icon={<Clock size={18} />} />
+                disabled={!isFieldEditable("preferred_shift")} 
+                icon={<Clock size={20} />} 
+              />
             </div>
             {(errors as any).preferred_shift && (
               <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest flex items-center gap-1 ml-2">
@@ -874,35 +951,35 @@ export default function Step2Academic() {
       </div>
 
       {/* STICKY BOTTOM BAR */}
-      <div className="sticky bottom-0 z-20 left-0 right-0 pt-4 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12 px-4 sm:px-6 md:px-8 lg:px-12 mt-6 backdrop-blur-md border-t flex flex-col gap-3 t-sticky">
-        <div style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }} className="flex flex-col gap-3">
+      <div className="sticky bottom-0 z-20 left-0 right-0 pt-8 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12 px-4 sm:px-6 md:px-8 lg:px-12 mt-6 flex flex-col gap-3 bg-transparent">
+        <div style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }} className="flex flex-col gap-3">
           <Button
             type="submit"
             disabled={fetchingYear || checking}
             className={cn(
-              "w-full min-h-[48px] sm:min-h-[52px] md:h-14 rounded-2xl sm:rounded-[28px]",
+              "w-full min-h-[52px] md:h-16 rounded-[28px]",
               "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-              "shadow-[0_20px_50px_rgba(59,130,246,0.4)]",
-              "transition-[background-color,color,box-shadow] duration-300 active:scale-[0.98]",
-              "flex items-center justify-center gap-3 sm:gap-4 group touch-manipulation"
+              "shadow-[0_20px_50px_rgba(59,130,246,0.3)] lg:hover:shadow-blue-600/20",
+              "transition-all duration-500 active:scale-[0.98]",
+              "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
             )}
           >
             {checking ? (
-              <><Loader2 className="animate-spin w-5 h-5 shrink-0" /><span className="text-xs sm:text-sm font-bold uppercase tracking-wider">Verifying LRN...</span></>
+              <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <>
-                <span className="font-bold uppercase text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.4em] text-white lg:group-hover:text-blue-600">Proceed To Step 03</span>
-                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-[background-color]">
-                  <ArrowRight size={18} className="sm:w-5 sm:h-5 lg:group-hover:translate-x-1 transition-transform" />
-                </div>
-              </>
+              <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
+                Proceed To Step 03
+              </span>
             )}
+            <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
+              <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
+            </div>
           </Button>
           <button type="button" onClick={() => {
             updateFormData(getValues() as any)
             setStep(1)
           }}
-            className="min-h-[44px] w-full rounded-xl t-text-muted font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 transition-colors py-3 touch-manipulation active:scale-[0.98]">
+            className="min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 transition-colors py-3 touch-manipulation active:scale-[0.98]">
             <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
           </button>
         </div>

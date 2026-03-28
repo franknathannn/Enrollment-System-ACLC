@@ -601,10 +601,10 @@ function ArchiveContent() {
             <div>
               <div className="flex items-center gap-2 mb-0.5">
                 <span className={`w-1.5 h-1.5 rounded-full animate-pulse shrink-0 ${isDarkMode ? 'bg-amber-400' : 'bg-amber-500'}`} />
-                <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`}>Records Vault</p>
+                <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`}>Academic Vault</p>
               </div>
-              <h1 className="text-2xl sm:text-4xl font-black tracking-tighter uppercase" style={{ color: tc.text.primary }}>Student Archive</h1>
-              <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: tc.text.muted }}>Archives of Current Students &amp; Graduated Students</p>
+              <h1 className="text-2xl sm:text-5xl font-black tracking-tighter uppercase leading-none" style={{ color: tc.text.primary }}>Student Archive</h1>
+              <p className="text-[10px] sm:text-[11px] font-bold italic mt-1" style={{ color: tc.text.muted }}>Institutional History & Graduate Ledger</p>
             </div>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
@@ -675,36 +675,65 @@ function ArchiveContent() {
       </div>
 
       {/* TABLE */}
-      <div className="rounded-[24px] sm:rounded-[32px] border overflow-hidden" style={{ backgroundColor: tc.surface, borderColor: tc.border }}>
+      <div className={`rounded-[28px] sm:rounded-[40px] border overflow-hidden shadow-xl shadow-amber-500/5 ${isDarkMode ? "bg-slate-900/40 backdrop-blur-xl" : "bg-white"}`} style={{ borderColor: tc.border }}>
+        
+        {/* Top Pagination Switcher */}
+        {!loading && students.length > 0 && totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-b bg-amber-500/5" style={{ borderColor: tc.border }}>
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>
+                Page {page} of {totalPages}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className={`h-8 px-3 rounded-xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30 border
+                  ${isDarkMode ? "bg-slate-800 border-slate-750 hover:bg-slate-700 text-slate-300" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-600"}`}
+              >Prev</button>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className={`h-8 px-3 rounded-xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30 border
+                  ${isDarkMode ? "bg-slate-800 border-slate-750 hover:bg-slate-700 text-slate-300" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-600"}`}
+              >Next</button>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-20 gap-3">
             <Loader2 size={22} className="animate-spin text-blue-500" />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Records...</span>
           </div>
         ) : students.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Archive size={40} className="text-slate-300" />
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">No Archived Records Found</p>
-            {!selectedYear && <p className="text-[9px] text-slate-500 uppercase tracking-widest">Select a school year above</p>}
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <div className="w-16 h-16 rounded-3xl bg-slate-500/10 flex items-center justify-center text-slate-300">
+               <Archive size={32} />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">No Archived Records Found</p>
+              {!selectedYear && <p className="text-[9px] text-slate-500 uppercase tracking-widest">Select a school year above to begin research</p>}
+            </div>
           </div>
         ) : (<>
           {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full border-separate border-spacing-y-3 px-6 pb-6">
               <thead>
-                <tr style={{ backgroundColor: isDarkMode ? "rgba(15,23,42,0.7)" : "#f1f5f9" }}>
+                <tr>
                   {[
-                    { label: "Student", w: "w-[280px]" },
-                    { label: "LRN", w: "w-[130px]" },
-                    { label: "Strand / Grade", w: "w-[130px]" },
-                    { label: "Section", w: "w-[110px]" },
-                    { label: "Category", w: "w-[120px]" },
-                    { label: "Status", w: "w-[100px]" },
-                    { label: "GWA", w: "w-[70px]" },
-                    { label: "", w: "w-[60px]" },
+                    { label: "Student Profile", w: "w-[300px]" },
+                    { label: "Credentials", w: "w-[150px]" },
+                    { label: "Academic Path", w: "w-[150px]" },
+                    { label: "Classification", w: "w-[130px]" },
+                    { label: "GWA", w: "w-[80px]" },
+                    { label: "", w: "text-right" },
                   ].map((h, i) => (
-                    <th key={i} className={`px-4 py-3.5 text-left text-[8px] font-black uppercase tracking-[0.18em] ${h.w}`}
-                      style={{ color: tc.text.muted, borderBottom: `2px solid ${tc.border}` }}>
+                    <th key={i} className={`px-4 pt-4 pb-2 text-left text-[8px] font-black uppercase tracking-[0.2em] ${h.w}`}
+                      style={{ color: tc.text.muted }}>
                       {h.label}
                     </th>
                   ))}
@@ -716,112 +745,78 @@ function ArchiveContent() {
                   const pfp = s.two_by_two_url || s.profile_picture
                   return (
                     <tr key={s.id}
-                      className="group cursor-pointer transition-all duration-150"
-                      style={{ borderBottom: `1px solid ${tc.border}` }}
+                      className={`group cursor-pointer transition-all duration-300 hover:-translate-y-0.5`}
                       onClick={() => setSelectedStudent(s)}>
-
-                      {/* Student — photo + name */}
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          {/* Photo */}
+                      
+                      {/* Name Card */}
+                      <td className={`px-4 py-4 rounded-l-3xl border-y border-l transition-colors ${isDarkMode ? "bg-slate-800/20 group-hover:bg-slate-800/40 border-slate-800/50" : "bg-slate-50/30 group-hover:bg-slate-50 border-slate-100"}`}>
+                        <div className="flex items-center gap-4">
                           <div className="relative shrink-0">
-                            <div className={`w-11 h-11 rounded-2xl overflow-hidden border-2 transition-transform group-hover:scale-105
-                              ${isGrad ? "border-amber-500/40" : isDarkMode ? "border-slate-700" : "border-slate-200"}`}
-                              style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.8)" : "#e2e8f0" }}>
+                            <div className={`w-12 h-12 rounded-2xl overflow-hidden border-2 transition-all duration-500 shadow-lg group-hover:shadow-blue-500/10
+                              ${isGrad ? "border-amber-500/40" : isDarkMode ? "border-slate-700/50" : "border-white"}`}
+                              style={{ backgroundColor: isDarkMode ? "rgba(15,23,42,0.8)" : "#fff" }}>
                               {pfp
-                                ? <img src={pfp} alt="" className="w-full h-full object-cover" />
-                                : <div className="w-full h-full flex items-center justify-center">
-                                    <User size={16} className="text-slate-400" />
-                                  </div>
-                              }
+                                ? <img src={pfp} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                : <div className="w-full h-full flex items-center justify-center text-slate-400"><User size={20} /></div>}
                             </div>
-                            {isGrad && (
-                              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-sm">
-                                <Star size={8} className="text-white fill-white" />
-                              </div>
-                            )}
                           </div>
-                          {/* Name + gender */}
                           <div className="min-w-0">
-                            <p className="text-[12px] font-black uppercase leading-tight truncate group-hover:text-blue-500 transition-colors"
-                              style={{ color: tc.text.primary }}>
-                              {s.last_name}, {s.first_name}{s.middle_name ? ` ${s.middle_name[0]}.` : ""}
+                            <p className={`text-sm font-black uppercase leading-tight truncate group-hover:text-amber-500 transition-colors ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                               {s.last_name}, {s.first_name}
                             </p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full
-                                ${s.gender === "Male" ? "bg-blue-500/10 text-blue-400" : "bg-pink-500/10 text-pink-400"}`}>
-                                {s.gender}
-                              </span>
-                              {s.school_year && (
-                                <span className="text-[8px] font-bold" style={{ color: tc.text.muted }}>S.Y. {s.school_year}</span>
-                              )}
-                            </div>
+                             <div className="flex items-center gap-2 mt-1">
+                               <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${s.gender === "Male" ? "bg-blue-500/10 text-blue-400" : "bg-pink-500/10 text-pink-400"}`}>
+                                 {s.gender}
+                               </span>
+                             </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* LRN */}
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-[10px] font-bold tracking-widest" style={{ color: tc.text.muted }}>{s.lrn || "—"}</span>
+                      {/* LRN / ID */}
+                      <td className={`px-4 py-4 border-y transition-colors ${isDarkMode ? "bg-slate-800/20 group-hover:bg-slate-800/40 border-slate-800/50" : "bg-slate-50/30 group-hover:bg-slate-50 border-slate-100"}`}>
+                        <div className="space-y-1">
+                          <p className="font-mono text-[10px] font-bold tracking-widest" style={{ color: tc.text.primary }}>{s.lrn || "—"}</p>
+                          <p className="text-[8px] font-black uppercase tracking-widest opacity-40">Identity Code</p>
+                        </div>
                       </td>
 
-                      {/* Strand / Grade */}
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1">
+                      {/* Academic Path */}
+                      <td className={`px-4 py-4 border-y transition-colors ${isDarkMode ? "bg-slate-800/20 group-hover:bg-slate-800/40 border-slate-800/50" : "bg-slate-50/30 group-hover:bg-slate-50 border-slate-100"}`}>
+                        <div className="flex flex-col gap-1.5">
                           <div className="flex items-center gap-1.5">
-                            {s.strand === "ICT"
-                              ? <Cpu size={11} className="text-blue-400 shrink-0" />
-                              : <BookOpen size={11} className="text-orange-400 shrink-0" />}
-                            <span className={`text-[10px] font-black ${s.strand === "ICT" ? "text-blue-400" : "text-orange-400"}`}>{s.strand}</span>
+                            <span className={`text-[10px] font-black uppercase tracking-wider ${s.strand === "ICT" ? "text-blue-400" : "text-orange-400"}`}>{s.strand} Division</span>
                           </div>
                           <GradeBadge gradeLevel={s.grade_level || "11"} sectionId={s.section_id} isDarkMode={isDarkMode} />
                         </div>
                       </td>
 
-                      {/* Section */}
-                      <td className="px-4 py-3">
-                        <span className="text-[10px] font-bold" style={{ color: isGrad ? tc.text.muted : tc.text.secondary }}>
-                          {isGrad ? "—" : (s.section || "Unassigned")}
-                        </span>
+                      {/* Classification / Section */}
+                      <td className={`px-4 py-4 border-y transition-colors ${isDarkMode ? "bg-slate-800/20 group-hover:bg-slate-800/40 border-slate-800/50" : "bg-slate-50/30 group-hover:bg-slate-50 border-slate-100"}`}>
+                         <div className="space-y-1">
+                            <p className="text-[10px] font-black" style={{ color: isGrad ? tc.text.muted : tc.text.primary }}>
+                              {isGrad ? "ALUMNI" : (s.section || "UNASSIGNED")}
+                            </p>
+                            <p className="text-[8px] font-bold uppercase tracking-widest opacity-40">{s.student_category || "Standard"}</p>
+                         </div>
                       </td>
 
-                      {/* Category */}
-                      <td className="px-4 py-3">
-                        <span className="text-[9px] font-bold" style={{ color: tc.text.muted }}>{s.student_category || "—"}</span>
+                      {/* GWA Score */}
+                      <td className={`px-4 py-4 border-y transition-colors ${isDarkMode ? "bg-slate-800/20 group-hover:bg-slate-800/40 border-slate-800/50" : "bg-slate-50/30 group-hover:bg-slate-50 border-slate-100"}`}>
+                         <div className="flex items-baseline gap-1">
+                            <span className={`text-sm font-black tabular-nums transition-colors ${s.gwa_grade_10 ? "text-blue-500 group-hover:text-blue-400" : "text-slate-500"}`}>
+                               {s.gwa_grade_10 || "0.0"}
+                            </span>
+                         </div>
                       </td>
 
-                      {/* Status */}
-                      <td className="px-4 py-3">
-                        {isGrad ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[8px] font-black uppercase bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-500/30 text-amber-400">
-                            <Award size={8} /> Graduated
-                          </span>
-                        ) : s.graduate_lock ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[8px] font-black uppercase bg-slate-500/10 border border-slate-500/20 text-slate-400">
-                            <Lock size={8} /> Locked
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[8px] font-black uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                            Archived
-                          </span>
-                        )}
-                      </td>
-
-                      {/* GWA */}
-                      <td className="px-4 py-3">
-                        <span className={`text-[11px] font-black tabular-nums ${s.gwa_grade_10 ? "text-blue-400" : ""}`}
-                          style={{ color: s.gwa_grade_10 ? undefined : tc.text.muted }}>
-                          {s.gwa_grade_10 || "—"}
-                        </span>
-                      </td>
-
-                      {/* View button */}
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={e => { e.stopPropagation(); setSelectedStudent(s) }}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all opacity-0 group-hover:opacity-100 bg-blue-600 text-white hover:bg-blue-500">
-                          <Eye size={10} /> View
-                        </button>
+                      {/* Action */}
+                      <td className={`px-4 py-4 rounded-r-3xl border-y border-r transition-colors ${isDarkMode ? "bg-slate-800/20 group-hover:bg-slate-800/40 border-slate-800/50" : "bg-slate-50/30 group-hover:bg-slate-50 border-slate-100"} text-right`}>
+                        <div className="flex items-center justify-end">
+                           <div className={`p-2.5 rounded-xl border transition-all duration-300 ${isDarkMode ? "border-slate-700 bg-slate-800/50 text-slate-400 group-hover:text-blue-400 group-hover:border-blue-500/50" : "border-slate-200 bg-white text-slate-400 group-hover:text-blue-600 group-hover:border-blue-200 shadow-sm"}`}>
+                             <Eye size={16} />
+                           </div>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -838,7 +833,7 @@ function ArchiveContent() {
               return (
                 <div key={s.id} className="px-4 py-3.5 flex items-center gap-3 cursor-pointer active:bg-blue-500/5" onClick={() => setSelectedStudent(s)}>
                   <div className="relative shrink-0">
-                    <div className="w-12 h-12 rounded-2xl overflow-hidden border" style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.8)" : "#e2e8f0", borderColor: tc.border }}>
+                    <div className={`w-12 h-12 rounded-2xl overflow-hidden border ${isDarkMode ? "border-slate-750 bg-slate-800" : "border-slate-200 bg-white shadow-sm"}`}>
                       {pfp
                         ? <img src={pfp} alt="" className="w-full h-full object-cover" />
                         : <div className="w-full h-full flex items-center justify-center"><User size={18} className="text-slate-400" /></div>}
@@ -850,12 +845,11 @@ function ArchiveContent() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-black uppercase truncate" style={{ color: tc.text.primary }}>{s.last_name}, {s.first_name}</p>
+                    <p className={`text-[12px] font-black uppercase truncate ${isDarkMode ? "text-white" : "text-slate-900"}`}>{s.last_name}, {s.first_name}</p>
                     <p className="font-mono text-[9px] mt-0.5" style={{ color: tc.text.muted }}>{s.lrn}</p>
                     <div className="flex gap-1.5 mt-1 flex-wrap items-center">
                       <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${s.strand === "ICT" ? "bg-blue-500/10 text-blue-400" : "bg-orange-500/10 text-orange-400"}`}>{s.strand}</span>
                       <GradeBadge gradeLevel={s.grade_level || "11"} sectionId={s.section_id} isDarkMode={isDarkMode} />
-                      {!isGrad && <span className="text-[8px] font-bold" style={{ color: tc.text.muted }}>{s.section || "Unassigned"}</span>}
                     </div>
                   </div>
                   <ChevronRight size={14} style={{ color: tc.text.muted }} />
@@ -865,17 +859,17 @@ function ArchiveContent() {
           </div>
         </>)}
 
-        {/* PAGINATION */}
+        {/* PAGINATION — Bottom */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-t" style={{ borderColor: tc.border }}>
+          <div className="flex items-center justify-between px-6 py-5 border-t bg-amber-500/5 shadow-inner" style={{ borderColor: tc.border }}>
             <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>
-              {total} record{total !== 1 ? "s" : ""} · Page {page} of {totalPages}
+              {total} record{total !== 1 ? "s" : ""} · Database Totals
             </span>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}
-                className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black transition-all disabled:opacity-30
-                  ${isDarkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-100 hover:bg-slate-200 text-slate-600"}`}
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm
+                  ${isDarkMode ? "bg-slate-800 border-slate-750 hover:bg-slate-700 text-slate-300" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-600"}`}
               >‹</button>
               {Array.from({ length: totalPages }, (_, i) => i + 1)
                 .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
@@ -887,17 +881,17 @@ function ArchiveContent() {
                   <span key={`e${i}`} className="text-[10px] px-1" style={{ color: tc.text.muted }}>…</span>
                 ) : (
                   <button key={p} onClick={() => setPage(p as number)}
-                    className={`w-8 h-8 rounded-xl text-[10px] font-black transition-all
+                    className={`w-10 h-10 rounded-2xl text-[10px] font-black transition-all border shadow-sm
                       ${page === p
-                        ? "bg-blue-600 text-white shadow-md"
-                        : isDarkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-400" : "bg-slate-100 hover:bg-slate-200 text-slate-500"
+                        ? "bg-blue-600 border-blue-500 text-white shadow-blue-500/20"
+                        : isDarkMode ? "bg-slate-800 border-slate-750 hover:bg-slate-700 text-slate-400" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-500"
                       }`}
                   >{p}</button>
                 ))}
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-                className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black transition-all disabled:opacity-30
-                  ${isDarkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-100 hover:bg-slate-200 text-slate-600"}`}
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm
+                  ${isDarkMode ? "bg-slate-800 border-slate-750 hover:bg-slate-700 text-slate-300" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-600"}`}
               >›</button>
             </div>
           </div>

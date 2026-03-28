@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   ArrowRight, User, BookOpen, MapPin, Heart,
-  ChevronDown, Loader2, Globe, AlertTriangle,
+  ChevronDown, Loader2, Globe, AlertTriangle, Sparkles,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -77,17 +77,17 @@ function buildFieldClass(opts: {
     "font-medium outline-none text-xs md:text-sm",
     isDark ? "text-white" : "text-slate-900",
     hasError
-      ? "border-red-500/50 bg-red-950/30 focus:border-red-500"
+      ? "border-red-500/50 bg-red-950/30 focus:border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.15)]"
       : cn(
-          "focus:border-blue-500",
+          "focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)]",
           isDark ? "focus:bg-slate-900/80" : "focus:bg-white",
           filled
             ? isDark
               ? "border-blue-900/40 bg-slate-950/60 text-blue-100"
-              : "border-blue-500/40 bg-blue-50 text-blue-900"
+              : "border-blue-500/40 bg-blue-50 text-blue-900 shadow-sm"
             : isDark
-              ? "border-white/5 bg-white/5"
-              : "border-slate-200 bg-white",
+              ? "border-white/5 bg-white/5 lg:hover:border-white/20"
+              : "border-slate-200 bg-white lg:hover:border-slate-300",
         )
   )
 }
@@ -518,6 +518,7 @@ export default function Step1Identity() {
     trigger, getValues, control,
     formState: { errors },
   } = useForm<EnrollmentFormData>({
+    shouldFocusError: false, // We handle manual centering scroll
     defaultValues: {
       first_name:   formData.first_name   || "",
       middle_name:  formData.middle_name  || "",
@@ -564,7 +565,6 @@ export default function Step1Identity() {
   )
 
   const onSubmit = async (data: any) => {
-    if (!data.gender) { toast.error("Protocol Error: Gender selection required."); return }
     setChecking(true)
     try {
       if (data.email) {
@@ -585,9 +585,17 @@ export default function Step1Identity() {
         : nameQuery.or('middle_name.is.null,middle_name.eq.""')
       const { data: existingName } = await nameQuery.maybeSingle()
       if (existingName) { toast.error("Student identity already exists."); setChecking(false); return }
-      updateFormData(data); setStep(2); toast.success("Identity Verified & Submitted")
+      updateFormData(data); setStep(2); toast.success("Identity Verified & Submitted", { icon: <img src="/logo-aclc.png" className="w-5 h-5" alt="" /> })
     } catch { toast.error("System validation failed. Please try again.") }
-    finally   { setChecking(false) }
+  }
+  const onError = (errors: any) => {
+    const errorKeys = Object.keys(errors); if (errorKeys.length === 0) return
+    const firstError = errorKeys[0]
+    const el = document.getElementById(`${firstError}_container`) || document.getElementsByName(firstError)[0]
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" })
+      toast.error(`Missing or invalid: ${firstError.replace(/_/g, " ")}`, { duration: 4000 })
+    }
   }
 
   // Title-case handler. Updates native input value directly first (no extra render),
@@ -625,43 +633,73 @@ export default function Step1Identity() {
     : null
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="animate-step-in">
+    <form onSubmit={handleSubmit(onSubmit, onError)} className="animate-step-in">
       <style>{`
         @keyframes stepIn {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes float {
+          0%, 100% { transform: translate3d(-50%, -50%, 0); }
+          50% { transform: translate3d(-50%, calc(-50% - 15px), 0); }
+        }
         .animate-step-in {
           animation: stepIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
           will-change: opacity, transform;
         }
+        .animate-float {
+          animation: float 8s ease-in-out infinite;
+          will-change: transform;
+        }
         @media (prefers-reduced-motion: reduce) { .animate-step-in { animation: none; } }
       `}</style>
+
+      {/* BACKGROUND BRANDING */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className={cn(
+          "absolute top-1/2 left-1/2 w-[clamp(280px,80vw,500px)] aspect-square transition-opacity duration-1000 animate-float",
+          isDark ? "opacity-[0.05] brightness-150" : "opacity-[0.10]"
+        )}>
+          <img src="/logo-aclc.png" alt="" className="w-full h-full object-contain" />
+        </div>
+        <div className={cn(
+          "absolute top-0 right-0 w-1/3 h-1/3 blur-[120px] rounded-full",
+          isDark ? "bg-blue-600/10" : "bg-blue-600/5"
+        )} />
+        <div className={cn(
+          "absolute bottom-0 left-0 w-1/3 h-1/3 blur-[120px] rounded-full",
+          isDark ? "bg-red-600/10" : "bg-red-600/5"
+        )} />
+      </div>
 
       <div className="space-y-6 sm:space-y-8 pb-[140px] min-[480px]:pb-[160px]">
 
         {/* HEADER */}
         <div className={cn(
-          "rounded-2xl sm:rounded-[32px] p-4 sm:p-6 border flex items-center gap-3 sm:gap-5 shadow-2xl relative overflow-hidden",
-          isDark ? "bg-blue-600/10 border-blue-500/20 text-white" : "bg-white border-blue-100 text-slate-900"
+          "rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border flex items-center gap-4 sm:gap-6 shadow-2xl relative overflow-hidden",
+          isDark ? "bg-blue-600/10 border-white/10 text-white" : "bg-white/95 border-blue-100 text-slate-900"
         )}>
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
-          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
-            <User className="text-white w-6 h-6 sm:w-7 sm:h-7 drop-shadow-[0_1px_4px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-blue-400 to-red-500" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl sm:rounded-[24px] flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform duration-500">
+            <User className="text-white w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_2px_10px_rgba(255,255,255,0.4)]" />
           </div>
           <div className="min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-[0.3em] sm:tracking-[0.4em] text-blue-400 mb-0.5 sm:mb-1">Step 01</p>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 rounded-md bg-blue-600/20 text-blue-400 text-[8px] font-black uppercase tracking-[0.2em] border border-blue-500/20">Step 01</span>
+              <div className="h-px w-8 bg-blue-500/20" />
+              <Sparkles size={10} className="text-blue-400 animate-pulse" />
+            </div>
             <h2 className={cn(
-              "text-base sm:text-xl md:text-2xl font-bold tracking-tight uppercase italic leading-tight",
+              "text-lg sm:text-2xl md:text-3xl font-black tracking-tighter uppercase italic leading-none",
               isDark ? "text-white" : "text-slate-900"
-            )}>Personal Identity</h2>
+            )}>Personal <span className="text-blue-600">Identity</span></h2>
           </div>
         </div>
 
         {/* NAME FIELDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {(["first_name", "middle_name", "last_name"] as const).map(field => (
-            <div key={field} className="space-y-2">
+            <div key={field} className="space-y-2" id={`${field}_container`}>
               <div className="flex justify-between items-center">
                 <Label className="font-bold text-[10px] uppercase tracking-[0.3em] text-slate-500 ml-2">
                   {field.replace("_", " ")} {isFieldRequired(field) && <span className="text-red-500">*</span>}
@@ -691,7 +729,7 @@ export default function Step1Identity() {
         </div>
 
         {/* NATIONALITY */}
-        <div className="space-y-2">
+        <div className="space-y-2" id="nationality_container">
           <Label className="font-bold text-[10px] uppercase tracking-[0.3em] text-slate-500 ml-2">
             Nationality {isFieldRequired("nationality") && <span className="text-red-500">*</span>}
           </Label>
@@ -706,11 +744,12 @@ export default function Step1Identity() {
         </div>
 
         {/* GENDER */}
-        <div className="space-y-4">
-          <Label className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.3em] ml-2 block">
-            Gender {isFieldRequired("gender") && <span className="text-red-500">*</span>}
+        <div className="space-y-4" id="gender_container">
+          <Label className="text-slate-500 font-black text-[10px] uppercase tracking-[0.3em] ml-2 block">
+            Gender Selection {isFieldRequired("gender") && <span className="text-red-500">*</span>}
           </Label>
-          <div className="flex flex-col sm:flex-row gap-5">
+          <input type="hidden" {...register("gender", { required: isFieldRequired("gender") ? "Required" : false })} />
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             {(["Male", "Female"] as const).map(g => {
               const active   = selectedGender === g
               const isFemale = g === "Female"
@@ -721,30 +760,38 @@ export default function Step1Identity() {
                   onClick={() => { setValue("gender", g); updateFormData({ gender: g }) }}
                   disabled={!isFieldEditable("gender")}
                   className={cn(
-                    "flex-1 flex items-center justify-between px-8 py-6 rounded-[32px] border-2",
-                    "transition-[border-color,background-color,box-shadow] duration-200",
-                    "active:scale-[0.95] relative overflow-hidden",
+                    "flex-1 flex items-center justify-between px-8 py-7 rounded-[32px] border-2",
+                    "transition-all duration-300 transform",
+                    "active:scale-95 relative overflow-hidden lg:hover:-translate-y-1",
                     active
                       ? isFemale
-                        ? "border-pink-900/80 bg-pink-900/30 text-white shadow-[0_0_25px_rgba(157,23,77,0.2)]"
-                        : "border-blue-900/80 bg-blue-900/40 text-white shadow-[0_0_25px_rgba(30,58,138,0.3)]"
-                      : cn("text-slate-500", isDark ? "bg-white/5 border-white/5 lg:hover:border-white/10" : "bg-white border-slate-200 lg:hover:border-slate-300"),
+                        ? "border-red-500/50 bg-red-950/20 text-white shadow-[0_0_30px_rgba(239,68,68,0.15)]"
+                        : "border-blue-500/50 bg-blue-900/20 text-white shadow-[0_0_30px_rgba(59,130,246,0.2)]"
+                      : cn("text-slate-500", isDark ? "bg-white/5 border-white/5 lg:hover:border-white/10" : "bg-white border-slate-200 lg:hover:border-blue-400/30"),
                     !isFieldEditable("gender") && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-5">
                     <div className={cn(
-                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      "transition-[border-color,background-color] duration-200",
+                      "w-6 h-6 rounded-full border-2 flex items-center justify-center",
+                      "transition-all duration-300",
                       active
-                        ? isFemale ? "border-pink-400 bg-pink-400/20" : "border-blue-400 bg-blue-400/20"
+                        ? isFemale ? "border-red-400 bg-red-400/20" : "border-blue-400 bg-blue-400/20"
                         : "border-slate-700"
                     )}>
-                      {active && <div className={cn("w-2 h-2 rounded-full animate-pulse", isFemale ? "bg-pink-400" : "bg-blue-400")} />}
+                      {active && <div className={cn("w-2.5 h-2.5 rounded-full animate-pulse", isFemale ? "bg-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)]" : "bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.8)]")} />}
                     </div>
-                    <span className="font-bold uppercase text-xs tracking-[0.2em]">{g}</span>
+                    <span className="font-black uppercase text-xs tracking-[0.25em]">{g}</span>
                   </div>
-                  <User size={22} className={active ? isFemale ? "text-pink-400" : "text-blue-400" : "text-slate-700"} />
+                  <User size={24} className={cn("transition-colors duration-300", active ? isFemale ? "text-red-400" : "text-blue-400" : "text-slate-800")} />
+                  
+                  {/* Visual Impact Flare */}
+                  {active && (
+                    <div className={cn(
+                      "absolute -right-4 -bottom-4 w-24 h-24 blur-3xl opacity-20 animate-pulse",
+                      isFemale ? "bg-red-600" : "bg-blue-600"
+                    )} />
+                  )}
                 </button>
               )
             })}
@@ -752,7 +799,7 @@ export default function Step1Identity() {
         </div>
 
         {/* BIRTH DATE */}
-        <div className="space-y-2">
+        <div className="space-y-2" id="birth_date_container">
           <Label className="font-bold text-[10px] uppercase tracking-[0.3em] text-slate-500 ml-2">
             Birth Date {isFieldRequired("birth_date") && <span className="text-red-500">*</span>}
           </Label>
@@ -772,7 +819,7 @@ export default function Step1Identity() {
         </div>
 
         {/* RELIGION */}
-        <div className="space-y-2">
+        <div className="space-y-2" id="religion_container">
           <div className="flex justify-between items-center">
             <Label className="font-bold text-[10px] uppercase tracking-[0.3em] text-slate-500 ml-2">
               Religion {isFieldRequired("religion") && <span className="text-red-500">*</span>}
@@ -801,7 +848,7 @@ export default function Step1Identity() {
 
         {/* AGE & CIVIL STATUS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
+          <div className="space-y-2" id="age_container">
             <Label className="font-bold text-[10px] uppercase tracking-[0.3em] text-slate-500 ml-2">
               Age {isFieldRequired("age") && <span className="text-red-500">*</span>}
             </Label>
@@ -821,7 +868,7 @@ export default function Step1Identity() {
               </p>
             )}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2" id="civil_status_container">
             <Label className="font-bold text-[10px] uppercase tracking-[0.3em] text-slate-500 ml-2">
               Civil Status {isFieldRequired("civil_status") && <span className="text-red-500">*</span>}
             </Label>
@@ -837,7 +884,7 @@ export default function Step1Identity() {
 
         {/* ADDRESS & EMAIL */}
         <div className="space-y-6">
-          <div className="space-y-2">
+          <div className="space-y-2" id="address_container">
             <div className="flex justify-between items-center">
               <Label className="font-bold text-[10px] uppercase tracking-[0.3em] text-slate-500 ml-2">
                 Home Address {isFieldRequired("address") && <span className="text-red-500">*</span>}
@@ -860,7 +907,7 @@ export default function Step1Identity() {
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" id="email_container">
             <div className="flex justify-between items-center">
               <Label className="font-bold text-[10px] uppercase tracking-[0.3em] text-slate-500 ml-2">
                 Email {isFieldRequired("email") && <span className="text-red-500">*</span>}
@@ -887,41 +934,31 @@ export default function Step1Identity() {
       </div>
 
       {/* STICKY SUBMIT */}
-      <div
-        className="sticky bottom-0 z-20 left-0 right-0 pt-4 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12 px-4 sm:px-6 md:px-8 lg:px-12 mt-6 backdrop-blur-md border-t"
-        style={{
-          paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
-          backgroundColor: isDark ? "rgba(2, 6, 23, 0.95)" : "rgba(255, 255, 255, 0.95)",
-          borderColor:     isDark ? "rgba(255,255,255,0.1)" : "rgba(226,232,240,1)",
-        }}
-      >
-        <Button
-          type="submit"
-          disabled={checking}
-          className={cn(
-            "w-full min-h-[48px] sm:min-h-[52px] md:h-14 rounded-2xl sm:rounded-[28px]",
-            "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-            "shadow-[0_20px_50px_rgba(59,130,246,0.35)]",
-            "transition-[background-color,color,box-shadow] duration-300 active:scale-[0.98]",
-            "flex items-center justify-center gap-3 sm:gap-4 group touch-manipulation"
-          )}
-        >
-          {checking ? (
-            <>
-              <Loader2 className="animate-spin w-5 h-5 shrink-0" />
-              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">Verifying...</span>
-            </>
-          ) : (
-            <>
-              <span className="font-bold uppercase text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.4em] text-white lg:group-hover:text-blue-600">
+      <div className="sticky bottom-0 z-20 left-0 right-0 pt-8 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12 px-4 sm:px-6 md:px-8 lg:px-12 mt-6 flex flex-col gap-3 bg-transparent">
+        <div style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }} className="flex flex-col gap-3">
+          <Button
+            type="submit"
+            disabled={checking}
+            className={cn(
+              "w-full min-h-[52px] md:h-16 rounded-[28px]",
+              "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
+              "shadow-[0_20px_50px_rgba(59,130,246,0.3)] lg:hover:shadow-blue-600/20",
+              "transition-all duration-500 active:scale-[0.98]",
+              "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
+            )}
+          >
+            {checking ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
                 Proceed To Step 02
               </span>
-              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 transition-[background-color] shrink-0">
-                <ArrowRight size={18} className="sm:w-5 sm:h-5 lg:group-hover:translate-x-1 transition-transform" />
-              </div>
-            </>
-          )}
-        </Button>
+            )}
+            <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
+              <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Button>
+        </div>
       </div>
     </form>
   )

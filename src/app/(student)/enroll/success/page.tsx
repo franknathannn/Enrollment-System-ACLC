@@ -46,9 +46,12 @@ function SuccessContent() {
   useEffect(() => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!fullId || !uuidRegex.test(fullId)) { setIsLoading(false); return }
-    supabase.from('students').select('last_name, lrn').eq('id', fullId).maybeSingle()
-      .then(({ data, error }) => { if (!error && data) setStudentData({ lastName: data.last_name, lrn: data.lrn || "" }) })
-      .finally(() => setIsLoading(false))
+    const fetchData = async () => {
+      const { data, error } = await supabase.from('students').select('last_name, lrn').eq('id', fullId).maybeSingle()
+      if (!error && data) setStudentData({ lastName: data.last_name, lrn: data.lrn || "" })
+      setIsLoading(false)
+    }
+    fetchData()
   }, [fullId])
 
   // ── Local canvas — desktop only ──────────────────────────────────────────
@@ -107,16 +110,26 @@ function SuccessContent() {
       {/* Canvas — desktop only */}
       {!isMobile && <canvas ref={heroCanvasRef} className="absolute inset-0 pointer-events-none z-0 opacity-50" style={{ willChange: "transform" }} aria-hidden="true" />}
 
-      {/* Success icon */}
+      {/* Success logo replacement */}
       <div className="relative inline-block z-10">
-        <div className="absolute inset-0 bg-blue-500/30 blur-[60px] animate-pulse" />
-        <div className={cn("w-28 h-28 rounded-[44px] flex items-center justify-center border relative backdrop-blur-2xl",
-          d ? "bg-slate-900/90 border-blue-500/20 shadow-[0_0_50px_rgba(59,130,246,0.3)]" : "bg-white border-blue-200 shadow-[0_0_50px_rgba(59,130,246,0.2)]")}>
-          <CheckCircle2 size={56} className={cn("drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]", d ? "text-blue-400" : "text-blue-500")} />
-          <Orbit size={130} className={cn("absolute animate-spin", d ? "text-blue-800/20" : "text-blue-200/60")} style={{ animationDuration: '12s' }} />
+        <div className="absolute inset-0 bg-blue-500/40 blur-[80px] animate-pulse" />
+        <div className="absolute inset-[-20px] rounded-full border border-blue-400/20 animate-[ping_3s_linear_infinite] opacity-20" />
+        <div className="absolute inset-[-40px] rounded-full border border-blue-400/10 animate-[ping_4s_linear_infinite] opacity-10" />
+        
+        <div className={cn("w-32 h-32 md:w-40 md:h-40 rounded-[44px] md:rounded-[56px] flex items-center justify-center border relative overflow-hidden group/logo",
+          d ? "bg-slate-900/90 border-blue-500/20 shadow-[0_0_70px_rgba(59,130,246,0.3)]" : "bg-white/90 border-blue-200 shadow-[0_0_70px_rgba(59,130,246,0.2)]")}>
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent opacity-0 group-hover/logo:opacity-100 transition-opacity duration-700" />
+          <img 
+            src="/logo-aclc.png" 
+            alt="ACLC Logo" 
+            className="w-20 h-20 md:w-24 md:h-24 object-contain relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-transform duration-700 group-hover/logo:scale-110" 
+            style={{ transform: 'translateZ(0)' }}
+          />
+          <Orbit size={160} className={cn("absolute animate-spin", d ? "text-blue-800/20" : "text-blue-100/60")} style={{ animationDuration: '15s' }} />
         </div>
-        <div className="absolute -top-2 -right-2 w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl animate-bounce" style={{ animationDuration: '2s' }}>
-          <Sparkles size={22} />
+        
+        <div className="absolute -top-3 -right-3 w-14 h-14 bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 rounded-2xl flex items-center justify-center text-white shadow-[0_10px_30px_rgba(59,130,246,0.5)] animate-bounce" style={{ animationDuration: '2.5s' }}>
+          <Sparkles size={24} className="animate-pulse" />
         </div>
       </div>
 
@@ -134,9 +147,9 @@ function SuccessContent() {
       </div>
 
       {/* Dossier Card */}
-      <Card ref={cardRef} className={cn("p-1 rounded-[56px] border-none shadow-2xl text-left relative overflow-hidden backdrop-blur-3xl",
+      <Card ref={cardRef} className={cn("p-1 rounded-[56px] border-none shadow-2xl text-left relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/20 group",
         d ? "bg-gradient-to-br from-blue-500/20 to-transparent" : "bg-gradient-to-br from-blue-200/40 to-indigo-100/20")}>
-        <div className={cn("rounded-[52px] p-10 relative overflow-hidden", d ? "bg-slate-950/80" : "bg-white/95")}>
+        <div className={cn("rounded-[52px] p-10 relative overflow-hidden transition-all duration-500", d ? "bg-slate-950/95 group-hover:bg-slate-900/95" : "bg-white/95 group-hover:bg-white")}>
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
           <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12 pointer-events-none">
             <GraduationCap size={180} className={d ? "text-blue-400" : "text-blue-600"} />
@@ -275,8 +288,8 @@ export default function SuccessPage() {
       {!isMobile && <canvas ref={globalCanvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ willChange: "transform" }} aria-hidden="true" />}
 
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        <div className={cn("absolute top-[-30%] right-[-10%] w-[70%] h-[70%] rounded-full blur-[160px] pointer-events-none animate-aurora-1", d ? "bg-blue-600/10" : "bg-blue-300/25")} />
-        <div className={cn("absolute bottom-[-30%] left-[-10%] w-[70%] h-[70%] rounded-full blur-[160px] pointer-events-none animate-aurora-2", d ? "bg-indigo-600/10" : "bg-indigo-200/30")} />
+        <div className={cn("absolute top-[-30%] right-[-10%] w-[70%] h-[70%] rounded-full blur-[160px] pointer-events-none animate-aurora-1", d ? "bg-blue-600/10" : "bg-blue-300/25")} style={{ transform: 'translateZ(0)' }} />
+        <div className={cn("absolute bottom-[-30%] left-[-10%] w-[70%] h-[70%] rounded-full blur-[160px] pointer-events-none animate-aurora-2", d ? "bg-indigo-600/10" : "bg-indigo-200/30")} style={{ transform: 'translateZ(0)' }} />
       </div>
 
       <Suspense fallback={

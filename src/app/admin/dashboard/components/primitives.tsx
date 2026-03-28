@@ -75,19 +75,27 @@ AnimatedText.displayName = "AnimatedText"
 export const MetricCard = memo(({ label, value, colorLight, colorDark, icon, isDarkMode, textColor = "text-white", tooltip }: any) => {
   const content = (
     <Card
-        className={`p-6 md:p-10 rounded-[32px] md:rounded-[56px] ${textColor} flex justify-between items-center relative overflow-hidden group hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 border-none cursor-default touch-manipulation`}
+        className={`p-8 md:p-12 rounded-[2.5rem] md:rounded-[4rem] ${textColor} flex justify-between items-center relative overflow-hidden group hover:-translate-y-1 active:scale-[0.98] transition-all duration-500 border-none cursor-default touch-manipulation shadow-xl hover:shadow-2xl hover:shadow-indigo-500/10`}
         style={{
           background: isDarkMode ? colorDark : colorLight
         }}
       >
-        <div className="absolute top-0 right-0 w-32 md:w-48 h-32 md:h-48 bg-white/5 blur-[80px] rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
-        <div className="relative z-10">
-          <p className="text-[9px] md:text-[11px] font-black uppercase opacity-60 tracking-[0.3em] mb-2">{label}</p>
-          <h3 className="text-4xl md:text-7xl font-black tracking-tighter leading-none">
-            {typeof value === 'number' ? value.toLocaleString() : value}
+        {/* SaaS Decorative Glow */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 blur-[100px] rounded-full group-hover:bg-white/20 transition-all duration-700" />
+        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-black/5 blur-[80px] rounded-full group-hover:bg-black/10 transition-all duration-700" />
+        
+        <div className="relative z-10 flex-1">
+          <p className="text-[10px] md:text-[12px] font-black uppercase opacity-70 tracking-[0.25em] mb-3 drop-shadow-sm">{label}</p>
+          <h3 className="text-5xl md:text-8xl font-black tracking-tighter leading-none drop-shadow-md">
+            {typeof value === 'number' ? <span className="tabular-nums">{value.toLocaleString()}</span> : value}
           </h3>
         </div>
-        <div className="w-16 md:w-24 h-16 md:h-24 bg-white/10 rounded-[24px] md:rounded-[40px] flex items-center justify-center group-hover:scale-110 transition-transform relative z-10 shadow-lg backdrop-blur-md border border-white/10">{icon}</div>
+        
+        <div className="w-20 md:w-32 h-20 md:h-32 bg-white/15 rounded-[32px] md:rounded-[48px] flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 relative z-10 shadow-2xl backdrop-blur-xl border border-white/20 ring-1 ring-white/10">
+          <div className="scale-110 md:scale-150 drop-shadow-lg">
+            {icon}
+          </div>
+        </div>
       </Card>
   );
 
@@ -97,8 +105,8 @@ export const MetricCard = memo(({ label, value, colorLight, colorDark, icon, isD
         <TooltipTrigger asChild>
           {content}
         </TooltipTrigger>
-        <TooltipContent className="bg-slate-900 text-white border-slate-800">
-          <p className="font-medium text-xs">{tooltip}</p>
+        <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+          <p className="font-bold text-[10px] uppercase tracking-widest">{tooltip}</p>
         </TooltipContent>
       </Tooltip>
     )
@@ -126,29 +134,45 @@ export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode
 
   const content = (
     <Card
-      className="rounded-[32px] md:rounded-[48px] flex flex-col justify-between hover:shadow-2xl hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 h-full group min-h-[180px] touch-manipulation overflow-hidden"
+      className={`rounded-[2.5rem] md:rounded-[3.5rem] flex flex-col justify-between hover:shadow-2xl hover:-translate-y-1.5 active:scale-[0.98] transition-all duration-500 h-full group min-h-[220px] touch-manipulation overflow-hidden border-2`}
       style={{
         backgroundColor: isDarkMode ? themeColors.dark.surface : (isHighlighted ? highlightColor : themeColors.light.surface),
-        borderColor: isDarkMode ? themeColors.dark.border : (isHighlighted ? 'transparent' : themeColors.light.border)
+        borderColor: isDarkMode ? themeColors.dark.border : (isHighlighted ? 'transparent' : 'rgba(226, 232, 240, 0.5)')
       }}
     >
       {!isHighlighted && accentColor && (
-        <div className={`h-0.5 w-full bg-gradient-to-r ${accentColor} opacity-70 shrink-0`} />
+        <div className={`h-1 w-full bg-gradient-to-r ${accentColor} opacity-50 shrink-0 group-hover:opacity-100 transition-opacity duration-500`} />
       )}
-      <div className="p-6 md:p-10 flex flex-col justify-between flex-1">
-      <div className="space-y-4 md:space-y-6">
-        <div className={`w-12 md:w-16 h-12 md:h-16 rounded-2xl md:rounded-3xl flex items-center justify-center text-xl md:text-3xl ${isDarkMode ? 'bg-slate-800' : (isHighlighted ? 'bg-white/20 text-white' : bg)} ${!isHighlighted ? color : ''} transition-transform group-hover:rotate-6 shadow-sm`}>{icon}</div>
-        <div>
-          <ThemedText variant="h2" className="text-3xl md:text-5xl leading-none" isDarkMode={isDarkMode} style={isHighlighted ? { color: 'white' } : {}}>
-            {typeof value === 'number' ? value.toLocaleString() : value ?? 0}
-          </ThemedText>
-          <ThemedText variant="caption" className="mt-2 md:mt-4 text-[10px] md:text-[11px]" isDarkMode={isDarkMode} style={isHighlighted ? { color: 'rgba(255,255,255,0.8)' } : {}}>{title}</ThemedText>
+      
+      <div className="p-8 md:p-10 flex flex-col justify-between flex-1 relative">
+        {/* Subtle Background Pattern */}
+        <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-500 pointer-events-none">
+          {icon && typeof icon !== 'string' && icon}
         </div>
-      </div>
-      <div className="mt-4 md:mt-8 pt-4 md:pt-6 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between" style={isHighlighted ? { borderColor: 'rgba(255,255,255,0.2)' } : {}}>
-         <span className={`text-[8px] md:text-[9px] font-black uppercase tracking-widest ${isHighlighted ? 'text-white/80' : 'text-slate-300 dark:text-slate-600'}`}>{trend}</span>
-         <ArrowUpRight size={14} className={`${isHighlighted ? 'text-white/80' : 'text-slate-200 dark:text-slate-600'} group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors`} />
-      </div>
+
+        <div className="space-y-6 md:space-y-8 relative z-10">
+          <div className={`w-14 md:w-20 h-14 md:h-20 rounded-3xl md:rounded-[2rem] flex items-center justify-center text-2xl md:text-4xl ${isDarkMode ? 'bg-slate-800/80' : (isHighlighted ? 'bg-white/20 text-white' : bg)} ${!isHighlighted ? color : ''} transition-all duration-500 group-hover:rotate-6 group-hover:scale-110 shadow-lg border border-white/10`}>
+            {icon}
+          </div>
+          
+          <div>
+            <div className="flex items-baseline gap-1">
+              <ThemedText variant="h2" className="text-4xl md:text-6xl font-black tracking-tighter leading-none tabular-nums" isDarkMode={isDarkMode} style={isHighlighted ? { color: 'white' } : {}}>
+                {typeof value === 'number' ? value.toLocaleString() : value ?? 0}
+              </ThemedText>
+            </div>
+            <ThemedText variant="caption" className="mt-3 md:mt-5 text-[10px] md:text-[12px] font-black uppercase tracking-[0.2em] opacity-60" isDarkMode={isDarkMode} style={isHighlighted ? { color: 'rgba(255,255,255,0.8)' } : {}}>{title}</ThemedText>
+          </div>
+        </div>
+
+        <div className="mt-6 md:mt-10 pt-6 md:pt-8 border-t border-slate-100/50 dark:border-slate-800/50 flex items-center justify-between" style={isHighlighted ? { borderColor: 'rgba(255,255,255,0.2)' } : {}}>
+           <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.25em] ${isHighlighted ? 'text-white/80' : isDarkMode ? 'text-slate-500 group-hover:text-blue-400' : 'text-slate-400 group-hover:text-blue-600'} transition-colors duration-300`}>
+            {trend}
+           </span>
+           <div className={`p-2 rounded-xl transition-all duration-300 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+            <ArrowUpRight size={14} className={`${isHighlighted ? 'text-white' : isDarkMode ? 'text-slate-500 group-hover:text-blue-400' : 'text-slate-400 group-hover:text-blue-600'} transition-colors`} />
+           </div>
+        </div>
       </div>
     </Card>
   );
@@ -159,7 +183,7 @@ export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode
         <TooltipTrigger asChild>
           {content}
         </TooltipTrigger>
-        <TooltipContent className="bg-slate-900 text-white border-slate-800">
+        <TooltipContent className="bg-slate-950 text-white border-slate-800">
           <p className="font-medium text-xs">{tooltip}</p>
         </TooltipContent>
       </Tooltip>

@@ -30,20 +30,25 @@ function useIsMobile() {
   return isMobile
 }
 
-// ── ANIMATED COUNTER ─────────────────────────────────────────────────────────
+// ── ANIMATED COUNTER — Optimized with RAF ────────────────────────────────────
 function useCountUp(target: number, duration = 1200, trigger = true) {
   const [val, setVal] = useState(0)
+  const startTime = useRef<number | null>(null)
+
   useEffect(() => {
     if (!trigger || target === 0) return
-    let current = 0
-    const step = target / (duration / 16)
-    const timer = setInterval(() => {
-      current += step
-      if (current >= target) { setVal(target); clearInterval(timer) }
-      else setVal(Math.floor(current))
-    }, 16)
-    return () => clearInterval(timer)
+
+    let rafId: number
+    const step = (timestamp: number) => {
+      if (!startTime.current) startTime.current = timestamp
+      const progress = Math.min((timestamp - startTime.current) / duration, 1)
+      setVal(Math.floor(progress * target))
+      if (progress < 1) { rafId = requestAnimationFrame(step) }
+    }
+    rafId = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(rafId)
   }, [target, trigger, duration])
+
   return val
 }
 
@@ -98,79 +103,108 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
     : (start && end && now >= start && now <= end)
 
   const getStatusText = () => {
-    if (isManual) return isPortalActive ? "Enrollment Form is Open" : "System Lockdown"
+    if (isManual) return isPortalActive ? "Enrollment Form Open" : "System Lockdown"
     if (isExpired) return "Portal Expired"
     if (isPortalActive && config?.enrollment_start && config?.enrollment_end) {
-      const s = new Date(config.enrollment_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      const e = new Date(config.enrollment_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      return `${s} — ${e}`
+      return "Open for Admissions"
     }
     return "Admissions Offline"
   }
 
   return (
-    <div className={cn("lg:col-span-5 relative", !isMobile && "float")} ref={statsRef}>
-      <div className={cn("absolute -inset-8 rounded-[65px] blur-3xl transition-[opacity,background] duration-700", d ? "bg-indigo-600/10" : "bg-indigo-300/20")} />
-      <div className={cn("absolute -inset-4 rounded-[60px] blur-2xl transition-[opacity,background] duration-700", d ? "bg-blue-500/6" : "bg-blue-200/20")} />
+    <div className={cn("lg:col-span-5 relative group/stats", !isMobile && "float")} ref={statsRef} style={{ translate: "0 0", willChange: "transform" }}>
+      {/* Decorative Glows */}
+      <div className={cn("absolute -inset-10 rounded-[80px] blur-[100px] transition-opacity duration-1000 pointer-events-none", d ? "bg-blue-600/10 opacity-60" : "bg-blue-600/5 opacity-40")} />
+
       <div className={cn(
-        "relative rounded-[36px] md:rounded-[48px] border overflow-hidden backdrop-blur-3xl",
-        "transition-[background,border-color,box-shadow] duration-500",
-        d ? "bg-gradient-to-b from-[#0d1433]/80 to-[#060c20]/90 border-white/10 shadow-[0_40px_100px_rgba(0,0,40,0.6)]"
-          : "bg-white/90 border-blue-100 shadow-[0_30px_80px_rgba(99,102,241,0.18)]"
+        "relative rounded-[40px] md:rounded-[56px] border overflow-hidden backdrop-blur-3xl transition-all duration-700 ease-out transform cursor-default",
+        statsVisible ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0",
+        d ? "bg-[#030712]/85 border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.8)] lg:group-hover/stats:border-blue-500/40"
+          : "bg-white/90 border-slate-200 shadow-[0_30px_80px_rgba(0,0,0,0.06)] lg:group-hover/stats:border-blue-300 lg:group-hover/stats:shadow-[0_40px_100px_rgba(0,0,0,0.08)]",
+        "lg:group-hover/stats:-translate-y-2"
       )}>
-        <div className="h-[3px] w-full bg-gradient-to-r from-blue-500 via-violet-500 via-indigo-400 to-cyan-400" />
-        <div className="p-6 md:p-8 space-y-6 md:space-y-8">
+        {/* Top Accent Bar — Solid ACLC Blue */}
+        <div className="h-1.5 w-full bg-blue-600" />
+        
+        {/* Centered Logo Background — Full Color */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden select-none">
+            <img 
+                src="/logo-aclc.png" 
+                alt="Logo Background" 
+                className={cn(
+                    "w-[300px] md:w-[450px] h-auto object-contain transition-all duration-1000",
+                    "opacity-[0.15] lg:group-hover/stats:scale-110 lg:group-hover/stats:opacity-[0.18]",
+                    d && "brightness-125"
+                )} 
+            />
+        </div>
+
+        <div className="relative z-10 p-7 md:p-10 space-y-8 md:space-y-10 group">
           {/* Header */}
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className={cn("text-sm font-black uppercase tracking-tight", d ? "text-white" : "text-slate-900")}>Strand Distribution</h3>
-              <p className={cn("text-[10px] font-bold uppercase tracking-[0.35em] mt-1", d ? "text-blue-400" : "text-blue-600")}>Real-time Academic Tracker</p>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className={cn("text-xs font-black uppercase tracking-[0.3em]", d ? "text-white/40" : "text-slate-400")}>Live Metrics</h3>
+              <p className={cn("text-lg font-black uppercase tracking-tight", d ? "text-white" : "text-slate-900")}>Strand Distribution</p>
             </div>
-            <div className={cn("p-2.5 rounded-xl", d ? "bg-indigo-900/40" : "bg-blue-50")}>
-              <Target size={18} className={cn("lg:animate-pulse", d ? "text-indigo-400" : "text-blue-600")} />
-            </div>
-          </div>
-
-          {/* Bars */}
-          <div className="space-y-6 md:space-y-7">
-            <PrettyBar label="ICT Division" icon={<Cpu size={12} />} current={displayIct} max={stats.ictMax} color="blue" isDark={d} />
-            <PrettyBar label="GAS Division" icon={<BookOpen size={12} />} current={displayGas} max={stats.gasMax} color="indigo" isDark={d} />
-          </div>
-
-          {/* Vacancy counter */}
-          <div className="relative overflow-hidden rounded-2xl md:rounded-3xl p-6 md:p-7" style={{
-            background: d
-              ? "linear-gradient(135deg,#1e3a8a 0%,#312e81 50%,#1e1b4b 100%)"
-              : "linear-gradient(135deg,#2563eb 0%,#4f46e5 100%)"
-          }}>
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.08),transparent_60%)]" />
-            <div className="absolute -right-8 -top-8 w-36 h-36 bg-white/4 rounded-full" />
-            <p className="relative text-[10px] font-black uppercase tracking-[0.4em] text-white/50 mb-1">Open Slots</p>
-            <p className="relative text-[3.5rem] md:text-[4.5rem] font-black leading-none text-white tracking-tight tabular-nums">{displayVacancy}</p>
-            <p className="relative text-[10px] font-bold text-white/40 uppercase tracking-widest mt-2">of {stats.totalMax} total seats</p>
-            <div className="absolute right-6 bottom-6">
-              <Orbit size={38} className="text-white/10 lg:animate-spin" style={{ animationDuration: '14s' }} />
-            </div>
-          </div>
-
-          {/* Status row */}
-          <div className={cn("flex items-center gap-4 pt-4 border-t", d ? "border-white/6" : "border-slate-100")}>
             <div className={cn(
-              "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0",
-              isPortalActive
-                ? "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30"
-                : d ? "bg-slate-800 text-slate-500" : "bg-slate-100 text-slate-400"
+                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300", 
+                d ? "bg-white/5 border border-white/10 group-hover:border-blue-500/50" : "bg-slate-50 border border-slate-200 shadow-sm"
             )}>
-              {isManual
-                ? <Zap size={16} className={isPortalActive ? "text-white" : ""} />
-                : <Calendar size={16} className={isPortalActive ? "text-white" : ""} />}
+              <Activity size={20} className={cn(isPortalActive ? "text-blue-500 lg:animate-pulse" : d ? "text-slate-600" : "text-slate-300")} />
+            </div>
+          </div>
+
+          {/* Visualization Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <VisualMetric label="ICT" current={displayIct} max={stats.ictMax} color="blue" isDark={d} />
+            <VisualMetric label="GAS" current={displayGas} max={stats.gasMax} color="red" isDark={d} />
+          </div>
+
+          {/* Centerpiece Counter */}
+          <div className="relative">
+            <div className={cn(
+              "relative rounded-[32px] p-8 md:p-10 overflow-hidden border transition-all duration-500",
+              d ? "bg-[#020617]/50 border-white/5 lg:hover:border-blue-500/20" : "bg-white/50 border-slate-100 lg:hover:border-blue-400/20"
+            )}>
+              <div className="absolute top-0 right-0 p-6 pointer-events-none">
+                <Orbit size={48} className={cn("opacity-10 lg:animate-spin", d ? "text-white" : "text-blue-600")} style={{ animationDuration: '15s' }} />
+              </div>
+              
+              <p className={cn("text-[10px] font-black uppercase tracking-[0.5em] mb-2", d ? "text-blue-400" : "text-blue-600")}>Remaining Slots</p>
+              <div className="flex items-baseline gap-2">
+                <span className={cn("text-5xl md:text-7xl font-black tracking-tighter tabular-nums", d ? "text-white" : "text-slate-900")}>
+                  {displayVacancy}
+                </span>
+                <span className={cn("text-sm font-bold uppercase tracking-widest mb-2", d ? "text-slate-500" : "text-slate-400")}>
+                  / {stats.totalMax}
+                </span>
+              </div>
+              
+              <div className="mt-8 flex items-center gap-3">
+                 <div className={cn("h-1 flex-1 rounded-full", d ? "bg-white/5" : "bg-slate-100 overflow-hidden shadow-inner")}>
+                    <div 
+                      className="h-full bg-blue-600 transition-all duration-1000 shadow-[0_0_10px_rgba(37,99,235,0.3)]" 
+                      style={{ width: `${(stats.totalCount / stats.totalMax) * 100}%` }}
+                    />
+                 </div>
+                 <span className={cn("text-[9px] font-black uppercase tracking-widest", d ? "text-slate-500" : "text-slate-400")}>
+                    {Math.round((stats.totalCount / stats.totalMax) * 100)}% Full
+                 </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Status */}
+          <div className={cn("flex items-center gap-4 pt-4 border-t", d ? "border-white/5" : "border-slate-100")}>
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm",
+              isPortalActive ? "bg-blue-600/10 text-blue-500 shadow-blue-500/10" : "bg-slate-500/10 text-slate-500"
+            )}>
+              {isPortalActive ? <CheckCircle2 size={20} className="lg:animate-bounce" /> : <Lock size={20} />}
             </div>
             <div>
-              <p className={cn("text-[10px] font-bold uppercase tracking-widest", d ? "text-slate-500" : "text-slate-400")}>Application Status</p>
-              <p className={cn(
-                "text-sm font-black uppercase tracking-tight mt-0.5",
-                isPortalActive ? d ? "text-white" : "text-slate-900" : "text-red-400"
-              )}>
+              <p className={cn("text-[10px] font-black uppercase tracking-[0.2em]", d ? "text-slate-500" : "text-slate-400")}>Portal Access</p>
+              <p className={cn("text-sm font-black uppercase tracking-tight transition-colors duration-300", isPortalActive ? (d ? "text-blue-400" : "text-blue-700") : "text-red-500")}>
                 {getStatusText()}
               </p>
             </div>
@@ -180,6 +214,31 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
     </div>
   )
 }
+
+
+function VisualMetric({ label, current, max, color, isDark }: { label: string, current: number, max: number, color: 'blue'|'red', isDark: boolean }) {
+  const pct = Math.min((current/max)*100, 100) || 0
+  const isRed = color === 'red'
+  return (
+    <div className={cn(
+      "p-5 rounded-3xl border transition-all duration-300 hover:scale-[1.02]",
+      isDark ? "bg-white/[0.03] border-white/5" : "bg-slate-50 border-slate-200"
+    )}>
+      <div className="flex justify-between items-end mb-3">
+        <span className={cn("text-[10px] font-black uppercase tracking-widest", isDark ? "text-white/40" : "text-slate-500")}>{label}</span>
+        <span className={cn("text-lg font-black leading-none", isDark ? "text-white" : "text-slate-900")}>{current}</span>
+      </div>
+      <div className={cn("h-1.5 w-full rounded-full overflow-hidden", isDark ? "bg-white/5" : "bg-slate-200")}>
+        <div 
+          className={cn("h-full transition-all duration-1000 ease-out", isRed ? "bg-red-600" : "bg-blue-600")}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className={cn("text-[8px] font-bold uppercase tracking-widest mt-2", isDark ? "text-white/20" : "text-slate-400")}>Limit: {max}</p>
+    </div>
+  )
+}
+
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function HomePage() {
@@ -261,40 +320,68 @@ export default function HomePage() {
       frameCount++
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       const dark = isDarkRef.current
-      const pCol = dark ? [255, 255, 255] : [37, 99, 235]
-      const lCol = dark ? [140, 180, 255] : [29, 78, 216]
+      const colorsDark = [[220, 38, 38], [59, 130, 246], [200, 200, 200]]
+      const colorsLight = [[220, 38, 38], [37, 99, 235], [50, 50, 50]]
+      const colors = dark ? colorsDark : colorsLight
       const n = particles.length
 
-      particles.forEach((p: Particle) => {
-        p.x += p.vx; p.y += p.vy; p.pulse += p.twinkle
+      // --- SaaS Mouse Grid Spotlight ---
+      const gridSpacing = 40;
+      ctx.beginPath();
+      ctx.lineWidth = 1;
+      const gridR = dark ? 255 : 0;
+      
+      const grad = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 450);
+      grad.addColorStop(0, `rgba(${gridR},${gridR},${gridR},0.08)`);
+      grad.addColorStop(1, `rgba(${gridR},${gridR},${gridR},0)`);
+      ctx.strokeStyle = grad;
+      
+      const offsetX = (frameCount * 0.2) % gridSpacing;
+      const offsetY = (frameCount * 0.2) % gridSpacing;
+      for (let x = offsetX; x < canvas.width; x += gridSpacing) {
+        ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
+      }
+      for (let y = offsetY; y < canvas.height; y += gridSpacing) {
+        ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
+      }
+      ctx.stroke();
+
+      // --- Particles Physics ---
+      particles.forEach((p: Particle, i: number) => {
+        const pCol = colors[i % 3]
+        
+        p.x += p.vx; p.y += p.vy; p.pulse += p.twinkle;
+        
+        const dx = mouse.x - p.x; const dy = mouse.y - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 180) {
+            const force = (180 - dist) / 180;
+            p.x -= (dx / dist) * force * 1.5;
+            p.y -= (dy / dist) * force * 1.5;
+        }
+
         if (p.x < 0 || p.x > canvas.width)  p.vx *= -1
         if (p.y < 0 || p.y > canvas.height) p.vy *= -1
-        const alpha = dark
-          ? Math.max(0.08, 0.22 + Math.sin(p.pulse) * 0.18)
-          : Math.max(0.05, 0.15 + Math.sin(p.pulse) * 0.10)
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${pCol.join(',')},${alpha})`; ctx.fill()
 
-        const mx = mouse.x - p.x; const my = mouse.y - p.y
-        const md = Math.sqrt(mx * mx + my * my)
-        if (md < 180) {
-          ctx.beginPath(); ctx.lineWidth = 0.8
-          ctx.strokeStyle = `rgba(${lCol.join(',')},${(1 - md / 180) * 0.7})`
-          ctx.moveTo(p.x, p.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke()
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2.2, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${lCol.join(',')},${(1 - md / 180) * 0.28})`; ctx.fill()
-        }
+        const mouseGlow = dist < 250 ? (1 - dist/250) * 0.8 : 0;
+        const baseAlpha = dark ? 0.2 : 0.4;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (1 + mouseGlow), 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(${pCol.join(',')},${baseAlpha + mouseGlow})`; ctx.fill()
       })
 
-      if (frameCount % 3 === 0) {
-        for (let a = 0; a < n - 1; a++) {
-          for (let b = a + 1; b < n; b += 2) {
-            const dx = particles[a].x - particles[b].x; const dy = particles[a].y - particles[b].y
-            const d2 = dx * dx + dy * dy
-            if (d2 < 8100) {
-              ctx.beginPath(); ctx.lineWidth = 0.3
-              ctx.strokeStyle = `rgba(${lCol.join(',')},${(1 - Math.sqrt(d2) / 90) * 0.18})`
-              ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y); ctx.stroke()
+      // Network Lines (connect if close to mouse)
+      for (let a = 0; a < n - 1; a++) {
+        for (let b = a + 1; b < n; b++) {
+          const dx = particles[a].x - particles[b].x; const dy = particles[a].y - particles[b].y
+          const d2 = dx * dx + dy * dy
+          if (d2 < 12000) {
+            const mx = mouse.x - particles[a].x; const my = mouse.y - particles[a].y;
+            const distToMouse = Math.sqrt(mx * mx + my * my);
+            if (distToMouse < 380) {
+                const lCol = colors[(a + b) % 3]
+                ctx.beginPath(); ctx.lineWidth = dark ? 0.6 : 1.0;
+                ctx.strokeStyle = `rgba(${lCol.join(',')},${(1 - Math.sqrt(d2) / 110) * (1 - distToMouse/380) * 0.85})`
+                ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y); ctx.stroke()
             }
           }
         }
@@ -307,11 +394,11 @@ export default function HomePage() {
         if (s.opacity <= 0 || s.x > canvas.width + 80 || s.y > canvas.height + 80) { s.dead = true; return }
         s.tail.forEach((pt: TailPoint, i: number) => {
           const ratio = i / s.tail.length
-          const r = dark ? [200, 220, 255] : [99, 140, 255]
+          const r = dark ? [255, 255, 255] : [220, 38, 38]
           ctx.beginPath(); ctx.arc(pt.x, pt.y, s.width * ratio * 1.4, 0, Math.PI * 2)
           ctx.fillStyle = `rgba(${r.join(',')},${ratio * s.opacity * (dark ? 0.85 : 0.65)})`; ctx.fill()
         })
-        const headR = dark ? [220, 240, 255] : [120, 160, 255]
+        const headR = dark ? [220, 38, 38] : [37, 99, 235]
         const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.width * 5)
         grad.addColorStop(0, `rgba(${headR.join(',')},${s.opacity})`); grad.addColorStop(1, `rgba(${headR.join(',')},0)`)
         ctx.beginPath(); ctx.arc(s.x, s.y, s.width * 5, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill()
@@ -344,27 +431,7 @@ export default function HomePage() {
       d ? "bg-[#030712] text-white" : "bg-[#eef2ff] text-slate-900"
     )}>
 
-      {/* ── AURORA — CSS only, zero JS ───────────────────────────────────── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        <div className={cn(
-          "absolute top-[-20%] left-[-10%] w-[80vw] h-[70vh] rounded-full blur-[50px] sm:blur-[90px] transform-gpu",
-          "transition-[opacity] duration-700 lg:animate-aurora-1",
-          d ? "opacity-[0.18] bg-gradient-to-br from-blue-500 via-indigo-600 to-violet-700"
-            : "opacity-[0.22] bg-gradient-to-br from-blue-300 via-indigo-300 to-violet-300"
-        )} />
-        <div className={cn(
-          "absolute top-[10%] right-[-15%] w-[60vw] h-[60vh] rounded-full blur-[60px] sm:blur-[110px] transform-gpu",
-          "transition-[opacity] duration-700 lg:animate-aurora-2",
-          d ? "opacity-[0.13] bg-gradient-to-bl from-cyan-500 via-blue-600 to-indigo-700"
-            : "opacity-[0.16] bg-gradient-to-bl from-cyan-200 via-blue-200 to-indigo-200"
-        )} />
-        <div className={cn(
-          "absolute bottom-[5%] left-[20%] w-[50vw] h-[40vh] rounded-full blur-[50px] sm:blur-[100px] transform-gpu",
-          "transition-[opacity] duration-700 lg:animate-aurora-3",
-          d ? "opacity-[0.1] bg-gradient-to-tr from-violet-600 via-purple-500 to-blue-500"
-            : "opacity-[0.14] bg-gradient-to-tr from-violet-200 via-purple-200 to-blue-200"
-        )} />
-      </div>
+      {/* Removed Auroras for strict SaaS look */}
 
       {/* Canvas — desktop only */}
       {!isMobile && (
@@ -470,16 +537,16 @@ export default function HomePage() {
                   <span
                     className="block text-[clamp(3.2rem,10vw,8.8rem)] text-transparent bg-clip-text shimmer-text"
                     style={{ backgroundImage: d
-                      ? "linear-gradient(90deg,#93c5fd,#a5b4fc,#e0f2fe,#818cf8,#93c5fd)"
-                      : "linear-gradient(90deg,#2563eb,#4f46e5,#0ea5e9,#3b82f6,#2563eb)" }}>
+                      ? "linear-gradient(90deg,#ffffff,#c2d7fb,#ffffff,#c2d7fb,#ffffff)"
+                      : "linear-gradient(90deg,#0a0f1d,#1e3a8a,#0a0f1d,#1e3a8a,#0a0f1d)" }}>
                     Your
                   </span>
                   <span className="block text-[clamp(3.2rem,10vw,8.8rem)]">Future.</span>
                 </h1>
                 <div className={cn(
                   "w-20 md:w-28 h-[3px] rounded-full mt-4 md:mt-5",
-                  d ? "bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400"
-                    : "bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500"
+                  d ? "bg-gradient-to-r from-red-400 via-blue-400 to-white/80"
+                    : "bg-gradient-to-r from-red-600 via-blue-600 to-white"
                 )} />
               </div>
 
@@ -493,17 +560,23 @@ export default function HomePage() {
               </p>
 
               {/* CTA Buttons — min 44px touch targets */}
-              <div className="flex flex-wrap gap-3 md:gap-4 pt-1">
+              <div className="flex flex-wrap gap-4 md:gap-6 pt-2">
                 {isPortalActive ? (
-                  <Link href="/enroll">
+                  <Link href="/enroll" className="relative group/cta">
                     <button
                       style={{ touchAction: "manipulation" }}
-                      className="group relative h-[52px] md:h-[60px] px-8 md:px-10 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] text-white overflow-hidden transition-transform duration-300 lg:hover:-translate-y-1.5 active:scale-95">
-                      <span className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-600 bg-[length:200%_100%] lg:animate-[shimmer_2s_linear_infinite]" />
-                      <span className="absolute inset-0 shadow-[0_8px_40px_rgba(99,130,246,0.5)] lg:group-hover:shadow-[0_14px_55px_rgba(99,130,246,0.7)] transition-shadow duration-300 rounded-2xl" />
-                      <span className="relative flex items-center gap-3">
+                      className={cn(
+                        "relative h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] text-white overflow-hidden transition-all duration-300 active:scale-95 shadow-2xl shadow-red-600/20",
+                        "lg:hover:-translate-y-2 lg:hover:shadow-red-600/40"
+                      )}>
+                      <span className="absolute inset-0 bg-red-600 transition-colors duration-300 group-hover/cta:bg-red-700" />
+                      
+                      {/* Shimmer Effect */}
+                      <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/cta:animate-[shimmer_2s_infinite] pointer-events-none" style={{ backgroundSize: '200% 100%' }} />
+                      
+                      <span className="relative flex items-center gap-4">
                         Begin Enrollment
-                        <ArrowRight size={16} className="lg:group-hover:translate-x-1.5 transition-transform" />
+                        <ArrowRight size={18} className="group-hover/cta:translate-x-2 transition-transform duration-300" />
                       </span>
                     </button>
                   </Link>
@@ -511,21 +584,21 @@ export default function HomePage() {
                   <button
                     disabled
                     className={cn(
-                      "h-[52px] md:h-[60px] px-8 md:px-10 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] flex items-center gap-2 cursor-not-allowed border",
+                      "h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] flex items-center gap-3 cursor-not-allowed border",
                       d ? "bg-slate-900/50 text-slate-600 border-white/5"
                         : "bg-slate-100 text-slate-400 border-slate-200"
                     )}>
-                    <Lock size={14} /> {isExpired ? "Portal Expired" : "Access Locked"}
+                    <Lock size={16} /> Portal Locked
                   </button>
                 )}
-                <Link href="/status">
+                <Link href="/status" className="group/status">
                   <button
                     style={{ touchAction: "manipulation" }}
                     className={cn(
-                      "h-[52px] md:h-[60px] px-8 md:px-10 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] border",
-                      "transition-[background-color,border-color,transform] duration-300 lg:hover:-translate-y-1.5 active:scale-95",
-                      d ? "bg-white/5 border-white/15 text-white lg:hover:bg-white/10 backdrop-blur-xl"
-                        : "bg-white border-slate-200 text-slate-700 lg:hover:bg-blue-50 lg:hover:border-blue-300 shadow-sm"
+                      "h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] border",
+                      "transition-all duration-300 active:scale-95",
+                      d ? "bg-white/5 border-white/10 text-white lg:hover:bg-white/10 lg:hover:border-blue-400 lg:hover:-translate-y-2 backdrop-blur-3xl"
+                        : "bg-white border-slate-200 text-slate-800 lg:hover:bg-slate-50 lg:hover:border-blue-300 lg:hover:-translate-y-2 lg:hover:shadow-2xl shadow-sm"
                     )}>
                     Track My Status
                   </button>
@@ -560,80 +633,95 @@ export default function HomePage() {
           </div>
 
           {/* ── STRANDS ───────────────────────────────────────────────────── */}
-          <div className="mt-24 md:mt-32 lg:mt-44 space-y-8 md:space-y-10">
+          <div className="mt-24 md:mt-32 lg:mt-48 space-y-12 md:space-y-16">
             <Reveal>
-              <div className="flex items-end gap-4 md:gap-6">
-                <div>
-                  <p className={cn("text-[10px] font-black uppercase tracking-[0.45em] mb-2", d ? "text-indigo-400" : "text-indigo-600")}>Curriculum Paths</p>
-                  <h2 className={cn("text-3xl md:text-5xl font-black uppercase tracking-tight leading-none", d ? "text-white" : "text-slate-900")}>Available Strands</h2>
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 group cursor-default">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-500/20 bg-blue-500/5 text-blue-500 text-[10px] font-black uppercase tracking-[0.3em]">
+                    <Zap size={10} className="group-hover:animate-pulse" /> Specialized Training
+                  </div>
+                  <h2 className={cn(
+                    "text-4xl md:text-6xl font-black uppercase tracking-tighter leading-[0.9] transition-colors duration-300",
+                    d ? "text-white group-hover:text-blue-400" : "text-slate-900 group-hover:text-blue-600"
+                  )}>
+                    Available <br /> <span className="text-blue-600">Strands</span>
+                  </h2>
                 </div>
-                <div className={cn("h-px flex-1 max-w-xs mb-2 md:mb-3", d ? "bg-white/8" : "bg-slate-200")} />
+                <p className={cn("max-w-xs text-sm font-medium leading-relaxed transition-opacity duration-300", d ? "text-slate-500 group-hover:text-slate-300" : "text-slate-400 group-hover:text-slate-600")}>
+                  Industry-mapped curriculum designed to accelerate your career transition from day one.
+                </p>
               </div>
             </Reveal>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               {[
                 {
                   strand: "ICT", Icon: Cpu, color: "blue",
                   title: ["Information &", "Communication", "Technology"],
-                  sub: "Specialized Tech Curriculum",
-                  desc: "Master the digital landscape through computer programming, systems analysis, and visual graphics — built for tomorrow's tech leaders.",
-                  feats: ["100% Computerized Modules","Industry-aligned Software Training","Career-ready upon Graduation"],
+                  sub: "The Digital Vanguard",
+                  desc: "Master coding, systems design, and multimedia arts with ACLC's signature computer-integrated methodology.",
+                  feats: ["Full Computer Laboratory Access","Expert IT Industry Faculty","Digital Certification Paths"],
+                  gradient: "from-blue-600 to-blue-900",
+                  shadow: "shadow-blue-500/20"
                 },
                 {
-                  strand: "GAS", Icon: BookOpen, color: "indigo",
+                  strand: "GAS", Icon: BookOpen, color: "red",
                   title: ["General", "Academic", "Strand"],
-                  sub: "Versatile Collegiate Prep",
-                  desc: "A flexible pathway for students exploring business, education, and management — powered by modern digital research tools.",
-                  feats: ["Tech-Humanities Integration","Multi-field Career Pathways","DepEd-aligned Curriculum"],
+                  sub: "Strategic Foundations",
+                  desc: "A multidisciplinary approach to higher education, empowering students with versatile leadership and research skills.",
+                  feats: ["Holistic Academic Training","College-ready Readiness","Professional Skills Track"],
+                  gradient: "from-red-600 to-red-900",
+                  shadow: "shadow-red-600/20"
                 },
-              ].map(({ strand, Icon, color, title, sub, desc, feats }, idx) => (
-                <Reveal key={strand} delay={idx * 120}>
+              ].map(({ strand, Icon, color, title, sub, desc, feats, gradient, shadow }, idx) => (
+                <Reveal key={strand} delay={idx * 150}>
                   <div className={cn(
-                    "group relative rounded-[32px] md:rounded-[40px] p-7 md:p-10 border overflow-hidden h-full cursor-default",
-                    "transition-[background,border-color,box-shadow] duration-500",
-                    color === "blue"
-                      ? d ? "bg-gradient-to-br from-[#0d1433]/70 to-[#070b1c]/80 border-blue-900/25 lg:hover:border-blue-400/40 lg:hover:shadow-[0_0_70px_rgba(99,130,246,0.15)]"
-                            : "bg-white border-slate-200 lg:hover:border-blue-300 lg:hover:shadow-[0_20px_60px_rgba(59,130,246,0.12)] shadow-sm"
-                      : d ? "bg-gradient-to-br from-[#100d33]/70 to-[#070b1c]/80 border-indigo-900/25 lg:hover:border-indigo-400/40 lg:hover:shadow-[0_0_70px_rgba(129,140,248,0.15)]"
-                            : "bg-white border-slate-200 lg:hover:border-indigo-300 lg:hover:shadow-[0_20px_60px_rgba(99,102,241,0.12)] shadow-sm"
-                  )}>
-                    <div className="absolute -right-12 -bottom-12 opacity-[0.04] lg:group-hover:opacity-[0.08] transition-opacity duration-500">
-                      <Icon size={200} className={color === "blue" ? "text-blue-400" : "text-indigo-400"} />
-                    </div>
-                    <div className="relative z-10 space-y-5">
-                      <div className="flex items-start justify-between">
+                    "group relative rounded-[40px] md:rounded-[56px] p-8 md:p-12 border overflow-hidden h-full transition-all duration-500",
+                    d ? "bg-[#030712] border-white/[0.12] lg:hover:border-blue-500/50" : "bg-white border-slate-200 lg:hover:border-blue-400 shadow-sm lg:hover:shadow-2xl",
+                    "lg:hover:-translate-y-2 cursor-pointer"
+                  )} style={{ transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' }}>
+                    {/* Background Decorative Blob */}
+                    <div className={cn(
+                      "absolute -right-16 -top-16 w-64 h-64 blur-[100px] opacity-0 group-hover:opacity-10 transition-opacity duration-700 pointer-events-none",
+                      strand === 'ICT' ? "bg-blue-600" : "bg-red-600"
+                    )} />
+
+                    <div className="relative z-10 flex flex-col h-full">
+                      <div className="flex items-start justify-between mb-10">
                         <div className={cn(
-                          "w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center shadow-lg lg:group-hover:scale-110 lg:group-hover:rotate-3 transition-transform duration-300",
-                          color === "blue"
-                            ? "bg-gradient-to-br from-blue-500 to-blue-700 shadow-blue-500/30"
-                            : "bg-gradient-to-br from-indigo-500 to-violet-700 shadow-indigo-500/30"
+                          "w-16 h-16 rounded-[24px] flex items-center justify-center shadow-lg transition-all duration-500",
+                          `bg-gradient-to-br ${gradient} ${shadow} group-hover:scale-110 group-hover:rotate-6`
                         )}>
-                          <Icon size={24} className="text-white" />
+                          <Icon size={32} className="text-white" />
                         </div>
-                        <span className={cn(
-                          "text-[10px] font-black uppercase tracking-[0.25em] px-3 py-1.5 rounded-full border",
-                          color === "blue"
-                            ? d ? "border-blue-500/20 text-blue-400 bg-blue-900/30" : "border-blue-200 text-blue-600 bg-blue-50"
-                            : d ? "border-indigo-500/20 text-indigo-400 bg-indigo-900/30" : "border-indigo-200 text-indigo-600 bg-indigo-50"
-                        )}>{strand}</span>
+                        <div className={cn(
+                          "px-4 py-2 rounded-2xl border text-[11px] font-black tracking-[0.2em] transform transition-all duration-300",
+                          d ? "border-white/10 text-white/40 group-hover:text-white group-hover:border-white/20" : "border-slate-200 text-slate-400 group-hover:text-slate-900 group-hover:border-slate-300"
+                        )}>
+                          STRAND / {strand}
+                        </div>
                       </div>
-                      <div>
-                        <h3 className={cn("text-xl md:text-2xl font-black uppercase tracking-tight leading-tight", d ? "text-white" : "text-slate-900")}>
+
+                      <div className="space-y-4 flex-1">
+                        <h3 className={cn("text-3xl md:text-4xl font-black uppercase tracking-tighter leading-[0.9] transition-colors duration-300", d ? "text-white group-hover:text-blue-400" : "text-slate-900 group-hover:text-blue-600")}>
                           {title.map((l, i) => <span key={i} className="block">{l}</span>)}
                         </h3>
-                        <p className={cn(
-                          "text-[10px] font-black uppercase tracking-[0.25em] mt-2",
-                          color === "blue" ? d ? "text-blue-400" : "text-blue-600"
-                                          : d ? "text-indigo-400" : "text-indigo-600"
-                        )}>{sub}</p>
+                        <p className={cn("text-[11px] font-black uppercase tracking-[0.4em] transition-colors duration-300", strand === 'ICT' ? "text-blue-500" : "text-red-500")}>
+                          {sub}
+                        </p>
+                        <p className={cn("text-base leading-relaxed font-medium transition-colors duration-300", d ? "text-slate-400 group-hover:text-slate-200" : "text-slate-500 group-hover:text-slate-700")}>
+                          {desc}
+                        </p>
                       </div>
-                      <p className={cn("text-sm leading-relaxed", d ? "text-slate-400" : "text-slate-500")}>{desc}</p>
-                      <div className={cn("pt-4 md:pt-5 border-t space-y-2.5", d ? "border-white/5" : "border-slate-100")}>
+
+                      <div className={cn("mt-10 pt-8 border-t space-y-4 transition-colors duration-300", d ? "border-white/5" : "border-slate-100")}>
                         {feats.map((f, i) => (
-                          <div key={i} className="flex items-center gap-3">
-                            <CheckCircle2 size={13} className={cn("shrink-0", color === "blue" ? "text-blue-400" : "text-indigo-400")} />
-                            <span className={cn("text-[11px] font-bold uppercase tracking-wide", d ? "text-slate-300" : "text-slate-600")}>{f}</span>
+                          <div key={i} className="flex items-center gap-4 group/item">
+                            <div className={cn(
+                                "w-2 h-2 rounded-full transition-transform duration-300 group-hover/item:scale-150", 
+                                strand === 'ICT' ? "bg-blue-500" : "bg-red-500"
+                            )} />
+                            <span className={cn("text-xs font-bold uppercase tracking-widest transition-colors duration-300", d ? "text-slate-300 group-hover/item:text-white" : "text-slate-700 group-hover/item:text-slate-900")}>{f}</span>
                           </div>
                         ))}
                       </div>
@@ -644,48 +732,61 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── BENEFITS ────────────────────────────────────────────────────── */}
-          <div className="mt-24 md:mt-32 lg:mt-44">
+          {/* ── BENEFITS — Refined with pure colors and performance hovers ── */}
+          <div className="mt-24 md:mt-32 lg:mt-48 text-left">
             <Reveal>
               <div className={cn(
-                "relative rounded-[40px] md:rounded-[56px] border overflow-hidden",
-                "transition-[background,border-color] duration-500",
-                d ? "bg-gradient-to-br from-[#0d1433]/60 to-[#0a0d28]/70 border-indigo-900/20"
-                  : "bg-gradient-to-br from-blue-50 to-indigo-50/80 border-blue-200/60"
-              )}>
-                <div className="relative z-10 p-8 md:p-14 space-y-10 md:space-y-14">
+                "relative rounded-[48px] md:rounded-[80px] border overflow-hidden group",
+                "transition-all duration-700",
+                d ? "bg-[#030712] border-white/[0.12] lg:hover:border-blue-500/50" : "bg-white border-slate-200 shadow-2xl hover:shadow-blue-500/10"
+              )} style={{ translate: "0 0", willChange: "transform, border-color" }}>
+                {/* Decorative Brand Accents */}
+                <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/5 to-transparent pointer-events-none" />
+                <div className="absolute top-0 left-0 w-1/2 h-full bg-gradient-to-r from-blue-600/5 to-transparent pointer-events-none" />
+
+                <div className="relative z-10 p-10 md:p-20 space-y-16 md:space-y-24">
                   {/* Section heading */}
-                  <div className="text-center space-y-4">
-                    <div
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-[10px] font-black uppercase tracking-[0.3em]"
-                      style={{ background: "linear-gradient(90deg,#3b82f6,#6366f1,#8b5cf6)" }}>
-                      <Sparkles size={11} />Welcome New Enrollees
+                  <div className="max-w-3xl space-y-8">
+                    <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-lg shadow-blue-600/20">
+                      <Sparkles size={12} fill="currentColor" className="group-hover:animate-spin" /> Premium Education
                     </div>
-                    <h2 className={cn("text-4xl md:text-5xl lg:text-[5.5rem] font-black uppercase tracking-tight leading-none", d ? "text-white" : "text-slate-900")}>
-                      Why Choose<br />ACLC?
+                    <h2 className={cn("text-5xl md:text-8xl font-black uppercase tracking-tighter leading-[0.85]", d ? "text-white" : "text-slate-900")}>
+                      Why Choose <br /> <span className="text-blue-600">ACLC?</span>
                     </h2>
-                    <p className={cn("text-sm font-medium max-w-md mx-auto", d ? "text-slate-400" : "text-slate-500")}>
-                      Open to all Grade 10 Completers and ALS Graduates — no barriers, just opportunity.
+                    <p className={cn("text-lg md:text-xl font-medium leading-relaxed max-w-xl transition-colors duration-300", d ? "text-slate-400 group-hover:text-slate-200" : "text-slate-500 group-hover:text-slate-700")}>
+                      We remove the barriers to high-quality tech education. No entrance exams, no grade targets — just absolute potential.
                     </p>
                   </div>
 
-                  {/* Benefits grid — 2 cols on mobile, 4 on desktop */}
-                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                  {/* Benefits grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                     {[
-                      "No Top-Up","No Hidden Fees","No Entrance Exam","No Grade Requirements",
-                      "No Books to Purchase","Airconditioned Classrooms","Flexible Learning Schedule","DepEd Voucher Accepted",
+                      { t: "No Top-Up Fees", d: "Zero hidden costs during enrollment." },
+                      { t: "No Entrance Exam", d: "Your ambition is your only requirement." },
+                      { t: "Fully Airconditioned", d: "Modern laboratories for deep focus." },
+                      { t: "Industry Modules", d: "Curriculum designed by IT experts." },
+                      { t: "Voucher Accepted", d: "Zero tuition for public school grads." },
+                      { t: "Modern Tech", d: "Latest software and hardware setups." },
+                      { t: "Flexible Tracks", d: "Career-ready or college-ready paths." },
+                      { t: "Global Network", d: "Part of the AMA Education System." },
                     ].map((b, i) => (
                       <div
                         key={i}
                         className={cn(
-                          "group flex items-center gap-3 md:gap-4 p-4 md:p-5 rounded-2xl md:rounded-3xl border cursor-default",
-                          "transition-[background,border-color,box-shadow,transform] duration-300 lg:hover:-translate-y-1.5",
-                          d
-                            ? "bg-white/3 border-white/6 lg:hover:bg-gradient-to-br lg:hover:from-blue-600/80 lg:hover:to-indigo-700/80 lg:hover:border-indigo-400/30 lg:hover:shadow-[0_10px_40px_rgba(99,130,246,0.25)]"
-                            : "bg-white border-slate-200 lg:hover:bg-gradient-to-br lg:hover:from-blue-600 lg:hover:to-indigo-600 lg:hover:border-blue-500 lg:hover:shadow-[0_10px_40px_rgba(59,130,246,0.2)] shadow-sm"
+                          "group/card p-8 rounded-[32px] border transition-all duration-300 transform",
+                          d ? "bg-white/[0.02] border-white/[0.12] lg:hover:border-blue-500/50 lg:hover:bg-blue-600/5" 
+                            : "bg-slate-50 border-slate-100 lg:hover:bg-white lg:hover:border-blue-200 lg:hover:shadow-xl",
+                          "lg:hover:-translate-y-2 cursor-pointer"
+                        )} style={{ transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' }}>
+                        <div className={cn(
+                          "w-10 h-10 rounded-xl mb-6 flex items-center justify-center transition-all duration-300 shadow-sm",
+                          d ? "bg-white/5 text-blue-500 group-hover/card:bg-blue-600 group-hover/card:text-white" 
+                            : "bg-blue-600 text-white shadow-blue-600/20 shadow-lg"
                         )}>
-                        <CheckCircle2 size={16} className={cn("shrink-0 transition-colors duration-300 lg:group-hover:text-white", d ? "text-indigo-400" : "text-blue-500")} />
-                        <span className={cn("text-[10px] md:text-[11px] font-black uppercase tracking-wide leading-tight transition-colors duration-300 lg:group-hover:text-white", d ? "text-slate-300" : "text-slate-700")}>{b}</span>
+                          <CheckCircle2 size={18} />
+                        </div>
+                        <h4 className={cn("text-sm font-black uppercase tracking-tight mb-2 transition-colors duration-300", d ? "text-white group-hover/card:text-blue-400" : "text-slate-900 group-hover/card:text-blue-600")}>{b.t}</h4>
+                        <p className={cn("text-xs font-medium leading-relaxed transition-colors duration-300", d ? "text-slate-500 group-hover/card:text-slate-300" : "text-slate-400 group-hover/card:text-slate-600")}>{b.d}</p>
                       </div>
                     ))}
                   </div>
@@ -794,8 +895,8 @@ function PrettyBar({ label, icon, current, max, color, isDark }: {
         <div className="flex items-center gap-2">
           <span className={cn("p-1 rounded-md",
             isDark
-              ? isBlue ? "bg-blue-900/40 text-blue-400" : "bg-indigo-900/40 text-indigo-400"
-              : isBlue ? "bg-blue-50 text-blue-600"      : "bg-indigo-50 text-indigo-600"
+              ? isBlue ? "bg-blue-900/40 text-blue-400" : "bg-red-900/40 text-red-400"
+              : isBlue ? "bg-blue-50 text-blue-600"      : "bg-red-50 text-red-600"
           )}>{icon}</span>
           <p className={cn("text-[10px] font-black uppercase tracking-[0.2em]", isDark ? "text-slate-300" : "text-slate-700")}>{label}</p>
         </div>
@@ -808,8 +909,8 @@ function PrettyBar({ label, icon, current, max, color, isDark }: {
           className={cn(
             "h-full rounded-full transition-[width] duration-[2000ms] ease-out",
             isBlue
-              ? "bg-gradient-to-r from-blue-700 via-blue-400 to-cyan-300 lg:shadow-[0_0_14px_rgba(59,130,246,0.7)]"
-              : "bg-gradient-to-r from-indigo-700 via-violet-400 to-purple-300 lg:shadow-[0_0_14px_rgba(139,92,246,0.7)]"
+              ? "bg-gradient-to-r from-blue-700 via-blue-500 to-blue-300 lg:shadow-[0_0_14px_rgba(59,130,246,0.7)]"
+              : "bg-gradient-to-r from-red-700 via-red-500 to-red-300 lg:shadow-[0_0_14px_rgba(239,68,68,0.7)]"
           )}
           style={{ width: `${pct}%` }}
         />

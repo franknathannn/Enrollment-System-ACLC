@@ -34,7 +34,7 @@ export function useEnrolledFiltering({ students }: { students: any[] }) {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(saved.currentPage ?? 1)
-  const itemsPerPage = 10
+  const itemsPerPage = 5
 
   // Animation state
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set())

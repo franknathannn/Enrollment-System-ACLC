@@ -22,7 +22,7 @@ const ARCHIVE_SELECT = [
   "g11_section", "g11_section_id",
 ].join(", ")
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 5
 
 export function useArchive() {
   const [years, setYears] = useState<string[]>([])

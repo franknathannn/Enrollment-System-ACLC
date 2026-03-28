@@ -63,10 +63,10 @@ const handleCopyLRN = (e: React.MouseEvent, lrn: string) => {
 };
 
 const STATUS_STYLES: Record<string, { badge: string; glow: string; bar: string }> = {
-  Pending:  { badge: 'bg-amber-500/15 text-amber-400 border-amber-500/25',   glow: 'shadow-amber-500/10',   bar: 'bg-amber-400'   },
+  Pending: { badge: 'bg-amber-500/15 text-amber-400 border-amber-500/25', glow: 'shadow-amber-500/10', bar: 'bg-amber-400' },
   Accepted: { badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25', glow: 'shadow-emerald-500/10', bar: 'bg-emerald-400' },
   Approved: { badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25', glow: 'shadow-emerald-500/10', bar: 'bg-emerald-400' },
-  Rejected: { badge: 'bg-red-500/15 text-red-400 border-red-500/25',         glow: 'shadow-red-500/10',     bar: 'bg-red-400'     },
+  Rejected: { badge: 'bg-red-500/15 text-red-400 border-red-500/25', glow: 'shadow-red-500/10', bar: 'bg-red-400' },
 }
 
 const MobileApplicantRow = memo(({
@@ -78,12 +78,12 @@ const MobileApplicantRow = memo(({
   const isMale = student.gender !== 'Female'
   const statusStyle = STATUS_STYLES[student.status] || STATUS_STYLES.Pending
 
-  const cardBg  = isDarkMode ? 'bg-slate-900/70' : 'bg-white'
-  const border  = isDarkMode ? 'border-white/8'  : 'border-slate-200'
-  const textMain = isDarkMode ? 'text-white'      : 'text-slate-900'
-  const textSub  = isDarkMode ? 'text-slate-400'  : 'text-slate-500'
-  const innerBg  = isDarkMode ? 'bg-slate-800/60' : 'bg-slate-50'
-  const dockBg   = isDarkMode ? 'bg-slate-950/70' : 'bg-slate-50/90'
+  const cardBg = isDarkMode ? 'bg-slate-900/70' : 'bg-white'
+  const border = isDarkMode ? 'border-white/8' : 'border-slate-200'
+  const textMain = isDarkMode ? 'text-white' : 'text-slate-900'
+  const textSub = isDarkMode ? 'text-slate-400' : 'text-slate-500'
+  const innerBg = isDarkMode ? 'bg-slate-800/60' : 'bg-slate-50'
+  const dockBg = isDarkMode ? 'bg-slate-950/70' : 'bg-slate-50/90'
 
   return (
     <div
@@ -305,45 +305,43 @@ const DesktopApplicantRow = memo(({
           className="flex items-center gap-3 md:gap-4 cursor-pointer hover:opacity-90 transition-opacity group/name"
         >
           <Tooltip>
-          <TooltipTrigger asChild>
-          <div className="relative">
-            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden border border-white shadow-lg shrink-0 ring-2 transition-all group-hover/name:scale-105 ${
-              isMale 
-                ? 'ring-blue-400/60 group-hover/name:ring-blue-500' 
-                : 'ring-pink-400/40 group-hover/name:ring-pink-500'
-            }`}>
-              <OptimizedImage 
-                src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
-                alt="Avatar" 
-                className="w-full h-full object-cover"
-                fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
-              />
-            </div>
-            <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[6px] md:text-[7px] font-black uppercase tracking-widest text-white shadow-sm z-10 whitespace-nowrap ${
-              student.student_category?.toLowerCase().includes('als') 
-                ? 'bg-gradient-to-r from-orange-500 to-red-500 shadow-orange-500/30' 
-                : 'bg-gradient-to-r from-blue-500 to-indigo-500 shadow-blue-500/30'
-            }`}>
-              {student.student_category?.toLowerCase().includes('als') ? 'ALS' : 'JHS'}
-            </div>
-          </div>
-          </TooltipTrigger>
-          <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
-                  <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
-                      <OptimizedImage 
-                          src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name} 
-                          alt="Avatar" 
-                          className="w-full h-full object-cover"
-                      />
-                  </div>
-                  <div className="min-w-0">
-                      <p className="font-black uppercase text-sm truncate">{student.last_name}, {student.first_name}</p>
-                      <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {student.lrn}</p>
-                      <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{student.strand} - {student.student_category}</Badge>
-                  </div>
+            <TooltipTrigger asChild>
+              <div className="relative">
+                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden border border-white shadow-lg shrink-0 ring-2 transition-all group-hover/name:scale-105 ${isMale
+                    ? 'ring-blue-400/60 group-hover/name:ring-blue-500'
+                    : 'ring-pink-400/40 group-hover/name:ring-pink-500'
+                  }`}>
+                  <OptimizedImage
+                    src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${student.last_name}`}
+                  />
+                </div>
+                <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[6px] md:text-[7px] font-black uppercase tracking-widest text-white shadow-sm z-10 whitespace-nowrap ${student.student_category?.toLowerCase().includes('als')
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 shadow-orange-500/30'
+                    : 'bg-gradient-to-r from-blue-500 to-indigo-500 shadow-blue-500/30'
+                  }`}>
+                  {student.student_category?.toLowerCase().includes('als') ? 'ALS' : 'JHS'}
+                </div>
               </div>
-          </TooltipContent>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
+                <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
+                  <OptimizedImage
+                    src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-black uppercase text-sm truncate">{student.last_name}, {student.first_name}</p>
+                  <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {student.lrn}</p>
+                  <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{student.strand} - {student.student_category}</Badge>
+                </div>
+              </div>
+            </TooltipContent>
           </Tooltip>
           <div className="min-w-0">
             <ShrinkName
@@ -352,19 +350,18 @@ const DesktopApplicantRow = memo(({
               className={`font-black text-sm md:text-base uppercase leading-none tracking-tight transition-colors duration-500 ${isDarkMode ? 'text-white group-hover/name:text-blue-400' : 'text-slate-900 group-hover/name:text-blue-600'}`}
             />
             <div className="flex items-center gap-2 mt-2">
-               <Shield size={10} className="text-slate-400" />
-               <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">LRN:{student.lrn}</p>
-               <button 
-                 onClick={(e) => handleCopyLRN(e, student.lrn)}
-                 title="Copy LRN"
-                 className={`p-1 rounded-md transition-all active:scale-90 shadow-sm ${
-                   isDarkMode 
-                   ? 'bg-slate-800 text-slate-400 hover:text-white' 
-                   : 'bg-slate-100 text-slate-500 hover:text-slate-900'
-                 }`}
-               >
-                  <Copy size={10} />
-               </button>
+              <Shield size={10} className="text-slate-400" />
+              <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">LRN:{student.lrn}</p>
+              <button
+                onClick={(e) => handleCopyLRN(e, student.lrn)}
+                title="Copy LRN"
+                className={`p-1 rounded-md transition-all active:scale-90 shadow-sm ${isDarkMode
+                    ? 'bg-slate-800 text-slate-400 hover:text-white'
+                    : 'bg-slate-100 text-slate-500 hover:text-slate-900'
+                  }`}
+              >
+                <Copy size={10} />
+              </button>
             </div>
           </div>
         </div>
@@ -378,11 +375,10 @@ const DesktopApplicantRow = memo(({
         </Badge>
       </TableCell>
       <TableCell className="text-center">
-        <span className={`text-[10px] font-black uppercase ${
-          student.section && student.section !== 'Unassigned' 
-            ? (student.strand === 'ICT' ? 'text-blue-500' : student.strand === 'GAS' ? 'text-orange-500' : (isDarkMode ? 'text-white' : 'text-slate-900')) 
+        <span className={`text-[10px] font-black uppercase ${student.section && student.section !== 'Unassigned'
+            ? (student.strand === 'ICT' ? 'text-blue-500' : student.strand === 'GAS' ? 'text-orange-500' : (isDarkMode ? 'text-white' : 'text-slate-900'))
             : 'text-red-500'
-        }`}>
+          }`}>
           {student.section || 'Unassigned'}
         </span>
       </TableCell>
@@ -394,50 +390,50 @@ const DesktopApplicantRow = memo(({
       <TableCell className="text-right px-4 md:px-8">
         <div className="flex items-center justify-end gap-1.5 md:gap-2 flex-nowrap">
           <Tooltip>
-          <TooltipTrigger asChild>
-          <Button 
-            onClick={() => setOpenStudentDialog(student.id)} 
-            variant="ghost"
-            className="h-9 px-3 rounded-xl text-slate-500 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 flex items-center justify-center"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgb(71 85 105)'
-              e.currentTarget.style.color = 'white'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = ''
-              e.currentTarget.style.color = 'rgb(100 116 139)'
-            }}
-          >
-            <Eye size={16}/>
-          </Button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View Profile</p></TooltipContent>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => setOpenStudentDialog(student.id)}
+                variant="ghost"
+                className="h-9 px-3 rounded-xl text-slate-500 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 flex items-center justify-center"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgb(71 85 105)'
+                  e.currentTarget.style.color = 'white'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = ''
+                  e.currentTarget.style.color = 'rgb(100 116 139)'
+                }}
+              >
+                <Eye size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View Profile</p></TooltipContent>
           </Tooltip>
 
           {student.status === 'Pending' && (
             <>
               <Tooltip><TooltipTrigger asChild>
-              <Button onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted'))} variant="ghost" disabled={isStrandFull} className={`h-9 px-2 md:px-3 rounded-xl font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap ${isStrandFull ? 'text-slate-300 cursor-not-allowed' : 'text-green-600'}`} onMouseEnter={(e) => { if (!isStrandFull) { e.currentTarget.style.backgroundColor = 'rgb(22 163 74)'; e.currentTarget.style.color = 'white'; } }} onMouseLeave={(e) => { if (!isStrandFull) { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = 'rgb(22 163 74)'; } }}><span className="hidden sm:inline">{isStrandFull ? 'FULL' : 'Approve'}</span><span className="sm:hidden">{isStrandFull ? 'X' : '✓'}</span></Button>
+                <Button onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted'))} variant="ghost" disabled={isStrandFull} className={`h-9 px-2 md:px-3 rounded-xl font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap ${isStrandFull ? 'text-slate-300 cursor-not-allowed' : 'text-green-600'}`} onMouseEnter={(e) => { if (!isStrandFull) { e.currentTarget.style.backgroundColor = 'rgb(22 163 74)'; e.currentTarget.style.color = 'white'; } }} onMouseLeave={(e) => { if (!isStrandFull) { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = 'rgb(22 163 74)'; } }}><span className="hidden sm:inline">{isStrandFull ? 'FULL' : 'Approve'}</span><span className="sm:hidden">{isStrandFull ? 'X' : '✓'}</span></Button>
               </TooltipTrigger><TooltipContent className="bg-green-900 text-green-100 border-green-800"><p>Approve Application</p></TooltipContent></Tooltip>
               <Tooltip><TooltipTrigger asChild>
-              <Button 
-                onClick={() => {
-                  setActiveDeclineStudent(student);
-                  setDeclineModalOpen(true);
-                }} 
-                variant="ghost" 
-                className="h-9 px-2 md:px-3 rounded-xl text-red-600 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap"
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgb(220 38 38)'
-                  e.currentTarget.style.color = 'white'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = ''
-                  e.currentTarget.style.color = 'rgb(220 38 38)'
-                }}
-              >
-                <span className="hidden sm:inline">Decline</span><span className="sm:hidden">✗</span>
-              </Button>
+                <Button
+                  onClick={() => {
+                    setActiveDeclineStudent(student);
+                    setDeclineModalOpen(true);
+                  }}
+                  variant="ghost"
+                  className="h-9 px-2 md:px-3 rounded-xl text-red-600 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgb(220 38 38)'
+                    e.currentTarget.style.color = 'white'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = ''
+                    e.currentTarget.style.color = 'rgb(220 38 38)'
+                  }}
+                >
+                  <span className="hidden sm:inline">Decline</span><span className="sm:hidden">✗</span>
+                </Button>
               </TooltipTrigger><TooltipContent className="bg-red-900 text-red-100 border-red-800"><p>Decline Application</p></TooltipContent></Tooltip>
             </>
           )}
@@ -445,10 +441,31 @@ const DesktopApplicantRow = memo(({
           {(student.status === 'Accepted' || student.status === 'Approved') && (
             <>
               <Tooltip><TooltipTrigger asChild>
-              <Button 
-                onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Pending'))} 
-                variant="ghost" 
-                className="h-9 px-2 md:px-3 rounded-xl text-amber-600 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap"
+                <Button
+                  onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Pending'))}
+                  variant="ghost"
+                  className="h-9 px-2 md:px-3 rounded-xl text-amber-600 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgb(245 158 11)'
+                    e.currentTarget.style.color = 'white'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = ''
+                    e.currentTarget.style.color = 'rgb(217 119 6)'
+                  }}
+                >
+                  <RotateCcw size={12} className="mr-1" /> <span className="hidden sm:inline">Reset</span>
+                </Button>
+              </TooltipTrigger><TooltipContent className="bg-amber-900 text-amber-100 border-amber-800"><p>Reset to Pending</p></TooltipContent></Tooltip>
+            </>
+          )}
+
+          {student.status === 'Rejected' && (
+            <Tooltip><TooltipTrigger asChild>
+              <Button
+                onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Pending'))}
+                variant="ghost"
+                className="h-9 px-3 md:px-4 rounded-xl text-amber-600 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap"
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = 'rgb(245 158 11)'
                   e.currentTarget.style.color = 'white'
@@ -458,52 +475,31 @@ const DesktopApplicantRow = memo(({
                   e.currentTarget.style.color = 'rgb(217 119 6)'
                 }}
               >
-                <RotateCcw size={12} className="mr-1"/> <span className="hidden sm:inline">Reset</span>
+                <RotateCcw size={14} className="mr-1 md:mr-2" /> <span className="hidden sm:inline">Reset</span>
               </Button>
-              </TooltipTrigger><TooltipContent className="bg-amber-900 text-amber-100 border-amber-800"><p>Reset to Pending</p></TooltipContent></Tooltip>
-            </>
-          )}
-
-          {student.status === 'Rejected' && (
-            <Tooltip><TooltipTrigger asChild>
-            <Button 
-              onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Pending'))} 
-              variant="ghost" 
-              className="h-9 px-3 md:px-4 rounded-xl text-amber-600 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap"
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgb(245 158 11)'
-                e.currentTarget.style.color = 'white'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = ''
-                e.currentTarget.style.color = 'rgb(217 119 6)'
-              }}
-            >
-              <RotateCcw size={14} className="mr-1 md:mr-2"/> <span className="hidden sm:inline">Reset</span>
-            </Button>
             </TooltipTrigger><TooltipContent className="bg-amber-900 text-amber-100 border-amber-800"><p>Reset to Pending</p></TooltipContent></Tooltip>
           )}
 
           {(student.status === 'Pending' || student.status === 'Rejected') && (
             <Tooltip><TooltipTrigger asChild>
-            <Button 
-              onClick={() => {
-                setActiveDeleteStudent(student);
-                setDeleteModalOpen(true);
-              }}
-              variant="ghost" 
-              className="h-9 px-3 rounded-xl text-red-600 dark:text-red-400 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 flex items-center justify-center"
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgb(220 38 38)'
-                e.currentTarget.style.color = 'white'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = ''
-                e.currentTarget.style.color = ''
-              }}
-            >
-              <Trash2 size={16}/>
-            </Button>
+              <Button
+                onClick={() => {
+                  setActiveDeleteStudent(student);
+                  setDeleteModalOpen(true);
+                }}
+                variant="ghost"
+                className="h-9 px-3 rounded-xl text-red-600 dark:text-red-400 font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 flex items-center justify-center"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgb(220 38 38)'
+                  e.currentTarget.style.color = 'white'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = ''
+                  e.currentTarget.style.color = ''
+                }}
+              >
+                <Trash2 size={16} />
+              </Button>
             </TooltipTrigger><TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Delete Record</p></TooltipContent></Tooltip>
           )}
 
@@ -540,22 +536,23 @@ function PaginationBar({
   }
 
   const pages = getPages()
-  const showFirstPage  = pages[0] > 1
-  const showLastPage   = pages[pages.length - 1] < totalPages
-  const showStartDots  = pages[0] > 2
-  const showEndDots    = pages[pages.length - 1] < totalPages - 1
+  const showFirstPage = pages[0] > 1
+  const showLastPage = pages[pages.length - 1] < totalPages
+  const showStartDots = pages[0] > 2
+  const showEndDots = pages[pages.length - 1] < totalPages - 1
 
   const c = isDarkMode
     ? { border: 'rgba(51,65,85,0.7)', text: '#94a3b8', hover: 'rgba(51,65,85,0.45)', activeBg: 'rgba(59,130,246,0.18)', activeBorder: '#3b82f6', activeText: '#93c5fd', dots: '#475569' }
-    : { border: '#e2e8f0',            text: '#64748b', hover: '#f1f5f9',              activeBg: '#eff6ff',               activeBorder: '#2563eb',  activeText: '#2563eb',  dots: '#94a3b8' }
+    : { border: '#e2e8f0', text: '#64748b', hover: '#f1f5f9', activeBg: '#eff6ff', activeBorder: '#2563eb', activeText: '#2563eb', dots: '#94a3b8' }
 
+  const sz = compact ? { h: 24, w: 24, r: 7, fs: 9, pad: '0 6px', navPad: '0 7px', navFs: 8, dotW: 16, dotFs: 9, iconSz: 10 } : { h: 36, w: 36, r: 10, fs: 12, pad: '0 10px', navPad: '0 13px', navFs: 11, dotW: 24, dotFs: 13, iconSz: 13 }
   const base: React.CSSProperties = {
-    height: 36, minWidth: 36, borderRadius: 10,
+    height: sz.h, minWidth: sz.w, borderRadius: sz.r,
     border: `1.5px solid ${c.border}`, background: 'transparent',
     color: c.text, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 12, fontWeight: 700, transition: 'all 0.14s ease',
-    padding: '0 10px', userSelect: 'none' as const,
+    fontSize: sz.fs, fontWeight: 700, transition: 'all 0.14s ease',
+    padding: sz.pad, userSelect: 'none' as const,
   }
   const active: React.CSSProperties = {
     ...base, background: c.activeBg, border: `1.5px solid ${c.activeBorder}`,
@@ -563,16 +560,17 @@ function PaginationBar({
   }
   const nav = (enabled: boolean): React.CSSProperties => ({
     ...base,
-    gap: 5, padding: '0 13px',
-    fontSize: 11, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' as const,
+    gap: compact ? 2 : 5, padding: sz.navPad,
+    fontSize: sz.navFs, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' as const,
     ...(enabled ? {} : { opacity: 0.32, cursor: 'not-allowed' as const }),
   })
   const dot: React.CSSProperties = {
-    height: 36, minWidth: 24,
+    height: sz.h, minWidth: sz.dotW,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 13, color: c.dots, fontWeight: 700, userSelect: 'none' as const,
+    fontSize: sz.dotFs, color: c.dots, fontWeight: 700, userSelect: 'none' as const,
     letterSpacing: 1,
   }
+  const iconSize = sz.iconSz
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: compact ? 'center' : 'space-between', gap: 8, width: '100%' }}>
@@ -581,7 +579,7 @@ function PaginationBar({
           Showing {totalShowing} of {totalCount}
         </span>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 2 : 3 }}>
 
         {/* ← Prev */}
         <button
@@ -591,7 +589,7 @@ function PaginationBar({
           onMouseEnter={e => { if (canPrev) (e.currentTarget as HTMLElement).style.background = c.hover }}
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
         >
-          <ChevronLeft size={13} strokeWidth={2.5} />
+          <ChevronLeft size={iconSize} strokeWidth={2.5} />
           {!compact && <span>Prev</span>}
         </button>
 
@@ -641,7 +639,7 @@ function PaginationBar({
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
         >
           {!compact && <span>Next</span>}
-          <ChevronRight size={13} strokeWidth={2.5} />
+          <ChevronRight size={iconSize} strokeWidth={2.5} />
         </button>
 
       </div>
@@ -752,7 +750,7 @@ export const ApplicantsTable = memo(({
           }
         }
       `}</style>
-      
+
       <ThemedCard
         className="rounded-2xl sm:rounded-3xl md:rounded-[48px] shadow-lg sm:shadow-2xl shadow-slate-200/50 dark:shadow-blue-500/10 overflow-hidden transition-colors duration-500 border w-full relative"
         style={{
@@ -767,13 +765,13 @@ export const ApplicantsTable = memo(({
         <div className="md:hidden p-2 sm:p-4 space-y-3 sm:space-y-4">
           {/* Mobile Header */}
           <div className="flex items-center justify-center gap-4 px-2 pb-2">
-            <button 
-              onClick={() => toggleSelectAll(pageIds)} 
+            <button
+              onClick={() => toggleSelectAll(pageIds)}
               className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500 touch-manipulation"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
-              {isPageSelected 
-                ? <CheckSquare className="text-blue-600" size={18} /> 
+              {isPageSelected
+                ? <CheckSquare className="text-blue-600" size={18} />
                 : <Square className={isDarkMode ? "text-slate-500" : "text-slate-400"} size={18} />
               }
               <span className="hidden xs:inline">Select All</span>
@@ -792,27 +790,27 @@ export const ApplicantsTable = memo(({
           ) : (
             <>
               {visibleStudents.map((student, index) => {
-            return (
-              <MobileApplicantRow
-                key={student.id}
-                student={student}
-                isSelected={selectedIds.includes(student.id)}
-                isHidden={hiddenRows.has(student.id)}
-                isExiting={exitingRows[student.id]}
-                isAnimatingIn={animatingIds.has(student.id) || localAnimatingIds.has(student.id)}
-                animIndex={index}
-                isStrandFull={strandStats?.[student.strand] || false}
-                isDarkMode={isDarkMode}
-                toggleSelect={toggleSelect}
-                setOpenStudentDialog={setOpenStudentDialog}
-                handleExit={handleExit}
-                handleStatusChange={handleStatusChange}
-                setActiveDeclineStudent={setActiveDeclineStudent}
-                setDeclineModalOpen={setDeclineModalOpen}
-                setActiveDeleteStudent={setActiveDeleteStudent}
-                setDeleteModalOpen={setDeleteModalOpen}
-              />
-            )
+                return (
+                  <MobileApplicantRow
+                    key={student.id}
+                    student={student}
+                    isSelected={selectedIds.includes(student.id)}
+                    isHidden={hiddenRows.has(student.id)}
+                    isExiting={exitingRows[student.id]}
+                    isAnimatingIn={animatingIds.has(student.id) || localAnimatingIds.has(student.id)}
+                    animIndex={index}
+                    isStrandFull={strandStats?.[student.strand] || false}
+                    isDarkMode={isDarkMode}
+                    toggleSelect={toggleSelect}
+                    setOpenStudentDialog={setOpenStudentDialog}
+                    handleExit={handleExit}
+                    handleStatusChange={handleStatusChange}
+                    setActiveDeclineStudent={setActiveDeclineStudent}
+                    setDeclineModalOpen={setDeclineModalOpen}
+                    setActiveDeleteStudent={setActiveDeleteStudent}
+                    setDeleteModalOpen={setDeleteModalOpen}
+                  />
+                )
               })}
             </>
           )}
@@ -849,7 +847,22 @@ export const ApplicantsTable = memo(({
                 <TableHead className={`w-[110px] min-w-[110px] font-black uppercase text-[9px] tracking-[0.25em] text-center ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Strand</TableHead>
                 <TableHead className={`w-[140px] min-w-[140px] font-black uppercase text-[9px] tracking-[0.25em] text-center ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Section</TableHead>
                 <TableHead className={`w-[80px] min-w-[80px] font-black uppercase text-[9px] tracking-[0.25em] text-center ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>GWA</TableHead>
-                <TableHead className={`w-[280px] min-w-[280px] text-right px-6 font-black uppercase text-[9px] tracking-[0.25em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Actions</TableHead>
+                <TableHead className={`w-[280px] min-w-[280px] text-right px-6 font-black uppercase text-[9px] tracking-[0.25em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <div className="flex items-center justify-end gap-3">
+                    {totalPages > 1 && (
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <PaginationBar
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          setCurrentPage={setCurrentPage}
+                          isDarkMode={isDarkMode}
+                          compact
+                        />
+                      </div>
+                    )}
+                    <span>Actions</span>
+                  </div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -858,27 +871,27 @@ export const ApplicantsTable = memo(({
               ) : (
                 <>
                   {visibleStudents.map((student, index) => {
-                return (
-                  <DesktopApplicantRow
-                    key={student.id}
-                    student={student}
-                    isSelected={selectedIds.includes(student.id)}
-                    isHidden={hiddenRows.has(student.id)}
-                    isExiting={exitingRows[student.id]}
-                    isAnimatingIn={animatingIds.has(student.id) || localAnimatingIds.has(student.id)}
-                    animIndex={index}
-                    isStrandFull={strandStats?.[student.strand] || false}
-                    isDarkMode={isDarkMode}
-                    toggleSelect={toggleSelect}
-                    setOpenStudentDialog={setOpenStudentDialog}
-                    handleExit={handleExit}
-                    handleStatusChange={handleStatusChange}
-                    setActiveDeclineStudent={setActiveDeclineStudent}
-                    setDeclineModalOpen={setDeclineModalOpen}
-                    setActiveDeleteStudent={setActiveDeleteStudent}
-                    setDeleteModalOpen={setDeleteModalOpen}
-                  />
-                )
+                    return (
+                      <DesktopApplicantRow
+                        key={student.id}
+                        student={student}
+                        isSelected={selectedIds.includes(student.id)}
+                        isHidden={hiddenRows.has(student.id)}
+                        isExiting={exitingRows[student.id]}
+                        isAnimatingIn={animatingIds.has(student.id) || localAnimatingIds.has(student.id)}
+                        animIndex={index}
+                        isStrandFull={strandStats?.[student.strand] || false}
+                        isDarkMode={isDarkMode}
+                        toggleSelect={toggleSelect}
+                        setOpenStudentDialog={setOpenStudentDialog}
+                        handleExit={handleExit}
+                        handleStatusChange={handleStatusChange}
+                        setActiveDeclineStudent={setActiveDeclineStudent}
+                        setDeclineModalOpen={setDeclineModalOpen}
+                        setActiveDeleteStudent={setActiveDeleteStudent}
+                        setDeleteModalOpen={setDeleteModalOpen}
+                      />
+                    )
                   })}
                 </>
               )}

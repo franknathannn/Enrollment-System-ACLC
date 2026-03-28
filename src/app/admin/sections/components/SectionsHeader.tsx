@@ -223,7 +223,7 @@ export const SectionsHeader = memo(({
 
   return (
     <ThemedCard 
-      className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 p-6 md:p-10 rounded-[32px] md:rounded-[48px] backdrop-blur-3xl shadow-2xl border transition-all duration-700 bg-clip-padding outline outline-1 outline-transparent isolate"
+      className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 p-6 md:p-10 rounded-[32px] md:rounded-[48px] backdrop-blur-3xl shadow-none border transition-all duration-700 bg-clip-padding outline outline-1 outline-transparent isolate"
       style={{
         backgroundColor: theme.surface,
         borderColor: theme.border

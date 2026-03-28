@@ -51,10 +51,10 @@ function TimeSelect({
   const amOpts  = filtered.filter(o => o.label.includes("AM"))
   const pmOpts  = filtered.filter(o => o.label.includes("PM"))
 
-  const overlayBg = isDarkMode ? "rgba(15,23,42,0.99)"    : "#ffffff"
+  const overlayBg = isDarkMode ? "rgba(15,23,42,0.98)"    : "rgba(255,255,255,0.98)"
   const shadow    = isDarkMode
-    ? "0 20px 40px -8px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.06)"
-    : "0 20px 40px -8px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.04)"
+    ? "0 20px 48px -8px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.04)"
+    : "0 20px 48px -8px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)"
   const rowHov    = isDarkMode ? "rgba(30,41,59,0.9)"     : "#f8fafc"
   const activeRow = isDarkMode ? "rgba(37,99,235,0.18)"   : "#eff6ff"
   const activeTxt = isDarkMode ? "#93c5fd"                : "#1d4ed8"
@@ -72,13 +72,15 @@ function TimeSelect({
         type="button"
         onClick={() => { setOpen(o => !o); setQuery("") }}
         style={{
-          width: "100%", height: 44, borderRadius: 16,
+          width: "100%", height: 44, borderRadius: 14,
           border: `1.5px solid ${open ? "#3b82f6" : bdr}`,
-          background: isDarkMode ? "rgba(30,41,59,0.5)" : surf,
+          background: isDarkMode ? "rgba(30,41,59,0.5)" : "rgba(248,250,252,0.8)",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "0 12px 0 14px", cursor: "pointer",
-          outline: "none", transition: "border-color 0.15s, box-shadow 0.15s",
-          boxShadow: open ? "0 0 0 3px rgba(59,130,246,0.15)" : "none",
+          outline: "none", transition: "border-color 0.2s, box-shadow 0.2s",
+          boxShadow: open
+            ? "0 0 0 3px rgba(59,130,246,0.15), 0 2px 8px rgba(59,130,246,0.08)"
+            : isDarkMode ? "0 1px 3px rgba(0,0,0,0.2)" : "0 1px 3px rgba(0,0,0,0.04)",
         }}
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
@@ -94,14 +96,16 @@ function TimeSelect({
             <span style={{ fontSize: 13, fontWeight: 800, color: txt, marginLeft: 4 }}>{displayLabel}</span>
           )}
         </div>
-        <ChevronDown size={13} style={{ color: muted, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+        <ChevronDown size={13} style={{ color: muted, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
       </button>
 
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0,
-          zIndex: 300, background: overlayBg, border: `1px solid ${bdr}`,
-          borderRadius: 18, boxShadow: shadow, overflow: "hidden",
+          zIndex: 300,
+          background: overlayBg, border: `1px solid ${isDarkMode ? "rgba(51,65,85,0.6)" : "rgba(226,232,240,0.8)"}`,
+          borderRadius: 16, boxShadow: shadow, overflow: "hidden",
+          backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
         }}>
           {/* Search */}
           <div style={{ padding: "10px 10px 6px" }}>
@@ -122,7 +126,7 @@ function TimeSelect({
             </div>
           </div>
 
-          <div style={{ maxHeight: 220, overflowY: "auto", paddingBottom: 6 }}>
+          <div style={{ maxHeight: 220, overflowY: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
             {[{ label: "Morning", opts: amOpts }, { label: "Afternoon", opts: pmOpts }].map(group =>
               group.opts.length === 0 ? null : (
                 <div key={group.label}>
@@ -194,10 +198,10 @@ function SearchableSelect({
     ? options.filter(o => o.toLowerCase().includes(query.toLowerCase()))
     : options
 
-  const overlayBg = isDarkMode ? "rgba(15,23,42,0.99)"   : "#ffffff"
+  const overlayBg = isDarkMode ? "rgba(15,23,42,0.98)"   : "rgba(255,255,255,0.98)"
   const shadow    = isDarkMode
-    ? "0 20px 40px -8px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.06)"
-    : "0 20px 40px -8px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.04)"
+    ? "0 20px 48px -8px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.04)"
+    : "0 20px 48px -8px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)"
   const rowHov    = isDarkMode ? "rgba(30,41,59,0.9)"    : "#f8fafc"
   const activeRow = isDarkMode ? "rgba(37,99,235,0.18)"  : "#eff6ff"
   const activeTxt = isDarkMode ? "#93c5fd"               : "#1d4ed8"
@@ -209,28 +213,32 @@ function SearchableSelect({
         type="button"
         onClick={() => { setOpen(o => !o); setQuery("") }}
         style={{
-          width: "100%", height: 44, borderRadius: 16,
+          width: "100%", height: 44, borderRadius: 14,
           border: `1.5px solid ${open ? "#3b82f6" : bdr}`,
-          background: isDarkMode ? "rgba(30,41,59,0.5)" : surf,
+          background: isDarkMode ? "rgba(30,41,59,0.5)" : "rgba(248,250,252,0.8)",
           color: value ? txt : muted,
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "0 12px 0 16px", fontSize: 12, fontWeight: 700,
           cursor: "pointer", outline: "none",
-          transition: "border-color 0.15s, box-shadow 0.15s",
-          boxShadow: open ? "0 0 0 3px rgba(59,130,246,0.15)" : "none",
+          transition: "border-color 0.2s, box-shadow 0.2s",
+          boxShadow: open
+            ? "0 0 0 3px rgba(59,130,246,0.15), 0 2px 8px rgba(59,130,246,0.08)"
+            : isDarkMode ? "0 1px 3px rgba(0,0,0,0.2)" : "0 1px 3px rgba(0,0,0,0.04)",
         }}
       >
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {value || placeholder}
         </span>
-        <ChevronDown size={13} style={{ color: muted, flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+        <ChevronDown size={13} style={{ color: muted, flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
       </button>
 
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0,
-          zIndex: 300, background: overlayBg, border: `1px solid ${bdr}`,
-          borderRadius: 18, boxShadow: shadow, overflow: "hidden",
+          zIndex: 300,
+          background: overlayBg, border: `1px solid ${isDarkMode ? "rgba(51,65,85,0.6)" : "rgba(226,232,240,0.8)"}`,
+          borderRadius: 16, boxShadow: shadow, overflow: "hidden",
+          backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
         }}>
           <div style={{ padding: "10px 10px 6px", borderBottom: `1px solid ${bdr}` }}>
             <div style={{ position: "relative" }}>
@@ -266,7 +274,7 @@ function SearchableSelect({
             </button>
           )}
 
-          <div style={{ maxHeight: 200, overflowY: "auto", paddingBottom: 6 }}>
+          <div style={{ maxHeight: 200, overflowY: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
             {filtered.length === 0 ? (
               <div style={{ padding: "12px 14px", fontSize: 10, color: muted, textAlign: "center" }}>No results</div>
             ) : filtered.map(opt => (
@@ -324,13 +332,17 @@ export function EditModal({
   const startOpts = TIME_OPTS.filter(o => toMins(o.value) < editEnd)
   const endOpts   = TIME_OPTS.filter(o => toMins(o.value) > editStart)
 
+  const modalSurf = isDarkMode ? "rgba(15,23,42,0.95)" : "rgba(255,255,255,0.97)"
+  const modalBdr  = isDarkMode ? "rgba(51,65,85,0.5)" : "rgba(226,232,240,0.7)"
+
   return (
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 50,
         display: "flex",
-        background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
+        background: "rgba(0,0,0,0.6)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
       }}
       className="items-end justify-center sm:items-center sm:p-4"
       onClick={onClose}
@@ -343,10 +355,6 @@ export function EditModal({
         @keyframes modalPop {
           from { opacity:0; transform:scale(0.96) translateY(10px) }
           to   { opacity:1; transform:scale(1)    translateY(0)    }
-        }
-        @keyframes backdropIn {
-          from { opacity:0 }
-          to   { opacity:1 }
         }
         .edit-modal-sheet { animation: sheetUp 0.28s cubic-bezier(0.16,1,0.3,1) both; }
         @media (min-width:640px) {
@@ -363,15 +371,18 @@ export function EditModal({
       <div
         style={{
           width: "100%", maxWidth: 480,
-          background: surf, border: `1px solid ${bdr}`,
+          background: modalSurf,
+          border: `1px solid ${modalBdr}`,
           boxShadow: isDarkMode
-            ? "0 32px 80px -12px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06)"
-            : "0 32px 80px -12px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.04)",
+            ? "0 32px 80px -12px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.04)"
+            : "0 32px 80px -12px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)",
           overflow: "hidden",
           maxHeight: "92dvh",
           display: "flex", flexDirection: "column",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
         }}
-        className="edit-modal-sheet rounded-t-[28px] sm:rounded-[28px] sm:max-h-[95dvh]"
+        className="edit-modal-sheet rounded-t-[24px] sm:rounded-[24px] sm:max-h-[95dvh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Drag handle — mobile only */}
@@ -380,15 +391,16 @@ export function EditModal({
         {/* Header */}
         <div style={{
           padding: "14px 20px 16px",
-          borderBottom: `1px solid ${bdr}`,
-          background: isDarkMode ? "rgba(15,23,42,0.6)" : "rgba(248,250,252,0.9)",
+          borderBottom: `1px solid ${modalBdr}`,
+          background: isDarkMode ? "rgba(15,23,42,0.7)" : "rgba(248,250,252,0.9)",
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{
               width: 36, height: 36, borderRadius: 12,
-              background: "rgba(59,130,246,0.12)",
+              background: "linear-gradient(135deg, rgba(59,130,246,0.15), rgba(124,58,237,0.1))",
               display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 0 0 1px rgba(59,130,246,0.1)",
             }}>
               <Edit3 size={16} style={{ color: "#3b82f6" }} />
             </div>
@@ -407,10 +419,16 @@ export function EditModal({
               width: 32, height: 32, borderRadius: 10, border: "none",
               background: "transparent", cursor: "pointer", color: muted,
               display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "background 0.15s",
+              transition: "background 0.15s, color 0.15s",
             }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = isDarkMode ? "rgba(239,68,68,0.12)" : "#fef2f2"}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.background = isDarkMode ? "rgba(239,68,68,0.12)" : "#fef2f2";
+              (e.currentTarget as HTMLElement).style.color = "#f87171";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.background = "transparent";
+              (e.currentTarget as HTMLElement).style.color = muted;
+            }}
           >
             <X size={15} />
           </button>
@@ -437,10 +455,16 @@ export function EditModal({
                 padding: "0 16px", fontSize: 12, fontWeight: 900,
                 textTransform: "uppercase", letterSpacing: "0.04em",
                 color: txt, outline: "none", boxSizing: "border-box",
-                transition: "border-color 0.15s",
+                transition: "border-color 0.2s, box-shadow 0.2s",
               }}
-              onFocus={e => (e.target as HTMLInputElement).style.borderColor = "#3b82f6"}
-              onBlur={e => (e.target as HTMLInputElement).style.borderColor = bdr}
+              onFocus={e => {
+                (e.target as HTMLInputElement).style.borderColor = "#3b82f6";
+                (e.target as HTMLInputElement).style.boxShadow = "0 0 0 3px rgba(59,130,246,0.12)";
+              }}
+              onBlur={e => {
+                (e.target as HTMLInputElement).style.borderColor = bdr;
+                (e.target as HTMLInputElement).style.boxShadow = "none";
+              }}
             />
           </div>
 
@@ -509,8 +533,8 @@ export function EditModal({
             <div style={{
               display: "flex", alignItems: "center", gap: 10,
               padding: "10px 14px", borderRadius: 14,
-              background: isDarkMode ? "rgba(30,41,59,0.5)" : "#f8fafc",
-              border: `1px solid ${bdr}`,
+              background: isDarkMode ? "rgba(30,41,59,0.4)" : "rgba(248,250,252,0.8)",
+              border: `1px solid ${isDarkMode ? "rgba(51,65,85,0.3)" : "rgba(226,232,240,0.6)"}`,
             }}>
               <Clock size={12} style={{ color: muted }} />
               <span style={{ fontSize: 9.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: muted }}>
@@ -518,9 +542,10 @@ export function EditModal({
               </span>
               <span style={{
                 marginLeft: "auto", fontSize: 9, fontWeight: 700,
-                background: isDarkMode ? "rgba(59,130,246,0.15)" : "#eff6ff",
+                background: isDarkMode ? "rgba(59,130,246,0.15)" : "rgba(239,246,255,0.8)",
                 color: isDarkMode ? "#93c5fd" : "#2563eb",
                 padding: "2px 8px", borderRadius: 99,
+                border: isDarkMode ? "1px solid rgba(59,130,246,0.15)" : "1px solid rgba(147,197,253,0.3)",
               }}>
                 {editEnd - editStart} min
               </span>
@@ -538,7 +563,7 @@ export function EditModal({
                 color: muted, cursor: "pointer",
                 display: "flex", alignItems: "center", gap: 6,
                 fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em",
-                transition: "all 0.15s",
+                transition: "all 0.2s",
               }}
               onMouseEnter={e => {
                 const el = e.currentTarget as HTMLElement
@@ -563,7 +588,7 @@ export function EditModal({
                 border: `1.5px solid ${bdr}`, background: "transparent",
                 color: muted, cursor: "pointer",
                 fontSize: 9.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em",
-                transition: "all 0.15s",
+                transition: "all 0.2s",
               }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = isDarkMode ? "rgba(255,255,255,0.04)" : "#f8fafc"}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
@@ -576,15 +601,20 @@ export function EditModal({
               onClick={onSave}
               style={{
                 flex: 1, height: 44, borderRadius: 14,
-                border: "none", background: saving || editStart >= editEnd ? "rgba(59,130,246,0.4)" : "#2563eb",
+                border: "none",
+                background: saving || editStart >= editEnd
+                  ? "rgba(59,130,246,0.4)"
+                  : "linear-gradient(135deg, #2563eb, #1d4ed8)",
                 color: "#ffffff", cursor: saving || editStart >= editEnd ? "not-allowed" : "pointer",
                 fontSize: 9.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                boxShadow: "0 4px 14px -2px rgba(37,99,235,0.4)",
-                transition: "all 0.15s",
+                boxShadow: saving || editStart >= editEnd
+                  ? "none"
+                  : "0 4px 16px -2px rgba(37,99,235,0.45), 0 0 0 1px rgba(96,165,250,0.15)",
+                transition: "all 0.2s",
               }}
-              onMouseEnter={e => { if (!saving && editStart < editEnd) (e.currentTarget as HTMLElement).style.background = "#1d4ed8" }}
-              onMouseLeave={e => { if (!saving && editStart < editEnd) (e.currentTarget as HTMLElement).style.background = "#2563eb" }}
+              onMouseEnter={e => { if (!saving && editStart < editEnd) (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, #1d4ed8, #1e40af)" }}
+              onMouseLeave={e => { if (!saving && editStart < editEnd) (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, #2563eb, #1d4ed8)" }}
             >
               {saving ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={12} />}
               Save

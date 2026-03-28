@@ -319,6 +319,16 @@ export default function EnrollmentPage() {
         )} />
       </div>
 
+      {/* Global Background Logo */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 flex items-center justify-center">
+        <div className={cn(
+          "w-[clamp(280px,80vw,500px)] aspect-square transition-opacity duration-1000",
+          isDark ? "opacity-10 brightness-150" : "opacity-20"
+        )} style={{ transform: 'translateZ(0)' }}>
+          <img src="/logo-aclc.png" alt="" className="w-full h-full object-contain" />
+        </div>
+      </div>
+
       {!systemStatus?.isOpen ? (
         /* ── CLOSED STATE ── */
         <div className="max-w-md mx-auto mt-32 space-y-10 relative z-10 text-center">
@@ -462,11 +472,11 @@ export default function EnrollmentPage() {
 
           {/* Form container */}
           <div className={cn(
-            "backdrop-blur-3xl p-8 md:p-12 rounded-[56px] border relative overflow-hidden",
+            "p-6 sm:p-8 md:p-12 rounded-[56px] border relative overflow-hidden transition-colors duration-500",
             isDark
-              ? "bg-gradient-to-b from-[#0d1433]/80 to-slate-950/90 border-white/10 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.9)]"
-              : "bg-white/90 border-blue-100 shadow-[0_30px_80px_rgba(99,102,241,0.15)]"
-          )}>
+              ? "bg-[#0d1433]/90 border-white/10 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.9)]"
+              : "bg-white/95 border-blue-50 shadow-[0_20px_60px_rgba(99,102,241,0.08)]"
+          )} style={{ transform: 'translateZ(0)' }}>
             <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
             <ShieldCheck size={200} className={cn(
               "absolute -bottom-20 -right-20 -rotate-12 pointer-events-none",

@@ -15,6 +15,13 @@ import {
   CalendarDays, BookOpen, Users, Eye, ShieldCheck, Download, Sun, Moon,
 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
+import {
+  STUDENT_ATTENDANCE_QR_THEMES as QR_THEMES,
+  type StudentAttendanceQrThemeKey,
+  generateStudentAttendanceQr,
+  buildStudentAttendanceQrDownloadCanvas,
+} from "@/lib/studentAttendanceQr"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { TeacherSession, ScheduleRow, Student, fmt, todayName, ALL_DAYS } from "../types"
 
@@ -121,33 +128,24 @@ const loadJsQR = () => new Promise<void>(resolve => {
 
 declare global { interface Window { QRCode?: new (el: HTMLElement, opts: { text: string; width: number; height: number; colorDark: string; colorLight: string; correctLevel: number }) => void } }
 
-type QRModalTheme = "dark" | "light"
-const QR_MODAL_THEMES = {
-  dark:  { bg: "#0a0f1e", card: "#0d1426", border: "#1e3a6e", qrDark: "#e2e8f0", qrLight: "#0a0f1e", strip0: "#1a3a7a", strip1: "#0c1a3e", textPri: "#f1f5f9", textSec: "#475569" },
-  light: { bg: "#f0f4ff", card: "#ffffff", border: "#c7d7f8", qrDark: "#0a0f1e", qrLight: "#ffffff", strip0: "#1d4ed8", strip1: "#1e40af", textPri: "#0f172a", textSec: "#64748b" },
-}
-
-function QRViewerModal({ student, dm, onClose }: { student: Student; dm: boolean; onClose: () => void }) {
+/** Same layout & PNG as status `StudentQRCard` — QR payload is `student.id` (scanner also accepts LRN). */
+function QRViewerModal({ student, onClose }: { student: Student; onClose: () => void }) {
   const darkRef  = useRef<HTMLDivElement>(null)
   const lightRef = useRef<HTMLDivElement>(null)
-  const [theme,   setTheme]   = useState<QRModalTheme>("dark")
-  const [darkOk,  setDarkOk]  = useState(false)
+  const [theme, setTheme] = useState<StudentAttendanceQrThemeKey>("dark")
+  const [darkOk, setDarkOk] = useState(false)
   const [lightOk, setLightOk] = useState(false)
-  const QR_SZ = 200
+  const [saving, setSaving] = useState(false)
+  const SZ = 176
 
-  const genQR = (container: HTMLDivElement, th: QRModalTheme, onDone: () => void) => {
-    container.innerHTML = ""
-    const t = QR_MODAL_THEMES[th]
-    try {
-      new window.QRCode!(container, { text: student.lrn, width: QR_SZ, height: QR_SZ, colorDark: t.qrDark, colorLight: t.qrLight, correctLevel: 2 })
-      setTimeout(onDone, 50)
-    } catch { onDone() }
-  }
+  const studentFullName = `${student.last_name}, ${student.first_name}`
 
   useEffect(() => {
+    setDarkOk(false)
+    setLightOk(false)
     const generate = () => {
-      if (darkRef.current)  genQR(darkRef.current,  "dark",  () => setDarkOk(true))
-      if (lightRef.current) genQR(lightRef.current, "light", () => setLightOk(true))
+      if (darkRef.current)  generateStudentAttendanceQr(darkRef.current,  student.id, SZ, "dark",  () => setDarkOk(true))
+      if (lightRef.current) generateStudentAttendanceQr(lightRef.current, student.id, SZ, "light", () => setLightOk(true))
     }
     if (window.QRCode) { generate(); return }
     const s = document.createElement("script")
@@ -156,151 +154,150 @@ function QRViewerModal({ student, dm, onClose }: { student: Student; dm: boolean
     document.head.appendChild(s)
   }, [student.id])
 
-  const handleDownload = async (th: QRModalTheme) => {
-    const offDiv = document.createElement("div")
-    offDiv.style.cssText = "position:absolute;left:-9999px;top:0;"
-    document.body.appendChild(offDiv)
-    const t = QR_MODAL_THEMES[th]
-    await new Promise<void>(res => {
-      offDiv.innerHTML = ""
-      try {
-        new window.QRCode!(offDiv, { text: student.id, width: 300, height: 300, colorDark: t.qrDark, colorLight: t.qrLight, correctLevel: 2 })
-        setTimeout(res, 60)
-      } catch { res() }
-    })
-    const src = offDiv.querySelector("canvas") as HTMLCanvasElement | null
-    if (!src) { document.body.removeChild(offDiv); return }
-
-    const W = 400, PAD = 32, HDR = 80, FOOTER = 80
-    const out = document.createElement("canvas")
-    out.width = W; out.height = HDR + PAD + 300 + PAD + FOOTER
-    const ctx = out.getContext("2d")!
-
-    ctx.fillStyle = t.bg; ctx.fillRect(0, 0, W, out.height)
-    ctx.strokeStyle = th === "dark" ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.04)"; ctx.lineWidth = 1
-    for (let x = 0; x < W; x += 24) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,out.height); ctx.stroke() }
-    for (let y = 0; y < out.height; y += 24) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke() }
-
-    const hg = ctx.createLinearGradient(0,0,W,HDR)
-    hg.addColorStop(0, t.strip0); hg.addColorStop(1, t.strip1)
-    ctx.fillStyle = hg; ctx.fillRect(0,0,W,HDR)
-    ctx.fillStyle = "rgba(255,255,255,0.06)"
-    for (let gx=12;gx<W;gx+=18) for (let gy=10;gy<HDR;gy+=18) { ctx.beginPath(); ctx.arc(gx,gy,1.4,0,Math.PI*2); ctx.fill() }
-
-    const logoImg = new Image(); logoImg.crossOrigin = "anonymous"
-    const drawRest = () => {
-      ctx.textAlign = "left"; ctx.fillStyle = "#ffffff"
-      ctx.font = '900 16px "Arial Black",Arial'; ctx.fillText("AMA ACLC", 76, HDR/2-2)
-      ctx.fillStyle = "rgba(186,220,255,0.8)"; ctx.font = "700 9px Arial"
-      ctx.fillText("NORTHBAY COLLEGE", 76, HDR/2+14)
-      ctx.textAlign = "right"; ctx.fillStyle = "rgba(255,255,255,0.25)"; ctx.font = "600 7px Arial"
-      ctx.fillText("ATTENDANCE QR", W-16, HDR-12)
-      ctx.drawImage(src, PAD, HDR+PAD, 300, 300)
-      const CL=22, accent=th==="dark"?"#38bdf8":"#1d4ed8"
-      ctx.strokeStyle=accent; ctx.lineWidth=2.5; ctx.lineCap="round"
-      const qx=PAD,qy=HDR+PAD,qs=300
-      ;[[qx,qy,1,1],[qx+qs,qy,-1,1],[qx,qy+qs,1,-1],[qx+qs,qy+qs,-1,-1]].forEach(([cx,cy,dx,dy])=>{
-        ctx.beginPath(); ctx.moveTo(cx,cy+dy*CL); ctx.lineTo(cx,cy); ctx.lineTo(cx+dx*CL,cy); ctx.stroke()
+  const handleDownload = async (th: StudentAttendanceQrThemeKey) => {
+    setSaving(true)
+    try {
+      const offDiv = document.createElement("div")
+      offDiv.style.cssText = "position:absolute;left:-9999px;top:0;"
+      document.body.appendChild(offDiv)
+      await new Promise<void>(res => generateStudentAttendanceQr(offDiv, student.id, 340, th, res))
+      const src = offDiv.querySelector("canvas") as HTMLCanvasElement | null
+      if (!src) { document.body.removeChild(offDiv); return }
+      const out = await buildStudentAttendanceQrDownloadCanvas(th, src, {
+        studentName: studentFullName,
+        lrn: student.lrn,
+        section: student.section,
       })
-      const fy = HDR+PAD+300+PAD+8
-      ctx.textAlign = "center"; ctx.fillStyle = t.textPri
-      ctx.font = '900 13px "Arial Black",Arial'; ctx.fillText((`${student.last_name}, ${student.first_name}`).toUpperCase(), W/2, fy)
-      ctx.fillStyle = t.textSec; ctx.font = "bold 10px Arial"; ctx.fillText(`LRN: ${student.lrn}`, W/2, fy+18)
-      ctx.fillStyle = t.textSec; ctx.font = "600 9px Arial"; ctx.fillText(student.section || "", W/2, fy+34)
       document.body.removeChild(offDiv)
       const a = document.createElement("a")
-      a.download = `qr_${student.lrn}_${th}.png`
+      a.download = `attendance_qr_${student.lrn}_${th}.png`
       a.href = out.toDataURL("image/png", 1.0)
       a.click()
+    } finally {
+      setSaving(false)
     }
-    logoImg.onload = () => {
-      ctx.save(); ctx.beginPath(); ctx.arc(38,HDR/2,18,0,Math.PI*2); ctx.clip()
-      ctx.drawImage(logoImg,20,HDR/2-18,36,36); ctx.restore()
-      ctx.strokeStyle="rgba(255,255,255,0.25)"; ctx.lineWidth=1
-      ctx.beginPath(); ctx.arc(38,HDR/2,18,0,Math.PI*2); ctx.stroke()
-      drawRest()
-    }
-    logoImg.onerror = drawRest
-    logoImg.src = "/logo-aclc.png"
   }
 
-  const t = QR_MODAL_THEMES[theme]
+  const t = QR_THEMES[theme]
   const isOk = theme === "dark" ? darkOk : lightOk
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(20px)" }}
-      onClick={onClose}>
-      <div className="relative w-full max-w-xs overflow-hidden shadow-2xl"
-        style={{ borderRadius: 28, background: t.bg, border: `1.5px solid ${t.border}`, transition: "background 0.3s" }}
-        onClick={e => e.stopPropagation()}>
-
-        <button onClick={onClose}
-          className="absolute top-3.5 right-3.5 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all"
-          style={{ background: "rgba(255,255,255,0.07)", color: t.textSec }}>
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.93)", backdropFilter: "blur(24px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-xs overflow-y-auto thin-scroll"
+        style={{
+          borderRadius: 32,
+          background: t.bg,
+          border: `1.5px solid ${t.border}`,
+          boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
+          maxHeight: "min(640px,90svh)",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full flex items-center justify-center"
+          style={{ background: "rgba(255,255,255,0.08)", color: t.textSec }}
+        >
           <X size={13} />
         </button>
 
-        <div className="relative overflow-hidden px-5 py-4 flex items-center gap-3"
-          style={{ background: `linear-gradient(135deg,${t.strip0},${t.strip1})` }}>
-          <div className="absolute inset-0 opacity-[0.07]"
-            style={{ backgroundImage:"radial-gradient(circle,#fff 1px,transparent 1px)", backgroundSize:"14px 14px" }} />
-          <div className="relative w-9 h-9 rounded-xl overflow-hidden shrink-0 flex items-center justify-center"
-            style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.22)" }}>
+        <div
+          className="relative overflow-hidden px-5 py-5 flex items-center gap-3"
+          style={{ background: `linear-gradient(135deg,${t.strip0},${t.strip1})` }}
+        >
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{ backgroundImage: "radial-gradient(circle,#fff 1px,transparent 1px)", backgroundSize: "14px 14px" }}
+          />
+          <div
+            className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 flex items-center justify-center"
+            style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)" }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-aclc.png" alt="ACLC" className="w-full h-full object-contain p-0.5"
               onError={e => { (e.target as HTMLImageElement).style.display = "none" }} />
           </div>
-          <div className="relative flex-1">
+          <div className="relative">
             <p className="text-white text-[12px] font-black uppercase tracking-[0.18em] leading-none">AMA ACLC</p>
-            <p className="text-blue-300 text-[8px] font-bold uppercase tracking-[0.22em] mt-0.5 opacity-80 leading-none">Northbay College</p>
+            <p className="text-blue-200 text-[8px] font-bold uppercase tracking-[0.2em] mt-0.5 opacity-80 leading-none">Northbay College</p>
           </div>
         </div>
 
-        <div className="px-5 pt-4 pb-2 text-center">
-          {student.section && (
-            <span className="inline-block px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest mb-2"
-              style={{ background: theme==="dark"?"rgba(56,189,248,0.1)":"#dbeafe",
-                       border: theme==="dark"?"1px solid rgba(56,189,248,0.25)":"1px solid #bfdbfe",
-                       color: theme==="dark"?"#38bdf8":"#1d4ed8" }}>
-              {student.section}
-            </span>
-          )}
-          <p className="text-[11px] font-black uppercase" style={{ color: t.textPri }}>
-            {student.last_name}, {student.first_name}
-          </p>
-          <p className="text-[9px] font-mono mt-0.5" style={{ color: t.textSec }}>LRN: {student.lrn}</p>
-        </div>
-
-        <div className="flex gap-2 px-5 pb-3">
-          {(["dark","light"] as QRModalTheme[]).map(th => (
-            <button key={th} onClick={() => setTheme(th)}
-              className="flex items-center gap-1.5 flex-1 justify-center py-2 rounded-[12px] text-[9px] font-black uppercase tracking-wide transition-all"
-              style={theme===th
-                ? { background:`linear-gradient(135deg,${t.strip0},${t.strip1})`, color:"#fff" }
-                : { background:"transparent", color:t.textSec, border:`1px solid ${t.border}` }}>
-              {th==="dark" ? <Moon size={9}/> : <Sun size={9}/>} {th}
+        <div className="flex items-center justify-center gap-2 pt-4 pb-2 px-5">
+          {(["dark", "light"] as StudentAttendanceQrThemeKey[]).map(th => (
+            <button
+              key={th}
+              type="button"
+              onClick={() => setTheme(th)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-wide transition-all flex-1 justify-center"
+              style={theme === th
+                ? { background: `linear-gradient(135deg,${t.strip0},${t.strip1})`, color: "#fff", boxShadow: "0 4px 16px rgba(29,78,216,0.3)" }
+                : { background: "transparent", color: t.textSec, border: `1px solid ${t.border}` }}
+            >
+              {th === "dark" ? <Moon size={10} /> : <Sun size={10} />} {th}
             </button>
           ))}
         </div>
 
-        <div className="flex justify-center px-5 pb-2">
-          <div className="relative rounded-[18px] p-3" style={{ background: t.qrLight }}>
-            <div ref={darkRef}  style={{ display: theme==="dark"  && darkOk  ? "block":"none", width:QR_SZ, height:QR_SZ }} />
-            <div ref={lightRef} style={{ display: theme==="light" && lightOk ? "block":"none", width:QR_SZ, height:QR_SZ }} />
-            {!isOk && (
-              <div style={{ width:QR_SZ, height:QR_SZ }} className="flex items-center justify-center">
-                <Loader2 size={24} className="animate-spin text-blue-400" />
+        <div className="px-4 py-3">
+          <div className="rounded-[20px] overflow-hidden transition-all duration-300"
+            style={{ background: t.card, border: `1px solid ${t.border}` }}>
+            <div className="h-0.5" style={{ background: `linear-gradient(90deg,${t.strip0},${t.strip1})` }} />
+
+            {student.section && (
+              <div className="pt-3 flex justify-center">
+                <span
+                  className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest"
+                  style={{ background: t.badge, color: t.badgeText }}
+                >
+                  {student.section}
+                </span>
               </div>
             )}
+
+            <div className="flex justify-center py-4">
+              <div className="relative p-2.5 rounded-[16px]" style={{ background: QR_THEMES[theme].qrLight }}>
+                <div ref={darkRef}  style={{ display: theme === "dark"  && darkOk  ? "block" : "none", width: SZ, height: SZ }} />
+                <div ref={lightRef} style={{ display: theme === "light" && lightOk ? "block" : "none", width: SZ, height: SZ }} />
+                {!isOk && (
+                  <div style={{ width: SZ, height: SZ }} className="flex items-center justify-center">
+                    <div
+                      className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+                      style={{ borderColor: t.textAccent, borderTopColor: "transparent" }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="px-4 pb-4 text-center space-y-0.5">
+              <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: t.textPri }}>{studentFullName}</p>
+              <p className="text-[9px] font-bold" style={{ color: t.textSec }}>LRN: {student.lrn}</p>
+            </div>
           </div>
         </div>
 
-        <div className="px-5 pb-5 pt-2">
-          <button onClick={() => handleDownload(theme)} disabled={!isOk}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-[14px] text-[9px] font-black uppercase tracking-widest transition-all disabled:opacity-40 text-white"
-            style={{ background:`linear-gradient(135deg,${t.strip0},${t.strip1})`, boxShadow:"0 4px 20px rgba(29,78,216,0.25)" }}>
-            <Download size={12} /> Download {theme === "dark" ? "Dark" : "Light"}
+        <div className="px-4 pb-5">
+          <button
+            type="button"
+            disabled={!isOk || saving}
+            onClick={() => handleDownload(theme)}
+            className="w-full flex items-center justify-center gap-2 rounded-[16px] text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 text-white touch-manipulation"
+            style={{
+              background: `linear-gradient(135deg,${t.strip0},${t.strip1})`,
+              boxShadow: "0 6px 24px rgba(29,78,216,0.35)",
+              minHeight: 48,
+              padding: "12px 16px",
+            }}
+          >
+            <Download size={13} />
+            {saving ? "Saving…" : `Download ${theme === "dark" ? "Dark" : "Light"}`}
           </button>
         </div>
       </div>
@@ -312,8 +309,6 @@ const ATT_TAB_KEY = "att_active_tab"
 
 export function AttendanceTab({ schedules, students, dm, session, schoolYear }: Props) {
   const realDayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
-  const realTodayName = realDayNames[new Date().getDay()]
-  const todaySchedules = schedules.filter(s => s.day === realTodayName)
 
   const [tab, setTab] = useState<"scanner" | "calendar">(() => {
     try { return (sessionStorage.getItem(ATT_TAB_KEY) as "scanner" | "calendar") || "scanner" } catch { return "scanner" }
@@ -322,6 +317,34 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     try { sessionStorage.setItem(ATT_TAB_KEY, t) } catch {}
     setTab(t)
   }
+  /** Date used for scanner attendance rows — set from calendar when opening Scanner, else today. */
+  const [scannerAttendanceDate, setScannerAttendanceDate] = useState<string>(() => localDateStr())
+  const [beepOn, setBeepOn] = useState(true)
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem("teacher_att_beep")
+      if (v !== null) setBeepOn(v === "true")
+    } catch { /* ignore */ }
+  }, [])
+  const setBeepPersist = (on: boolean) => {
+    setBeepOn(on)
+    try { localStorage.setItem("teacher_att_beep", String(on)) } catch { /* ignore */ }
+  }
+
+  const scannerDayName = useMemo(() => {
+    const d = new Date(scannerAttendanceDate + "T12:00:00")
+    return realDayNames[d.getDay()]
+  }, [scannerAttendanceDate])
+  const scannerSchedules = useMemo(
+    () => schedules.filter(s => s.day === scannerDayName),
+    [schedules, scannerDayName]
+  )
+  const isScannerLive = scannerAttendanceDate === todayStr()
+
+  const scannerDateBanner = useMemo(() => {
+    const d = new Date(scannerAttendanceDate + "T12:00:00")
+    return d.toLocaleDateString("en-US", { month: "long", day: "numeric" }).toUpperCase()
+  }, [scannerAttendanceDate])
 
   const [period, setPeriod]       = useState<ScheduleRow | null>(null)
   const [scanning, setScanning]   = useState(false)
@@ -361,6 +384,11 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
   const [calDayData, setCalDayData]       = useState<Record<string, { present: number; total: number; excused: number; bySubject: Record<string, { present: number; total: number }> }>>({})
   const [calLoading, setCalLoading]       = useState(false)
   const [selectedDay, setSelectedDay]     = useState<string | null>(null)
+
+  const goToScannerTab = () => {
+    setTabPersist("scanner")
+    setScannerAttendanceDate(selectedDay ?? localDateStr())
+  }
   const [dayRecords, setDayRecords]       = useState<AttRecord[]>([])
   const [dayLoading, setDayLoading]       = useState(false)
   const [dayView, setDayView]             = useState<"by-subject" | "by-student">("by-subject")
@@ -394,7 +422,12 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
   useEffect(() => { graceMinsRef.current = graceMins }, [graceMins])
 
   useEffect(() => {
-    if (!period || !scanning) return
+    if (!period) return
+    if (!scannerSchedules.some(s => s.id === period.id)) setPeriod(null)
+  }, [scannerAttendanceDate, scannerSchedules, period])
+
+  useEffect(() => {
+    if (!period || !scanning || !isScannerLive) return
     const check = () => {
       if (forcedOpen) return
       const now  = new Date()
@@ -413,7 +446,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     check()
     const timer = setInterval(check, 30_000)
     return () => clearInterval(timer)
-  }, [period, scanning, forcedOpen]) // eslint-disable-line
+  }, [period, scanning, forcedOpen, isScannerLive]) // eslint-disable-line
 
   useEffect(() => { setForcedOpen(false); setScannerClosed(false) }, [period])
 
@@ -455,20 +488,21 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
   const loadAttendance = useCallback(async (p: ScheduleRow) => {
     const mine = students.filter(s => s.section === p.section)
     if (!mine.length) return
+    const dateStr = scannerAttendanceDate
     const { data } = await supabase
       .from("attendance").select("*")
       .in("student_id", mine.map(s => s.id))
-      .eq("date", todayStr()).eq("subject", p.subject)
+      .eq("date", dateStr).eq("subject", p.subject)
     if (data) {
       const scrollPos = scannerListRef.current?.scrollTop ?? 0
       const map: Record<string, AttRecord> = {}
       data.forEach((r: any) => { map[r.student_id] = r })
-      getQueue().filter(q => q.record.subject === p.subject && q.record.date === todayStr())
+      getQueue().filter(q => q.record.subject === p.subject && q.record.date === dateStr)
         .forEach(q => { map[q.record.student_id] = q.record })
       setAttendance(map)
       requestAnimationFrame(() => { if (scannerListRef.current) scannerListRef.current.scrollTop = scrollPos })
     }
-  }, [students])
+  }, [students, scannerAttendanceDate])
 
   useEffect(() => { if (period) loadAttendance(period) }, [period, loadAttendance])
 
@@ -481,12 +515,12 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
         const { data } = await supabase
           .from("attendance").select("*")
           .in("student_id", mine.map(s => s.id))
-          .eq("date", todayStr()).eq("subject", period.subject)
+          .eq("date", scannerAttendanceDate).eq("subject", period.subject)
         if (data) {
           const scrollPos = scannerListRef.current?.scrollTop ?? 0
           const map: Record<string, AttRecord> = {}
           data.forEach((r: any) => { map[r.student_id] = r })
-          getQueue().filter(q => q.record.subject === period.subject && q.record.date === todayStr())
+          getQueue().filter(q => q.record.subject === period.subject && q.record.date === scannerAttendanceDate)
             .forEach(q => { map[q.record.student_id] = q.record })
           setAttendance(map)
           requestAnimationFrame(() => { if (scannerListRef.current) scannerListRef.current.scrollTop = scrollPos })
@@ -494,7 +528,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
       })
       .subscribe()
     return () => { supabase.removeChannel(ch) }
-  }, [period, students])
+  }, [period, students, scannerAttendanceDate])
 
   const startCam = async (force = false) => {
     if (force) setForcedOpen(true)
@@ -629,6 +663,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
 
     // ── FIX: Use graceMinsRef.current so we always get the latest value ──
     const autoStatus: AttStatus = (() => {
+      if (!isScannerLive) return "Present"
       const gm = graceMinsRef.current
       if (!gm) return "Present"
       const now = new Date()
@@ -642,13 +677,19 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
       student_id: student.id, lrn: student.lrn,
       student_name: `${student.last_name}, ${student.first_name}`,
       section: period.section, strand: student.strand || "",
-      subject: period.subject, date: todayStr(), time: nowTime(),
+      subject: period.subject, date: scannerAttendanceDate, time: nowTime(),
       status: autoStatus, school_year: schoolYear,
       notes: "QR_SCAN",
     }
 
     setAttendance(prev => ({ ...prev, [student.id]: rec }))
     setLastScan({ name: `${student.first_name} ${student.last_name}`, ok: true })
+    if (beepOn) {
+      try {
+        const a = new Audio("/beep.mp3")
+        void a.play().catch(() => {})
+      } catch { /* ignore */ }
+    }
 
     if (!isOnline) {
       upsertQueue(rec, "insert"); setPending(getQueue())
@@ -683,7 +724,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
           student_id: studentId, lrn: student.lrn,
           student_name: `${student.last_name}, ${student.first_name}`,
           section: period.section, strand: student.strand || "",
-          subject: period.subject, date: todayStr(), time: nowTime(),
+          subject: period.subject, date: scannerAttendanceDate, time: nowTime(),
           status: newStatus, school_year: schoolYear,
           notes: "MANUAL",
         }
@@ -697,7 +738,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
       const scrollPos = scannerListRef.current?.scrollTop ?? 0
       if (existing) {
         await supabase.from("attendance").update({ status: newStatus })
-          .eq("student_id", studentId).eq("date", todayStr()).eq("subject", period.subject)
+          .eq("student_id", studentId).eq("date", scannerAttendanceDate).eq("subject", period.subject)
       } else {
         const { data } = await supabase.from("attendance").insert(rec).select().single()
         if (data) setAttendance(prev => ({ ...prev, [studentId]: { ...rec, id: data.id } }))
@@ -931,7 +972,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
       .then(({ data }) => setCalDayExcuses(data || []))
   }, [selectedDay, calSection, students])
 
-  const isPossiblyLate = period ? (() => {
+  const isPossiblyLate = period && isScannerLive ? (() => {
     const now = new Date()
     const [sh, sm] = period.start_time.slice(0, 5).split(":").map(Number)
     return (now.getHours() * 60 + now.getMinutes()) - (sh * 60 + sm) >= 15
@@ -1044,7 +1085,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
       {/* (video is always mounted via CSS hide so stream survives tab switches)  */}
 
       <div className={`flex gap-1.5 p-1.5 rounded-2xl border w-fit ${dm ? "bg-slate-800/30 border-slate-700/50" : "bg-slate-100 border-slate-200"}`}>
-        <button className={tabBtn(tab === "scanner")} onClick={() => setTabPersist("scanner")}>
+        <button type="button" className={tabBtn(tab === "scanner")} onClick={goToScannerTab}>
           <QrCode size={10} className="inline mr-1" />Scanner
         </button>
         <button className={tabBtn(tab === "calendar")} onClick={() => setTabPersist("calendar")}>
@@ -1053,11 +1094,29 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
       </div>
 
       <div style={{ display: tab === "scanner" ? "contents" : "none" }}>
+          {!isScannerLive && (
+            <div className={`rounded-2xl border px-4 py-3 flex flex-wrap items-center gap-2 ${dm ? "bg-red-500/10 border-red-500/25" : "bg-red-50 border-red-200"}`}>
+              <p className={`text-[10px] font-bold ${dm ? "text-slate-300" : "text-slate-700"}`}>
+                Recording attendance for a selected calendar date (not live today). Same scanner and roster as that day&apos;s schedule.
+              </p>
+              <span className="text-[10px] font-black tracking-wide text-red-600 dark:text-red-400">
+                ({scannerDateBanner})
+              </span>
+            </div>
+          )}
+
           <div className={`rounded-2xl md:rounded-3xl border p-5 ${card}`}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>Today's Periods</p>
-                <p className={`text-xs font-bold mt-0.5 ${head}`}>{realTodayName}</p>
+                <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>
+                  {isScannerLive ? "Today's Periods" : "Periods for this day"}
+                </p>
+                <p className={`text-xs font-bold mt-0.5 ${head}`}>
+                  {scannerDayName}
+                  {!isScannerLive && (
+                    <span className="ml-2 text-[10px] font-black text-red-600 dark:text-red-400">({scannerDateBanner})</span>
+                  )}
+                </p>
               </div>
               {isPossiblyLate && period && (
                 <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[9px] font-black uppercase
@@ -1067,14 +1126,14 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
               )}
             </div>
 
-            {todaySchedules.length === 0 ? (
+            {scannerSchedules.length === 0 ? (
               <div className="py-8 text-center">
                 <BookOpen size={28} className={`mx-auto mb-2 ${dm ? "text-slate-700" : "text-slate-300"}`} />
-                <p className={`text-xs ${sub}`}>No classes today</p>
+                <p className={`text-xs ${sub}`}>No classes on {scannerDayName}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {todaySchedules.sort((a, b) => a.start_time.localeCompare(b.start_time)).map(p => {
+                {scannerSchedules.sort((a, b) => a.start_time.localeCompare(b.start_time)).map(p => {
                   const active = period?.id === p.id
                   const cnt = students.filter(s => s.section === p.section).length
                   const scanned = active ? Object.keys(attendance).length : 0
@@ -1100,6 +1159,9 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                   <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>QR Scanner</p>
                   <p className={`text-sm font-black mt-0.5 ${head}`}>{period.subject}</p>
                   <p className={`text-[10px] ${sub}`}>{period.section} · {fmt(period.start_time)}</p>
+                  {!isScannerLive && (
+                    <p className="text-[10px] font-black text-red-600 dark:text-red-400 mt-1">Selected date · ({scannerDateBanner})</p>
+                  )}
                 </div>
                 <button onClick={scanning ? stopCam : () => startCam(scannerClosed)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all
@@ -1183,6 +1245,15 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                   )}
                 </div>
 
+                <div className={`flex items-center justify-between gap-3 px-1 ${dm ? "text-slate-200" : "text-slate-800"}`}>
+                  <span className="text-[11px] font-bold">Beep</span>
+                  <Switch
+                    checked={beepOn}
+                    onCheckedChange={setBeepPersist}
+                    className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-slate-400"
+                  />
+                </div>
+
                 {sectionStudents.length > 0 && (
                   <div className="grid grid-cols-5 gap-2">
                     {[
@@ -1219,6 +1290,9 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                   <div>
                     <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>Attendance List</p>
                     <p className={`text-xs font-black mt-0.5 ${head}`}>{period.section} · {sectionStudents.length} students</p>
+                    {!isScannerLive && (
+                      <p className="text-[10px] font-black text-red-600 dark:text-red-400 mt-0.5">({scannerDateBanner})</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {attLoading && <Loader2 size={14} className="animate-spin text-blue-400" />}
@@ -1231,7 +1305,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                           student_id: s.id, lrn: s.lrn,
                           student_name: `${s.last_name}, ${s.first_name}`,
                           section: period.section, strand: s.strand || "",
-                          subject: period.subject, date: todayStr(), time: now,
+                          subject: period.subject, date: scannerAttendanceDate, time: now,
                           status: "Present" as AttStatus, school_year: schoolYear,
                           notes: "MANUAL",
                         }))
@@ -1543,6 +1617,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
 
                     const isOpenable = !isFuture && !isSpecial && dayClasses.length > 0
                     const showClassChips = !hasData && isOpenable && !isSpecial
+                    const canClickDay = !isSpecial && (isOpenable || hasData || dateStr === selectedDay)
 
                     const cellClass = isSpecial
                       ? (dm
@@ -1564,8 +1639,17 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                     return (
                       <div key={day} className="relative group">
                         <button
-                          onClick={() => { if (isOpenable || hasData) loadDay(dateStr) }}
-                          disabled={(!isOpenable && !hasData) || isSpecial}
+                          type="button"
+                          onClick={() => {
+                            if (!canClickDay) return
+                            if (dateStr === selectedDay) {
+                              setSelectedDay(null)
+                              setDayRecords([])
+                              return
+                            }
+                            loadDay(dateStr)
+                          }}
+                          disabled={!canClickDay}
                           title={firstEventTitle}
                           className={`relative w-full aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all text-[9px] font-black overflow-hidden
                             ${isSelected ? "ring-2 ring-blue-500 ring-offset-1 " + (dm ? "ring-offset-slate-900" : "ring-offset-white") : ""}
@@ -2250,7 +2334,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
       `}</style>
 
       {qrViewStudent && (
-        <QRViewerModal student={qrViewStudent} dm={dm} onClose={() => setQrViewStudent(null)} />
+        <QRViewerModal student={qrViewStudent} onClose={() => setQrViewStudent(null)} />
       )}
     </div>
   )

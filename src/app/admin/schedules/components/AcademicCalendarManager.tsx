@@ -99,8 +99,8 @@ function EventFormModal({
   const [type, setType]         = useState<EventType>(editing?.event_type || "event")
   const [saving, setSaving]     = useState(false)
 
-  const bdr  = isDarkMode ? "rgba(71,85,105,0.5)" : "rgba(226,232,240,1)"
-  const surf = isDarkMode ? "rgba(15,23,42,0.95)" : "#fff"
+  const bdr  = isDarkMode ? "rgba(51,65,85,0.5)" : "rgba(226,232,240,0.8)"
+  const surf = isDarkMode ? "rgba(15,23,42,0.96)" : "rgba(255,255,255,0.97)"
   const txt  = isDarkMode ? "#f8fafc" : "#0f172a"
   const inp  = isDarkMode
     ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500"
@@ -142,8 +142,16 @@ function EventFormModal({
   const divB    = isDarkMode ? "border-slate-700" : "border-slate-100"
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }} onClick={onClose}>
-      <div className={`rounded-3xl border w-full max-w-md shadow-2xl ${modalBg}`} onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+      onClick={onClose}>
+      <div className={`rounded-[20px] border w-full max-w-md overflow-hidden ${modalBg}`}
+        style={{
+          boxShadow: isDarkMode
+            ? "0 32px 80px -12px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.04)"
+            : "0 32px 80px -12px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.8)",
+        }}
+        onClick={e => e.stopPropagation()}>
         <div className={`px-5 py-4 flex items-center justify-between border-b ${divB}`}>
           <div>
             <p className={`text-[8px] font-black uppercase tracking-widest ${lbl}`}>{editing ? "Edit" : "New"} Calendar Event</p>
@@ -211,7 +219,8 @@ function EventFormModal({
             </button>
             <button onClick={save} disabled={saving || !title.trim()}
               className={`flex-1 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider text-white disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5
-                ${TYPE_COLORS[type].hex === "#ef4444" ? "bg-red-500 hover:bg-red-600" : TYPE_COLORS[type].hex === "#f59e0b" ? "bg-amber-500 hover:bg-amber-600" : "bg-blue-600 hover:bg-blue-700"}`}>
+                ${TYPE_COLORS[type].hex === "#ef4444" ? "bg-red-500 hover:bg-red-600" : TYPE_COLORS[type].hex === "#f59e0b" ? "bg-amber-500 hover:bg-amber-600" : "bg-blue-600 hover:bg-blue-700"}`}
+              style={{ boxShadow: saving ? "none" : "0 4px 12px -2px rgba(37,99,235,0.3)" }}>
               {saving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
               {editing ? "Update" : "Create"}
             </button>
@@ -242,7 +251,8 @@ export function AcademicCalendarManager({ isDarkMode, surf, bdr, txt, muted, sch
   const [showHols, setShowHols]       = useState(true)
 
   const dm = isDarkMode
-  const card  = dm ? "bg-slate-900/60 border-slate-700/50" : "bg-white border-slate-200"
+  const cardBg   = dm ? "rgba(15,23,42,0.6)" : "rgba(255,255,255,0.8)"
+  const cardBdr  = dm ? "rgba(51,65,85,0.5)" : "rgba(226,232,240,0.7)"
   const sub   = dm ? "text-slate-400" : "text-slate-500"
   const head  = dm ? "text-white" : "text-slate-900"
   const divB  = dm ? "border-slate-700/40" : "border-slate-100"
@@ -332,12 +342,26 @@ export function AcademicCalendarManager({ isDarkMode, surf, bdr, txt, muted, sch
 
   const selectedCountry = COUNTRIES.find(c => c.code === country)
 
+  const cardShadow = dm
+    ? "0 4px 24px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)"
+    : "0 4px 24px -4px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7)"
+
   return (
-    <div className="space-y-4">
-      <div className="rounded-3xl border overflow-hidden" style={{ background: surf, borderColor: bdr }}>
+    <div className="space-y-4" style={{ animation: "saas-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
+      <style>{`
+        @keyframes saas-fade-up {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      <div className="rounded-[20px] sm:rounded-[24px] border overflow-hidden" style={{ background: cardBg, borderColor: cardBdr, boxShadow: cardShadow }}>
+
+        {/* Top gradient accent */}
+        <div style={{ height: 3, background: "linear-gradient(90deg, #2563eb, #7c3aed, #06b6d4, #2563eb)", backgroundSize: "200% 100%" }} />
 
         {/* Header */}
-        <div className="px-6 py-5 flex flex-col gap-3" style={{ borderBottom: `1px solid ${bdr}` }}>
+        <div className="px-6 py-5 flex flex-col gap-3" style={{ borderBottom: `1px solid ${cardBdr}` }}>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <p style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.2em", color: muted }}>Academic Calendar</p>
@@ -346,27 +370,35 @@ export function AcademicCalendarManager({ isDarkMode, surf, bdr, txt, muted, sch
             <div className="flex items-center gap-2 flex-wrap">
               {(loading || holLoading) && <Loader2 size={13} className="animate-spin text-blue-400" />}
               <button onClick={() => { setEditing(null); setFormOpen(true) }}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-blue-600 text-white text-[9px] font-black uppercase tracking-wider hover:bg-blue-700 transition-colors shadow-md">
+                className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-white text-[9px] font-black uppercase tracking-wider transition-all active:scale-95"
+                style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)", boxShadow: "0 4px 16px -2px rgba(37,99,235,0.4)" }}>
                 <Plus size={11} /> Add Event
               </button>
               <button onClick={() => setShowHols(v => !v)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide border transition-all
                   ${showHols ? (dm ? "bg-red-500/15 border-red-500/30 text-red-400" : "bg-red-50 border-red-200 text-red-600") : ""}`}
-                style={!showHols ? { borderColor: bdr, color: muted } : {}}>
+                style={!showHols ? { borderColor: cardBdr, color: muted } : {}}>
                 <Flag size={10} /> {showHols ? "Holidays ON" : "Holidays OFF"}
               </button>
               {showHols && (
                 <div className="relative">
                   <button onClick={() => setShowPicker(v => !v)}
-                    style={{ borderColor: bdr, background: surf, color: txt }}
+                    style={{ borderColor: cardBdr, background: "transparent", color: txt }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide border transition-all">
                     <Globe size={10} style={{ color: muted }} /> {selectedCountry?.flag} {selectedCountry?.code}
                   </button>
                   {showPicker && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
-                      <div className="absolute right-0 top-full mt-1.5 z-50 rounded-2xl border shadow-xl overflow-hidden w-52"
-                        style={{ background: surf, borderColor: bdr }}>
+                      <div className="absolute right-0 top-full mt-1.5 z-50 rounded-2xl border overflow-hidden w-52"
+                        style={{
+                          background: dm ? "rgba(15,23,42,0.98)" : "rgba(255,255,255,0.98)",
+                          borderColor: cardBdr,
+                          boxShadow: dm
+                            ? "0 16px 40px -8px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)"
+                            : "0 16px 40px -8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)",
+                          backdropFilter: "blur(16px)",
+                        }}>
                         {COUNTRIES.map(c => (
                           <button key={c.code} onClick={() => { setCountry(c.code); setShowPicker(false) }}
                             className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-[10px] font-bold transition-opacity hover:opacity-70
@@ -383,12 +415,26 @@ export function AcademicCalendarManager({ isDarkMode, surf, bdr, txt, muted, sch
                 </div>
               )}
               <button onClick={() => { const d = new Date(year, month - 1); setMonth(d.getMonth()); setYear(d.getFullYear()); setSelected(null) }}
-                style={{ width: 32, height: 32, borderRadius: 12, border: `1.5px solid ${bdr}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                style={{
+                  width: 32, height: 32, borderRadius: 12,
+                  border: `1.5px solid ${cardBdr}`, background: "transparent", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "border-color 0.2s",
+                }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = "rgba(59,130,246,0.4)"}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = cardBdr}>
                 <ChevronLeft size={14} style={{ color: muted }} />
               </button>
               <span style={{ fontSize: 11, fontWeight: 800, minWidth: 100, textAlign: "center", color: txt }}>{MONTH_NAMES[month]} {year}</span>
               <button onClick={() => { const d = new Date(year, month + 1); setMonth(d.getMonth()); setYear(d.getFullYear()); setSelected(null) }}
-                style={{ width: 32, height: 32, borderRadius: 12, border: `1.5px solid ${bdr}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                style={{
+                  width: 32, height: 32, borderRadius: 12,
+                  border: `1.5px solid ${cardBdr}`, background: "transparent", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "border-color 0.2s",
+                }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = "rgba(59,130,246,0.4)"}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = cardBdr}>
                 <ChevronRight size={14} style={{ color: muted }} />
               </button>
             </div>
@@ -438,9 +484,9 @@ export function AcademicCalendarManager({ isDarkMode, surf, bdr, txt, muted, sch
               const hasHol    = rawEvs.some(e => e.event_type === "holiday")
               const hasSusp   = rawEvs.some(e => e.event_type === "suspension")
 
-              const bg = hasHol ? (dm ? "rgba(239,68,68,0.2)" : "#fee2e2")
-                : hasSusp   ? (dm ? "rgba(249,115,22,0.2)" : "#ffedd5")
-                : dayEvs.length > 0 ? (dm ? "rgba(59,130,246,0.1)" : "#eff6ff")
+              const bg = hasHol ? (dm ? "rgba(239,68,68,0.15)" : "#fee2e2")
+                : hasSusp   ? (dm ? "rgba(249,115,22,0.15)" : "#ffedd5")
+                : dayEvs.length > 0 ? (dm ? "rgba(59,130,246,0.08)" : "#eff6ff")
                 : isSunday ? (dm ? "rgba(15,23,42,0.5)" : "#f8fafc")
                 : "transparent"
 
@@ -451,12 +497,13 @@ export function AcademicCalendarManager({ isDarkMode, surf, bdr, txt, muted, sch
                   style={{
                     minHeight: 52,
                     background: bg,
-                    border: isToday ? "2px solid #3b82f6" : isSel ? "2px solid #3b82f6" : "1.5px solid transparent",
+                    border: isToday ? "2px solid #3b82f6" : isSel ? `2px solid ${dm ? "#60a5fa" : "#3b82f6"}` : "1.5px solid transparent",
                     borderRadius: 10, padding: "6px 4px 4px",
                     display: "flex", flexDirection: "column", alignItems: "flex-start",
-                    cursor: "pointer", transition: "opacity 0.15s", overflow: "hidden", width: "100%",
+                    cursor: "pointer", transition: "opacity 0.15s, transform 0.15s", overflow: "hidden", width: "100%",
+                    boxShadow: isToday ? "0 0 0 2px rgba(59,130,246,0.15)" : "none",
                   }}
-                  className="hover:opacity-75"
+                  className="hover:opacity-75 active:scale-95"
                 >
                   <span style={{ fontSize: 11, fontWeight: 800, color: isToday ? "#3b82f6" : isSunday ? (dm ? "#475569" : "#cbd5e1") : txt, lineHeight: 1 }}>
                     {day}
@@ -471,7 +518,10 @@ export function AcademicCalendarManager({ isDarkMode, surf, bdr, txt, muted, sch
                           : e.event_type === "meeting" ? "#a855f7" : "#3b82f6"
                         return (
                           <div key={e.id} style={{ display: "flex", alignItems: "flex-start", gap: 3, width: "100%", minWidth: 0 }}>
-                            <div style={{ width: 5, height: 5, borderRadius: "50%", background: dotColor, flexShrink: 0, marginTop: 2 }} />
+                            <div style={{
+                              width: 5, height: 5, borderRadius: "50%", background: dotColor, flexShrink: 0, marginTop: 2,
+                              boxShadow: `0 0 4px ${dotColor}30`,
+                            }} />
                             <span style={{
                               fontSize: 7, fontWeight: 700, color: dotColor,
                               display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
@@ -508,13 +558,14 @@ export function AcademicCalendarManager({ isDarkMode, surf, bdr, txt, muted, sch
 
         {/* Selected day panel */}
         {selected && (
-          <div style={{ borderTop: `1px solid ${bdr}` }} className="p-5 space-y-2">
+          <div style={{ borderTop: `1px solid ${cardBdr}` }} className="p-5 space-y-2">
             <div className="flex items-center justify-between">
               <p style={{ fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", color: txt }}>
                 {new Date(selected + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
               </p>
               <button onClick={() => { setEditing(null); setFormOpen(true) }}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[8px] font-black uppercase bg-blue-600 text-white hover:bg-blue-700">
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[8px] font-black uppercase text-white transition-all active:scale-95"
+                style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)", boxShadow: "0 2px 8px -2px rgba(37,99,235,0.4)" }}>
                 <Plus size={9} /> Add here
               </button>
             </div>
@@ -555,8 +606,8 @@ export function AcademicCalendarManager({ isDarkMode, surf, bdr, txt, muted, sch
 
       {/* Month event list */}
       {filteredEvents.length > 0 && (
-        <div className={`rounded-3xl border overflow-hidden ${card}`}>
-          <div className={`px-5 py-3 border-b ${divB}`}>
+        <div className="rounded-[20px] sm:rounded-[24px] border overflow-hidden" style={{ background: cardBg, borderColor: cardBdr, boxShadow: cardShadow }}>
+          <div style={{ borderBottom: `1px solid ${cardBdr}` }} className="px-5 py-3">
             <p className={`text-[9px] font-black uppercase tracking-wider ${sub}`}>{MONTH_NAMES[month]} Events ({filteredEvents.length})</p>
           </div>
           <div className={`divide-y ${dm ? "divide-slate-700/30" : "divide-slate-100"}`}>
@@ -596,7 +647,7 @@ export function AcademicCalendarManager({ isDarkMode, surf, bdr, txt, muted, sch
       )}
 
       {filteredEvents.length === 0 && !loading && !holLoading && (
-        <div className={`rounded-3xl border p-10 flex flex-col items-center gap-3 ${card}`}>
+        <div className="rounded-[20px] sm:rounded-[24px] border p-10 flex flex-col items-center gap-3" style={{ background: cardBg, borderColor: cardBdr, boxShadow: cardShadow }}>
           <CalendarDays size={24} className={dm ? "text-slate-700" : "text-slate-300"} />
           <p className={`text-xs ${sub}`}>No events in {MONTH_NAMES[month]} — click "Add Event" to create one</p>
         </div>

@@ -18,10 +18,11 @@
 import { useEffect, useState, useCallback, memo } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { useEnrollmentStore } from "@/store/useEnrollmentStore"
+import { useThemeStore } from "@/store/useThemeStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowRight, ChevronLeft, Users, Phone, Sparkles, ShieldCheck } from "lucide-react"
+import { ArrowRight, ChevronLeft, Users, Phone, Sparkles, ShieldCheck, Globe } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useEnrollmentValidation } from "@/hooks/useEnrollmentValidation"
@@ -30,11 +31,17 @@ import { useEnrollmentValidation } from "@/hooks/useEnrollmentValidation"
 // buildFieldClass — no isDark, uses t-input CSS vars
 // ─────────────────────────────────────────────────────────────────────────────
 function buildFieldClass(opts: { hasError: boolean; filled: boolean }) {
+  const { hasError, filled } = opts
   return cn(
     "min-h-[44px] h-11 md:h-12 rounded-xl border-2",
-    "transition-[border-color,background-color] duration-150",
+    "transition-all duration-300",
     "font-medium outline-none text-sm t-input",
-    opts.hasError ? "error" : opts.filled ? "filled" : ""
+    hasError
+      ? "error shadow-[0_0_20px_rgba(239,68,68,0.15)]"
+      : cn(
+          "focus:shadow-[0_0_20px_rgba(59,130,246,0.2)]",
+          filled ? "filled shadow-sm" : "lg:hover:border-blue-500/30"
+        )
   )
 }
 
@@ -117,6 +124,7 @@ const PhoneInput = memo(function PhoneInput({
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Step3Family() {
+  const { isDark } = useThemeStore()
   const { formData, updateFormData, setStep } = useEnrollmentStore()
   const { isFieldRequired, isFieldEditable }  = useEnrollmentValidation()
 
@@ -124,6 +132,7 @@ export default function Step3Family() {
     register, handleSubmit, setValue, control,
     formState: { errors },
   } = useForm({
+    shouldFocusError: false,
     defaultValues: {
       guardian_first_name:  formData.guardian_first_name  || "",
       guardian_middle_name: formData.guardian_middle_name || "",
@@ -140,8 +149,18 @@ export default function Step3Family() {
 
   const onSubmit = useCallback((data: any) => {
     updateFormData(data); setStep(4)
-    toast.success("Contact Details Submitted", { icon: <Sparkles className="text-blue-400" /> })
+    toast.success("Contact Details Submitted", { icon: <img src="/logo-aclc.png" className="w-5 h-5" alt="" /> })
   }, [updateFormData, setStep])
+
+  const onError = (errors: any) => {
+    const errorKeys = Object.keys(errors); if (errorKeys.length === 0) return
+    const firstError = errorKeys[0]
+    const el = document.getElementById(`${firstError}_container`) || document.getElementsByName(firstError)[0]
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" })
+      toast.error(`Missing or invalid: ${firstError.replace(/_/g, " ")}`, { duration: 4000 })
+    }
+  }
 
   // Title-case, updates native input directly before RHF sync
   const handleNameInput = useCallback((e: React.ChangeEvent<HTMLInputElement>, field: any) => {
@@ -154,32 +173,66 @@ export default function Step3Family() {
   }, [setValue])
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="animate-step-in">
+    <form onSubmit={handleSubmit(onSubmit, onError)} className="animate-step-in">
       <style>{`
         @keyframes stepIn {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes float {
+          0%, 100% { transform: translate3d(-50%, -50%, 0); }
+          50% { transform: translate3d(-50%, calc(-50% - 15px), 0); }
+        }
         .animate-step-in {
           animation: stepIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
           will-change: opacity, transform;
         }
+        .animate-float {
+          animation: float 10s ease-in-out infinite;
+          will-change: transform;
+        }
         @media (prefers-reduced-motion: reduce) { .animate-step-in { animation: none; } }
       `}</style>
+
+      {/* BACKGROUND BRANDING */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className={cn(
+          "absolute top-1/2 left-1/2 w-[clamp(280px,80vw,500px)] aspect-square transition-opacity duration-1000 animate-float",
+          isDark ? "opacity-[0.05] brightness-150" : "opacity-[0.10]"
+        )}>
+          <img src="/logo-aclc.png" alt="" className="w-full h-full object-contain" />
+        </div>
+        <div className={cn(
+          "absolute top-0 right-0 w-1/3 h-1/3 blur-[120px] rounded-full",
+          isDark ? "bg-blue-600/10" : "bg-blue-600/5"
+        )} />
+        <div className={cn(
+          "absolute bottom-0 left-0 w-1/3 h-1/3 blur-[120px] rounded-full",
+          isDark ? "bg-red-600/10" : "bg-red-600/5"
+        )} />
+      </div>
 
       <div className="space-y-6 sm:space-y-8 pb-[140px] min-[480px]:pb-[160px]">
 
         {/* HEADER */}
-        <div className="rounded-2xl sm:rounded-[32px] p-4 sm:p-6 border flex items-center gap-3 sm:gap-5 shadow-2xl relative overflow-hidden t-header-block">
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
-          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
-            <Users className="text-white w-6 h-6 sm:w-7 sm:h-7 drop-shadow-[0_1px_4px_rgba(255,255,255,0.3)]" />
+        <div className={cn(
+          "rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border flex items-center gap-4 sm:gap-6 shadow-2xl relative overflow-hidden",
+          isDark ? "bg-blue-600/10 border-white/10 text-white" : "bg-white/95 border-blue-100 text-slate-900"
+        )}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-blue-400 to-red-500" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl sm:rounded-[24px] flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform duration-500">
+            <Users className="text-white w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_2px_10px_rgba(255,255,255,0.4)]" />
           </div>
           <div className="min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-[0.3em] sm:tracking-[0.4em] text-blue-400 mb-0.5 sm:mb-1">Step 03</p>
-            <h2 className="text-base sm:text-xl md:text-2xl font-bold tracking-tight uppercase italic leading-tight t-text">
-              Family & Contacts
-            </h2>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 rounded-md bg-blue-600/20 text-blue-400 text-[8px] font-black uppercase tracking-[0.2em] border border-blue-500/20">Step 03</span>
+              <div className="h-px w-8 bg-blue-500/20" />
+              <Sparkles size={10} className="text-blue-400 animate-pulse" />
+            </div>
+            <h2 className={cn(
+              "text-lg sm:text-2xl md:text-3xl font-black tracking-tighter uppercase italic leading-none",
+              isDark ? "text-white" : "text-slate-900"
+            )}>Family & <span className="text-blue-600">Contacts</span></h2>
           </div>
         </div>
 
@@ -193,7 +246,7 @@ export default function Step3Family() {
           </Label>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {(["guardian_first_name", "guardian_middle_name", "guardian_last_name"] as const).map(field => (
-              <div key={field} className="space-y-1">
+              <div key={field} className="space-y-1" id={`${field}_container`}>
                 <div className="flex justify-between items-center px-1">
                   <span className="text-[9px] font-bold uppercase tracking-widest text-slate-600">
                     {field.split("_")[1]} name
@@ -226,7 +279,7 @@ export default function Step3Family() {
             { field: "guardian_phone" as const, label: "Guardian Contact No." },
             { field: "phone" as const,          label: "Student No." },
           ]).map(({ field, label }) => (
-            <div key={field} className="space-y-2">
+            <div key={field} className="space-y-2" id={`${field}_container`}>
               <Label className="t-text-muted font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2 ml-2">
                 <Phone size={12} className="text-blue-700" />
                 {label} {isFieldRequired(field as any) && <span className="text-red-500">*</span>}
@@ -262,30 +315,27 @@ export default function Step3Family() {
       </div>
 
       {/* STICKY BOTTOM BAR */}
-      <div className="sticky bottom-0 z-20 left-0 right-0 pt-4 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12 px-4 sm:px-6 md:px-8 lg:px-12 mt-6 backdrop-blur-md border-t flex flex-col gap-3 t-sticky">
+      <div className="sticky bottom-0 z-20 left-0 right-0 pt-8 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12 px-4 sm:px-6 md:px-8 lg:px-12 mt-6 flex flex-col gap-3 bg-transparent">
         <div style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }} className="flex flex-col gap-3">
           <Button
             type="submit"
             className={cn(
-              "w-full min-h-[48px] sm:min-h-[52px] md:h-14 rounded-2xl sm:rounded-[28px]",
+              "w-full min-h-[52px] md:h-16 rounded-[28px]",
               "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-              "shadow-[0_20px_50px_rgba(59,130,246,0.4)]",
-              "transition-[background-color,color,box-shadow] duration-300 active:scale-[0.98]",
-              "flex items-center justify-center gap-3 sm:gap-4 group touch-manipulation"
+              "shadow-[0_20px_50px_rgba(59,130,246,0.3)] lg:hover:shadow-blue-600/20",
+              "transition-all duration-500 active:scale-[0.98]",
+              "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
             )}
           >
-            <span className="font-bold uppercase text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.4em] text-white lg:group-hover:text-blue-600">
+            <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
               Proceed To Step 04
             </span>
-            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-[background-color]">
-              <ArrowRight size={18} className="sm:w-5 sm:h-5 lg:group-hover:translate-x-1 transition-transform" />
+            <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
+              <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
             </div>
           </Button>
-          <button
-            type="button"
-            onClick={() => setStep(2)}
-            className="min-h-[44px] w-full rounded-xl t-text-muted font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 transition-colors py-3 touch-manipulation active:scale-[0.98]"
-          >
+          <button type="button" onClick={() => setStep(2)}
+            className="min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 transition-colors py-3 touch-manipulation active:scale-[0.98]">
             <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
           </button>
         </div>

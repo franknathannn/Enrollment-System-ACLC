@@ -12,17 +12,7 @@ import type { Teacher }        from "./types"
 import { supabase } from "@/lib/supabase/client"
 import { AcademicCalendarTab } from "@/app/teacher/dashboard/components/AcademicCalendarTab"
 
-function useDarkMode() {
-  const [dm, setDm] = useState(() => typeof document !== "undefined" && document.documentElement.classList.contains("dark"))
-  useEffect(() => {
-    const check = () => setDm(document.documentElement.classList.contains("dark"))
-    check()
-    const obs = new MutationObserver(check)
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
-    return () => obs.disconnect()
-  }, [])
-  return dm
-}
+import { useTheme } from "@/hooks/useTheme"
 
 /** Renders teacher avatar — uses avatar_url from Supabase storage if available */
 function Avatar({ name, url, size = 36 }: { name: string; url?: string | null; size?: number }) {
@@ -171,7 +161,7 @@ function AdminAllSectionsReport({ isDarkMode, schoolYear }: { isDarkMode: boolea
 }
 
 export default function TeachersPage() {
-  const dm = useDarkMode()
+  const { isDarkMode: dm, mounted } = useTheme()
   const {
     teachers, filtered, announcements, loading, search, setSearch,
     createTeacher, updateTeacher, deleteTeacher, toggleActive,
@@ -192,7 +182,7 @@ export default function TeachersPage() {
   }, [])
 
   // Pagination
-  const TEACHERS_PER_PAGE = 10
+  const TEACHERS_PER_PAGE = 5
   const [teachersPage, setTeachersPage] = useState(1)
   // Reset to page 1 when search changes
   const handleSearchChange = (v: string) => { setSearch(v); setTeachersPage(1) }
@@ -238,8 +228,8 @@ export default function TeachersPage() {
     inactive: teachers.filter(t => !t.is_active).length,
   }
 
-  if (loading && teachers.length === 0) return (
-    <div className={`h-screen flex flex-col items-center justify-center gap-6 ${page}`}>
+  if (!mounted || (loading && teachers.length === 0)) return (
+    <div className={`h-screen flex flex-col items-center justify-center gap-6 ${dm ? "bg-slate-950" : "bg-slate-50"}`}>
       <div className="relative flex items-center justify-center">
         <span className="absolute w-24 h-24 rounded-full border-2 border-blue-500/15 animate-ping" />
         <span className="absolute w-16 h-16 rounded-full border-2 border-blue-400/20 animate-ping" style={{ animationDelay: "0.15s" }} />
@@ -344,8 +334,35 @@ export default function TeachersPage() {
               <input value={search} onChange={e => handleSearchChange(e.target.value)} placeholder="Search teachers…" className={input} />
             </div>
 
-            <div className={`rounded-2xl sm:rounded-3xl border overflow-hidden ${surface} ${border} relative`}>
-              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
+            <div className={`rounded-2xl sm:rounded-[32px] border overflow-hidden ${surface} ${border} relative shadow-xl shadow-blue-500/5`}>
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-400" />
+              
+              {/* Top Pagination Switcher */}
+              {totalTeacherPages > 1 && (
+                <div className={`flex items-center justify-between px-6 py-4 border-b bg-slate-500/5`} style={{ borderColor: divB }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                    <span className={`text-[9px] font-black uppercase tracking-widest ${sub}`}>
+                      Page {teachersPage} of {totalTeacherPages}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setTeachersPage(p => Math.max(1, p - 1))}
+                      disabled={teachersPage <= 1}
+                      className={`h-8 px-3 rounded-xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30 border
+                        ${dm ? "bg-slate-800 border-slate-750 hover:bg-slate-700 text-slate-300" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-600"}`}
+                    >Prev</button>
+                    <button
+                      onClick={() => setTeachersPage(p => Math.min(totalTeacherPages, p + 1))}
+                      disabled={teachersPage >= totalTeacherPages}
+                      className={`h-8 px-3 rounded-xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30 border
+                        ${dm ? "bg-slate-800 border-slate-750 hover:bg-slate-700 text-slate-300" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-600"}`}
+                    >Next</button>
+                  </div>
+                </div>
+              )}
+
               {/* Table header — desktop only */}
               <div
                 className={`hidden md:grid gap-4 px-6 py-3 border-b text-[9px] font-black uppercase tracking-widest mt-[3px] ${border} ${sub}`}
@@ -455,18 +472,18 @@ export default function TeachersPage() {
                 ))}
               </div>
 
-              {/* Teachers Pagination */}
+              {/* Teachers Pagination — Bottom */}
               {totalTeacherPages > 1 && (
-                <div className={`flex items-center justify-between px-6 py-3 border-t`} style={{ borderColor: divB }}>
+                <div className={`flex items-center justify-between px-6 py-5 border-t bg-slate-500/5`} style={{ borderColor: divB }}>
                   <span className={`text-[9px] font-black uppercase tracking-widest ${sub}`}>
-                    {filtered.length} teacher{filtered.length !== 1 ? "s" : ""} · Page {teachersPage} of {totalTeacherPages}
+                    {filtered.length} teacher{filtered.length !== 1 ? "s" : ""} · Overall count
                   </span>
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => setTeachersPage(p => Math.max(1, p - 1))}
                       disabled={teachersPage <= 1}
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black transition-all disabled:opacity-30
-                        ${dm ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-100 hover:bg-slate-200 text-slate-600"}`}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm
+                        ${dm ? "bg-slate-800 border-slate-750 hover:bg-slate-700 text-slate-300" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-600"}`}
                     >‹</button>
                     {Array.from({ length: totalTeacherPages }, (_, i) => i + 1)
                       .filter(p => p === 1 || p === totalTeacherPages || Math.abs(p - teachersPage) <= 1)
@@ -480,18 +497,18 @@ export default function TeachersPage() {
                       ) : (
                         <button key={p}
                           onClick={() => setTeachersPage(p as number)}
-                          className={`w-8 h-8 rounded-xl text-[10px] font-black transition-all
+                          className={`w-10 h-10 rounded-xl text-[10px] font-black transition-all border shadow-sm
                             ${teachersPage === p
-                              ? "bg-blue-600 text-white shadow-md"
-                              : dm ? "bg-slate-800 hover:bg-slate-700 text-slate-400" : "bg-slate-100 hover:bg-slate-200 text-slate-500"
+                              ? "bg-blue-600 border-blue-600 text-white shadow-blue-500/20"
+                              : dm ? "bg-slate-800 border-slate-750 hover:bg-slate-700 text-slate-400" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-500"
                             }`}
                         >{p}</button>
                       ))}
                     <button
                       onClick={() => setTeachersPage(p => Math.min(totalTeacherPages, p + 1))}
                       disabled={teachersPage >= totalTeacherPages}
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black transition-all disabled:opacity-30
-                        ${dm ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-100 hover:bg-slate-200 text-slate-600"}`}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm
+                        ${dm ? "bg-slate-800 border-slate-750 hover:bg-slate-700 text-slate-300" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-600"}`}
                     >›</button>
                   </div>
                 </div>

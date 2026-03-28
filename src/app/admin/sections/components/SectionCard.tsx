@@ -1,6 +1,4 @@
 import { memo } from "react"
-import { ThemedText } from "@/components/ThemedText"
-import { Badge } from "@/components/ui/badge"
 import { Layers, Activity, Users } from "lucide-react"
 
 export const SectionCard = memo(function SectionCard({ section, isSelected, isDarkMode, config }: any) {
@@ -23,58 +21,62 @@ export const SectionCard = memo(function SectionCard({ section, isSelected, isDa
     return '50%';                       
   };
 
-  // 🎨 MOBILE-OPTIMIZED THEME ENGINE
+  // 🎨 Desktop (sm+): rich cards · Mobile: clean SaaS-style surfaces
   const theme = {
     surface: isDarkMode ? 'bg-slate-900/70' : 'bg-white',
     border: isDarkMode ? 'border-white/10' : 'border-slate-200',
-    inner: isDarkMode ? 'bg-black/40' : 'bg-slate-50',
     textMain: isDarkMode ? 'text-white' : 'text-slate-900',
     textSub: isDarkMode ? 'text-slate-400' : 'text-slate-500',
     track: isDarkMode ? 'bg-slate-950/50' : 'bg-slate-200', 
     shadow: isDarkMode ? 'shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)]' : 'shadow-lg shadow-slate-200/50',
     line: isDarkMode ? 'bg-white' : 'bg-slate-900',
-    hover: isDarkMode ? 'active:bg-slate-800/60' : 'active:bg-slate-100'
   };
+
+  const smSurface = isDarkMode
+    ? "sm:bg-slate-900/70 sm:border-white/10 sm:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)]"
+    : "sm:bg-white sm:border-slate-200 sm:shadow-lg sm:shadow-slate-200/50"
 
   return (
     <div
       className={`
         relative overflow-hidden h-full w-full
-        rounded-2xl sm:rounded-[28px]
-        border transition-all duration-300
-        ${theme.surface} ${theme.border} ${theme.shadow}
-        ${isSelected ? `ring-2 ring-offset-1 ${isICT ? 'ring-blue-500/70' : 'ring-orange-500/70'}` : ''}
+        max-sm:rounded-xl max-sm:border max-sm:border-slate-200/80 max-sm:bg-white max-sm:shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_rgba(15,23,42,0.06)]
+        dark:max-sm:bg-slate-950 dark:max-sm:border-slate-800/80 dark:max-sm:shadow-none
+        sm:rounded-[28px] sm:border transition-all duration-300
+        ${smSurface}
+        ${isSelected ? `ring-2 ring-offset-1 max-sm:ring-offset-white dark:max-sm:ring-offset-slate-950 ${isICT ? 'ring-blue-500/70' : 'ring-orange-500/70'}` : ''}
         touch-manipulation
       `}
       style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
     >
-      {/* Top accent strip — strand-colored */}
-      <div className={`absolute top-0 left-0 right-0 h-[3px] z-10 ${
-        isICT ? 'bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400'
-              : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400'
+      {/* Top accent — SaaS: slim solid · Desktop: gradient strip */}
+      <div className={`absolute top-0 left-0 right-0 z-10 max-sm:h-0.5 sm:h-[3px] ${
+        isICT
+          ? 'max-sm:bg-blue-600 sm:bg-gradient-to-r sm:from-blue-500 sm:via-violet-500 sm:to-cyan-400'
+          : 'max-sm:bg-orange-500 sm:bg-gradient-to-r sm:from-orange-500 sm:via-amber-500 sm:to-yellow-400'
       }`} />
 
-      {/* Ambient strand glow bg */}
-      <div className={`absolute inset-0 pointer-events-none ${
+      {/* Ambient strand glow — desktop only */}
+      <div className={`hidden sm:block absolute inset-0 pointer-events-none ${
         isICT ? 'bg-gradient-to-br from-blue-500/[0.04] via-transparent to-transparent'
               : 'bg-gradient-to-br from-orange-500/[0.04] via-transparent to-transparent'
       }`} />
 
       {/* ── HERO HEADER ──────────────────────────────────────── */}
-      <div className="flex items-start justify-between px-4 pt-6 pb-3">
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Strand pill icon */}
-          <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center font-black text-[10px] tracking-widest text-white ${
-            isICT ? 'bg-gradient-to-br from-blue-500 to-blue-700 shadow-md shadow-blue-500/30'
-                  : 'bg-gradient-to-br from-orange-500 to-orange-700 shadow-md shadow-orange-500/30'
+      <div className="flex items-start justify-between px-3 pt-5 pb-2.5 max-sm:px-3.5 sm:px-4 sm:pt-6 sm:pb-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          {/* Strand pill — SaaS mobile: flat brand chip */}
+          <div className={`shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center font-black text-[9px] sm:text-[10px] tracking-widest text-white max-sm:shadow-none ${
+            isICT ? 'max-sm:bg-blue-600 sm:bg-gradient-to-br sm:from-blue-500 sm:to-blue-700 sm:shadow-md sm:shadow-blue-500/30'
+                  : 'max-sm:bg-orange-600 sm:bg-gradient-to-br sm:from-orange-500 sm:to-orange-700 sm:shadow-md sm:shadow-orange-500/30'
           }`}>
             {isICT ? 'ICT' : 'GAS'}
           </div>
           <div className="min-w-0">
-            <p className={`text-3xl font-black uppercase italic tracking-tighter leading-none truncate ${theme.textMain}`}>
+            <p className={`text-2xl sm:text-3xl font-black uppercase italic tracking-tighter leading-none truncate ${theme.textMain}`}>
               {section.section_name}
             </p>
-            <p className={`text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5 opacity-40 ${theme.textSub}`}>
+            <p className={`text-[8px] sm:text-[9px] font-semibold sm:font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] mt-0.5 max-sm:text-slate-500 dark:max-sm:text-slate-400 sm:opacity-40 ${theme.textSub}`}>
               SY.{config?.school_year || "2025"}
             </p>
           </div>
@@ -92,7 +94,7 @@ export const SectionCard = memo(function SectionCard({ section, isSelected, isDa
       </div>
 
       {/* ── CAPACITY BLOCK ───────────────────────────────────── */}
-      <div className="px-4 pb-3">
+      <div className="px-3.5 pb-2.5 sm:px-4 sm:pb-3">
         {/* Big fill % + count */}
         <div className="flex items-baseline justify-between mb-2">
           <span className={`text-[10px] font-black uppercase tracking-widest ${theme.textSub} opacity-50 flex items-center gap-1`}>
@@ -109,22 +111,22 @@ export const SectionCard = memo(function SectionCard({ section, isSelected, isDa
         </div>
 
         {/* Combined M/F progress bar */}
-        <div className={`relative w-full rounded-full overflow-hidden h-3 ${theme.track} border ${theme.border}`}>
+        <div className={`relative w-full rounded-full overflow-hidden h-2.5 sm:h-3 max-sm:border-0 max-sm:bg-slate-100 dark:max-sm:bg-slate-900/60 sm:border ${isDarkMode ? "sm:border-white/10" : "sm:border-slate-200"} ${theme.track}`}>
           <div style={{ width: `${mP}%` }} className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-blue-700 to-blue-400 transition-all duration-1000 ease-out" />
           <div style={{ width: `${fP}%` }} className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-pink-700 to-pink-400 transition-all duration-1000 ease-out" />
           <div style={{ left: getFinishLinePosition() }} className={`absolute top-0 bottom-0 z-10 -translate-x-1/2 w-[2px] mix-blend-difference opacity-60 ${theme.line}`} />
         </div>
       </div>
 
-      {/* ── GENDER TILES ─────────────────────────────────────── */}
-      <div className={`grid grid-cols-2 gap-px border-t ${theme.border} mx-0`}>
+      {/* ── GENDER TILES — SaaS mobile: flat panels · sm+: tinted glass ── */}
+      <div className={`grid grid-cols-2 gap-px border-t max-sm:border-slate-100 dark:max-sm:border-slate-800/80 ${theme.border} mx-0`}>
         {/* Males */}
-        <div className={`flex items-center justify-between px-4 py-3 ${isDarkMode ? 'bg-blue-950/20' : 'bg-blue-50/50'}`}>
+        <div className={`flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 max-sm:bg-slate-50/90 dark:max-sm:bg-slate-900/50 ${isDarkMode ? 'sm:bg-blue-950/20' : 'sm:bg-blue-50/50'}`}>
           <div>
             <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-0.5 flex items-center gap-1">
               <Users size={9} /> M
             </p>
-            <span className={`text-3xl font-black tabular-nums text-blue-400 leading-none ${isDarkMode ? 'drop-shadow-[0_0_10px_rgba(96,165,250,0.5)]' : ''}`}>
+            <span className={`text-2xl sm:text-3xl font-black tabular-nums text-blue-600 sm:text-blue-400 leading-none max-sm:drop-shadow-none dark:text-blue-400 ${isDarkMode ? 'sm:drop-shadow-[0_0_10px_rgba(96,165,250,0.5)]' : ''}`}>
               {mCount}
             </span>
           </div>
@@ -135,12 +137,12 @@ export const SectionCard = memo(function SectionCard({ section, isSelected, isDa
         </div>
 
         {/* Females */}
-        <div className={`flex items-center justify-between px-4 py-3 border-l ${theme.border} ${isDarkMode ? 'bg-pink-950/20' : 'bg-pink-50/50'}`}>
+        <div className={`flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-l max-sm:border-slate-100 dark:max-sm:border-slate-800/80 ${theme.border} max-sm:bg-slate-50/90 dark:max-sm:bg-slate-900/50 ${isDarkMode ? 'sm:bg-pink-950/20' : 'sm:bg-pink-50/50'}`}>
           <div>
             <p className="text-[8px] font-black text-pink-500 uppercase tracking-widest mb-0.5 flex items-center gap-1">
               <Users size={9} /> F
             </p>
-            <span className={`text-3xl font-black tabular-nums text-pink-400 leading-none ${isDarkMode ? 'drop-shadow-[0_0_10px_rgba(244,114,182,0.5)]' : ''}`}>
+            <span className={`text-2xl sm:text-3xl font-black tabular-nums text-pink-600 sm:text-pink-400 leading-none max-sm:drop-shadow-none dark:text-pink-400 ${isDarkMode ? 'sm:drop-shadow-[0_0_10px_rgba(244,114,182,0.5)]' : ''}`}>
               {fCount}
             </span>
           </div>

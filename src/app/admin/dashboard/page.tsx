@@ -55,7 +55,7 @@ export default function AdminDashboard() {
     fetchingRef.current = true
     try {
       const [studentsRes, configRes, sectionsRes, historyRes] = await Promise.all([
-        supabase.from('students').select('id,first_name,last_name,gender,strand,status,student_category,gwa_grade_10,created_at,preferred_shift,last_school_attended,grade_level,is_archived').order('created_at', { ascending: false }),
+        supabase.from('students').select('id,first_name,last_name,gender,strand,section,status,student_category,gwa_grade_10,two_by_two_url,created_at,preferred_shift,last_school_attended,grade_level,is_archived').order('created_at', { ascending: false }),
         supabase.from('system_config').select('*').maybeSingle(),
         supabase.from('sections').select('capacity'),
         supabase.from('enrollment_history').select('*').order('school_year', { ascending: false })
@@ -461,7 +461,7 @@ export default function AdminDashboard() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button onClick={() => router.push('/admin/predictive-analytics')} variant="outline" className="inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 bg-white text-black border-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900">
+                <Button onClick={() => router.push('/admin/predictive-analytics')} variant="outline" className={`inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 ${isDarkMode ? 'bg-slate-950 text-white border-slate-800 hover:bg-slate-900' : 'bg-white text-black border-slate-200 hover:bg-slate-50'}`}>
                   <LineChart /> Predictive Analysis
                 </Button>
               </TooltipTrigger>
@@ -472,7 +472,7 @@ export default function AdminDashboard() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button onClick={() => window.print()} variant="outline" className="inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 bg-white text-black border-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900">
+                <Button onClick={() => window.print()} variant="outline" className={`inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 ${isDarkMode ? 'bg-slate-950 text-white border-slate-800 hover:bg-slate-900' : 'bg-white text-black border-slate-200 hover:bg-slate-50'}`}>
                   <FileDown /> Print Report
                 </Button>
               </TooltipTrigger>
@@ -484,20 +484,24 @@ export default function AdminDashboard() {
       <OverviewGrid stats={stats} isDarkMode={isDarkMode} />
 
       {/* G11 / G12 Enrollment Breakdown */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-10">
         {[
-          { label: "Grade 11 Enrolled", value: gradeBreakdown.g11, color: isDarkMode ? "text-blue-400" : "text-blue-600", bg: isDarkMode ? "bg-blue-500/8 border-blue-500/20" : "bg-blue-50 border-blue-200", dot: "bg-blue-500" },
-          { label: "Grade 12 Enrolled", value: gradeBreakdown.g12, color: isDarkMode ? "text-violet-400" : "text-violet-600", bg: isDarkMode ? "bg-violet-500/8 border-violet-500/20" : "bg-violet-50 border-violet-200", dot: "bg-violet-500" },
+          { label: "Grade 11 Enrolled", value: gradeBreakdown.g11, color: isDarkMode ? "text-blue-400" : "text-blue-600", bg: isDarkMode ? "bg-blue-500/5 border-blue-500/10" : "bg-blue-50/50 border-blue-100", dot: "bg-blue-500", glow: "shadow-blue-500/20" },
+          { label: "Grade 12 Enrolled", value: gradeBreakdown.g12, color: isDarkMode ? "text-violet-400" : "text-violet-600", bg: isDarkMode ? "bg-violet-500/5 border-violet-500/10" : "bg-violet-50/50 border-violet-100", dot: "bg-violet-500", glow: "shadow-violet-500/20" },
         ].map(card => (
-          <div key={card.label} className={`rounded-2xl border p-5 flex items-center gap-4 ${card.bg} relative overflow-hidden`}>
-            <div className={`h-0.5 absolute top-0 left-0 right-0 ${card.dot} opacity-60`} />
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isDarkMode ? "bg-white/5" : "bg-white"} shadow-sm`}>
-              <span className={`w-3 h-3 rounded-full ${card.dot} shadow-sm`} />
+          <div key={card.label} className={`rounded-[2.5rem] border p-8 md:p-10 flex items-center gap-6 ${card.bg} relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
+            <div className={`h-1.5 absolute top-0 left-0 right-0 ${card.dot} opacity-40 group-hover:opacity-100 transition-opacity duration-500`} />
+            <div className={`w-16 h-16 rounded-[2rem] flex items-center justify-center shrink-0 ${isDarkMode ? "bg-slate-800" : "bg-white"} shadow-xl border border-white/10 group-hover:scale-110 transition-transform duration-500`}>
+              <span className={`w-4 h-4 rounded-full ${card.dot} ${card.glow} shadow-lg animate-pulse`} />
             </div>
             <div>
-              <p className={`text-3xl font-black tabular-nums ${card.color}`}>{card.value}</p>
-              <p className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${card.color} opacity-70`}>{card.label}</p>
+              <p className={`text-4xl md:text-6xl font-black tabular-nums tracking-tighter ${card.color}`}>
+                <AnimatedNumber value={card.value} />
+              </p>
+              <p className={`text-[10px] md:text-[12px] font-black uppercase tracking-[0.3em] mt-1 ${card.color} opacity-60`}>{card.label}</p>
             </div>
+            {/* Subtle Decorative SaaS Glow */}
+            <div className={`absolute -right-8 -bottom-8 w-32 h-32 ${card.dot} opacity-[0.03] blur-3xl rounded-full`} />
           </div>
         ))}
       </div>

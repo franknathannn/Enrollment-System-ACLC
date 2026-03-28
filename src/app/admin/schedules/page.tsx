@@ -34,10 +34,10 @@ function PageTimeSelect({
   const filtered  = query.trim() ? options.filter(o => o.label.toLowerCase().includes(query.toLowerCase())) : options
   const amOpts    = filtered.filter(o => o.label.includes("AM"))
   const pmOpts    = filtered.filter(o => o.label.includes("PM"))
-  const overlayBg = isDarkMode ? "rgba(9,14,26,0.99)"    : "#ffffff"
+  const overlayBg = isDarkMode ? "rgba(9,14,26,0.98)"     : "rgba(255,255,255,0.98)"
   const shadow    = isDarkMode
-    ? "0 20px 40px -8px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.07)"
-    : "0 20px 40px -8px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.04)"
+    ? "0 20px 48px -8px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.04)"
+    : "0 20px 48px -8px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)"
   const rowHov    = isDarkMode ? "rgba(30,41,59,0.9)"    : "#f8fafc"
   const activeRow = isDarkMode ? "rgba(37,99,235,0.18)"  : "#eff6ff"
   const activeTxt = isDarkMode ? "#93c5fd"               : "#1d4ed8"
@@ -64,11 +64,14 @@ function PageTimeSelect({
         onClick={() => open ? setOpen(false) : openDropdown()}
         style={{
           display: "flex", alignItems: "center", gap: 6,
-          padding: "0 12px", height: 36, borderRadius: 14,
+          padding: "0 12px", height: 36, borderRadius: 12,
           border: `1.5px solid ${open ? "#3b82f6" : bdr}`,
-          background: surf, cursor: "pointer", outline: "none",
-          boxShadow: open ? "0 0 0 3px rgba(59,130,246,0.15)" : "none",
-          transition: "border-color 0.15s, box-shadow 0.15s",
+          background: isDarkMode ? "rgba(15,23,42,0.6)" : "rgba(255,255,255,0.8)",
+          cursor: "pointer", outline: "none",
+          boxShadow: open
+            ? "0 0 0 3px rgba(59,130,246,0.18), 0 2px 8px rgba(59,130,246,0.1)"
+            : isDarkMode ? "0 1px 3px rgba(0,0,0,0.3)" : "0 1px 3px rgba(0,0,0,0.06)",
+          transition: "border-color 0.2s, box-shadow 0.2s",
         }}
       >
         <Clock size={11} style={{ color: open ? "#3b82f6" : muted, flexShrink: 0 }} />
@@ -79,7 +82,7 @@ function PageTimeSelect({
         ) : (
           <span style={{ fontSize: 11, fontWeight: 800, color: txt }}>{label}</span>
         )}
-        <ChevronDown size={10} style={{ color: muted, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+        <ChevronDown size={10} style={{ color: muted, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
       </button>
 
       {open && (
@@ -91,8 +94,10 @@ function PageTimeSelect({
             position: "fixed",
             top: pos.top, left: pos.left, width: Math.max(pos.width, 200),
             zIndex: 9999,
-            background: overlayBg, border: `1px solid ${bdr}`,
-            borderRadius: 18, boxShadow: shadow, overflow: "hidden",
+            background: overlayBg,
+            border: `1px solid ${isDarkMode ? "rgba(51,65,85,0.6)" : "rgba(226,232,240,0.8)"}`,
+            borderRadius: 16, boxShadow: shadow, overflow: "hidden",
+            backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
           }}>
             <div style={{ padding: "8px 8px 5px" }}>
               <div style={{ position: "relative" }}>
@@ -411,37 +416,38 @@ export default function SchedulesPage() {
     setEditEnd(toMins(row.end_time))
   }
 
-  // ── Theme — mirrors layout.tsx pattern ───────────────────────────────────
-  const surf  = isDarkMode ? themeColors.dark.surface      : "#ffffff"
-  const bdr   = isDarkMode ? themeColors.dark.border       : "#e2e8f0"
+  // ── Theme — SaaS premium palette ─────────────────────────────────────────
+  const surf  = isDarkMode ? "rgba(15,23,42,0.65)" : "rgba(255,255,255,0.75)"
+  const surfSolid = isDarkMode ? themeColors.dark.surface : "#ffffff"
+  const bdr   = isDarkMode ? "rgba(51,65,85,0.5)"  : "rgba(226,232,240,0.8)"
   const txt   = isDarkMode ? themeColors.dark.text.primary : "#0f172a"
   const muted = isDarkMode ? themeColors.dark.text.muted   : "#94a3b8"
 
   // ── Day button active style ───────────────────────────────────────────────
   const dayActiveBg  = isDarkMode
-    ? "linear-gradient(135deg,rgb(29,78,216),rgb(30,58,138))"
-    : "#0f172a"
+    ? "linear-gradient(135deg,#2563eb,#1e40af)"
+    : "linear-gradient(135deg,#0f172a,#1e293b)"
   const dayActiveBox = isDarkMode
-    ? "0 8px 20px -4px rgba(37,99,235,0.5)"
-    : "0 8px 20px -4px rgba(15,23,42,0.3)"
+    ? "0 8px 24px -4px rgba(37,99,235,0.5), 0 0 0 1px rgba(96,165,250,0.2)"
+    : "0 8px 24px -4px rgba(15,23,42,0.3), 0 0 0 1px rgba(15,23,42,0.1)"
 
   // ── Strand button colors ──────────────────────────────────────────────────
   const strandActiveBg = (s: StrandFilter) =>
-    s === "ICT" ? "#2563eb" : s === "GAS" ? "#d97706"
-    : (isDarkMode ? "linear-gradient(135deg,rgb(29,78,216),rgb(30,58,138))" : "#0f172a")
+    s === "ICT" ? "linear-gradient(135deg,#2563eb,#1d4ed8)" : s === "GAS" ? "linear-gradient(135deg,#d97706,#b45309)"
+    : (isDarkMode ? "linear-gradient(135deg,#2563eb,#1e40af)" : "linear-gradient(135deg,#0f172a,#1e293b)")
 
   const strandActiveBox = (s: StrandFilter) =>
-    s === "ICT" ? "0 8px 20px -4px rgba(37,99,235,0.45)"
-    : s === "GAS" ? "0 8px 20px -4px rgba(217,119,6,0.45)"
-    : (isDarkMode ? "0 8px 20px -4px rgba(37,99,235,0.4)" : "0 8px 20px -4px rgba(15,23,42,0.3)")
+    s === "ICT" ? "0 8px 24px -4px rgba(37,99,235,0.45), 0 0 0 1px rgba(96,165,250,0.2)"
+    : s === "GAS" ? "0 8px 24px -4px rgba(217,119,6,0.45), 0 0 0 1px rgba(251,191,36,0.2)"
+    : (isDarkMode ? "0 8px 24px -4px rgba(37,99,235,0.4)" : "0 8px 24px -4px rgba(15,23,42,0.3)")
 
-  // Pill background helper
+  // Pill background helper — glassmorphic
   const pill = (color: "slate"|"blue"|"amber"|"violet") => {
     const map = {
-      slate:  isDarkMode ? { bg:"rgba(30,41,59,0.7)",   color:"#94a3b8" } : { bg:"#f1f5f9",   color:"#64748b" },
-      blue:   isDarkMode ? { bg:"rgba(30,58,138,0.35)", color:"#93c5fd" } : { bg:"#eff6ff",   color:"#2563eb" },
-      amber:  isDarkMode ? { bg:"rgba(120,53,15,0.35)", color:"#fcd34d" } : { bg:"#fffbeb",   color:"#d97706" },
-      violet: isDarkMode ? { bg:"rgba(76,29,149,0.35)", color:"#c4b5fd" } : { bg:"#f5f3ff",   color:"#7c3aed" },
+      slate:  isDarkMode ? { bg:"rgba(30,41,59,0.5)",   color:"#94a3b8", border:"1px solid rgba(51,65,85,0.4)" } : { bg:"rgba(241,245,249,0.8)",   color:"#64748b", border:"1px solid rgba(226,232,240,0.6)" },
+      blue:   isDarkMode ? { bg:"rgba(30,58,138,0.25)", color:"#93c5fd", border:"1px solid rgba(59,130,246,0.2)" } : { bg:"rgba(239,246,255,0.8)",   color:"#2563eb", border:"1px solid rgba(147,197,253,0.4)" },
+      amber:  isDarkMode ? { bg:"rgba(120,53,15,0.25)", color:"#fcd34d", border:"1px solid rgba(245,158,11,0.2)" } : { bg:"rgba(255,251,235,0.8)",   color:"#d97706", border:"1px solid rgba(252,211,77,0.4)" },
+      violet: isDarkMode ? { bg:"rgba(76,29,149,0.25)", color:"#c4b5fd", border:"1px solid rgba(139,92,246,0.2)" } : { bg:"rgba(245,243,255,0.8)",   color:"#7c3aed", border:"1px solid rgba(196,181,253,0.4)" },
     }
     return map[color]
   }
@@ -469,23 +475,38 @@ export default function SchedulesPage() {
           -ms-overflow-style: none !important;
         }
         ::-webkit-scrollbar { display: none !important; }
+        @keyframes saas-fade-up {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes saas-pulse-ring {
+          0%, 100% { transform: scale(1); opacity: 0.4; }
+          50% { transform: scale(1.15); opacity: 0.15; }
+        }
       `}</style>
 
       {/* ── HEADER ──────────────────────────────────────────────────────── */}
       <div
-        className="relative overflow-hidden rounded-[24px] sm:rounded-[32px] border p-4 sm:p-6 flex items-center justify-between gap-3"
+        className="relative overflow-hidden rounded-[20px] sm:rounded-[24px] border p-4 sm:p-6 flex items-center justify-between gap-3"
         style={{
-          backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.85)' : '#ffffff',
+          backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.7)' : 'rgba(255,255,255,0.85)',
           borderColor: bdr,
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          boxShadow: isDarkMode
+            ? "0 4px 24px -4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)"
+            : "0 4px 24px -4px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+          animation: "saas-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) both",
         }}
       >
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
-        <div style={{ position: 'absolute', top: -60, right: -60, width: 160, height: 160, borderRadius: '50%', background: isDarkMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+        <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: "linear-gradient(90deg, #2563eb, #7c3aed, #06b6d4, #2563eb)", backgroundSize: "200% 100%"}} />
+        <div style={{ position: 'absolute', top: -80, right: -80, width: 200, height: 200, borderRadius: '50%', background: isDarkMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)', filter: 'blur(60px)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -60, left: -40, width: 140, height: 140, borderRadius: '50%', background: isDarkMode ? 'rgba(124,58,237,0.05)' : 'rgba(124,58,237,0.03)', filter: 'blur(50px)', pointerEvents: 'none' }} />
 
         <div className="flex items-center gap-3 min-w-0">
           <div
             className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", boxShadow: "0 8px 20px -4px rgba(59,130,246,0.4)" }}
+            style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", boxShadow: "0 8px 24px -4px rgba(59,130,246,0.45), 0 0 0 1px rgba(96,165,250,0.2)" }}
           >
             <CalendarRange size={18} className="text-white" />
           </div>
@@ -506,8 +527,14 @@ export default function SchedulesPage() {
         <button
           onClick={load}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-black text-[8.5px] uppercase tracking-widest border transition-all active:scale-95 disabled:opacity-50 shrink-0 hover:border-blue-500/40"
-          style={{ background: isDarkMode ? 'rgba(30,41,59,0.8)' : '#f8fafc', borderColor: bdr, color: muted }}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-black text-[8.5px] uppercase tracking-widest border transition-all active:scale-95 disabled:opacity-50 shrink-0"
+          style={{
+            background: isDarkMode ? 'rgba(30,41,59,0.6)' : 'rgba(248,250,252,0.8)',
+            borderColor: bdr, color: muted,
+            backdropFilter: "blur(8px)",
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = "rgba(59,130,246,0.4)"}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = bdr}
         >
           <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
           <span className="hidden sm:inline">Sync</span>
@@ -517,7 +544,12 @@ export default function SchedulesPage() {
       {/* ── PAGE TAB SWITCHER ────────────────────────────────────────────── */}
       <div
         className="flex gap-1 p-1.5 rounded-2xl border w-fit"
-        style={{ background: isDarkMode ? 'rgba(15,23,42,0.8)' : '#f8fafc', borderColor: bdr }}
+        style={{
+          background: isDarkMode ? 'rgba(15,23,42,0.6)' : 'rgba(248,250,252,0.8)',
+          borderColor: bdr,
+          backdropFilter: "blur(8px)",
+          animation: "saas-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) 0.05s both",
+        }}
       >
         {([
           { key: "timetable", label: "Timetable",        icon: <CalendarRange size={11} /> },
@@ -529,7 +561,11 @@ export default function SchedulesPage() {
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 whitespace-nowrap"
             style={
               pageTab === t.key
-                ? { background: "linear-gradient(135deg, #2563eb, #1d4ed8)", color: "#fff", boxShadow: "0 4px 12px -2px rgba(37,99,235,0.4)" }
+                ? {
+                    background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                    color: "#fff",
+                    boxShadow: "0 4px 16px -2px rgba(37,99,235,0.45), 0 0 0 1px rgba(96,165,250,0.15)",
+                  }
                 : { color: muted }
             }
           >
@@ -542,7 +578,7 @@ export default function SchedulesPage() {
       {pageTab === "calendar" && (
         <AcademicCalendarManager
           isDarkMode={isDarkMode}
-          surf={surf}
+          surf={surfSolid}
           bdr={bdr}
           txt={txt}
           muted={muted}
@@ -563,13 +599,18 @@ export default function SchedulesPage() {
           paddingBottom: 2,
           scrollbarWidth: "none",
           msOverflowStyle: "none",
+          animation: "saas-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) 0.1s both",
         } as React.CSSProperties}
       >
 
         {/* Day selector */}
         <div
           className="flex gap-0.5 p-1 rounded-2xl border shrink-0"
-          style={{ background: surf, borderColor: bdr }}
+          style={{
+            background: isDarkMode ? "rgba(15,23,42,0.5)" : "rgba(255,255,255,0.7)",
+            borderColor: bdr,
+            backdropFilter: "blur(8px)",
+          }}
         >
           {DAYS.map(d => (
             <button
@@ -592,7 +633,11 @@ export default function SchedulesPage() {
         {/* Strand filter */}
         <div
           className="flex gap-0.5 p-1 rounded-2xl border shrink-0"
-          style={{ background: surf, borderColor: bdr }}
+          style={{
+            background: isDarkMode ? "rgba(15,23,42,0.5)" : "rgba(255,255,255,0.7)",
+            borderColor: bdr,
+            backdropFilter: "blur(8px)",
+          }}
         >
           {(["BOTH", "ICT", "GAS"] as StrandFilter[]).map(s => (
             <button
@@ -616,13 +661,17 @@ export default function SchedulesPage() {
         {/* Time: From */}
         <div
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl border shrink-0"
-          style={{ background: surf, borderColor: bdr }}
+          style={{
+            background: isDarkMode ? "rgba(15,23,42,0.5)" : "rgba(255,255,255,0.7)",
+            borderColor: bdr,
+            backdropFilter: "blur(8px)",
+          }}
         >
           <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: muted }}>From</span>
           <PageTimeSelect
             value={timeStart}
             options={TIME_OPTS.filter(o => toMins(o.value) < timeEnd)}
-            isDarkMode={isDarkMode} surf={surf} bdr={bdr} txt={txt} muted={muted}
+            isDarkMode={isDarkMode} surf={surfSolid} bdr={bdr} txt={txt} muted={muted}
             onChange={m => { if (m < timeEnd) setTStart(m) }}
           />
         </div>
@@ -630,13 +679,17 @@ export default function SchedulesPage() {
         {/* Time: To */}
         <div
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl border shrink-0"
-          style={{ background: surf, borderColor: bdr }}
+          style={{
+            background: isDarkMode ? "rgba(15,23,42,0.5)" : "rgba(255,255,255,0.7)",
+            borderColor: bdr,
+            backdropFilter: "blur(8px)",
+          }}
         >
           <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: muted }}>To</span>
           <PageTimeSelect
             value={timeEnd}
             options={TIME_OPTS.filter(o => toMins(o.value) > timeStart)}
-            isDarkMode={isDarkMode} surf={surf} bdr={bdr} txt={txt} muted={muted}
+            isDarkMode={isDarkMode} surf={surfSolid} bdr={bdr} txt={txt} muted={muted}
             onChange={m => { if (m > timeStart) setTEnd(m) }}
           />
         </div>
@@ -645,49 +698,80 @@ export default function SchedulesPage() {
       {/* ── STAT PILLS ──────────────────────────────────────────────────── */}
       <div
         className="flex gap-1.5 items-center"
-        style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}
+        style={{
+          overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none",
+          animation: "saas-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) 0.15s both",
+        } as React.CSSProperties}
       >
-        <span
-          className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider whitespace-nowrap shrink-0"
-          style={pill("slate")}
-        >
-          {totalSecs} sections
-        </span>
+        {(() => {
+          const p = pill("slate")
+          return (
+            <span
+              className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider whitespace-nowrap shrink-0"
+              style={{ background: p.bg, color: p.color, border: p.border }}
+            >
+              {totalSecs} sections
+            </span>
+          )
+        })()}
 
-        {showICT && (
-          <span
-            className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider whitespace-nowrap shrink-0"
-            style={pill("blue")}
-          >
-            {ictPeriods} ICT period{ictPeriods !== 1 ? "s" : ""}
-          </span>
-        )}
+        {showICT && (() => {
+          const p = pill("blue")
+          return (
+            <span
+              className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider whitespace-nowrap shrink-0"
+              style={{ background: p.bg, color: p.color, border: p.border }}
+            >
+              {ictPeriods} ICT period{ictPeriods !== 1 ? "s" : ""}
+            </span>
+          )
+        })()}
 
-        {showGAS && (
-          <span
-            className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider whitespace-nowrap shrink-0"
-            style={pill("amber")}
-          >
-            {gasPeriods} GAS period{gasPeriods !== 1 ? "s" : ""}
-          </span>
-        )}
+        {showGAS && (() => {
+          const p = pill("amber")
+          return (
+            <span
+              className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider whitespace-nowrap shrink-0"
+              style={{ background: p.bg, color: p.color, border: p.border }}
+            >
+              {gasPeriods} GAS period{gasPeriods !== 1 ? "s" : ""}
+            </span>
+          )
+        })()}
 
-        <span
-          className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider whitespace-nowrap shrink-0"
-          style={pill("violet")}
-        >
-          {toDisp(timeStart)} – {toDisp(timeEnd)}
-        </span>
+        {(() => {
+          const p = pill("violet")
+          return (
+            <span
+              className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider whitespace-nowrap shrink-0"
+              style={{ background: p.bg, color: p.color, border: p.border }}
+            >
+              {toDisp(timeStart)} – {toDisp(timeEnd)}
+            </span>
+          )
+        })()}
       </div>
 
       {/* ── GRID / STATES ───────────────────────────────────────────────── */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-40 gap-4">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{ background: isDarkMode ? "rgba(37,99,235,0.15)" : "rgba(37,99,235,0.08)" }}
-          >
-            <Loader2 className="animate-spin text-blue-500" size={28} />
+        <div
+          className="flex flex-col items-center justify-center py-40 gap-4"
+          style={{ animation: "saas-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) both" }}
+        >
+          <div className="relative">
+            <div
+              className="absolute inset-0 rounded-2xl"
+              style={{
+                background: isDarkMode ? "rgba(37,99,235,0.12)" : "rgba(37,99,235,0.06)",
+                animation: "saas-pulse-ring 2s ease-in-out infinite",
+              }}
+            />
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center relative"
+              style={{ background: isDarkMode ? "rgba(37,99,235,0.15)" : "rgba(37,99,235,0.08)" }}
+            >
+              <Loader2 className="animate-spin text-blue-500" size={28} />
+            </div>
           </div>
           <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: muted }}>
             Loading schedules…
@@ -696,7 +780,11 @@ export default function SchedulesPage() {
       ) : totalSecs === 0 ? (
         <div
           className="flex flex-col items-center justify-center py-40 gap-4 rounded-3xl border-2 border-dashed"
-          style={{ borderColor: bdr }}
+          style={{
+            borderColor: bdr,
+            background: isDarkMode ? "rgba(15,23,42,0.3)" : "rgba(248,250,252,0.5)",
+            animation: "saas-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) both",
+          }}
         >
           <CalendarRange size={40} style={{ color: muted, opacity: 0.3 }} />
           <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: muted, opacity: 0.4 }}>
@@ -713,6 +801,7 @@ export default function SchedulesPage() {
             scrollbarWidth: "none",
             msOverflowStyle: "none",
             WebkitOverflowScrolling: "touch",
+            animation: "saas-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) 0.2s both",
           } as React.CSSProperties}
         >
           <StrandGrid
@@ -723,7 +812,7 @@ export default function SchedulesPage() {
             timeStart={timeStart}
             timeEnd={timeEnd}
             isDarkMode={isDarkMode}
-            surf={surf}
+            surf={surfSolid}
             bdr={bdr}
             muted={muted}
             txt={txt}
@@ -747,7 +836,7 @@ export default function SchedulesPage() {
           saving={saving}
           deleting={deleting}
           isDarkMode={isDarkMode}
-          surf={surf}
+          surf={surfSolid}
           bdr={bdr}
           txt={txt}
           muted={muted}
