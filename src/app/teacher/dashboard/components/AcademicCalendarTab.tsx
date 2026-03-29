@@ -183,58 +183,63 @@ export function AcademicCalendarTab({ dm, schoolYear }: Props) {
               <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>Academic Calendar</p>
               <p className={`text-sm font-black mt-0.5 ${head}`}>{schoolYear}</p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {(loading || holLoading) && <Loader2 size={13} className="animate-spin text-blue-400" />}
+            <div className="flex flex-col items-end gap-2">
+              {/* Row 1: Holiday toggle + Country picker */}
+              <div className="flex items-center gap-2">
+                {(loading || holLoading) && <Loader2 size={13} className="animate-spin text-blue-400" />}
 
-              {/* Holiday toggle */}
-              <button onClick={() => setShowHols(v => !v)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide border transition-all
-                  ${showHols
-                    ? (dm ? "bg-red-500/15 border-red-500/30 text-red-400" : "bg-red-50 border-red-200 text-red-600")
-                    : (dm ? "border-slate-700 text-slate-500" : "border-slate-200 text-slate-400")}`}>
-                <Flag size={10} /> {showHols ? "Holidays ON" : "Holidays OFF"}
-              </button>
+                {/* Holiday toggle */}
+                <button onClick={() => setShowHols(v => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide border transition-all
+                    ${showHols
+                      ? (dm ? "bg-red-500/15 border-red-500/30 text-red-400" : "bg-red-50 border-red-200 text-red-600")
+                      : (dm ? "border-slate-700 text-slate-500" : "border-slate-200 text-slate-400")}`}>
+                  <Flag size={10} /> {showHols ? "Holidays ON" : "Holidays OFF"}
+                </button>
 
-              {/* Country picker */}
-              {showHols && (
-                <div className="relative">
-                  <button onClick={() => setShowPicker(v => !v)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide border transition-all
-                      ${dm ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:bg-slate-700" : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>
-                    <Globe size={10} /> {selectedCountry?.flag} {selectedCountry?.code}
-                  </button>
-                  {showPicker && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
-                      <div className={`absolute right-0 top-full mt-1.5 z-50 rounded-2xl border shadow-xl overflow-hidden w-52
-                        ${dm ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"}`}>
-                        {COUNTRIES.map(c => (
-                          <button key={c.code} onClick={() => { setCountry(c.code); setShowPicker(false) }}
-                            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-[10px] font-bold transition-colors
-                              ${country === c.code
-                                ? "bg-blue-600 text-white"
-                                : (dm ? "hover:bg-slate-800 text-slate-300" : "hover:bg-slate-50 text-slate-700")}`}>
-                            <span className="text-base leading-none">{c.flag}</span>
-                            <span>{c.name}</span>
-                            {country === c.code && <span className="ml-auto text-[8px]">✓</span>}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
+                {/* Country picker */}
+                {showHols && (
+                  <div className="relative">
+                    <button onClick={() => setShowPicker(v => !v)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide border transition-all
+                        ${dm ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:bg-slate-700" : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>
+                      <Globe size={10} /> {selectedCountry?.flag} {selectedCountry?.code}
+                    </button>
+                    {showPicker && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
+                        <div className={`absolute right-0 top-full mt-1.5 z-50 rounded-2xl border shadow-xl overflow-hidden w-52
+                          ${dm ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"}`}>
+                          {COUNTRIES.map(c => (
+                            <button key={c.code} onClick={() => { setCountry(c.code); setShowPicker(false) }}
+                              className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-[10px] font-bold transition-colors
+                                ${country === c.code
+                                  ? "bg-blue-600 text-white"
+                                  : (dm ? "hover:bg-slate-800 text-slate-300" : "hover:bg-slate-50 text-slate-700")}`}>
+                              <span className="text-base leading-none">{c.flag}</span>
+                              <span>{c.name}</span>
+                              {country === c.code && <span className="ml-auto text-[8px]">✓</span>}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
 
-              {/* Month nav */}
-              <button onClick={() => { const d = new Date(year, month - 1); setMonth(d.getMonth()); setYear(d.getFullYear()); setSelected(null) }}
-                className={`w-8 h-8 rounded-xl border flex items-center justify-center ${dm ? "border-slate-700 hover:bg-slate-700" : "border-slate-200 hover:bg-slate-100"}`}>
-                <ChevronLeft size={14} className={sub} />
-              </button>
-              <span className={`text-[11px] font-black min-w-[100px] text-center ${head}`}>{MONTH_NAMES[month]} {year}</span>
-              <button onClick={() => { const d = new Date(year, month + 1); setMonth(d.getMonth()); setYear(d.getFullYear()); setSelected(null) }}
-                className={`w-8 h-8 rounded-xl border flex items-center justify-center ${dm ? "border-slate-700 hover:bg-slate-700" : "border-slate-200 hover:bg-slate-100"}`}>
-                <ChevronRight size={14} className={sub} />
-              </button>
+              {/* Row 2: Month nav */}
+              <div className="flex items-center gap-2">
+                <button onClick={() => { const d = new Date(year, month - 1); setMonth(d.getMonth()); setYear(d.getFullYear()); setSelected(null) }}
+                  className={`w-8 h-8 rounded-xl border flex items-center justify-center ${dm ? "border-slate-700 hover:bg-slate-700" : "border-slate-200 hover:bg-slate-100"}`}>
+                  <ChevronLeft size={14} className={sub} />
+                </button>
+                <span className={`text-[11px] font-black min-w-[100px] text-center ${head}`}>{MONTH_NAMES[month]} {year}</span>
+                <button onClick={() => { const d = new Date(year, month + 1); setMonth(d.getMonth()); setYear(d.getFullYear()); setSelected(null) }}
+                  className={`w-8 h-8 rounded-xl border flex items-center justify-center ${dm ? "border-slate-700 hover:bg-slate-700" : "border-slate-200 hover:bg-slate-100"}`}>
+                  <ChevronRight size={14} className={sub} />
+                </button>
+              </div>
             </div>
           </div>
           {showHols && (

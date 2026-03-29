@@ -93,7 +93,7 @@ export const ApplicantsFilter = memo(({
   return (
     <div className="flex flex-col gap-3 w-full relative z-30">
       {/* Row 1: Grade filter + status tabs */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3 flex-wrap justify-center sm:justify-start">
 
         {/* Grade level pills */}
         <div className={`flex items-center gap-1 p-1 rounded-2xl border shrink-0 ${isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
@@ -114,16 +114,17 @@ export const ApplicantsFilter = memo(({
         </div>
 
         {/* Status tabs — color-coded per status */}
-        <div className={`flex items-center gap-1.5 p-1.5 rounded-2xl border ${isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50/80 border-slate-200 shadow-sm'}`}>
+        <div className={`grid grid-cols-2 sm:flex sm:flex-row items-center gap-1.5 p-1.5 rounded-2xl border ${isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50/80 border-slate-200 shadow-sm'}`}>
           {TAB_CONFIG.map(({ id, icon }) => {
             const isActive = filter === id
             const count = gradeFilteredStudents.filter(s => s.status === id || (id === 'Accepted' && s.status === 'Approved')).length
+            const isRejected = id === 'Rejected'
             return (
               <button
                 key={id}
                 type="button"
                 onClick={() => { setFilter(id); setSelectedIds([]); }}
-                className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 border whitespace-nowrap ${
+                className={`relative flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 border whitespace-nowrap ${isRejected ? 'col-span-2 sm:col-span-1 justify-self-center sm:justify-self-auto' : ''} ${
                   isActive
                     ? `${tabActiveStyles[id]} shadow-lg scale-[1.03]`
                     : `border-transparent ${isDarkMode ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/60' : 'text-slate-400 hover:text-slate-600 hover:bg-white'}`

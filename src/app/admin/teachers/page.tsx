@@ -308,20 +308,20 @@ export default function TeachersPage() {
         </div>
 
         {/* Tab switcher */}
-        <div className={`flex items-center gap-1 sm:gap-2 p-1.5 rounded-2xl border overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${border} ${dm ? "bg-slate-800/40" : "bg-slate-100"}`} style={{ WebkitOverflowScrolling: 'touch' }}>
-          <button className={`${tabBase} ${tab === "list" ? tabAct : tabInact}`} onClick={() => setTab("list")}>
+        <div className={`grid grid-cols-2 sm:flex sm:flex-row gap-1 sm:gap-2 p-1.5 rounded-2xl border ${border} ${dm ? "bg-slate-800/40" : "bg-slate-100"}`}>
+          <button className={`${tabBase} justify-center ${tab === "list" ? tabAct : tabInact}`} onClick={() => setTab("list")}>
             <Users size={12} /> <span>Teachers</span>
           </button>
-          <button className={`${tabBase} ${tab === "announcements" ? tabAct : tabInact}`} onClick={() => setTab("announcements")}>
+          <button className={`${tabBase} justify-center ${tab === "announcements" ? tabAct : tabInact}`} onClick={() => setTab("announcements")}>
             <Megaphone size={12} /> <span>Announcements</span>
             {announcements.length > 0 && (
-              <span className="bg-amber-500 text-white text-[8px] font-black rounded-full w-4 h-4 flex items-center justify-center">{announcements.length}</span>
+              <span className="bg-amber-500 text-white text-[8px] font-black rounded-full w-4 h-4 flex items-center justify-center shrink-0">{announcements.length}</span>
             )}
           </button>
-          <button className={`${tabBase} ${tab === "reports" ? tabAct : tabInact}`} onClick={() => setTab("reports")}>
+          <button className={`${tabBase} justify-center ${tab === "reports" ? tabAct : tabInact}`} onClick={() => setTab("reports")}>
             <BarChart2 size={12} /> <span>Reports</span>
           </button>
-          <button className={`${tabBase} ${tab === "calendar" ? tabAct : tabInact}`} onClick={() => setTab("calendar")}>
+          <button className={`${tabBase} justify-center ${tab === "calendar" ? tabAct : tabInact}`} onClick={() => setTab("calendar")}>
             <CalendarDays size={12} /> <span>Calendar</span>
           </button>
         </div>

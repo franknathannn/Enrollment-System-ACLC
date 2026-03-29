@@ -143,8 +143,11 @@ export function ScheduleModal({ isOpen, onClose, student, isDarkMode }: Props) {
           }
           .sched-sheet {
             border-radius: 20px 20px 0 0;
-            max-height: 90dvh;
+            max-height: calc(92dvh - env(safe-area-inset-bottom, 0px));
             width: 100%;
+          }
+          .sched-body-pad {
+            padding-bottom: max(24px, env(safe-area-inset-bottom, 24px)) !important;
           }
         }
       `}</style>
@@ -213,7 +216,7 @@ export function ScheduleModal({ isOpen, onClose, student, isDarkMode }: Props) {
                 </p>
               </div>
             ) : (
-              <div style={{ padding:"16px 16px 24px" }}>
+              <div className="sched-body-pad" style={{ padding:"16px 16px 24px" }}>
                 <div className="ss" style={{ overflowX:"auto" }}>
                   <div style={{ minWidth:500 }}>
 

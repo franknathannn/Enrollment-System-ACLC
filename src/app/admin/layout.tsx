@@ -78,7 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
       setAdminProfile(prev => ({ ...prev, avatar: publicUrl }));
-      toast.success("Identity image uploaded.", { id: toastId });
+      toast.success("Student Image uploaded.", { id: toastId });
     } catch (error: any) {
       toast.error(error.message, { id: toastId });
     } finally {
@@ -97,7 +97,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       });
     if (error) toast.error(error.message, { id: toastId });
     else {
-      toast.success("Identity Confirmed & Synced.", { id: toastId });
+      toast.success("Student Updated.", { id: toastId });
       fetchAdminIdentity();
     }
     setUpdating(false);
@@ -108,7 +108,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     await supabase.auth.signOut();
     router.refresh(); 
     setTimeout(() => {
-      toast.success("Securely Logged Out", { id: toastId });
+      toast.success("Logged Out", { id: toastId });
       router.push("/admin/login");
     }, 800);
   };

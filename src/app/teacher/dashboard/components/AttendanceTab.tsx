@@ -22,12 +22,15 @@ import {
   buildStudentAttendanceQrDownloadCanvas,
 } from "@/lib/studentAttendanceQr"
 import { Switch } from "@/components/ui/switch"
+import { PieChart, Pie, Cell, Tooltip } from 'recharts'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { TeacherSession, ScheduleRow, Student, fmt, todayName, ALL_DAYS } from "../types"
+import { LiveMonitoring } from "./LiveMonitoring"
 
-type AttStatus = "Present" | "Late" | "Absent" | "Excused"
+export type AttStatus = "Present" | "Late" | "Absent" | "Excused"
 
-interface AttRecord {
+export interface AttRecord {
   id?: string
   student_id: string
   lrn: string
@@ -183,7 +186,7 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[150] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.93)", backdropFilter: "blur(24px)" }}
       onClick={onClose}
     >
@@ -377,6 +380,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
   const [isFrontCamera, setIsFrontCamera] = useState(false)
   const [forcedOpen, setForcedOpen]       = useState(false)
   const [scannerClosed, setScannerClosed] = useState(false)
+  const [showLiveMonitoring, setShowLiveMonitoring] = useState(false)
 
   const [calSection, setCalSection]       = useState<string>("")
   const [calYear, setCalYear]             = useState(() => new Date().getFullYear())
@@ -496,7 +500,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     if (data) {
       const scrollPos = scannerListRef.current?.scrollTop ?? 0
       const map: Record<string, AttRecord> = {}
-      data.forEach((r: any) => { map[r.student_id] = r })
+      data.forEach((r: any) => { map[r.student_id] = { ...r, notes: r.notes || "QR_SCAN" } })
       getQueue().filter(q => q.record.subject === p.subject && q.record.date === dateStr)
         .forEach(q => { map[q.record.student_id] = q.record })
       setAttendance(map)
@@ -519,7 +523,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
         if (data) {
           const scrollPos = scannerListRef.current?.scrollTop ?? 0
           const map: Record<string, AttRecord> = {}
-          data.forEach((r: any) => { map[r.student_id] = r })
+          data.forEach((r: any) => { map[r.student_id] = { ...r, notes: r.notes || "QR_SCAN" } })
           getQueue().filter(q => q.record.subject === period.subject && q.record.date === scannerAttendanceDate)
             .forEach(q => { map[q.record.student_id] = q.record })
           setAttendance(map)
@@ -719,7 +723,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     if (!student) { setUpdatingId(null); return }
     const existing = attendance[studentId]
     const rec: AttRecord = existing
-      ? { ...existing, status: newStatus }
+      ? { ...existing, status: newStatus, notes: "MANUAL" }
       : {
           student_id: studentId, lrn: student.lrn,
           student_name: `${student.last_name}, ${student.first_name}`,
@@ -1106,24 +1110,52 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
           )}
 
           <div className={`rounded-2xl md:rounded-3xl border p-5 ${card}`}>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div>
                 <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>
                   {isScannerLive ? "Today's Periods" : "Periods for this day"}
                 </p>
-                <p className={`text-xs font-bold mt-0.5 ${head}`}>
-                  {scannerDayName}
-                  {!isScannerLive && (
-                    <span className="ml-2 text-[10px] font-black text-red-600 dark:text-red-400">({scannerDateBanner})</span>
-                  )}
-                </p>
-              </div>
-              {isPossiblyLate && period && (
-                <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[9px] font-black uppercase
-                  ${dm ? "bg-amber-500/10 border-amber-500/20 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-600"}`}>
-                  <AlertTriangle size={10} /> Grace period ended
+                <div className="flex items-center gap-3 mt-0.5">
+                  <p className={`text-xs font-bold ${head}`}>
+                    {scannerDayName}
+                    {!isScannerLive && (
+                      <span className="ml-2 text-[10px] font-black text-red-600 dark:text-red-400">({scannerDateBanner})</span>
+                    )}
+                  </p>
                 </div>
-              )}
+              </div>
+              
+              <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar shrink-0">
+                <div className="relative group">
+                  <input
+                    type="date"
+                    value={scannerAttendanceDate}
+                    onChange={e => {
+                      if (e.target.value) setScannerAttendanceDate(e.target.value)
+                    }}
+                    className={`appearance-none rounded-xl border px-3 pr-8 py-1.5 text-[10px] font-black uppercase tracking-wider outline-none transition-all cursor-pointer shadow-sm
+                      focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 group-hover:border-blue-500/50
+                      ${dm ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-white border-slate-200 text-slate-700"}`}
+                  />
+                  <div className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors 
+                    ${dm ? "text-slate-500 group-hover:text-blue-400" : "text-slate-400 group-hover:text-blue-500"}`}>
+                    <CalendarDays size={12} />
+                  </div>
+                </div>
+                {period && (
+                  <button onClick={() => setShowLiveMonitoring(true)}
+                    className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-sm shrink-0
+                      ${dm ? "bg-blue-600 text-white hover:bg-blue-500" : "bg-blue-600 text-white hover:bg-blue-700"}`}>
+                    <Eye size={12} /> Live Monitor
+                  </button>
+                )}
+                {isPossiblyLate && period && (
+                  <div className={`hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[9px] font-black uppercase shrink-0
+                    ${dm ? "bg-amber-500/10 border-amber-500/20 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-600"}`}>
+                    <AlertTriangle size={10} /> Grace period ended
+                  </div>
+                )}
+              </div>
             </div>
 
             {scannerSchedules.length === 0 ? (
@@ -1157,19 +1189,37 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
               <div className={`px-5 py-4 border-b ${divB} flex items-center justify-between`}>
                 <div>
                   <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>QR Scanner</p>
-                  <p className={`text-sm font-black mt-0.5 ${head}`}>{period.subject}</p>
-                  <p className={`text-[10px] ${sub}`}>{period.section} · {fmt(period.start_time)}</p>
+                  <div className="mt-1">
+                    <Select value={period.id} onValueChange={val => {
+                      const next = scannerSchedules.find(s => s.id === val)
+                      if (next) setPeriod(next)
+                    }}>
+                      <SelectTrigger className={`border-none ring-0 focus:ring-0 shadow-none bg-transparent h-fit py-1 px-0 -ml-1 gap-1 text-[13px] font-black outline-none cursor-pointer transition-opacity text-left w-auto max-w-full [&>span]:line-clamp-none
+                        ${head} hover:opacity-80`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className={`z-[150] ${dm ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"}`}>
+                        {scannerSchedules.map(p => (
+                          <SelectItem key={p.id} value={p.id} className="text-xs font-bold cursor-pointer transition-colors max-w-[300px] sm:max-w-none">
+                            {p.subject} ({p.section})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className={`text-[10px] mt-0.5 ${sub}`}>{period.section} · {fmt(period.start_time)}</p>
                   {!isScannerLive && (
                     <p className="text-[10px] font-black text-red-600 dark:text-red-400 mt-1">Selected date · ({scannerDateBanner})</p>
                   )}
                 </div>
-                <button onClick={scanning ? stopCam : () => startCam(scannerClosed)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all
-                    ${scanning
-                      ? "bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20"
-                      : scannerClosed
-                        ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
-                        : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"}`}>
+                <div className="flex items-center gap-2">
+                  <button onClick={scanning ? stopCam : () => startCam(scannerClosed)}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all
+                      ${scanning
+                        ? "bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20"
+                        : scannerClosed
+                          ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
+                          : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"}`}>
                   {scanning
                     ? <><CameraOff size={11} /> Stop</>
                     : scannerClosed
@@ -1177,6 +1227,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                       : <><Camera size={11} /> {jsQRReady ? "Start Scanner" : "Loading..."}</>
                   }
                 </button>
+                </div>
               </div>
 
               <div className="p-4 space-y-4">
@@ -1382,19 +1433,26 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                   {/* ── Auto-Late selector ── */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className={`text-[8px] font-black uppercase tracking-wide ${sub}`}>Auto-Late after:</span>
-                    <select
-                      value={graceMins}
-                      onChange={e => {
-                        const val = Number(e.target.value)
+                    <Select
+                      value={String(graceMins)}
+                      onValueChange={v => {
+                        const val = Number(v)
                         setGraceMins(val)
                         graceMinsRef.current = val // ── FIX: update ref immediately on change ──
                       }}
-                      className={`rounded-xl border px-2 py-1 text-[9px] font-black outline-none transition-colors
+                    >
+                      <SelectTrigger className={`h-6 w-20 rounded-xl border px-2 text-[9px] font-black uppercase shadow-sm outline-none ring-0 focus:ring-2 focus:ring-blue-500/50
                         ${dm ? "bg-slate-800 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}>
-                      {[0,10,20,30,40,50].map(m => (
-                        <option key={m} value={m}>{m === 0 ? "Off" : `${m} min`}</option>
-                      ))}
-                    </select>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className={`z-[150] ${dm ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"}`}>
+                        {[0,10,20,30,40,50].map(m => (
+                          <SelectItem key={m} value={String(m)} className="text-[9px] font-black uppercase cursor-pointer">
+                            {m === 0 ? "Off" : `${m} min`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -2335,6 +2393,54 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
 
       {qrViewStudent && (
         <QRViewerModal student={qrViewStudent} onClose={() => setQrViewStudent(null)} />
+      )}
+
+      {showLiveMonitoring && period && (
+        <LiveMonitoring
+          students={students}
+          period={period}
+          attendance={attendance}
+          dm={dm}
+          isOnline={isOnline}
+          onClose={() => setShowLiveMonitoring(false)}
+          onScan={handleScan}
+          onUpdateStatus={updateStatus}
+          onMarkAllPresent={async () => {
+            const sectionStudents = students.filter(s => s.section === period.section)
+            const unscanned = sectionStudents.filter(s => !attendance[s.id])
+            if (!unscanned.length) { toast.info("All students already recorded"); return }
+            const now = nowTime()
+            const recs = unscanned.map(s => ({
+              student_id: s.id, lrn: s.lrn,
+              student_name: `${s.last_name}, ${s.first_name}`,
+              section: period.section, strand: s.strand || "",
+              subject: period.subject, date: scannerAttendanceDate, time: now,
+              status: "Present" as AttStatus, school_year: schoolYear,
+              notes: "MANUAL",
+            }))
+            const newMap = { ...attendance }
+            recs.forEach(r => { newMap[r.student_id] = r })
+            setAttendance(newMap)
+            const { error } = await supabase.from("attendance").insert(recs)
+            if (error) { toast.error("Failed: " + error.message); return }
+            toast.success(`${recs.length} student${recs.length !== 1 ? "s" : ""} marked Present`)
+          }}
+          onMarkRemainingAbsent={async () => {
+            const sectionStudents = students.filter(s => s.section === period.section)
+            sectionStudents.filter(s => !attendance[s.id]).forEach(s => updateStatus(s.id, "Absent"))
+          }}
+          isScannerLive={isScannerLive}
+          graceMins={graceMins}
+          setGraceMins={(val) => {
+            setGraceMins(val)
+            graceMinsRef.current = val
+          }}
+          beepOn={beepOn}
+          setBeepPersist={setBeepPersist}
+          setQrViewStudent={setQrViewStudent}
+          schedules={scannerSchedules}
+          setPeriod={setPeriod}
+        />
       )}
     </div>
   )

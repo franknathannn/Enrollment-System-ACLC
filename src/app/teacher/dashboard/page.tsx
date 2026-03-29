@@ -188,7 +188,7 @@ export default function TeacherDashboard() {
   const sub  = dm ? "text-slate-400" : "text-slate-500"
 
   const tabBtn = (active: boolean) =>
-    `flex items-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 md:px-5 py-2.5 rounded-2xl transition-all duration-200
+    `flex items-center justify-center md:justify-start gap-1.5 w-full md:w-auto text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 md:px-5 py-2.5 rounded-2xl transition-all duration-200
      ${active
        ? "text-white bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/25"
        : (dm ? "text-slate-500 hover:text-slate-200 hover:bg-slate-700/50" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/60")}`
@@ -230,33 +230,33 @@ export default function TeacherDashboard() {
           onAvatarUpdate={(url) => setSession(prev => prev ? { ...prev, avatar_url: url } : prev)}
         />
 
-        {/* Tab switcher — scrollable on mobile */}
-        <div className="overflow-x-auto pb-1">
-          <div className={`flex items-center gap-1 p-1.5 rounded-2xl border w-fit backdrop-blur-sm ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`}>
-            <button className={tabBtn(tab === "schedule")} onClick={() => setTab("schedule")}>
-              <CalendarDays size={11} /> Schedule
-            </button>
-            <button className={tabBtn(tab === "attendance")} onClick={() => setTab("attendance")}>
-              <QrCode size={11} /> Attendance
-            </button>
-            <button className={tabBtn(tab === "cutting")} onClick={() => setTab("cutting")}>
-              <AlertTriangle size={11} /> Cutting
-            </button>
-            <button className={tabBtn(tab === "reports")} onClick={() => setTab("reports")}>
-              <BarChart2 size={11} /> Reports
-            </button>
-            <button className={tabBtn(tab === "announcements")} onClick={() => setTab("announcements")}>
-              <Bell size={11} /> Announcements
-              {pinnedCount > 0 && (
-                <span className="bg-amber-500 text-white text-[7px] font-black rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-amber-500/30">
-                  {pinnedCount}
-                </span>
-              )}
-            </button>
-            <button className={tabBtn(tab === "calendar")} onClick={() => setTab("calendar")}>
-              <Calendar size={11} /> Calendar
-            </button>
-          </div>
+        {/* Tab switcher — 2×3 grid on mobile, single row on desktop */}
+        <div className="md:overflow-x-auto md:pb-1">
+        <div className={`grid grid-cols-3 md:flex md:flex-nowrap md:items-center md:w-fit gap-1 p-1.5 rounded-2xl border backdrop-blur-sm ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`}>
+          <button className={tabBtn(tab === "schedule")} onClick={() => setTab("schedule")}>
+            <CalendarDays size={11} /> Schedule
+          </button>
+          <button className={tabBtn(tab === "attendance")} onClick={() => setTab("attendance")}>
+            <QrCode size={11} /> Attendance
+          </button>
+          <button className={tabBtn(tab === "cutting")} onClick={() => setTab("cutting")}>
+            <AlertTriangle size={11} /> Cutting
+          </button>
+          <button className={tabBtn(tab === "reports")} onClick={() => setTab("reports")}>
+            <BarChart2 size={11} /> Reports
+          </button>
+          <button className={tabBtn(tab === "announcements")} onClick={() => setTab("announcements")}>
+            <Bell size={11} /> Announcements
+            {pinnedCount > 0 && (
+              <span className="bg-amber-500 text-white text-[7px] font-black rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-amber-500/30">
+                {pinnedCount}
+              </span>
+            )}
+          </button>
+          <button className={tabBtn(tab === "calendar")} onClick={() => setTab("calendar")}>
+            <Calendar size={11} /> Calendar
+          </button>
+        </div>
         </div>
 
         {/* Tab content */}

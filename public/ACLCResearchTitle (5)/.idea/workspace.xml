@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="78acd93f-c2a3-4ffb-921f-7cf296a3f9cc" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../../CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/applicants/api/exportApplicants.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/applicants/api/exportApplicants.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/applicants/components/ApplicantsFilter.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/applicants/components/ApplicantsFilter.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/applicants/components/ApplicantsHeader.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/applicants/components/ApplicantsHeader.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/applicants/hooks/useStudentActions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/applicants/hooks/useStudentActions.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/dashboard/components/sections.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/dashboard/components/sections.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/enrolled/components/EnrolledTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/enrolled/components/EnrolledTable.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/enrolled/components/ScheduleModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/enrolled/components/ScheduleModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/predictive-analytics/components/PredictionControlPanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/predictive-analytics/components/PredictionControlPanel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/predictive-analytics/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/predictive-analytics/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/schedules/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/schedules/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/sections/components/SectionCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/sections/components/SectionCard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/settings/components/EnrollmentMatrix.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/settings/components/EnrollmentMatrix.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/settings/components/SettingsHeader.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/settings/components/SettingsHeader.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/admin/teachers/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/admin/teachers/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/teacher/dashboard/components/AcademicCalendarTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/teacher/dashboard/components/AcademicCalendarTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/teacher/dashboard/components/AttendanceTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/teacher/dashboard/components/AttendanceTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../src/app/teacher/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../src/app/teacher/dashboard/page.tsx" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 3
+}]]></component>
+  <component name="ProjectId" id="3BcwkR8Ej2ACdjPJi0ItlYNx2Dp" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "junie.onboarding.icon.badge.shown": "true",
+    "kotlin-language-version-configured": "true",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.31033.145" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.31033.145" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="78acd93f-c2a3-4ffb-921f-7cf296a3f9cc" name="Changes" comment="" />
+      <created>1774801809167</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774801809167</updated>
+      <workItem from="1774801811081" duration="72000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

@@ -44,7 +44,7 @@ UPSTASH_REDIS_REST_TOKEN=
 
 ### Data Layer
 
-All DB mutations go through **Next.js Server Actions** in `src/lib/actions/`. These files use `"use server"` and import from `src/lib/supabase/server.ts`.
+Most DB mutations go through **Next.js Server Actions** in `src/lib/actions/`. These files use `"use server"` and import from `src/lib/supabase/server.ts`. **Exception**: the Teachers and Communication admin pages call the Supabase client singleton directly (no server action) — they are the only admin features that do this.
 
 Two Supabase clients exist:
 - `createClient()` — cookie-based, respects RLS. Use for standard operations.
@@ -81,9 +81,9 @@ Whether the portal is open is controlled by `system_config` (single row): `is_po
 - **Schedules** (`/admin/schedules`) — strand/shift schedule grid view
 - **Settings** (`/admin/settings`) — enrollment portal control, capacity, financial config, grade operations (rollover, archive)
 - **Archive** (`/admin/archive`) — view/restore archived students by school year; graduate lock/unlock
-- **Predictive Analytics** (`/admin/predictive-analytics`) — charts using Recharts
+- **Predictive Analytics** (`/admin/predictive-analytics`) — charts using Recharts; predictions powered by a pure-TypeScript 4-model ensemble in `src/lib/utils/ensemble.ts` (OLS, Recency-Weighted OLS, Polynomial, Exponential Smoothing)
 - **Activity Logs** (`/admin/activity_logs`) — audit trail
-- **Communication** (`/admin/communication`) — announcements via EmailJS
+- **Communication** (`/admin/communication`) — realtime announcement board backed by Supabase (not EmailJS)
 
 ### Key Directories
 
@@ -113,9 +113,9 @@ src/
 
 ### Middleware (`src/middleware.ts`)
 
-Runs on `/admin/:path*` and `/teacher/:path*`:
-- Redirects unauthenticated requests to `/admin/login` (checks Supabase session cookie)
-- Rate-limits `/admin/login` and `/teacher/login` to 10 requests/minute per IP via Upstash Redis sliding window; returns HTTP 429 if exceeded. Rate limiting is silently skipped when Upstash env vars are absent.
+Matcher covers `/admin/:path*` and `/teacher/:path*`, but behaviors differ:
+- **Auth guard** (redirect to `/admin/login`) applies to `/admin/*` routes only. `/teacher/*` routes are **not** auth-protected by middleware — teacher auth must be enforced at the page/component level.
+- **Rate limiting** applies to both `/admin/login` and `/teacher/login`: 10 requests/minute per IP via Upstash Redis sliding window; returns HTTP 429 if exceeded. Silently skipped when Upstash env vars are absent.
 
 ### Teacher Dashboard
 
@@ -134,3 +134,4 @@ Runs on `/admin/:path*` and `/teacher/:path*`:
 - Document generation uses `docxtemplater` + `pizzip`; Excel export uses `xlsx`.
 - `typescript.ignoreBuildErrors: true` is intentional — Supabase Deno edge function types would otherwise break the build.
 - React Compiler is enabled (`reactCompiler: true` in `next.config.ts`).
+- `src/lib/themeColors.ts` exports a `themeColors` token map consumed by components that apply theme colors imperatively (alongside `useThemeStore`).

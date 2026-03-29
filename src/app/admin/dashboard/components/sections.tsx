@@ -349,9 +349,9 @@ export const SpikeAnalyticsSection = memo(function SpikeAnalyticsSection({ spike
       <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4">
         <div>
           <ThemedText variant="h3" className="flex items-center gap-3 md:text-2xl" isDarkMode={isDarkMode}>
-            <Zap className="text-amber-600 dark:text-amber-400" /> Enrollment Spike Analytics
+            <Zap className="text-amber-600 dark:text-amber-400" /> Enrollment Analysis
           </ThemedText>
-          <ThemedText variant="label" className="mt-1" isDarkMode={isDarkMode}>Capacity Monitoring Analytics</ThemedText>
+          <ThemedText variant="label" className="mt-1" isDarkMode={isDarkMode}>Capacity Monitoring Analysis</ThemedText>
         </div>
         <Tooltip>
         <TooltipTrigger>
@@ -636,7 +636,7 @@ export const CapacitySection = memo(function CapacitySection({ capacityPercentag
               <div className="space-y-3">
                 <ThemedText variant="label" className="tracking-[0.4em] font-black text-[10px] md:text-[12px] opacity-50 uppercase" isDarkMode={isDarkMode}>Campus Capacity Status</ThemedText>
                 <ThemedText variant="h2" className="text-4xl md:text-6xl font-black tracking-tighter leading-none" isDarkMode={isDarkMode}>
-                  Saturation: <span className="text-blue-600 dark:text-blue-400 tabular-nums">{capacityPercentage.toFixed(1)}%</span>
+                  Saturation <span className="text-blue-600 dark:text-blue-400 tabular-nums">{capacityPercentage.toFixed(1)}%</span>
                 </ThemedText>
               </div>
               <Tooltip>

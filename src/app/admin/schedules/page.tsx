@@ -590,15 +590,10 @@ export default function SchedulesPage() {
       <React.Fragment>
 
       {/* ── CONTROLS ────────────────────────────────────────────────────── */}
-      {/* Scrolls horizontally on mobile, no wrap — hidden scrollbar */}
       <div
-        className="flex gap-2 items-center"
+        className="flex flex-wrap justify-center sm:flex-nowrap sm:justify-start gap-2 items-center"
         style={{
-          overflowX: "auto",
-          overflowY: "visible",
           paddingBottom: 2,
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
           animation: "saas-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) 0.1s both",
         } as React.CSSProperties}
       >

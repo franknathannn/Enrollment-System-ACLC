@@ -115,7 +115,7 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
         modals.setDeleteModalOpen(false); modals.setActiveDeleteStudent(null);
       }
     } catch (err: any) {
-      toast.error("❌ Delete failed", { id: toastId })
+      toast.error("Delete failed", { id: toastId })
       setExitingRows(prev => { const next = { ...prev }; delete next[studentId]; return next })
       setHiddenRows(prev => { const next = new Set(prev); next.delete(studentId); return next })
     } finally {
@@ -178,7 +178,7 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
         modals.setBulkDeclineModalOpen(false); modals.setDeclineReason("")
       }
     } catch (err: any) {
-      toast.error("❌ Bulk action failed", { id: toastId })
+      toast.error("Bulk action failed", { id: toastId })
       setExitingRows(prev => { const next = { ...prev }; selectedIds.forEach(id => delete next[id]); return next })
       setHiddenRows(prev => { const next = new Set(prev); selectedIds.forEach(id => next.delete(id)); return next })
     } finally {
@@ -209,7 +209,7 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
       toast.success(`${selectedStudents.length} student${selectedStudents.length !== 1 ? 's' : ''} permanently deleted`, { id: toastId })
       modals.setBulkDeleteModalOpen(false)
     } catch (err: any) {
-      toast.error("❌ Bulk deletion failed", { id: toastId })
+      toast.error("Bulk deletion failed", { id: toastId })
       setExitingRows(prev => { const next = { ...prev }; selectedIds.forEach(id => delete next[id]); return next })
       setHiddenRows(prev => { const next = new Set(prev); selectedIds.forEach(id => next.delete(id)); return next })
     } finally {

@@ -46,9 +46,9 @@ export function EnrollmentMatrix({
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-6">
+      <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-slate-800 pb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-500 text-white rounded-xl">
+          <div className="p-2 bg-blue-500 text-white rounded-xl shrink-0">
             <CalendarDays size={20} />
           </div>
           <ThemedText variant="h3" className="text-xs font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>

@@ -209,20 +209,22 @@ export const EnrolledTable = memo(({
                 </div>
 
                 {/* Action Dock */}
-                <div className={`p-2 flex items-center gap-1.5 border-t ${theme.dockBg} ${theme.border}`}>
-                  <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onView(s) }} className={`flex-1 h-11 rounded-2xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>
-                    <Eye size={14} className="mr-1.5" /> View
-                  </Button>
-                  {s.section && s.section !== 'Unassigned' && (
-                    <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setScheduleStudent(s) }} className={`flex-1 h-11 rounded-2xl text-[8px] font-black uppercase tracking-widest text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all active:scale-95`}>
-                      <CalendarDays size={14} className="mr-1.5" /> Schedule
+                <div className={`p-2 flex flex-col gap-1.5 border-t ${theme.dockBg} ${theme.border}`}>
+                  <div className="flex items-center gap-1.5">
+                    <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onView(s) }} className={`flex-1 h-11 rounded-2xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>
+                      <Eye size={14} className="mr-1.5" /> View
                     </Button>
-                  )}
-                  <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onToggleStatus(s) }} className={`flex-1 h-11 rounded-2xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${isLocked ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20' : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'}`}>
-                    {isLocked ? <Power size={14} className="mr-1.5" /> : <PowerOff size={14} className="mr-1.5" />}
-                    {isLocked ? 'Activate' : 'Deactivate'}
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onReset(s) }} className="flex-1 h-11 rounded-2xl text-[8px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all active:scale-95">
+                    {s.section && s.section !== 'Unassigned' && (
+                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setScheduleStudent(s) }} className={`flex-1 h-11 rounded-2xl text-[8px] font-black uppercase tracking-widest text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all active:scale-95`}>
+                        <CalendarDays size={14} className="mr-1.5" /> Schedule
+                      </Button>
+                    )}
+                    <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onToggleStatus(s) }} className={`flex-1 h-11 rounded-2xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${isLocked ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20' : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'}`}>
+                      {isLocked ? <Power size={14} className="mr-1.5" /> : <PowerOff size={14} className="mr-1.5" />}
+                      {isLocked ? 'Activate' : 'Deactivate'}
+                    </Button>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onReset(s) }} className="w-full h-9 rounded-2xl text-[8px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all active:scale-95">
                     <RotateCcw size={14} className="mr-1.5" /> Reset
                   </Button>
                 </div>

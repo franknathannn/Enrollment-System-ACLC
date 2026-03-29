@@ -111,7 +111,7 @@ export const SectionCard = memo(function SectionCard({ section, isSelected, isDa
         </div>
 
         {/* Combined M/F progress bar */}
-        <div className={`relative w-full rounded-full overflow-hidden h-2.5 sm:h-3 max-sm:border-0 max-sm:bg-slate-100 dark:max-sm:bg-slate-900/60 sm:border ${isDarkMode ? "sm:border-white/10" : "sm:border-slate-200"} ${theme.track}`}>
+        <div className={`relative w-full rounded-full overflow-hidden h-3 max-sm:border-0 max-sm:bg-slate-100 dark:max-sm:bg-slate-900/60 sm:border ${isDarkMode ? "sm:border-white/10" : "sm:border-slate-200"} ${theme.track}`}>
           <div style={{ width: `${mP}%` }} className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-blue-700 to-blue-400 transition-all duration-1000 ease-out" />
           <div style={{ width: `${fP}%` }} className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-pink-700 to-pink-400 transition-all duration-1000 ease-out" />
           <div style={{ left: getFinishLinePosition() }} className={`absolute top-0 bottom-0 z-10 -translate-x-1/2 w-[2px] mix-blend-difference opacity-60 ${theme.line}`} />

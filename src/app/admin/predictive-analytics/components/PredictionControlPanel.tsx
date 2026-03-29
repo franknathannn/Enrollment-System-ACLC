@@ -1,41 +1,18 @@
 "use client"
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { FlaskConical, Layers, UserPlus, Zap, Settings2 } from "lucide-react"
-import { toast } from "sonner"
+import { FlaskConical, Layers, UserPlus, Settings2 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface Props {
   mode: string
   setMode: (m: any) => void
-  simulationValue: number
-  setSimulationValue: (v: number) => void
-  currentRealValue: number
   isDarkMode: boolean
 }
 
-export function PredictionControlPanel({ mode, setMode, simulationValue, setSimulationValue, currentRealValue, isDarkMode }: Props) {
+export function PredictionControlPanel({ mode, setMode, isDarkMode }: Props) {
   
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    if (val === '') {
-      setSimulationValue(0)
-      return
-    }
-    const parsed = parseInt(val)
-    if (!isNaN(parsed)) {
-      setSimulationValue(parsed)
-    }
-  }
-
-  const handleBlur = () => {
-    if (simulationValue <= 0) {
-      toast.error("Simulation Error: Total enrollees cannot be empty or zero.")
-    }
-  }
-
   return (
     <div className={`relative overflow-hidden flex flex-col md:flex-row items-end gap-8 p-8 rounded-[2rem] shadow-2xl border transition-all duration-500 ${
       isDarkMode 
@@ -100,32 +77,6 @@ export function PredictionControlPanel({ mode, setMode, simulationValue, setSimu
         </Select>
       </div>
 
-      {mode === 'simulation' && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-700 ease-out">
-          <div className="flex items-center gap-2">
-            <Zap className="w-3.5 h-3.5 text-purple-500 fill-purple-500/20" />
-            <Label className="text-[10px] font-black uppercase tracking-[0.25em] text-purple-500">
-              Hypothetical Input
-            </Label>
-          </div>
-          
-          <div className="relative group">
-             <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-             <Input 
-               type="number" 
-               value={simulationValue === 0 ? '' : simulationValue}
-               onChange={handleInputChange}
-               onBlur={handleBlur}
-               placeholder="0"
-               className={`relative w-40 h-12 font-black text-xl rounded-2xl transition-all tabular-nums text-center ${
-                 isDarkMode 
-                   ? 'text-purple-400 border-purple-900/50 bg-slate-950 placeholder:text-purple-900/30 focus:border-purple-500' 
-                   : 'text-purple-600 border-purple-100 bg-white placeholder:text-purple-200 focus:border-purple-400 shadow-sm'
-               }`}
-             />
-          </div>
-        </div>
-      )}
     </div>
   )
 }

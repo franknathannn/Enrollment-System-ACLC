@@ -106,7 +106,7 @@ export async function downloadApplicantsExcel(filter: string) {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
 
-    toast.success("Kaboom! List Exported Successfully.", { id: toastId });
+    toast.success("List Exported Successfully.", { id: toastId });
 
   } catch (err: any) {
     console.error(err);

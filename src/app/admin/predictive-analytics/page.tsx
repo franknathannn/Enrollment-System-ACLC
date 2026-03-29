@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/client"
-import { ArrowLeft, CalendarClock, RefreshCw, AlertCircle, Wand2, Settings2, TrendingUp, TrendingDown, Minus, Target, Users, ChevronRight, BarChart2 } from "lucide-react"
+import { ArrowLeft, CalendarClock, RefreshCw, AlertCircle, Wand2, Settings2, TrendingUp, TrendingDown, Minus, Target, Users, ChevronRight, BarChart2, ChevronDown, ChevronUp, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -221,21 +221,31 @@ function ThisYearSpotlight({
             />
           </div>
 
-          <div className="relative h-4">
-            <span className="absolute text-[10px] text-rose-400 font-semibold -translate-x-1/2" style={{ left: `${declPct}%` }}>
-              ▲ {lowestPossible.toLocaleString()}
-            </span>
-            <span className="absolute text-[10px] text-blue-500 font-semibold -translate-x-1/2" style={{ left: `${realPct}%` }}>
-              ▲ {expectedOutcome.toLocaleString()}
-            </span>
-            <span className="absolute right-0 text-[10px] font-semibold text-emerald-500">
-              {highestPossible.toLocaleString()} ▲
-            </span>
+          {/* Desktop: inline labels at their bar position */}
+          <div className="relative h-5 mt-2 hidden md:block">
+            <span className="absolute text-[10px] text-rose-400 font-semibold -translate-x-1/2" style={{ left: `${declPct}%` }}>▲ {lowestPossible.toLocaleString()}</span>
+            <span className="absolute text-[10px] text-blue-500 font-semibold -translate-x-1/2" style={{ left: `${realPct}%` }}>▲ {expectedOutcome.toLocaleString()}</span>
+            <span className="absolute right-0 text-[10px] font-semibold text-emerald-500">{highestPossible.toLocaleString()} ▲</span>
           </div>
-          <div className="flex justify-between text-[9px] uppercase tracking-widest">
+          <div className="relative h-4 mt-1 hidden md:flex justify-between text-[9px] uppercase tracking-widest">
             <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Declining</span>
             <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Realistic</span>
-            <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Optimistic ↑</span>
+            <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Optimistic</span>
+          </div>
+          {/* Mobile: fixed 3-column grid */}
+          <div className="grid grid-cols-3 gap-1 mt-3 md:hidden">
+            <div className="text-left">
+              <p className="text-[9px] uppercase font-semibold text-rose-400 tracking-wider">Declining</p>
+              <p className="text-[10px] font-semibold text-rose-400 tabular-nums">{lowestPossible.toLocaleString()}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[9px] uppercase font-semibold text-blue-500 tracking-wider">Realistic</p>
+              <p className="text-[10px] font-semibold text-blue-500 tabular-nums">{expectedOutcome.toLocaleString()}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] uppercase font-semibold text-emerald-500 tracking-wider">Optimistic</p>
+              <p className="text-[10px] font-semibold text-emerald-500 tabular-nums">{highestPossible.toLocaleString()}</p>
+            </div>
           </div>
         </div>
 
@@ -285,6 +295,8 @@ function LovCvPythonEnginePanel({
   currentCount: number
   pendingCount: number
 }) {
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
   if (!result) return (
     <div className={`rounded-2xl border p-8 flex items-center justify-center gap-3 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
       <AlertCircle className="w-4 h-4 text-slate-400" />
@@ -312,7 +324,7 @@ function LovCvPythonEnginePanel({
             </div>
             <div>
               <h3 className={`text-sm font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-emerald-400' : 'text-slate-600'}`}>
-                LOV-CV (PYTHON ENGINE)
+                LOO-CV (PYTHON ENGINE)
               </h3>
             </div>
           </div>
@@ -323,9 +335,17 @@ function LovCvPythonEnginePanel({
             <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${isDarkMode ? 'bg-blue-950/30 border-blue-800/30 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
               Works on Vercel
             </span>
+            <button
+              onClick={() => setIsCollapsed(v => !v)}
+              className={`p-2 rounded-xl border transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'border-slate-700 bg-slate-800/60 text-slate-400 hover:text-white hover:border-slate-600' : 'border-slate-200 bg-slate-50 text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+              title={isCollapsed ? 'Expand' : 'Minimize'}
+            >
+              {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 
+        {!isCollapsed && <>
         {/* Enrolled so far */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`rounded-2xl p-6 col-span-1 border transition-all ${isDarkMode ? 'bg-slate-800/40 border-slate-700/50 hover:border-emerald-500/30' : 'bg-slate-50 border-slate-100 hover:border-emerald-200'}`}>
@@ -359,10 +379,31 @@ function LovCvPythonEnginePanel({
                     <div className="absolute top-0 bottom-0 w-0.5 bg-blue-500/60 z-10"  style={{ left: `${realPct}%` }} />
                     <div className={`absolute top-0 left-0 bottom-0 rounded-full transition-all duration-1000 ease-out ${passed ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'}`} style={{ width: `${Math.min(fillPct, 100)}%` }} />
                   </div>
-                  <div className="relative h-5 mt-2">
+                  {/* Desktop: inline labels at their bar position */}
+                  <div className="relative h-5 mt-2 hidden md:block">
                     <span className="absolute text-[10px] text-rose-500 font-black -translate-x-1/2" style={{ left: `${declPct}%` }}>▲ {result.declining.toLocaleString()}</span>
                     <span className="absolute text-[10px] font-black -translate-x-1/2" style={{ left: `${realPct}%`, color: isDarkMode ? '#60a5fa' : '#2563eb' }}>▲ {result.realistic.toLocaleString()}</span>
                     <span className="absolute right-0 text-[10px] text-emerald-500 font-black">{result.optimistic.toLocaleString()} ▲</span>
+                  </div>
+                  <div className="relative h-4 mt-1 hidden md:flex justify-between text-[9px] uppercase tracking-widest">
+                    <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Declining</span>
+                    <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Realistic</span>
+                    <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Optimistic</span>
+                  </div>
+                  {/* Mobile: fixed 3-column grid */}
+                  <div className="grid grid-cols-3 gap-1 mt-3 md:hidden">
+                    <div className="text-left">
+                      <p className="text-[9px] uppercase font-black text-rose-500 tracking-wider">Declining</p>
+                      <p className="text-[10px] font-black text-rose-500 tabular-nums">{result.declining.toLocaleString()}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className={`text-[9px] uppercase font-black tracking-wider ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Realistic</p>
+                      <p className={`text-[10px] font-black tabular-nums ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{result.realistic.toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] uppercase font-black text-emerald-500 tracking-wider">Optimistic</p>
+                      <p className="text-[10px] font-black text-emerald-500 tabular-nums">{result.optimistic.toLocaleString()}</p>
+                    </div>
                   </div>
                 </div>
               )
@@ -423,20 +464,18 @@ function LovCvPythonEnginePanel({
               return (
                 <Tooltip key={i}>
                   <TooltipTrigger asChild>
-                    <div className={`flex items-center justify-between px-6 py-4 hover:bg-slate-500/5 transition-colors cursor-help`}>
-                      <div className="flex items-center gap-3">
-                        <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-indigo-500' : i === 2 ? 'bg-purple-500' : 'bg-emerald-500'}`} />
-                        <span className={`text-xs font-black uppercase tracking-wider ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{m.label}</span>
+                    <div className={`grid grid-cols-[1fr_72px_72px] items-center px-6 py-4 hover:bg-slate-500/5 transition-colors cursor-help gap-3`}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-indigo-500' : i === 2 ? 'bg-purple-500' : 'bg-emerald-500'}`} />
+                        <span className={`text-[10px] font-black uppercase tracking-wider leading-tight ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{m.label}</span>
                       </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <p className={`text-sm font-black tabular-nums tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{Math.round(m.pred).toLocaleString()}</p>
-                          <p className={`text-[9px] font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>PREDICTED</p>
-                        </div>
-                        <div className="text-right min-w-[60px]">
-                          <p className={`text-sm font-black tabular-nums ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{m.weight}%</p>
-                          <p className={`text-[9px] font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>influence</p>
-                        </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-black tabular-nums tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{Math.round(m.pred).toLocaleString()}</p>
+                        <p className={`text-[9px] font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>PREDICTED</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-black tabular-nums ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{m.weight}%</p>
+                        <p className={`text-[9px] font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>INFLUENCE</p>
                       </div>
                     </div>
                   </TooltipTrigger>
@@ -455,6 +494,7 @@ function LovCvPythonEnginePanel({
             Based on {result.n_records} years of past enrollment data · More historical data improves accuracy · Final numbers may vary as enrollment is ongoing
           </p>
         </div>
+        </>}
       </div>
     </div>
   )
@@ -1316,17 +1356,14 @@ export default function PredictiveAnalytics() {
                     <HistoryEditor historyData={history} isDarkMode={isDarkMode} />
                     <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border shadow-sm transition-all ${isDarkMode ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
                       <Wand2 className="w-3.5 h-3.5 animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">LOV-CV (PYTHON ENGINE)</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">LOO-CV (PYTHON ENGINE)</span>
                     </div>
                 </div>
             </div>
 
-            <PredictionControlPanel 
-                mode={mode} 
-                setMode={setMode as any} 
-                simulationValue={simulationValue} 
-                setSimulationValue={setSimulationValue}
-                currentRealValue={effectiveLiveCount}
+            <PredictionControlPanel
+                mode={mode}
+                setMode={setMode as any}
                 isDarkMode={isDarkMode}
             />
         </div>
@@ -1367,27 +1404,54 @@ export default function PredictiveAnalytics() {
                   </p>
                 </div>
 
-                <div className={`flex rounded-xl border overflow-hidden text-xs font-bold shadow-sm ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
-                  <button
-                    onClick={() => setChartFocus('this_year')}
-                    className={`px-3.5 py-2 flex items-center gap-1.5 transition-all ${
-                      chartFocus === 'this_year'
-                        ? 'bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-inner'
-                        : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-white'
-                    }`}
-                  >
-                    <Target className="w-3 h-3" /> Focus View
-                  </button>
-                  <button
-                    onClick={() => setChartFocus('full')}
-                    className={`px-3.5 py-2 flex items-center gap-1.5 transition-all ${
-                      chartFocus === 'full'
-                        ? 'bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-inner'
-                        : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-white'
-                    }`}
-                  >
-                    <BarChart2 className="w-3 h-3" /> Full History
-                  </button>
+                <div className="flex items-center gap-2 flex-nowrap">
+                  {mode === 'simulation' && (
+                    <div className="relative group animate-in fade-in slide-in-from-right-4 duration-300 shrink-0">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl blur opacity-20 group-hover:opacity-35 transition duration-500" />
+                      <div className="relative flex items-center gap-1.5">
+                        <Zap className="w-3 h-3 text-purple-500 fill-purple-500/20 shrink-0" />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={simulationValue === 0 ? '' : simulationValue}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '')
+                            if (val === '') { setSimulationValue(0); return }
+                            const parsed = parseInt(val, 10)
+                            if (!isNaN(parsed)) setSimulationValue(parsed)
+                          }}
+                          placeholder="0"
+                          className={`w-[72px] h-8 px-2 font-black text-xs rounded-xl border text-center tabular-nums transition-all outline-none focus:ring-2 focus:ring-purple-500/30 ${
+                            isDarkMode
+                              ? 'text-purple-400 border-purple-900/50 bg-slate-950 placeholder:text-purple-900/30 focus:border-purple-500'
+                              : 'text-purple-600 border-purple-200 bg-white placeholder:text-purple-200 focus:border-purple-400 shadow-sm'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <div className={`flex rounded-xl border overflow-hidden text-xs font-bold shadow-sm shrink-0 ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
+                    <button
+                      onClick={() => setChartFocus('this_year')}
+                      className={`px-3 h-8 flex items-center gap-1 transition-all ${
+                        chartFocus === 'this_year'
+                          ? 'bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-inner'
+                          : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-white'
+                      }`}
+                    >
+                      <Target className="w-3 h-3 shrink-0" /> Focus View
+                    </button>
+                    <button
+                      onClick={() => setChartFocus('full')}
+                      className={`px-3 h-8 flex items-center gap-1 transition-all ${
+                        chartFocus === 'full'
+                          ? 'bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-inner'
+                          : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-white'
+                      }`}
+                    >
+                      <BarChart2 className="w-3 h-3 shrink-0" /> Full History
+                    </button>
+                  </div>
                 </div>
               </div>
               <EnrollmentTrendChart data={ensembleChartData || []} isDarkMode={isDarkMode} mode={mode as any} />

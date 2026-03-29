@@ -29,10 +29,10 @@ export function SettingsHeader({ isDarkMode }: SettingsHeaderProps) {
             <span className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}`} />
             <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>System Control</p>
           </div>
-          <h1 className={`text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+          <h1 className={`text-2xl sm:text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
             Configuration
           </h1>
-          <p className={`text-[11px] font-semibold mt-1.5 italic ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`text-[9px] sm:text-[11px] font-semibold mt-1.5 italic ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
             AMA ACLC Northbay Enrollment Customization
           </p>
         </div>
