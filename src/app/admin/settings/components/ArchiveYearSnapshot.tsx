@@ -4,7 +4,7 @@ import { useState } from "react"
 import { BookMarked, AlertTriangle, CheckCircle2, Loader2, ArrowRight, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { recordYearlySnapshot } from "@/lib/actions/history"
 
 interface ArchiveYearSnapshotProps {

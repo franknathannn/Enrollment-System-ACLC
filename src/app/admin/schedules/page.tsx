@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState, useRef, useCallback } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { useTheme } from "@/hooks/useTheme"
 import { themeColors } from "@/lib/themeColors"
 import { toast } from "sonner"

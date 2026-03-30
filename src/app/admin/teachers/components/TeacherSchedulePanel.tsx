@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { CalendarDays, Clock, MapPin, BookOpen, Users } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import type { Teacher } from "../types"
 
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] as const

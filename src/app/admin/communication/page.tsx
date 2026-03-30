@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef, useCallback, memo } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/admin-client";
 import { 
   Send, User as UserIcon, Loader2, MoreVertical, 
   Trash2, Edit3, X, Check, Wifi, WifiOff, Eye, MessageSquare, ShieldCheck, Sparkles 

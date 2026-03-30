@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import { toast } from "sonner"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { updateApplicantStatus, deleteApplicant, bulkUpdateApplicantStatus, bulkDeleteApplicants } from "@/lib/actions/applicants"
 
 interface ActionDependencies {
@@ -44,7 +44,7 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
       setHiddenRows(prev => { const next = new Set(prev); next.add(studentId); return next })
       const result = await updateApplicantStatus(studentId, status, feedback);
       if (result.success) {
-        const { data: { user } } = await supabase.auth.getUser();    
+        const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;    
         const student = students.find(s => s.id === studentId);
         const assignedSectionId = result.assignedSectionId;
         const assignedSectionName = result.assignedSection || 'Unassigned';
@@ -101,7 +101,7 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
       const result = await deleteApplicant(studentId);
       if (result.success) {
         setStudents(prev => prev.filter(s => s.id !== studentId));
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
         await supabase.from('activity_logs').insert([{
           admin_id: user?.id,
           admin_name: user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Authorized Admin',
@@ -133,7 +133,7 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
       const targetStatus = newStatus === 'Accepted' ? 'Approved' : newStatus
       const result = await bulkUpdateApplicantStatus(selectedIds, targetStatus, feedback);
       if (result.success) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
         const selectedStudents = students.filter(s => selectedIds.includes(s.id));
         const successfulUpdates = result.results.filter(r => r.success);
         const logEntries = selectedStudents.map(s => {
@@ -193,7 +193,7 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
       setExitingRows(prev => { const next = { ...prev }; selectedIds.forEach(id => { next[id] = true }); return next })
       await new Promise(resolve => setTimeout(resolve, 280))
       setHiddenRows(prev => { const next = new Set(prev); selectedIds.forEach(id => next.add(id)); return next })
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
       const selectedStudents = students.filter(s => selectedIds.includes(s.id));
       const logEntries = selectedStudents.map(s => ({
         admin_id: user?.id,

@@ -9,7 +9,7 @@ import {
   Loader2, X, Star, Users, BookOpen, CalendarOff, Edit2, Check,
   Globe, Flag,
 } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
 
 export interface CalendarEvent {

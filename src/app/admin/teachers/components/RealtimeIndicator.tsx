@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { Wifi, WifiOff } from "lucide-react"
 
 interface RealtimeIndicatorProps {

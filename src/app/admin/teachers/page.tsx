@@ -9,7 +9,7 @@ import { TeacherFormDialog }   from "./components/TeacherFormDialog"
 import { TeacherDetailDrawer } from "./components/TeacherDetailDrawer"
 import { AnnouncementPanel }   from "./components/AnnouncementPanel"
 import type { Teacher }        from "./types"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { AcademicCalendarTab } from "@/app/teacher/dashboard/components/AcademicCalendarTab"
 
 import { useTheme } from "@/hooks/useTheme"

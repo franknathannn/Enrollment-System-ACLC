@@ -14,7 +14,7 @@ import {
   Search, X, ScanLine, ChevronLeft, ChevronRight,
   CalendarDays, BookOpen, Users, Eye, ShieldCheck, Download, Sun, Moon,
 } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/teacher-client"
 import {
   STUDENT_ATTENDANCE_QR_THEMES as QR_THEMES,
   type StudentAttendanceQrThemeKey,

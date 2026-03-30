@@ -7,7 +7,7 @@ import {
   AlertCircle, RefreshCw, History, ShieldAlert,
   CircleCheck, CircleX
 } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { OptimizedImage } from "./OptimizedImage"
 
 const MAX_TRIES = 3

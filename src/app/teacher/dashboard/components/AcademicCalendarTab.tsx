@@ -9,7 +9,7 @@ import {
   CalendarDays, ChevronLeft, ChevronRight, Loader2,
   Star, Users, BookOpen, CalendarOff, Globe, Flag,
 } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/teacher-client"
 
 interface CalendarEvent {
   id: string

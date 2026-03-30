@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { CalendarDays, Bell, QrCode, BarChart2, AlertTriangle, Calendar } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/teacher-client"
 import { toast } from "sonner"
 
 import { DashboardNav }            from "./components/DashboardNav"
@@ -63,31 +63,52 @@ export default function TeacherDashboard() {
 
   // ── Auth guard ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    const raw = sessionStorage.getItem("teacher_session")
-    if (!raw) { router.replace("/teacher/login"); return }
-    const sess: TeacherSession = JSON.parse(raw)
-
-    // Fetch avatar_url from DB async
-    const fetchAvatar = async () => {
-      const { data, error } = await supabase
-        .from("teachers")
-        .select("avatar_url")
-        .eq("id", sess.id)
-        .single()
-
-      if (error) {
-        setSession(sess)
+    const init = async () => {
+      // getSession() reads from cookies — no network call, fast and resilient.
+      // Middleware already verified the JWT with getUser() before this page loaded,
+      // so trusting the session here is safe.
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
+      if (!user || user.user_metadata?.role !== "teacher") {
+        router.replace("/teacher/login")
         return
       }
-
-      const withAvatar = { ...sess, avatar_url: data?.avatar_url ?? null }
-      setSession(withAvatar)
-      // Patch sessionStorage so refresh picks it up
-      sessionStorage.setItem("teacher_session", JSON.stringify(withAvatar))
+      const { data: teacher, error } = await supabase
+        .from("teachers")
+        .select("id, full_name, email, avatar_url")
+        .eq("email", user.email!)
+        .single()
+      // PGRST116 = no rows — teacher record genuinely doesn't exist
+      if (error?.code === "PGRST116" || (!error && !teacher)) {
+        router.replace("/teacher/login")
+        return
+      }
+      // Any other error (network, RLS) is transient — don't kick the teacher out
+      if (error) {
+        toast.error("Could not load profile. Please refresh.")
+        setLoading(false)
+        return
+      }
+      const sess: TeacherSession = {
+        id:         teacher!.id,
+        full_name:  teacher!.full_name,
+        email:      teacher!.email,
+        avatar_url: teacher!.avatar_url ?? null,
+      }
+      setSession(sess)
+      loadData(sess)
     }
+    init()
+  }, []) // eslint-disable-line
 
-    fetchAvatar()
-    loadData(sess)
+  // ── React to real sign-out events (token refresh failure, external revocation)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        router.replace("/teacher/login")
+      }
+    })
+    return () => subscription.unsubscribe()
   }, []) // eslint-disable-line
 
   // ── Load data ──────────────────────────────────────────────────────────────
@@ -157,8 +178,8 @@ export default function TeacherDashboard() {
           const updated = payload.new as { is_active?: boolean }
           if (updated.is_active === false) {
             toast.error("Your account has been deactivated by the administrator.", { duration: 4000 })
-            setTimeout(() => {
-              sessionStorage.removeItem("teacher_session")
+            setTimeout(async () => {
+              await supabase.auth.signOut()
               router.replace("/teacher/login")
             }, 2000)
           } else if (updated.is_active === true) {
@@ -170,8 +191,8 @@ export default function TeacherDashboard() {
     return () => { supabase.removeChannel(chan) }
   }, [session, loadData])
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("teacher_session")
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
     router.push("/teacher/login")
   }
 

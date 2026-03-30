@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { createPortal } from "react-dom"
 import { Loader2, X, CalendarDays } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 
 const ALL_DAYS  = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] as const
 const DAY_SHORT = { Monday:"MON", Tuesday:"TUE", Wednesday:"WED", Thursday:"THU", Friday:"FRI", Saturday:"SAT" }

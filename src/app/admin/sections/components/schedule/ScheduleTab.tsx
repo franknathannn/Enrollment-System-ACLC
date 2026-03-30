@@ -1,7 +1,7 @@
 // sections/components/schedule/ScheduleTab.tsx
 
 import { memo, useState, useEffect, useRef } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
 import { ScheduleGrid }          from "./ScheduleGrid"
 import { ScheduleToolbar }       from "./ScheduleToolbar"

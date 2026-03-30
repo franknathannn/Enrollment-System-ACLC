@@ -48,22 +48,27 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next()
     }
 
-    let response = NextResponse.next({
-      request: { headers: request.headers },
-    })
+    // Each portal uses its own storageKey so their sessions are independent
+    const isAdminPath   = request.nextUrl.pathname.startsWith('/admin')
+    const storageKey    = isAdminPath ? 'sb-aclc-admin-auth' : 'sb-aclc-teacher-auth'
+
+    // Track cookies that need to be refreshed
+    let refreshedCookies: { name: string; value: string; options: any }[] = []
+    let response = NextResponse.next({ request })
 
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
+      auth: { storageKey },
       cookies: {
-        getAll() { 
-          return request.cookies.getAll() 
+        getAll() {
+          return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
+          // Store refreshed cookies so we can apply them to ANY response (including redirects)
+          refreshedCookies = cookiesToSet
           cookiesToSet.forEach(({ name, value }) => {
             request.cookies.set(name, value)
           })
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          })
+          response = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options)
           })
@@ -71,29 +76,42 @@ export async function middleware(request: NextRequest) {
       },
     })
 
-    // Only check auth for /admin routes
+    // IMPORTANT: Always call getUser() to refresh the session token.
+    // This must happen BEFORE any auth checks so the refreshed cookies
+    // are captured in `refreshedCookies`.
+    const { data: { user } } = await supabase.auth.getUser()
+
     const url = request.nextUrl.clone()
-    
-    if (url.pathname.startsWith('/admin')) {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        
-        const isLoginPage = url.pathname === '/admin/login'
-        
-        if (!isLoginPage && !user) {
-          return NextResponse.redirect(new URL('/admin/login', request.url))
-        }
-        
-        if (isLoginPage && user) {
-          return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-        }
-      } catch (authError) {
-        // If auth check fails, allow non-login admin routes to proceed
-        // but redirect to login for protected routes
-        const isLoginPage = url.pathname === '/admin/login'
-        if (!isLoginPage) {
-          return NextResponse.redirect(new URL('/admin/login', request.url))
-        }
+
+    if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/teacher')) {
+      const isAdmin     = url.pathname.startsWith('/admin')
+      const loginPath   = isAdmin ? '/admin/login'     : '/teacher/login'
+      const homePath    = isAdmin ? '/admin/dashboard' : '/teacher/dashboard'
+      const isLoginPage = url.pathname === loginPath
+
+      const role = user?.user_metadata?.role as string | undefined
+
+      // For admin routes: any authenticated non-teacher user is an admin
+      // For teacher routes: must have role === "teacher"
+      const isAuthorized = isAdmin
+        ? (!!user && role !== 'teacher')
+        : (!!user && role === 'teacher')
+
+      if (!isLoginPage && !isAuthorized) {
+        const redirectResponse = NextResponse.redirect(new URL(loginPath, request.url))
+        // CRITICAL: Apply refreshed cookies to redirect responses too.
+        // Without this, the refreshed token is lost and the user gets logged out.
+        refreshedCookies.forEach(({ name, value, options }) => {
+          redirectResponse.cookies.set(name, value, options)
+        })
+        return redirectResponse
+      }
+      if (isLoginPage && isAuthorized) {
+        const redirectResponse = NextResponse.redirect(new URL(homePath, request.url))
+        refreshedCookies.forEach(({ name, value, options }) => {
+          redirectResponse.cookies.set(name, value, options)
+        })
+        return redirectResponse
       }
     }
 

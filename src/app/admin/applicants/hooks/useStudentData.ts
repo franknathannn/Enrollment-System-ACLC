@@ -1,6 +1,6 @@
 // src/app/admin/applicants/hooks/useStudentData.ts
 import { useState, useCallback, useEffect } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
 
 export function useStudentData() {

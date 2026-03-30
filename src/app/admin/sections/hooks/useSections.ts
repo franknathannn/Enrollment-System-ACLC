@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { addSection, deleteAndCollapseSection, balanceGenderAcrossSections } from "@/lib/actions/sections"
 import { updateApplicantStatus, deleteApplicant, updateStudentSection } from "@/lib/actions/applicants"
 import { toast } from "sonner"
@@ -293,7 +293,7 @@ export function useSections() {
         return [...prev, newSection].sort((a, b) => (a.section_name || '').localeCompare(b.section_name || ''))
       })
 
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
       supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'APPROVED', student_name: 'N/A', details: `Created new ${confirmAdd.strand} section: ${result.data.section_name}` }]).then()
       
       setConfirmAdd({ isOpen: false, strand: null, gradeLevel: "11" }); 
@@ -311,7 +311,7 @@ export function useSections() {
 
     try {
       for (const t of targets) await deleteAndCollapseSection(t.id, t.strand, t.grade_level)
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
       supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'DELETED', student_name: 'N/A', details: `Bulk deleted ${targets.length} section matrices` }]).then()
       toast.success(`Removed ${targets.length} matrices.`); 
       fetchSections(true)
@@ -326,7 +326,7 @@ export function useSections() {
 
     try {
       await deleteAndCollapseSection(id, strand, gradeLevel)
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
       supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'DELETED', student_name: 'N/A', details: `Deleted section matrix: ${name} (${strand})` }]).then()
       toast.success(`Matrix Sequence Updated.`); 
       fetchSections(true)
@@ -353,7 +353,7 @@ export function useSections() {
 
     try {
       await supabase.from('students').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
       supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'DELETED', student_name: 'ALL STUDENTS', details: "Executed complete registry wipe (Factory Reset)" }]).then()
       toast.success("Student database purged."); 
       fetchSections(true)
@@ -363,7 +363,7 @@ export function useSections() {
   const handleReturnToPending = useCallback(async (id: string, name: string) => {
     try {
       await updateApplicantStatus(id, 'Pending')
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
       const student = sections.flatMap(s => s.students).find((s: any) => s.id === id)
       const previousStatus = student?.status || 'Unknown';
       await supabase.from('activity_logs').insert([{ 
@@ -387,7 +387,7 @@ export function useSections() {
       try {
         const result = await deleteApplicant(activeUnenrollStudent.id)
         if (result.success) {
-          const { data: { user } } = await supabase.auth.getUser()
+          const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
           const unenrollName = `${activeUnenrollStudent.first_name} ${activeUnenrollStudent.last_name}`;
           await supabase.from('activity_logs').insert([{ 
             admin_id: user?.id, 
@@ -420,7 +420,7 @@ export function useSections() {
       }
 
       await updateStudentSection(id, targetSec.id)
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
       const studentName = student ? `${student.first_name} ${student.last_name}` : 'Unknown Student'
       const previousSection = student?.section || 'Unassigned'
       await supabase.from('activity_logs').insert([{ 

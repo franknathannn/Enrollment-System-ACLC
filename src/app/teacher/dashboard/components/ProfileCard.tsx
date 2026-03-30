@@ -4,7 +4,7 @@
 import { useRef, useState } from "react"
 import { BookOpen, Users, CalendarDays, Camera, Loader2 } from "lucide-react"
 import { Avatar } from "./Avatar"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/teacher-client"
 import { toast } from "sonner"
 
 import { TeacherSession, ScheduleRow, ALL_DAYS, fmt } from "../types"
@@ -58,17 +58,6 @@ export function ProfileCard({ session, schedules, colorMap, dm, onAvatarUpdate }
       if (updateErr) throw updateErr
 
       setAvatarUrl(publicUrl)
-
-      // Patch sessionStorage so the photo persists on page refresh
-      try {
-        const raw = sessionStorage.getItem("teacher_session")
-        if (raw) {
-          const sess = JSON.parse(raw)
-          sess.avatar_url = publicUrl
-          sessionStorage.setItem("teacher_session", JSON.stringify(sess))
-        }
-      } catch { /* ignore */ }
-
       onAvatarUpdate?.(publicUrl)
       toast.success("Profile photo updated!", { id: toastId })
     } catch (err: any) {

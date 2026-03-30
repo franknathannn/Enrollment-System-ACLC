@@ -2,9 +2,14 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
 import type { Teacher, TeacherAnnouncement } from "../types"
+import {
+  createTeacherWithAuth,
+  updateTeacherWithAuth,
+  deleteTeacherWithAuth,
+} from "@/lib/actions/teachers"
 
 export function useTeachers() {
   const [teachers,      setTeachers]      = useState<Teacher[]>([])
@@ -66,55 +71,39 @@ export function useTeachers() {
     phone?: string
     subject_specialization?: string
   }) => {
-    // Hash password via a simple deterministic approach using Supabase Auth
-    // In production use bcrypt server-side — here we store a placeholder hash
-    // and rely on Supabase Auth for actual auth
-    const { data: authData, error: authErr } = await supabase.auth.admin
-      ? { data: null, error: null }
-      : { data: null, error: null }
-
-    // Store teacher record (password_hash stored as bcrypt on server action ideally)
-    const { error } = await supabase.from("teachers").insert([{
-      full_name:               form.full_name.trim(),
-      email:                   form.email.trim().toLowerCase(),
-      password_hash:           form.password,   // ⚠️ hash this server-side in production
-      phone:                   form.phone?.trim() || null,
-      subject_specialization:  form.subject_specialization?.trim() || null,
-      is_active:               true,
-    }])
-    if (error) {
-      if (error.code === "23505") toast.error("Email already registered")
-      else toast.error(error.message)
-      throw error
+    try {
+      await createTeacherWithAuth(form)
+      toast.success(`Teacher "${form.full_name}" created`)
+      await fetchTeachers(true)
+    } catch (err: any) {
+      if (err.message?.includes("already registered")) toast.error("Email already registered")
+      else toast.error(err.message ?? "Failed to create teacher")
+      throw err
     }
-    toast.success(`Teacher "${form.full_name}" created`)
-    await fetchTeachers(true)
   }, [fetchTeachers])
 
   // ── Update teacher ────────────────────────────────────────────────────────
   const updateTeacher = useCallback(async (id: string, updates: Partial<Teacher> & { password?: string }) => {
-    const payload: any = {
-      full_name:              updates.full_name?.trim(),
-      email:                  updates.email?.trim().toLowerCase(),
-      phone:                  updates.phone?.trim() || null,
-      subject_specialization: updates.subject_specialization?.trim() || null,
-      is_active:              updates.is_active,
+    try {
+      await updateTeacherWithAuth(id, updates)
+      toast.success("Teacher updated")
+      await fetchTeachers(true)
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to update teacher")
+      throw err
     }
-    if (updates.password) payload.password_hash = updates.password   // hash server-side in prod
-
-    const { error } = await supabase.from("teachers").update(payload).eq("id", id)
-    if (error) { toast.error(error.message); throw error }
-    toast.success("Teacher updated")
-    await fetchTeachers(true)
   }, [fetchTeachers])
 
   // ── Delete teacher ────────────────────────────────────────────────────────
   const deleteTeacher = useCallback(async (id: string, name: string) => {
     if (!confirm(`Permanently delete teacher "${name}"? This removes them from all assigned schedules.`)) return
-    const { error } = await supabase.from("teachers").delete().eq("id", id)
-    if (error) { toast.error(error.message); return }
-    toast.success(`"${name}" deleted`)
-    setTeachers(prev => prev.filter(t => t.id !== id))
+    try {
+      await deleteTeacherWithAuth(id)
+      toast.success(`"${name}" deleted`)
+      setTeachers(prev => prev.filter(t => t.id !== id))
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to delete teacher")
+    }
   }, [])
 
   // ── Toggle active ─────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { X, Save, Eye, EyeOff, User, Mail, Phone, BookOpen, KeyRound, Loader2, Camera } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
 import type { Teacher } from "../types"
 

@@ -308,8 +308,8 @@ const DesktopApplicantRow = memo(({
             <TooltipTrigger asChild>
               <div className="relative">
                 <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden border border-white shadow-lg shrink-0 ring-2 transition-all group-hover/name:scale-105 ${isMale
-                    ? 'ring-blue-400/60 group-hover/name:ring-blue-500'
-                    : 'ring-pink-400/40 group-hover/name:ring-pink-500'
+                  ? 'ring-blue-400/60 group-hover/name:ring-blue-500'
+                  : 'ring-pink-400/40 group-hover/name:ring-pink-500'
                   }`}>
                   <OptimizedImage
                     src={student.two_by_two_url || student.profile_2x2_url || student.profile_picture || "https://api.dicebear.com/7.x/initials/svg?seed=" + student.last_name}
@@ -319,8 +319,8 @@ const DesktopApplicantRow = memo(({
                   />
                 </div>
                 <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[6px] md:text-[7px] font-black uppercase tracking-widest text-white shadow-sm z-10 whitespace-nowrap ${student.student_category?.toLowerCase().includes('als')
-                    ? 'bg-gradient-to-r from-orange-500 to-red-500 shadow-orange-500/30'
-                    : 'bg-gradient-to-r from-blue-500 to-indigo-500 shadow-blue-500/30'
+                  ? 'bg-gradient-to-r from-orange-500 to-red-500 shadow-orange-500/30'
+                  : 'bg-gradient-to-r from-blue-500 to-indigo-500 shadow-blue-500/30'
                   }`}>
                   {student.student_category?.toLowerCase().includes('als') ? 'ALS' : 'JHS'}
                 </div>
@@ -356,8 +356,8 @@ const DesktopApplicantRow = memo(({
                 onClick={(e) => handleCopyLRN(e, student.lrn)}
                 title="Copy LRN"
                 className={`p-1 rounded-md transition-all active:scale-90 shadow-sm ${isDarkMode
-                    ? 'bg-slate-800 text-slate-400 hover:text-white'
-                    : 'bg-slate-100 text-slate-500 hover:text-slate-900'
+                  ? 'bg-slate-800 text-slate-400 hover:text-white'
+                  : 'bg-slate-100 text-slate-500 hover:text-slate-900'
                   }`}
               >
                 <Copy size={10} />
@@ -376,8 +376,8 @@ const DesktopApplicantRow = memo(({
       </TableCell>
       <TableCell className="text-center">
         <span className={`text-[10px] font-black uppercase ${student.section && student.section !== 'Unassigned'
-            ? (student.strand === 'ICT' ? 'text-blue-500' : student.strand === 'GAS' ? 'text-orange-500' : (isDarkMode ? 'text-white' : 'text-slate-900'))
-            : 'text-red-500'
+          ? (student.strand === 'ICT' ? 'text-blue-500' : student.strand === 'GAS' ? 'text-orange-500' : (isDarkMode ? 'text-white' : 'text-slate-900'))
+          : 'text-red-500'
           }`}>
           {student.section || 'Unassigned'}
         </span>

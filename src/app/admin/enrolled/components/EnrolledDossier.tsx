@@ -2,7 +2,7 @@
 
 import { memo, useState, useRef, useEffect, useMemo } from "react"
 import { toast } from "sonner"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 
 // Import components from applicants feature to ensure consistency across the app
 import { DossierHeader } from "../../applicants/components/DossierHeader"

@@ -3,7 +3,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, memo } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { formatDistanceToNow } from "date-fns"
 import { 
   Search, Filter, Undo2, AlertTriangle, CheckCircle2, 
@@ -78,8 +78,8 @@ export default function ActivityLogsPage() {
   }, [])
 
   const checkUser = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) setUser(user)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) setUser(session.user)
   }, [])
 
   const [adminProfiles, setAdminProfiles] = useState<Record<string, { name: string; avatar: string | null }>>({})

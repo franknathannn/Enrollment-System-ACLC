@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Users, MapPin, Clock, ChevronDown, ChevronUp, Loader2, CheckCircle2, AlertCircle, MinusCircle, User } from "lucide-react"
 import { StudentRow } from "./StudentRow"
 import { ScheduleRow, Student, COLORS, fmt } from "../types"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/teacher-client"
 import { toast } from "sonner"
 
 interface PeriodCardProps {

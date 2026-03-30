@@ -30,45 +30,57 @@ function DocViewerModal({ url, label, isDarkMode, onClose, allDocs, initialIndex
   const isPDF = current.url.toLowerCase().endsWith(".pdf")
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-6" style={{ background: "rgba(0,0,0,0.97)" }} onClick={onClose}>
-      <div className="relative w-full max-w-4xl flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 animate-in zoom-in duration-300" style={{ background: "rgba(0,0,0,0.9)" }} onClick={onClose}>
+      <div className="relative w-full max-w-5xl h-full flex flex-col gap-4" onClick={e => e.stopPropagation()}>
         {/* Top bar */}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-white text-[10px] font-black uppercase tracking-widest truncate max-w-[50%]">{current.label}</p>
+        <div className="flex items-center justify-between gap-4 px-2">
+          <div className="flex flex-col">
+            <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.3em]">Institutional Document</p>
+            <p className="text-white text-sm font-black uppercase tracking-widest truncate">{current.label}</p>
+          </div>
           <div className="flex items-center gap-2">
-            <a href={current.url} download className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-black uppercase tracking-widest transition-colors">
-              <Download size={12} /> Download
+            <a href={current.url} download className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
+              <Download size={14} /> <span className="hidden sm:inline">Download</span>
             </a>
-            <a href={current.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-[9px] font-black uppercase tracking-widest transition-colors">
-              <ExternalLink size={12} /> Open
-            </a>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-              <X size={15} />
+            <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all">
+              <X size={20} />
             </button>
           </div>
         </div>
-        {/* Document */}
-        <div className="rounded-2xl overflow-hidden" style={{ maxHeight: "72vh" }}>
+
+        {/* Document Display */}
+        <div className="flex-1 bg-black/40 rounded-[32px] overflow-hidden border border-white/5 relative group">
           {isPDF
-            ? <iframe src={current.url} className="w-full rounded-2xl" style={{ height: "72vh" }} title={current.label} />
-            : <img src={current.url} alt={current.label} className="w-full object-contain rounded-2xl" style={{ maxHeight: "72vh" }} />
+            ? <iframe src={current.url} className="w-full h-full border-none" title={current.label} />
+            : <div className="w-full h-full flex items-center justify-center p-4">
+                <img src={current.url} alt={current.label} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" />
+              </div>
           }
+          
+          {/* Nav Arrows */}
+          {allDocs.length > 1 && <>
+            <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0} 
+              className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white disabled:opacity-0 transition-all">
+              <ChevronLeft size={24} />
+            </button>
+            <button onClick={() => setIdx(i => Math.min(allDocs.length - 1, i + 1))} disabled={idx === allDocs.length - 1} 
+              className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white disabled:opacity-0 transition-all">
+              <ChevronRight size={24} />
+            </button>
+          </>}
         </div>
-        {/* Nav tabs */}
+
+        {/* Thumbnail Bar */}
         {allDocs.length > 1 && (
-          <div className="flex items-center gap-2 flex-wrap justify-center">
+          <div className="flex items-center gap-2 overflow-x-auto py-2 px-1 no-scrollbar justify-center">
             {allDocs.map((d, i) => (
               <button key={i} onClick={() => setIdx(i)}
-                className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-colors ${i === idx ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"}`}>
+                className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${i === idx ? "bg-blue-600 border-blue-400 text-white shadow-lg" : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:text-white"}`}>
                 {d.label}
               </button>
             ))}
           </div>
         )}
-        {allDocs.length > 1 && <>
-          <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0} className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center text-white disabled:opacity-30 transition-colors"><ChevronLeft size={18} /></button>
-          <button onClick={() => setIdx(i => Math.min(allDocs.length - 1, i + 1))} disabled={idx === allDocs.length - 1} className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center text-white disabled:opacity-30 transition-colors"><ChevronRight size={18} /></button>
-        </>}
       </div>
     </div>
   )
@@ -101,21 +113,31 @@ function DocCard({ label, url, onOpen, isDarkMode }: { label: string; url: strin
 }
 
 // ── Grade level badge ────────────────────────────────────────────────────────
-function GradeBadge({ gradeLevel, sectionId, isDarkMode }: { gradeLevel: string; sectionId?: string | null; isDarkMode: boolean }) {
-  if (gradeLevel === "12" && !sectionId) {
+function GradeBadge({ gradeLevel, sectionId, strand, isDarkMode }: { gradeLevel: string; sectionId?: string | null; strand?: string | null; isDarkMode: boolean }) {
+  const isGrad = gradeLevel === "12" && !sectionId
+  
+  if (isGrad) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-400">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-500">
         <Award size={9} /> Graduated
       </span>
     )
   }
-  if (gradeLevel === "12") {
-    return <Badge className="text-[8px] font-black uppercase border-none bg-purple-500/10 text-purple-400">G12</Badge>
+
+  const isICT = strand === "ICT"
+  const isGAS = strand === "GAS"
+
+  if (isICT) {
+    return <Badge className="text-[8px] font-black uppercase border border-blue-500/30 bg-blue-500/10 text-blue-500">G{gradeLevel || "11"} • ICT</Badge>
   }
+  if (isGAS) {
+    return <Badge className="text-[8px] font-black uppercase border border-orange-500/30 bg-orange-500/10 text-orange-500">G{gradeLevel || "11"} • GAS</Badge>
+  }
+
   return <Badge className="text-[8px] font-black uppercase border-none bg-slate-500/10 text-slate-400">G{gradeLevel || "11"}</Badge>
 }
 
-// ── Archive Dossier Drawer ─────────────────────────────────────────────────
+// ── Archive Dossier Modal ─────────────────────────────────────────────────
 function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
   student: any; isDarkMode: boolean; onClose: () => void; onUnarchive: (id: string) => void
 }) {
@@ -136,14 +158,21 @@ function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
   }, [])
 
   const isGraduated = student.grade_level === "12" && !student.section_id
+  const isICT = student.strand === "ICT"
+  const isGAS = student.strand === "GAS"
   const isJHS = student.student_category === "JHS Graduate"
   const isALS = student.student_category === "ALS Passer"
   const photo = student.two_by_two_url || null
   const pfpFallback = student.profile_picture || null
 
-  // G11 section: use saved g11_section field if student was promoted; else current section
+  // Brand color logic
+  const brandColor = isGraduated ? "amber" : isICT ? "blue" : isGAS ? "orange" : "slate"
+  const brandHex = isGraduated ? "#fbbf24" : isICT ? "#3b82f6" : isGAS ? "#f97316" : "#64748b"
+  const brandGlow = isGraduated ? "rgba(251,191,36,0.3)" : isICT ? "rgba(59,130,246,0.3)" : isGAS ? "rgba(249,115,22,0.3)" : "rgba(100,116,139,0.3)"
+
+  // G11 section
   const g11SectionName = student.g11_section || (student.grade_level === "11" ? student.section : null)
-  const g12SectionName = student.grade_level === "12" ? (isGraduated ? (student.section || "Unassigned") : (student.section || "Unassigned")) : null
+  const g12SectionName = student.grade_level === "12" ? (student.section || "Unassigned") : null
 
   const allDocs: { url: string; label: string }[] = []
   if (isJHS) {
@@ -177,311 +206,297 @@ function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
     } finally { setUnarchiving(false) }
   }
 
-  // Accent colors based on status
-  const accentFrom = isGraduated ? "rgba(251,191,36,0.18)" : "rgba(59,130,246,0.14)"
-  const accentTo   = isGraduated ? "rgba(245,158,11,0.04)" : "rgba(139,92,246,0.04)"
-  const photoBorder = isGraduated ? "rgba(251,191,36,0.55)" : "rgba(99,102,241,0.45)"
-
   return (<>
-    <div className="fixed inset-0 z-40 flex">
-      <div className="flex-1 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 animate-in fade-in duration-300">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
 
-      {/* Drawer */}
-      <div className="w-full sm:max-w-[440px] h-full flex flex-col overflow-hidden shadow-2xl"
-        style={{ backgroundColor: isDarkMode ? "rgb(6,9,20)" : "#f8fafc" }}>
+      {/* Modal Container */}
+      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-[40px] border border-white/10"
+        style={{ backgroundColor: isDarkMode ? "rgb(8,12,24)" : "#f8fafc" }}>
 
-        <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {/* Custom style to hide scrollbar */}
+          <style dangerouslySetInnerHTML={{ __html: `.no-scrollbar::-webkit-scrollbar { display: none; }` }} />
 
-          {/* ── HERO: gradient banner + 2x2 focal point ── */}
-          <div className="relative overflow-hidden flex flex-col items-center pb-6"
-            style={{ background: `linear-gradient(175deg, ${accentFrom} 0%, ${accentTo} 55%, transparent 100%)` }}>
+          {/* ── HERO HEADER ── */}
+          <div className="relative pt-20 pb-10 flex flex-col items-center">
+            {/* Ambient Background Glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[140%] h-[400px] opacity-10 pointer-events-none blur-[100px]"
+              style={{ background: `radial-gradient(circle, ${brandHex}, transparent 70%)` }} />
 
-            {/* Top control bar */}
-            <div className="w-full px-5 pt-5 pb-2 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className={`w-7 h-7 rounded-xl flex items-center justify-center shadow ${isGraduated ? "bg-gradient-to-br from-amber-400 to-yellow-500" : "bg-blue-600"}`}>
-                  {isGraduated ? <Award className="text-white w-3.5 h-3.5" /> : <Archive className="text-white w-3.5 h-3.5" />}
-                </div>
-                <div>
-                  <p className="text-[7.5px] font-black uppercase tracking-[0.22em] leading-none" style={{ color: tc.text.muted }}>
-                    {isGraduated ? "Graduated Record" : "Archived Record"}
-                  </p>
-                  <p className="text-[10px] font-black leading-none mt-0.5" style={{ color: tc.text.secondary }}>{student.school_year}</p>
-                </div>
-              </div>
-              <button onClick={onClose}
-                className="w-8 h-8 rounded-2xl flex items-center justify-center transition-all hover:scale-105"
-                style={{ backgroundColor: isDarkMode ? "rgba(51,65,85,0.55)" : "rgba(0,0,0,0.07)" }}>
-                <X size={14} style={{ color: tc.text.muted }} />
-              </button>
-            </div>
+            {/* Top Close */}
+            <button onClick={onClose}
+              className="absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all border border-white/5 z-20">
+              <X size={20} />
+            </button>
 
-            {/* 2x2 Photo — primary focal point */}
-            <div className="mt-4 relative">
-              {/* Glow ring */}
-              <div className="absolute inset-0 rounded-3xl blur-xl opacity-40"
-                style={{ background: isGraduated ? "radial-gradient(circle, rgba(251,191,36,0.7), transparent 70%)" : "radial-gradient(circle, rgba(99,102,241,0.6), transparent 70%)" }} />
+            {/* Profile Section - Centered Identity */}
+            <div className="relative group perspective-1000 z-10 transition-transform duration-500 hover:scale-105">
+              {/* Complex Glow Rings */}
+              <div className={`absolute inset-0 rounded-[48px] blur-2xl opacity-40 transition-opacity duration-500 group-hover:opacity-60`}
+                style={{ background: brandGlow }} />
+              <div className={`absolute -inset-1 rounded-[48px] animate-pulse opacity-20`}
+                style={{ backgroundColor: brandHex }} />
+
               <div
-                className="relative w-[120px] h-[150px] rounded-3xl overflow-hidden border-[2.5px] shadow-2xl cursor-pointer group"
-                style={{ borderColor: photoBorder, backgroundColor: isDarkMode ? "rgba(30,41,59,0.9)" : "#e2e8f0" }}
+                className="relative w-[180px] h-[220px] rounded-[44px] overflow-hidden border-[3px] shadow-2xl cursor-pointer"
+                style={{ borderColor: `${brandHex}aa`, backgroundColor: isDarkMode ? "rgba(30,41,59,0.9)" : "#e2e8f0" }}
                 onClick={() => { const url = photo || pfpFallback; if (url) openDoc(url, "2x2 Photo") }}
               >
                 {photo || pfpFallback
                   ? <img src={photo || pfpFallback!} alt="2x2 Photo"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  : <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                      <User size={32} className="text-slate-400" />
-                      <p className="text-[7px] font-black uppercase tracking-widest text-slate-500">No Photo</p>
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  : <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+                      <User size={48} className="text-slate-400" />
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Identity Record</p>
                     </div>
                 }
-                {/* Hover overlay */}
-                {(photo || pfpFallback) && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <ZoomIn size={22} className="text-white" />
-                  </div>
-                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                  <ZoomIn size={32} className="text-white" />
+                </div>
               </div>
 
-              {/* Graduate star badge */}
-              {isGraduated && (
-                <div className="absolute -top-2.5 -right-2.5 w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-lg border-2"
-                  style={{ borderColor: isDarkMode ? "rgb(6,9,20)" : "#f8fafc" }}>
-                  <Star size={14} className="text-white fill-white" />
+              {/* Status Indicator */}
+              <div className={`absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-2xl border-2 shadow-xl whitespace-nowrap flex items-center gap-2 z-20
+                ${brandColor === 'amber' ? 'bg-amber-500 border-amber-300 text-amber-950' : 
+                  brandColor === 'blue' ? 'bg-blue-600 border-blue-400 text-white' : 
+                  'bg-orange-500 border-orange-300 text-orange-950'}`}>
+                {isGraduated ? <Award size={14} className="fill-current" /> : <Shield size={14} />}
+                <span className="text-[10px] font-black uppercase tracking-wider">
+                  {isGraduated ? "Graduate ALUMNI" : `${student.strand} Scholar`}
+                </span>
+              </div>
+            </div>
+
+            {/* Name & Primary Info */}
+            <div className="mt-10 text-center px-6">
+              <div className="flex flex-col items-center">
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] mb-2 opacity-40" style={{ color: tc.text.primary }}>Institutional Record</p>
+                <h2 className="text-4xl sm:text-5xl font-black uppercase tracking-tighter leading-none" style={{ color: tc.text.primary }}>
+                  {student.last_name},
+                </h2>
+                <h2 className="text-4xl sm:text-5xl font-black uppercase tracking-tighter leading-none mt-1" style={{ color: tc.text.primary }}>
+                  {student.first_name} {student.middle_name ? `${student.middle_name[0]}.` : ""}
+                </h2>
+              </div>
+
+              <div className="flex items-center justify-center gap-4 mt-6">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[9px] font-bold uppercase tracking-widest opacity-40" style={{ color: tc.text.primary }}>Identity LRN</span>
+                  <span className="font-mono text-xs font-black tracking-widest" style={{ color: brandHex }}>{student.lrn}</span>
                 </div>
-              )}
-            </div>
-
-            {/* Identity */}
-            <div className="mt-4 text-center px-5">
-              <h2 className="text-[19px] font-black uppercase leading-tight" style={{ color: tc.text.primary }}>
-                {student.last_name},
-              </h2>
-              <h2 className="text-[19px] font-black uppercase leading-tight" style={{ color: tc.text.primary }}>
-                {student.first_name}{student.middle_name ? ` ${student.middle_name[0]}.` : ""}
-              </h2>
-              <p className="font-mono text-[9px] font-bold tracking-[0.2em] mt-1.5" style={{ color: tc.text.muted }}>
-                LRN: {student.lrn}
-              </p>
-            </div>
-
-            {/* Status badges */}
-            <div className="flex flex-wrap gap-1.5 justify-center mt-3 px-5">
-              {isGraduated
-                ? <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[8px] font-black uppercase bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-400 tracking-widest">
-                    <Award size={9} /> Graduated
-                  </span>
-                : <Badge className="text-[8px] font-black uppercase border-none bg-emerald-500/15 text-emerald-500 px-3 py-1">
-                    {student.status === "Approved" ? "Accepted" : student.status}
-                  </Badge>
-              }
-              <Badge className={`text-[8px] font-black uppercase border-none px-3 py-1 ${student.gender === "Male" ? "bg-blue-500/10 text-blue-400" : "bg-pink-500/10 text-pink-400"}`}>
-                {student.gender}
-              </Badge>
-              <Badge className="text-[8px] font-black uppercase border-none bg-violet-500/10 text-violet-400 px-3 py-1">
-                {student.strand}
-              </Badge>
-              {isGraduated && student.graduate_lock && (
-                <Badge className="text-[8px] font-black uppercase border-none bg-red-500/10 text-red-400 px-3 py-1 flex items-center gap-1">
-                  <Lock size={8} /> Locked
-                </Badge>
-              )}
+                <div className="w-[1px] h-8 bg-white/10" />
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[9px] font-bold uppercase tracking-widest opacity-40" style={{ color: tc.text.primary }}>School Year</span>
+                  <span className="text-xs font-black" style={{ color: tc.text.secondary }}>{student.school_year}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* ── Body ── */}
-          <div className="px-4 py-4 space-y-3">
+          {/* ── CONTENT GRID ── */}
+          <div className="px-6 sm:px-12 pb-12">
+            
+            {/* Quick Actions / Status Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+               <div className="p-1 rounded-[30px] border border-white/5" style={{ background: "rgba(255,255,255,0.02)" }}>
+                  {!isGraduated ? (
+                    <button onClick={handleUnarchive} disabled={unarchiving}
+                      className="w-full h-14 rounded-[26px] flex items-center justify-center gap-3 font-black text-[11px] uppercase tracking-widest transition-all bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-60 text-white shadow-xl shadow-emerald-500/20">
+                      {unarchiving ? <Loader2 size={18} className="animate-spin" /> : <ArchiveRestore size={18} />}
+                      {unarchiving ? "Restoring..." : "Restore to Enrollment"}
+                    </button>
+                  ) : student.graduate_lock ? (
+                    <div className="w-full h-14 rounded-[26px] flex items-center justify-center gap-3 border-2 border-amber-500/30 cursor-not-allowed bg-amber-500/5">
+                      <Lock size={16} className="text-amber-500" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Permanently Archived Alumni</span>
+                    </div>
+                  ) : (
+                    <div className="w-full h-14 rounded-[26px] flex items-center justify-center gap-3 border-2 border-amber-500/20 bg-amber-500/5">
+                      <Award size={16} className="text-amber-500" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Official Graduate Status</span>
+                    </div>
+                  )}
+               </div>
 
-            {/* Action button */}
-            {!isGraduated ? (
-              <button onClick={handleUnarchive} disabled={unarchiving}
-                className="w-full h-11 rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-widest transition-all bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-60 text-white shadow-lg shadow-emerald-500/20">
-                {unarchiving ? <Loader2 size={14} className="animate-spin" /> : <ArchiveRestore size={14} />}
-                {unarchiving ? "Restoring..." : "Restore to Active Enrollment"}
-              </button>
-            ) : student.graduate_lock ? (
-              <div className="w-full h-11 rounded-2xl flex items-center justify-center gap-2 border border-amber-500/30 cursor-not-allowed"
-                style={{ background: "rgba(251,191,36,0.05)" }}>
-                <Lock size={12} className="text-amber-400" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-amber-400">Locked Graduate — Cannot Restore</span>
-              </div>
-            ) : (
-              <div className="w-full h-11 rounded-2xl flex items-center justify-center gap-2 border border-amber-500/25"
-                style={{ background: "rgba(251,191,36,0.04)" }}>
-                <Sparkles size={12} className="text-amber-400" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-amber-400">Completed Senior High School</span>
-              </div>
-            )}
-
-            {/* ── Section History ── */}
-            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: tc.border }}>
-              <div className="px-4 py-3 flex items-center gap-2 border-b"
-                style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#ffffff", borderColor: tc.border }}>
-                <BookOpen size={11} style={{ color: tc.text.muted }} />
-                <p className="text-[8.5px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Section History</p>
-              </div>
-              <div className="px-4 py-1" style={{ backgroundColor: isDarkMode ? "rgba(15,23,42,0.4)" : "#fafafa" }}>
-
-                {/* G11 row */}
-                <div className="flex items-center gap-3 py-3.5">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[8px] font-black border ${
-                    g11SectionName
-                      ? isDarkMode ? "bg-blue-500/15 text-blue-300 border-blue-500/25" : "bg-blue-50 text-blue-600 border-blue-200"
-                      : isDarkMode ? "bg-slate-800/50 text-slate-600 border-slate-700/30" : "bg-slate-50 text-slate-300 border-slate-200"
-                  }`}>G11</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[7.5px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>Grade 11 Section</p>
-                    <p className="text-[13px] font-black mt-0.5 truncate" style={{ color: g11SectionName ? tc.text.primary : tc.text.muted }}>
-                      {g11SectionName || "—"}
-                    </p>
+               <div className="flex items-center gap-3 p-4 rounded-[30px] border border-white/5 bg-white/5">
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${brandColor === 'amber' ? 'bg-amber-500/20 text-amber-400' : brandColor === 'blue' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                    <GraduationCap size={20} />
                   </div>
-                  {g11SectionName && student.grade_level === "11" && (
-                    <span className="shrink-0 text-[7px] font-black px-2 py-1 rounded-full bg-blue-500/15 text-blue-400 tracking-widest">Current</span>
-                  )}
-                  {g11SectionName && student.grade_level === "12" && (
-                    <span className="shrink-0 text-[7px] font-black px-2 py-1 rounded-full bg-slate-500/10 text-slate-400 tracking-widest">Prev.</span>
-                  )}
-                </div>
-
-                <div className="flex items-center pl-4 py-0.5">
-                  <div className="w-[1px] h-5 rounded-full" style={{ backgroundColor: tc.border, marginLeft: "14px" }} />
-                </div>
-
-                {/* G12 row */}
-                <div className="flex items-center gap-3 py-3.5">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[8px] font-black border ${
-                    g12SectionName
-                      ? isGraduated
-                        ? "bg-gradient-to-br from-amber-500/20 to-yellow-500/10 text-amber-400 border-amber-500/25"
-                        : isDarkMode ? "bg-violet-500/15 text-violet-300 border-violet-500/25" : "bg-violet-50 text-violet-600 border-violet-200"
-                      : isDarkMode ? "bg-slate-800/50 text-slate-600 border-slate-700/30" : "bg-slate-50 text-slate-300 border-slate-200"
-                  }`}>G12</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[7.5px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>Grade 12 Section</p>
-                    <p className="text-[13px] font-black mt-0.5 truncate" style={{ color: g12SectionName ? tc.text.primary : tc.text.muted }}>
-                      {g12SectionName || "—"}
-                    </p>
+                  <div>
+                    <p className="text-[8px] font-black uppercase tracking-widest opacity-40">Classification</p>
+                    <p className="text-xs font-black uppercase">{isGraduated ? "Alumni / Graduated" : `${student.grade_level || "11"} - ${student.student_category}`}</p>
                   </div>
-                  {isGraduated && (
-                    <span className="shrink-0 text-[7px] font-black px-2 py-1 rounded-full bg-amber-500/15 text-amber-400 tracking-widest">Grad</span>
-                  )}
-                  {!isGraduated && g12SectionName && (
-                    <span className="shrink-0 text-[7px] font-black px-2 py-1 rounded-full bg-violet-500/15 text-violet-400 tracking-widest">Current</span>
-                  )}
-                </div>
-              </div>
+               </div>
             </div>
 
-            {/* ── Enrollment Details ── */}
-            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: tc.border }}>
-              <div className="px-4 py-3 flex items-center gap-2 border-b"
-                style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#ffffff", borderColor: tc.border }}>
-                <GraduationCap size={11} style={{ color: tc.text.muted }} />
-                <p className="text-[8.5px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Enrollment Details</p>
-              </div>
-              <div className="px-4 py-4 grid grid-cols-2 gap-x-4 gap-y-3.5"
-                style={{ backgroundColor: isDarkMode ? "rgba(15,23,42,0.4)" : "#fafafa" }}>
-                {[
-                  { label: "School Year", val: student.school_year },
-                  { label: "Grade Level", val: isGraduated ? "Graduated (G12)" : `Grade ${student.grade_level || "11"}` },
-                  { label: "Category",    val: student.student_category || "—" },
-                  { label: "GWA (G10)",   val: student.gwa_grade_10 ? String(student.gwa_grade_10) : "—" },
-                  { label: "Shift",       val: student.preferred_shift || "—" },
-                  { label: "Modality",    val: student.preferred_modality || "—" },
-                ].map(({ label, val }) => (
-                  <div key={label}>
-                    <p className="text-[7.5px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>{label}</p>
-                    <p className="text-[12px] font-black mt-0.5" style={{ color: tc.text.primary }}>{val}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ── Personal Info (collapsible) ── */}
-            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: tc.border }}>
-              <button onClick={() => setInfoOpen(v => !v)}
-                className="w-full flex items-center justify-between px-4 py-3 transition-colors"
-                style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#ffffff" }}>
-                <div className="flex items-center gap-2">
-                  <User size={11} style={{ color: tc.text.muted }} />
-                  <p className="text-[8.5px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Personal Info</p>
-                </div>
-                {infoOpen ? <ChevronUp size={13} style={{ color: tc.text.muted }} /> : <ChevronDown size={13} style={{ color: tc.text.muted }} />}
-              </button>
-              {infoOpen && (
-                <div className="px-4 pb-4 pt-3 space-y-3"
-                  style={{ backgroundColor: isDarkMode ? "rgba(15,23,42,0.4)" : "#fafafa" }}>
-                  {[
-                    { icon: <Calendar size={11} />, label: "Birth Date", val: student.birth_date ? new Date(student.birth_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : null },
-                    { icon: <Shield size={11} />,   label: "Civil Status", val: student.civil_status },
-                    { icon: <BookMarked size={11} />, label: "Religion", val: student.religion },
-                    { icon: <MapPin size={11} />,   label: "Address", val: student.address },
-                    { icon: <Mail size={11} />,     label: "Email", val: student.email },
-                    { icon: <Phone size={11} />,    label: "Phone", val: student.phone || student.contact_no },
-                    { icon: <School size={11} />,   label: "Last School Attended", val: student.last_school_attended },
-                  ].filter(f => f.val).map(({ icon, label, val }) => (
-                    <div key={label} className="flex items-start gap-3">
-                      <span className="mt-0.5 shrink-0" style={{ color: tc.text.muted }}>{icon}</span>
-                      <div>
-                        <p className="text-[7.5px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>{label}</p>
-                        <p className="text-[12px] font-bold mt-0.5 break-words leading-snug" style={{ color: tc.text.secondary }}>{val}</p>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              
+              {/* Left Column (Main Info) */}
+              <div className="lg:col-span-8 space-y-6">
+                
+                {/* ── Section History ── */}
+                <div className="p-6 rounded-[34px] border border-white/5 bg-white/5 relative overflow-hidden">
+                   <div className="flex items-center gap-3 mb-6">
+                      <BookOpen size={16} className="text-slate-400" />
+                      <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Academic Trajectory</h3>
+                   </div>
+                   
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* G11 Panel */}
+                      <div className={`p-4 rounded-3xl border transition-all ${g11SectionName ? 'bg-blue-500/5 border-blue-500/20' : 'bg-slate-500/5 border-slate-500/10 opacity-50'}`}>
+                        <div className="flex items-center justify-between mb-3">
+                           <span className={`text-[10px] font-black px-3 py-1 rounded-full ${g11SectionName ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-500/20 text-slate-500'}`}>G11</span>
+                           {g11SectionName && student.grade_level === "11" && <span className="text-[8px] font-black uppercase text-emerald-500 animate-pulse">Active</span>}
+                        </div>
+                        <p className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-1">Grade 11 Section</p>
+                        <p className="text-sm font-black truncate">{g11SectionName || "NOT RECORDED"}</p>
                       </div>
+
+                      {/* G12 Panel */}
+                      <div className={`p-4 rounded-3xl border transition-all ${g12SectionName ? isGraduated ? 'bg-amber-500/5 border-amber-500/20' : 'bg-violet-500/5 border-violet-500/20' : 'bg-slate-500/5 border-slate-500/10 opacity-50'}`}>
+                        <div className="flex items-center justify-between mb-3">
+                           <span className={`text-[10px] font-black px-3 py-1 rounded-full ${g12SectionName ? isGraduated ? 'bg-amber-500/20 text-amber-500' : 'bg-violet-500/20 text-violet-400' : 'bg-slate-500/20 text-slate-500'}`}>G12</span>
+                           {isGraduated && <Award size={12} className="text-amber-500" />}
+                           {!isGraduated && g12SectionName && student.grade_level === "12" && <span className="text-[8px] font-black uppercase text-emerald-500 animate-pulse">Active</span>}
+                        </div>
+                        <p className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-1">Grade 12 Section</p>
+                        <p className="text-sm font-black truncate">{g12SectionName || "NOT RECORDED"}</p>
+                      </div>
+                   </div>
+                </div>
+
+                {/* ── Enrollment Details Grid ── */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {[
+                    { label: "Modality", val: student.preferred_modality, icon: <Cpu size={14} /> },
+                    { label: "Shift", val: student.preferred_shift, icon: <Calendar size={14} /> },
+                    { label: "GWA (G10)", val: student.gwa_grade_10, icon: <Star size={14} /> },
+                    { label: "Category", val: student.student_category, icon: <Sparkles size={14} /> },
+                    { label: "Gender", val: student.gender, icon: <User size={14} /> },
+                    { label: "Civil Status", val: student.civil_status, icon: <Shield size={14} /> },
+                  ].map((item, i) => (
+                    <div key={i} className="p-4 rounded-[28px] border border-white/5 bg-white/5">
+                      <div className="flex items-center gap-2 mb-2 opacity-40">
+                        {item.icon}
+                        <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
+                      </div>
+                      <p className="text-[11px] font-black uppercase truncate">{item.val || "—"}</p>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
 
-            {/* ── Guardian Info (collapsible) ── */}
-            {(student.guardian_first_name || student.guardian_last_name || student.guardian_phone) && (
-              <div className="rounded-2xl border overflow-hidden" style={{ borderColor: tc.border }}>
-                <button onClick={() => setGuardianOpen(v => !v)}
-                  className="w-full flex items-center justify-between px-4 py-3 transition-colors"
-                  style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.5)" : "#ffffff" }}>
-                  <div className="flex items-center gap-2">
-                    <Users size={11} style={{ color: tc.text.muted }} />
-                    <p className="text-[8.5px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>Guardian / Parent</p>
-                  </div>
-                  {guardianOpen ? <ChevronUp size={13} style={{ color: tc.text.muted }} /> : <ChevronDown size={13} style={{ color: tc.text.muted }} />}
-                </button>
-                {guardianOpen && (
-                  <div className="px-4 pb-4 pt-3 space-y-3"
-                    style={{ backgroundColor: isDarkMode ? "rgba(15,23,42,0.4)" : "#fafafa" }}>
-                    {[
-                      { label: "Full Name", val: [student.guardian_first_name, student.guardian_middle_name, student.guardian_last_name].filter(Boolean).join(" ") },
-                      { label: "Phone / Contact", val: student.guardian_phone || student.guardian_contact },
-                    ].filter(f => f.val).map(({ label, val }) => (
-                      <div key={label}>
-                        <p className="text-[7.5px] font-bold uppercase tracking-widest" style={{ color: tc.text.muted }}>{label}</p>
-                        <p className="text-[12px] font-black mt-0.5" style={{ color: tc.text.primary }}>{val}</p>
+                {/* ── Personal Info ── */}
+                <div className="p-6 rounded-[34px] border border-white/5 bg-white/5">
+                   <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <User size={16} className="text-slate-400" />
+                        <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Personal Data</h3>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── Documents ── */}
-            {allDocs.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3 px-0.5">
-                  <FileText size={11} style={{ color: tc.text.muted }} />
-                  <p className="text-[8.5px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>
-                    Documents ({allDocs.length})
-                  </p>
+                      <button onClick={() => setInfoOpen(!infoOpen)} className="text-slate-500 hover:text-white transition-colors">
+                        {infoOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                   </div>
+                   
+                   {infoOpen && (
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        {[
+                          { label: "Full Address", val: student.address, icon: <MapPin size={14} /> },
+                          { label: "Primary Email", val: student.email, icon: <Mail size={14} /> },
+                          { label: "Birth Date", val: student.birth_date ? new Date(student.birth_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : null, icon: <Calendar size={14} /> },
+                          { label: "Contact No.", val: student.phone || student.contact_no, icon: <Phone size={14} /> },
+                          { label: "Religion", val: student.religion, icon: <BookMarked size={14} /> },
+                          { label: "Previous School", val: student.last_school_attended, icon: <School size={14} /> },
+                        ].map((f, i) => (
+                          <div key={i} className="flex gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5 text-slate-400">
+                              {f.icon}
+                            </div>
+                            <div className="min-w-0">
+                               <p className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-1">{f.label}</p>
+                               <p className="text-xs font-bold leading-relaxed break-words">{f.val || "—"}</p>
+                            </div>
+                          </div>
+                        ))}
+                     </div>
+                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-2.5">
-                  {allDocs.map(doc => <DocCard key={doc.label} label={doc.label} url={doc.url} onOpen={openDoc} isDarkMode={isDarkMode} />)}
-                </div>
               </div>
-            )}
 
-            <div className="h-6" />
+              {/* Right Column (Sidebar) */}
+              <div className="lg:col-span-4 space-y-6">
+                
+                {/* ── Guardian Info ── */}
+                <div className="p-6 rounded-[34px] border border-white/5 bg-white/5">
+                   <div className="flex items-center gap-3 mb-6">
+                      <Users size={16} className="text-slate-400" />
+                      <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Guardianship</h3>
+                   </div>
+                   <div className="space-y-4">
+                      <div>
+                         <p className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-1">Full Name</p>
+                         <p className="text-xs font-black">{[student.guardian_first_name, student.guardian_middle_name, student.guardian_last_name].filter(Boolean).join(" ") || "No Data"}</p>
+                      </div>
+                      <div>
+                         <p className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-1">Contact Details</p>
+                         <p className="text-xs font-black">{student.guardian_phone || student.guardian_contact || "No Phone Registered"}</p>
+                      </div>
+                   </div>
+                </div>
+
+                {/* ── Documentary Vault (Restyled) ── */}
+                <div className="p-8 rounded-[44px] bg-slate-200/40 dark:bg-slate-900/40 border border-white/5">
+                   <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl bg-slate-300/30 dark:bg-slate-800/50 flex items-center justify-center text-slate-500">
+                          <BookOpen size={20} />
+                        </div>
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500/80">Documentary Vault</h3>
+                      </div>
+                      <div className="w-9 h-9 rounded-full bg-slate-950 flex items-center justify-center shadow-2xl">
+                        <span className="text-xs font-black text-white">{allDocs.length}</span>
+                      </div>
+                   </div>
+                   
+                   <div className="space-y-4">
+                     {allDocs.length > 0 ? (
+                       allDocs.map((doc, idx) => (
+                         <div key={idx} onClick={() => openDoc(doc.url, doc.label)}
+                          className="flex items-center gap-4 p-5 rounded-[28px] bg-white dark:bg-slate-800/80 border border-white/5 hover:border-blue-500/30 transition-all cursor-pointer group shadow-sm hover:shadow-xl active:scale-[0.98]">
+                           <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                              <FileText size={22} />
+                           </div>
+                           <div className="min-w-0 flex-1">
+                              <p className="text-sm font-black uppercase text-slate-900 dark:text-white tracking-tight truncate">{doc.label}</p>
+                              <p className="text-[9px] font-bold uppercase text-slate-400 mt-0.5 tracking-wider">Verified Credential</p>
+                           </div>
+                           <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                         </div>
+                       ))
+                     ) : (
+                       <div className="text-center py-10 opacity-30">
+                          <BookMarked size={32} className="mx-auto mb-3" />
+                          <p className="text-xs font-bold uppercase tracking-[0.2em]">No Verified Vault Data</p>
+                       </div>
+                     )}
+                   </div>
+                </div>
+
+                {/* Footer Info (Moved outside) */}
+                <div className="text-center mt-6 mb-2 opacity-30">
+                   <p className="text-[8px] font-black uppercase tracking-[.4em] text-slate-500">Archived on ACLC Systems</p>
+                </div>
+
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
     {viewerOpen && <DocViewerModal url={viewerUrl} label={viewerLabel} isDarkMode={isDarkMode} onClose={() => setViewerOpen(false)} allDocs={viewerDocs} initialIndex={viewerIndex} />}
   </>)
+
 }
 
 // ── Confirmation Modal ─────────────────────────────────────────────────────
@@ -787,7 +802,7 @@ function ArchiveContent() {
                           <div className="flex items-center gap-1.5">
                             <span className={`text-[10px] font-black uppercase tracking-wider ${s.strand === "ICT" ? "text-blue-400" : "text-orange-400"}`}>{s.strand} Division</span>
                           </div>
-                          <GradeBadge gradeLevel={s.grade_level || "11"} sectionId={s.section_id} isDarkMode={isDarkMode} />
+                          <GradeBadge gradeLevel={s.grade_level || "11"} sectionId={s.section_id} strand={s.strand} isDarkMode={isDarkMode} />
                         </div>
                       </td>
 

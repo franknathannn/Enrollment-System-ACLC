@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { ThemedCard } from "@/components/ThemedCard"

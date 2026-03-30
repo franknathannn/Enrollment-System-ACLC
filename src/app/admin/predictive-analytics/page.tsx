@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { ArrowLeft, CalendarClock, RefreshCw, AlertCircle, Wand2, Settings2, TrendingUp, TrendingDown, Minus, Target, Users, ChevronRight, BarChart2, ChevronDown, ChevronUp, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"

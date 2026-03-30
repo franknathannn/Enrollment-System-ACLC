@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { deleteSnapshot } from "@/lib/actions/history"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

@@ -2,8 +2,7 @@
 "use client"
 
 import { useState, useEffect, memo, useRef } from "react"
-import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/teacher-client"
 import { toast } from "sonner"
 import { Lock, Loader2, GraduationCap, ShieldCheck, Eye, EyeOff } from "lucide-react"
 import { TurnstileWidget } from "@/components/TurnstileWidget"
@@ -90,7 +89,6 @@ const LoginConstellation = memo(function LoginConstellation() {
 })
 
 export default function TeacherLoginPage() {
-  const router = useRouter()
   const [email,    setEmail]    = useState("")
   const [password, setPassword] = useState("")
   const [showPass, setShowPass] = useState(false)
@@ -103,8 +101,6 @@ export default function TeacherLoginPage() {
     const style = document.createElement("style")
     style.textContent = "::-webkit-scrollbar{display:none}"
     document.head.appendChild(style)
-    const raw = sessionStorage.getItem("teacher_session")
-    if (raw) router.replace("/teacher/dashboard")
     return () => {
       document.body.style.overflow = ""
       document.documentElement.style.overflow = ""
@@ -132,20 +128,16 @@ export default function TeacherLoginPage() {
       return
     }
     try {
-      const { data: teacher, error } = await supabase
-        .from("teachers")
-        .select("id, full_name, email, password_hash, is_active")
-        .eq("email", trimmed)
-        .single()
-      if (error || !teacher) { toast.error("No account found with that email", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } }); return }
-      if (!teacher.is_active) { toast.error("Account deactivated — contact your administrator", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } }); return }
-      if (teacher.password_hash !== password) { toast.error("Access Denied: Invalid Security Key", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } }); return }
-      sessionStorage.setItem("teacher_session", JSON.stringify({ id: teacher.id, full_name: teacher.full_name, email: teacher.email }))
+      const { error } = await supabase.auth.signInWithPassword({ email: trimmed, password })
+      if (error) {
+        toast.error("Access Denied: Invalid credentials", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+        setLoading(false)
+        return
+      }
       toast.success("Identity Confirmed. Redirecting...", { id: toastId, duration: 1000, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
       window.location.href = "/teacher/dashboard"
     } catch {
       toast.error("Connection Error. Check your network.", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
-    } finally {
       setLoading(false)
     }
   }

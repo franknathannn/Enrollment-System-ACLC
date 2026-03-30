@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { exportArchiveCSV, ArchivedStudent } from "@/lib/actions/archive"
 import { toast } from "sonner"
 

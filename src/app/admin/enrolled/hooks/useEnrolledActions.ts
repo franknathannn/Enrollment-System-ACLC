@@ -1,5 +1,5 @@
 import { useCallback } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
 import { updateApplicantStatus } from "@/lib/actions/applicants"
 

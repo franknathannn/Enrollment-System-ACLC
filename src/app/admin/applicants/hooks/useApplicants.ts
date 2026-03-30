@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { useEffect, useCallback, useMemo } from "react"
 import { downloadApplicantsExcel } from "../api/exportApplicants"
 import { useStudentData } from "./useStudentData"

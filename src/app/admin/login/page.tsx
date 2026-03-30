@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, memo, useCallback, useRef, Suspense } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

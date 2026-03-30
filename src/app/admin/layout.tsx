@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/admin-client";
 import { toast } from "sonner";
 import { 
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription 
@@ -40,7 +40,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   const fetchAdminIdentity = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user && pathname !== "/admin/login") {
       router.push("/admin/login");
       return;
@@ -64,6 +65,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fetchAdminIdentity() }, [fetchAdminIdentity]);
+
+  // Listen for auth state changes — handles token refresh, sign-out, etc.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        setAuthorized(false);
+        router.push("/admin/login");
+      }
+      // TOKEN_REFRESHED is handled automatically by Supabase client —
+      // the session stays alive without user action.
+    });
+    return () => subscription.unsubscribe();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

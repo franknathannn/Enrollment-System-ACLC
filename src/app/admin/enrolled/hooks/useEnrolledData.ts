@@ -1,7 +1,7 @@
 // c:\Users\Nath\Documents\Enrollment System\enrollment-system\src\app\admin\enrolled\hooks\useEnrolledData.ts
 
 import { useState, useCallback, useEffect } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
 
 export function useEnrolledData() {
