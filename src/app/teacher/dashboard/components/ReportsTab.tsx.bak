@@ -1,0 +1,1321 @@
+// src/app/teacher/dashboard/components/ReportsTab.tsx
+"use client"
+
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import {
+  BarChart2, Users, TrendingDown, AlertCircle, Loader2,
+  ChevronDown, ChevronUp, BookOpen, Star, FileDown, RefreshCw, Zap,
+  TrendingUp, Minus
+} from "lucide-react"
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, ResponsiveContainer as RechartsContainer,
+  LineChart, Line
+} from "recharts"
+import { supabase } from "@/lib/supabase/teacher-client"
+import { TeacherSession, ScheduleRow, Student, fmt } from "../types"
+import { toast } from "sonner"
+
+interface Props {
+  schedules: ScheduleRow[]
+  students: Student[]
+  dm: boolean
+  session: TeacherSession
+  schoolYear: string
+}
+
+interface AttRow {
+  student_id: string
+  subject: string
+  date: string
+  status: string
+  notes?: string | null
+}
+
+interface SectionReport {
+  section: string
+  subjects: SubjectReport[]
+  totalStudents: number
+  avgAbsents: number
+  avgPresents: number
+  attendancePct: number
+}
+
+interface SubjectReport {
+  subject: string
+  scheduledDays: number
+  totalSessions: number
+  presentCount: number
+  absentCount: number
+  lateCount: number
+  excusedCount: number
+  attendancePct: number
+}
+
+interface StudentAbsence {
+  student: Student
+  totalAbsents: number
+  absentBySubject: Record<string, number>
+  needsCounseling: boolean
+}
+interface CalendarEvent {
+  id: string
+  event_date: string
+  end_date?: string | null
+  event_type: string
+}
+
+const COUNSELING_THRESHOLD = 3 // absences in any single subject
+
+type RiskStatus = "Monitoring" | "Safe" | "Warning" | "At Risk" | "Failed Threshold"
+
+interface RiskClassification {
+  status: RiskStatus
+  projectedTotal: number
+  absencesRemaining: number
+  isAtRisk: boolean
+  effectiveAbsences: number
+}
+
+function classifyAttendanceRisk(
+  absences: number,
+  late: number,
+  excused: number,
+  scheduledDays: number,
+  totalExpectedDays: number
+): RiskClassification {
+  const effectiveAbsences = absences + Math.floor(late / 3)
+  const cap = Math.floor(totalExpectedDays * 0.2)
+  const absencesRemaining = cap - effectiveAbsences
+
+  if (scheduledDays < 20) {
+    return { status: "Monitoring", projectedTotal: 0, absencesRemaining, isAtRisk: false, effectiveAbsences }
+  }
+
+  const absenceRate = effectiveAbsences / scheduledDays
+  const projectedTotal = Math.round(absenceRate * totalExpectedDays)
+
+  let status: RiskStatus
+  let isAtRisk = false
+
+  const warningThreshold = Math.ceil(cap * 0.8)
+
+  if (effectiveAbsences >= cap) {
+    status = "Failed Threshold"
+    isAtRisk = true
+  } else if (projectedTotal > cap) {
+     status = "At Risk"
+     isAtRisk = true
+  } else if (projectedTotal >= warningThreshold) {
+     status = "Warning"
+  } else {
+     status = "Safe"
+  }
+
+  return { status, projectedTotal, absencesRemaining, isAtRisk, effectiveAbsences }
+}
+
+// --- SUB-COMPONENT: Circular Progress Ring ---
+const CircularProgress = ({ pct, size = 60, strokeWidth = 5, dm }: { pct: number, size?: number, strokeWidth?: number, dm: boolean }) => {
+  const radius = (size - strokeWidth) / 2
+  const circ = 2 * Math.PI * radius
+  const offset = circ - (pct / 100) * circ
+  const color = pct >= 80 ? "#22c55e" : pct >= 60 ? "#f59e0b" : "#ef4444"
+
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg className="transform -rotate-90" width={size} height={size}>
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          stroke={dm ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circ}
+          style={{ strokeDashoffset: offset, transition: "stroke-dashoffset 1s ease-in-out" }}
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className={`absolute text-[10px] font-black ${dm ? "text-white" : "text-slate-900"}`}>{Math.round(pct)}%</span>
+    </div>
+  )
+}
+
+function countActualSchoolDays(events: CalendarEvent[], fromStr: string, toStr: string) {
+  if (!fromStr || !toStr) return 0
+  const start = new Date(fromStr + "T00:00:00")
+  const end = new Date(toStr + "T00:00:00")
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return 0
+
+  let count = 0
+  const current = new Date(start)
+  
+  const blockedDates = new Set<string>()
+  events.forEach(e => {
+    if (e.event_type !== "holiday" && e.event_type !== "suspension") return
+    if (e.end_date) {
+      const s = new Date(e.event_date + "T00:00:00")
+      const en = new Date(e.end_date + "T00:00:00")
+      while (s <= en) {
+        blockedDates.add(s.toISOString().split("T")[0])
+        s.setDate(s.getDate() + 1)
+      }
+    } else {
+      blockedDates.add(e.event_date)
+    }
+  })
+
+  while (current <= end) {
+    const day = current.getDay()
+    if (day !== 0 && day !== 6) {
+      const dStr = current.toISOString().split("T")[0]
+      if (!blockedDates.has(dStr)) count++
+    }
+    current.setDate(current.getDate() + 1)
+  }
+  return count
+}
+
+export function ReportsTab({ schedules, students, dm, session, schoolYear }: Props) {
+  const [attData, setAttData]   = useState<AttRow[]>([])
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
+  const [loading, setLoading]   = useState(false)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [activeSection, setActiveSection] = useState<string>("ALL")
+  const [subjectFocus, setSubjectFocus] = useState<Record<string, string | null>>({})
+  const [rosterSearch, setRosterSearch] = useState("")
+  const [reportMode, setReportMode] = useState<"subject" | "daily">("subject")
+  const [printSubject, setPrintSubject] = useState<{section: string; subject: string} | null | undefined>(undefined)
+
+  const toggleSubjectFocus = (section: string, subject: string) => {
+    setRosterSearch("")
+    setSubjectFocus(prev => ({ ...prev, [section]: prev[section] === subject ? null : subject }))
+  }
+  const printRef = useRef<HTMLDivElement>(null)
+
+  const card  = dm ? "bg-slate-900/40 backdrop-blur-xl border-white/5" : "bg-white/80 backdrop-blur-xl border-slate-200"
+  const glass = dm ? "bg-white/5 border-white/5 hover:bg-white/10" : "bg-slate-50 border-slate-200 hover:bg-slate-100/80"
+  const sub   = dm ? "text-slate-400" : "text-slate-500"
+  const head  = dm ? "text-white" : "text-slate-900"
+  const divB  = dm ? "border-white/5" : "border-slate-100"
+
+  const mySections = useMemo(
+    () => [...new Set(schedules.map(s => s.section))].filter(Boolean),
+    [schedules]
+  )
+
+  const load = useCallback(async (silent = false) => {
+    const myStudentIds = students.map(s => s.id)
+    if (!myStudentIds.length) return
+    if (!silent) setLoading(true)
+    try {
+      const { data } = await supabase
+        .from("attendance").select("student_id, subject, date, status, notes")
+        .in("student_id", myStudentIds)
+        .eq("school_year", schoolYear)
+      setAttData(data || [])
+    } finally {
+      if (!silent) setLoading(false)
+    }
+  }, [students, schoolYear])
+
+  const loadEvents = useCallback(async () => {
+    const { data } = await supabase
+      .from("school_calendar_events")
+      .select("id, event_date, end_date, event_type")
+      .eq("school_year", schoolYear)
+    if (data) setCalendarEvents(data)
+  }, [schoolYear])
+
+  useEffect(() => { load() }, [load])
+  useEffect(() => { loadEvents() }, [loadEvents])
+
+  useEffect(() => {
+    const ch = supabase.channel("reports_rt_att")
+      .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, () => load(true))
+      .subscribe()
+    const ch2 = supabase.channel("reports_rt_events")
+      .on("postgres_changes", { event: "*", schema: "public", table: "school_calendar_events" }, () => loadEvents())
+      .subscribe()
+    return () => { supabase.removeChannel(ch); supabase.removeChannel(ch2); }
+  }, [load, loadEvents])
+
+  useEffect(() => {
+    if (printSubject === undefined) return
+    const label = printSubject ? `${printSubject.section} — ${printSubject.subject}` : "Full Attendance Report"
+    const id = toast.loading(`Preparing PDF: ${label}...`)
+    const t = setTimeout(() => {
+      window.print()
+      toast.success("PDF Ready", { id })
+      setPrintSubject(undefined)
+    }, 400)
+    return () => clearTimeout(t)
+  }, [printSubject])
+
+  const semBounds = useMemo(() => {
+    const start = calendarEvents.find(e => e.event_type === "semester_start")?.event_date || ""
+    const end = calendarEvents.find(e => e.event_type === "semester_end")?.event_date || ""
+    // Fallback: if admin hasn't set semester boundaries yet, use attendance data bounds
+    const fallbackStart = start || (attData.length > 0 ? attData.reduce((min, r) => r.date < min ? r.date : min, attData[0].date) : new Date().toISOString().split("T")[0])
+    const fallbackEnd = end || new Date().toISOString().split("T")[0]
+    return { start: fallbackStart, end: fallbackEnd }
+  }, [calendarEvents, attData])
+
+  const sectionReports: SectionReport[] = useMemo(() => {
+    const todayStr = new Date().toISOString().split("T")[0]
+    return mySections.map(section => {
+      const sectionStudents = students.filter(s => s.section === section)
+      const sectionSchedules = schedules.filter(s => s.section === section)
+      const uniqueSubjects = [...new Set(sectionSchedules.map(s => s.subject))]
+
+      if (reportMode === "subject") {
+        const subjectReports: SubjectReport[] = uniqueSubjects.map(subject => {
+          const recs = attData.filter(r =>
+            sectionStudents.some(s => s.id === r.student_id) && r.subject === subject
+          )
+          const distinctDates = [...new Set(recs.map(r => r.date))].length
+          const presentCount = recs.filter(r => r.status === "Present" || r.status === "Late").length
+          const absentCount  = recs.filter(r => r.status === "Absent").length
+          const lateCount    = recs.filter(r => r.status === "Late").length
+          const excusedCount = recs.filter(r => r.status === "Excused").length
+          const totalExpected = distinctDates * sectionStudents.length
+          const pct = totalExpected > 0 ? Math.round((presentCount / totalExpected) * 100) : 0
+          return {
+            subject, scheduledDays: distinctDates,
+            totalSessions: totalExpected, presentCount, absentCount, lateCount, excusedCount,
+            attendancePct: pct,
+          }
+        })
+        const totalAbsents  = subjectReports.reduce((a, s) => a + s.absentCount, 0)
+        const totalPresents = subjectReports.reduce((a, s) => a + s.presentCount, 0)
+        const totalExpected = subjectReports.reduce((a, s) => a + s.totalSessions, 0)
+        const avgAbsents    = sectionStudents.length > 0 ? Math.round(totalAbsents / sectionStudents.length) : 0
+        const avgPresents   = sectionStudents.length > 0 ? Math.round(totalPresents / sectionStudents.length) : 0
+        const overallPct    = totalExpected > 0 ? Math.round((totalPresents / totalExpected) * 100) : 0
+        return {
+          section, subjects: subjectReports, totalStudents: sectionStudents.length,
+          avgAbsents, avgPresents, attendancePct: overallPct,
+        }
+      } else {
+        // "daily" mode
+        const sectionRecords = attData.filter(r => sectionStudents.some(s => s.id === r.student_id))
+        const semEnd = semBounds.end < todayStr ? semBounds.end : todayStr
+        const uniqueDates = [...new Set(sectionRecords.map(r => r.date))].filter(d => d >= semBounds.start && d <= semEnd)
+        let totalPresent = 0, totalAbsent = 0, totalExcused = 0
+        const expectedPerStudent = countActualSchoolDays(calendarEvents, semBounds.start, semBounds.end)
+        const expectedSessions = expectedPerStudent * sectionStudents.length
+        const scheduledPerStudent = countActualSchoolDays(calendarEvents, semBounds.start, todayStr)
+
+        uniqueDates.forEach(date => {
+          sectionStudents.forEach(student => {
+            const dayRecs = sectionRecords.filter(r => r.student_id === student.id && r.date === date)
+            if (dayRecs.length === 0) return
+            const absents = dayRecs.filter(r => r.status === "Absent").length
+            const excused = dayRecs.filter(r => r.status === "Excused").length
+            if (absents > 0) {
+               totalAbsent++ // Any absent makes it an absent day
+            } else if (excused === dayRecs.length) {
+               totalExcused++ // All excused makes it an excused day
+            } else {
+               totalPresent++ // Everything else is a present day
+            }
+          })
+        })
+
+        const pct = expectedSessions > 0 ? Math.round((totalPresent / expectedSessions) * 100) : 0
+        return {
+          section,
+          subjects: [{
+            subject: "Daily Aggregate", scheduledDays: scheduledPerStudent,
+            totalSessions: expectedSessions, presentCount: totalPresent, absentCount: totalAbsent,
+            lateCount: 0, excusedCount: totalExcused, attendancePct: pct
+          }],
+          totalStudents: sectionStudents.length,
+          avgAbsents: sectionStudents.length > 0 ? Math.round(totalAbsent / sectionStudents.length) : 0,
+          avgPresents: sectionStudents.length > 0 ? Math.round(totalPresent / sectionStudents.length) : 0,
+          attendancePct: pct
+        }
+      }
+    })
+  }, [mySections, students, schedules, attData, reportMode, calendarEvents, semBounds])
+
+  const studentAbsences: StudentAbsence[] = useMemo(() => {
+    return students.map(student => {
+      const recs = attData.filter(r => r.student_id === student.id && r.status === "Absent")
+      const bySubject: Record<string, number> = {}
+      recs.forEach(r => { bySubject[r.subject] = (bySubject[r.subject] || 0) + 1 })
+      const totalAbsents = recs.length
+      const needsCounseling = Object.values(bySubject).some(c => c >= COUNSELING_THRESHOLD)
+      return { student, totalAbsents, absentBySubject: bySubject, needsCounseling }
+    }).sort((a, b) => b.totalAbsents - a.totalAbsents)
+  }, [students, attData])
+
+  const counselingList = studentAbsences.filter(s => s.needsCounseling)
+  const filteredReports = activeSection === "ALL" ? sectionReports : sectionReports.filter(r => r.section === activeSection)
+  const filteredCounseling = activeSection === "ALL" ? counselingList : counselingList.filter(s => s.student.section === activeSection)
+
+  const handleDownloadPDF = () => {
+    let focused: {section: string; subject: string} | null = null
+    for (const sec of filteredReports) {
+      const fs = subjectFocus[sec.section]
+      if (fs) { focused = { section: sec.section, subject: fs }; break }
+      else if (expanded.has(sec.section)) { focused = { section: sec.section, subject: "" }; break }
+    }
+    setPrintSubject(focused)
+  }
+
+  const StackedBar = ({ present, late, excused, absent, total }: { present: number; late: number; excused: number; absent: number; total: number }) => {
+    if (total === 0) return <div className={`h-1.5 rounded-full w-full ${dm ? "bg-white/5" : "bg-slate-100"}`} />
+    const pPct = (present / total) * 100, lPct = (late / total) * 100, ePct = (excused / total) * 100, aPct = (absent / total) * 100
+    return (
+      <div className={`h-2 rounded-full overflow-hidden flex w-full ${dm ? "bg-white/5 shadow-inner" : "bg-slate-100"}`}>
+        {pPct > 0 && <div className="bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]" style={{ width: `${pPct}%`, transition: "width 0.8s cubic-bezier(0.4, 0, 0.2, 1)" }} />}
+        {lPct > 0 && <div className="bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]" style={{ width: `${lPct}%`, transition: "width 0.8s cubic-bezier(0.4, 0, 0.2, 1)" }} />}
+        {ePct > 0 && <div className="bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]" style={{ width: `${ePct}%`, transition: "width 0.8s cubic-bezier(0.4, 0, 0.2, 1)" }} />}
+        {aPct > 0 && <div className="bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.3)]" style={{ width: `${aPct}%`, transition: "width 0.8s cubic-bezier(0.4, 0, 0.2, 1)" }} />}
+      </div>
+    )
+  }
+
+  const toggleExpand = (key: string) => {
+    setExpanded(prev => {
+      const s = new Set(prev)
+      if (s.has(key)) {
+        s.delete(key)
+        setSubjectFocus(f => ({ ...f, [key]: null }))
+      } else {
+        s.add(key)
+      }
+      return s
+    })
+  }
+
+  // --- ANALYTICS: Trend Data ---
+  const trendData = useMemo(() => {
+    // 1. Get unique sorted dates from attData
+    const dates = [...new Set(attData.map(r => r.date))].sort().slice(-6)
+    if (dates.length === 0) return []
+
+    return dates.map(date => {
+      const dayRecs = attData.filter(r => r.date === date)
+      const isFiltered = activeSection !== "ALL"
+      const relevantRecs = isFiltered ? dayRecs.filter(r => {
+        const student = students.find(s => s.id === r.student_id)
+        return student?.section === activeSection
+      }) : dayRecs
+
+      const presents = relevantRecs.filter(r => r.status === "Present" || r.status === "Late").length
+      const total = relevantRecs.length
+      const pct = total > 0 ? Math.round((presents / total) * 100) : 0
+      
+      return { 
+        name: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        fullDate: date,
+        attendance: pct,
+        label: date.split("-").slice(1).join("/") // short date e.g. 03/29
+      }
+    })
+  }, [attData, activeSection, students])
+
+  const overallVelocity = useMemo(() => {
+    if (trendData.length < 2) return 0
+    const last = trendData[trendData.length - 1].attendance
+    const prev = trendData[trendData.length - 2].attendance
+    return last - prev
+  }, [trendData])
+
+  const VelocityChart = () => (
+    <div className={`h-[300px] w-full mt-4 rounded-3xl p-4 md:p-6 overflow-hidden relative ${dm ? "bg-slate-900/20" : "bg-slate-50/50"}`}>
+       <div className="flex justify-between items-start mb-6">
+          <div>
+            <h4 className={`text-[10px] font-black uppercase tracking-widest ${sub}`}>Attendance Velocity</h4>
+            <p className={`text-2xl font-black italic tracking-tighter ${head}`}>
+              {trendData.length > 0 ? trendData[trendData.length-1].attendance : 0}% 
+              <span className={`ml-2 text-xs not-italic ${overallVelocity >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                {overallVelocity >= 0 ? "+" : ""}{overallVelocity}% vs prev session
+              </span>
+            </p>
+          </div>
+          {overallVelocity !== 0 && (
+            <div className={`p-2 rounded-xl ${overallVelocity > 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+              {overallVelocity > 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+            </div>
+          )}
+       </div>
+       <ResponsiveContainer width="100%" height="80%">
+          <AreaChart data={trendData} margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
+            <defs>
+              <linearGradient id="velocityGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={dm ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)"} />
+            <XAxis 
+              dataKey="label" 
+              axisLine={false} tickLine={false} 
+              tick={{ fontSize: 9, fontWeight: 900, fill: dm ? "#64748b" : "#94a3b8" }}
+              dy={10}
+            />
+            <YAxis 
+              hide domain={[0, 110]}
+            />
+            <Tooltip 
+              contentStyle={{ 
+                borderRadius: '16px', border: 'none', 
+                backgroundColor: dm ? '#1e293b' : '#ffffff',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' 
+              }}
+              labelStyle={{ fontSize: '10px', fontWeight: 900, color: '#3b82f6', textTransform: 'uppercase', marginBottom: '4px' }}
+              itemStyle={{ fontSize: '12px', fontWeight: 900, color: dm ? '#f8fafc' : '#0f172a' }}
+            />
+            <Area 
+              type="monotone" 
+              dataKey="attendance" 
+              stroke="#3b82f6" 
+              strokeWidth={4} 
+              fillOpacity={1} 
+              fill="url(#velocityGradient)" 
+              animationDuration={2000}
+              dot={false}
+              activeDot={{ r: 4, strokeWidth: 0, fill: '#3b82f6' }}
+            />
+          </AreaChart>
+       </ResponsiveContainer>
+    </div>
+  )
+
+  return (
+    <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* --- HIDDEN PRINT LAYOUT --- */}
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #print-area, #print-area * { visibility: visible; }
+          #print-area { position: absolute; left: 0; top: 0; width: 100%; color: black !important; }
+          .no-print { display: none !important; }
+          .print-card { border: 1px solid #eee; break-inside: avoid; page-break-inside: avoid; margin-bottom: 2rem; padding: 1.5rem; border-radius: 1rem; }
+          .print-header { border-bottom: 3px solid #000; padding-bottom: 1rem; margin-bottom: 2rem; }
+        }
+      `}</style>
+      <div id="print-area" className="hidden print:block font-sans" style={{ fontFamily: "Georgia, 'Times New Roman', serif", padding: "32px 40px", color: "#111" }}>
+
+        {printSubject ? (() => {
+          const { section, subject } = printSubject
+          const report = sectionReports.find(r => r.section === section)
+          const subjectReport = report?.subjects.find(s => s.subject === subject)
+          const sectionStudents = students.filter(s => s.section === section)
+          const todayStr = new Date().toISOString().split("T")[0]
+          const studentStats = sectionStudents.map(student => {
+            let total = 0, present = 0, late = 0, absent = 0, excused = 0, cuttingCount = 0
+            const isGlobal = !subject
+            
+            let totalExpectedDays = countActualSchoolDays(calendarEvents, semBounds.start, semBounds.end)
+            let scheduledDays = countActualSchoolDays(calendarEvents, semBounds.start, todayStr)
+
+            if (reportMode === "daily" || isGlobal) {
+               const sectionRecords = attData.filter(r => r.student_id === student.id && (!subject || subject === "Daily Aggregate" || r.subject === subject))
+               const semEndCap = semBounds.end < todayStr ? semBounds.end : todayStr
+               const uniqueDates = [...new Set(sectionRecords.map(r => r.date))].filter(d => d >= semBounds.start && d <= semEndCap)
+               total = scheduledDays || uniqueDates.length
+               uniqueDates.forEach(date => {
+                   const dayRecs = sectionRecords.filter(r => r.date === date)
+                   const abs = dayRecs.filter(r => r.status === "Absent").length
+                   const ex = dayRecs.filter(r => r.status === "Excused").length
+                   if (abs > 0) { absent++; const pr = dayRecs.filter(r => r.status === "Present" || r.status === "Late").length; if (pr > 0 || ex > 0) cuttingCount++; }
+                   else if (ex === dayRecs.length) { excused++ }
+                   else { present++ }
+               })
+            } else {
+               const recs = attData.filter(r => r.student_id === student.id && r.subject === subject)
+               present = recs.filter(r => r.status === "Present").length
+               late = recs.filter(r => r.status === "Late").length
+               absent = recs.filter(r => r.status === "Absent").length
+               excused = recs.filter(r => r.status === "Excused").length
+               total = recs.length
+               cuttingCount = recs.filter(r => r.notes === "CUTTING").length
+               // By-Subject: totalExpectedDays is the actual number of sessions held
+               const distinctDates = [...new Set(recs.map(r => r.date))].length
+               totalExpectedDays = distinctDates
+               scheduledDays = distinctDates
+            }
+            
+            const pct = total > 0 ? Math.round(((present + late) / total) * 100) : 0
+            const classification = classifyAttendanceRisk(absent, late, excused, total, totalExpectedDays)
+            
+            return { student, present, late, absent, excused, total, pct, cuttingCount, classification }
+          }).sort((a, b) => b.absent - a.absent)
+          const flaggedStudents = studentStats.filter(s => s.cuttingCount > 0 || s.classification.isAtRisk || s.classification.status === "Warning")
+
+          return (
+            <div>
+              {/* Page header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #d1d5db", paddingBottom: "14px", marginBottom: "20px" }}>
+                <div>
+                  <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>AMA ACLC Northbay College — S.Y. {schoolYear}</p>
+                  <h1 style={{ fontSize: "22px", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>Attendance Report</h1>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <p style={{ fontSize: "9px", color: "#9ca3af", marginBottom: "2px" }}>Prepared by</p>
+                  <p style={{ fontSize: "11px", fontWeight: 700 }}>{session.full_name}</p>
+                  <p style={{ fontSize: "9px", color: "#6b7280" }}>{new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+                </div>
+              </div>
+
+              {/* Subject highlight banner */}
+              <div style={{ background: "#111827", color: "#fff", borderRadius: "8px", padding: "14px 20px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "9px", color: "#9ca3af", letterSpacing: "0.1em", marginBottom: "3px" }}>{subject ? "Subject" : "Section Overview"}</p>
+                <p style={{ fontSize: "20px", fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>{subject || report?.section}</p>
+                <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "2px" }}>{section}</p>
+              </div>
+
+              {/* Summary stats */}
+              {subjectReport && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px", marginBottom: "22px" }}>
+                  {[
+                    { label: "Attendance Rate", value: `${subjectReport.attendancePct}%`, color: subjectReport.attendancePct >= 80 ? "#16a34a" : subjectReport.attendancePct >= 60 ? "#d97706" : "#dc2626" },
+                    { label: "Present", value: subjectReport.presentCount, color: "#16a34a" },
+                    { label: "Absent", value: subjectReport.absentCount, color: "#dc2626" },
+                    { label: "At Risk", value: flaggedStudents.length, color: flaggedStudents.length > 0 ? "#dc2626" : "#6b7280" },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} style={{ border: "1px solid #e5e7eb", borderRadius: "6px", padding: "10px 14px" }}>
+                      <p style={{ fontSize: "18px", fontWeight: 900, color, margin: 0 }}>{value}</p>
+                      <p style={{ fontSize: "9px", color: "#9ca3af", marginTop: "2px", letterSpacing: "0.05em" }}>{label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Roster table */}
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: "#374151", marginBottom: "8px", textTransform: "uppercase" }}>Student Roster</p>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid #111827" }}>
+                    {["#", "Student Name", "LRN", "P", ...((!subject || reportMode === "daily") ? [] : ["L"]), "E", "A", "Att%", "Status"].map(h => (
+                      <th key={h} style={{ padding: "6px 8px", textAlign: h === "Student Name" || h === "LRN" || h === "#" ? "left" : "center", fontSize: "9px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.06em", textTransform: "uppercase" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {studentStats.map(({ student, present, late, absent, excused, pct, cuttingCount, classification }, i) => {
+                    const { status, isAtRisk } = classification;
+                    const hasCutting = cuttingCount > 0;
+                    
+                    let rowBg = i % 2 === 0 ? "#fff" : "#f9fafb";
+                    let statusColor = "#16a34a"; // green for Safe
+                    let dotColor: string | null = null;
+
+                    if (status === "Failed Threshold") {
+                      rowBg = "#fff1f2";
+                      statusColor = "#dc2626";
+                      dotColor = "#dc2626";
+                    } else if (status === "At Risk") {
+                      rowBg = "#fff7ed";
+                      statusColor = "#ea580c";
+                      dotColor = "#ea580c";
+                    } else if (status === "Warning") {
+                      rowBg = "#fefce8";
+                      statusColor = "#ca8a04";
+                      dotColor = "#eab308";
+                    } else if (status === "Monitoring") {
+                      statusColor = "#64748b"; // slate
+                    }
+                    
+                    // We also keep the orange flag for cutting if it's there
+                    const nameColor = (status === "Failed Threshold" || status === "At Risk" || hasCutting) ? (hasCutting && status !== "Failed Threshold" ? "#ea580c" : "#dc2626") : "#111827";
+
+                    return (
+                      <tr key={student.id} style={{ backgroundColor: rowBg, borderBottom: "1px solid #f3f4f6" }}>
+                        <td style={{ padding: "6px 8px", color: "#9ca3af", fontSize: "10px" }}>{i + 1}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 600, color: nameColor }}>
+                          {dotColor && <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", backgroundColor: dotColor, marginRight: "5px", verticalAlign: "middle" }} />}
+                          {student.last_name}, {student.first_name}
+                          {hasCutting && <span style={{ display: "block", fontSize: "8px", fontWeight: 700, color: "#f97316", marginTop: "2px" }}>{cuttingCount}x Cutting</span>}
+                        </td>
+                        <td style={{ padding: "6px 8px", color: "#9ca3af", fontSize: "10px" }}>{student.lrn ?? "—"}</td>
+                        <td style={{ padding: "6px 8px", textAlign: "center", color: "#16a34a", fontWeight: 600 }}>{present}</td>
+                        {(!(!subject || reportMode === "daily")) && <td style={{ padding: "6px 8px", textAlign: "center", color: "#d97706", fontWeight: 600 }}>{late}</td>}
+                        <td style={{ padding: "6px 8px", textAlign: "center", color: "#2563eb", fontWeight: 600 }}>{excused}</td>
+                        <td style={{ padding: "6px 8px", textAlign: "center", color: absent > 0 ? "#dc2626" : "#111827", fontWeight: absent > 0 ? 700 : 400 }}>{absent}</td>
+                        <td style={{ padding: "6px 8px", textAlign: "center", fontWeight: 700, color: pct >= 80 ? "#16a34a" : pct >= 60 ? "#d97706" : "#dc2626" }}>{pct}%</td>
+                        <td style={{ padding: "6px 8px", textAlign: "center", fontSize: "9px", fontWeight: 700, color: statusColor }}>{status}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+
+              {/* Flagged students — only rendered if there are any */}
+              {flaggedStudents.length > 0 && (
+                <div style={{ marginTop: "24px", padding: "14px 16px", border: "1px solid #fca5a5", borderRadius: "6px", background: "#fff5f5" }}>
+                  <p style={{ fontSize: "10px", fontWeight: 700, color: "#b91c1c", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>
+                    Students Requiring Attention ({flaggedStudents.length})
+                  </p>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid #fca5a5" }}>
+                        {["Name", "Absences", "Att%", "Reason"].map(h => (
+                          <th key={h} style={{ padding: "4px 8px", textAlign: "left", fontSize: "9px", color: "#b91c1c", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {flaggedStudents.map(({ student, classification, pct, cuttingCount }) => {
+                        const { status, effectiveAbsences, absencesRemaining } = classification;
+                        const hasCutting = cuttingCount > 0;
+                        return (
+                        <tr key={student.id} style={{ borderBottom: "1px solid #fee2e2" }}>
+                          <td style={{ padding: "5px 8px", fontWeight: 600, color: "#991b1b" }}>{student.last_name}, {student.first_name}</td>
+                          <td style={{ padding: "5px 8px", color: "#dc2626", fontWeight: 700 }}>{effectiveAbsences}</td>
+                          <td style={{ padding: "5px 8px", color: "#dc2626", fontWeight: 700 }}>{pct}%</td>
+                          <td style={{ padding: "5px 8px", fontSize: "9px", color: "#9ca3af" }}>
+                            <span style={{ fontWeight: 700, color: status === "Failed Threshold" ? "#dc2626" : "#ea580c" }}>{status}</span> — {absencesRemaining > 0 ? `${absencesRemaining} more leads to Failure.` : "Absent cap exceeded."} {hasCutting ? `(${cuttingCount} cutting incident(s))` : ""}
+                          </td>
+                        </tr>
+                      )})}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )
+        })() : (
+          <>
+            {/* Full report header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #d1d5db", paddingBottom: "14px", marginBottom: "20px" }}>
+              <div>
+                <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>AMA ACLC Northbay College — S.Y. {schoolYear}</p>
+                <h1 style={{ fontSize: "22px", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>Attendance Report</h1>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontSize: "9px", color: "#9ca3af", marginBottom: "2px" }}>Prepared by</p>
+                <p style={{ fontSize: "11px", fontWeight: 700 }}>{session.full_name}</p>
+                <p style={{ fontSize: "9px", color: "#6b7280" }}>{new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-6 mb-10">
+              <div className="print-card text-center">
+                <p className="text-3xl font-black">{Math.round(sectionReports.reduce((a,r)=>a+r.attendancePct,0)/sectionReports.length || 0)}%</p>
+                <p className="text-[10px] font-bold uppercase text-gray-400">Average Attendance</p>
+              </div>
+              <div className="print-card text-center">
+                <p className="text-3xl font-black">{students.length}</p>
+                <p className="text-[10px] font-bold uppercase text-gray-400">Managed Students</p>
+              </div>
+              <div className="print-card text-center">
+                <p className="text-3xl font-black">{counselingList.length}</p>
+                <p className="text-[10px] font-bold uppercase text-gray-400">Priority Counseling</p>
+              </div>
+            </div>
+            <h2 className="text-xl font-black uppercase mb-6 border-b-2 border-gray-100 pb-2">Section Performance</h2>
+            {sectionReports.map(r => (
+                <div key={r.section} className="print-card">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-black uppercase">{r.section}</h3>
+                    <span className="text-sm font-bold">{r.attendancePct}% Present</span>
+                  </div>
+                  <table className="w-full text-xs text-left">
+                    <thead><tr className="border-b uppercase text-[8px] text-gray-500">
+                      <th className="py-2">Subject</th>
+                      <th>Present</th>
+                      <th>Absent</th>
+                      <th>Late</th>
+                      <th>Excused</th>
+                    </tr></thead>
+                    <tbody className="divide-y">
+                      {r.subjects.map(s => (
+                        <tr key={s.subject}>
+                          <td className="py-2 font-bold">{s.subject}</td>
+                          <td>{s.presentCount - s.lateCount}</td>
+                          <td className="text-red-600">{s.absentCount}</td>
+                          <td className="text-amber-600">{s.lateCount}</td>
+                          <td className="text-blue-600">{s.excusedCount}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* --- DASHBOARD HEADER --- */}
+      <div className={`rounded-[32px] border p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-2xl overflow-hidden relative group ${card}`}>
+        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+        <div className="flex items-center gap-5">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border border-white/10 ${dm ? "bg-blue-600/20 shadow-[0_0_20px_rgba(37,99,235,0.1)]" : "bg-blue-50 shadow-sm shadow-blue-500/10"}`}>
+               <BarChart2 className="w-7 h-7 text-blue-500" />
+            </div>
+            <div>
+              <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${sub}`}>Attendance Report</p>
+              <h2 className={`text-2xl font-black italic tracking-tighter uppercase ${head}`}>S.Y. {schoolYear} ANALYTICS</h2>
+            </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+            <div className={`relative flex items-center rounded-2xl border p-1 overflow-hidden h-12 ${dm ? "bg-white/5 border-white/5" : "bg-slate-100 border-slate-200"}`}>
+               <button
+                 onClick={() => setReportMode("subject")}
+                 className={`flex-1 px-4 h-full rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${reportMode === "subject" ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30" : dm ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-900"}`}
+               >
+                 By Subject
+               </button>
+               <button
+                 onClick={() => setReportMode("daily")}
+                 className={`flex-1 px-4 h-full rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${reportMode === "daily" ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30" : dm ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-900"}`}
+               >
+                 By Day
+               </button>
+            </div>
+            <button
+               onClick={() => load()}
+               className={`h-12 px-6 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 group border ${dm ? "bg-white/5 border-white/5 hover:bg-white/10 text-white" : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-600"}`}
+            >
+              <RefreshCw className={`w-4 h-4 text-blue-500 ${loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-700"}`} />
+              Update Matrix
+            </button>
+            <button
+               onClick={handleDownloadPDF}
+               className="h-12 px-6 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 group bg-slate-900 border-none text-white hover:bg-black shadow-xl shadow-slate-950/20"
+            >
+              <FileDown className="w-4 h-4 text-blue-400 group-hover:-translate-y-0.5 transition-transform" />
+              {(() => {
+                for (const sec of filteredReports) {
+                  const fs = subjectFocus[sec.section]
+                  if (fs) return `PDF: ${sec.section} · ${fs}`
+                  if (expanded.has(sec.section)) return `PDF: ${sec.section} Roster`
+                }
+                return "Download PDF"
+              })()}
+            </button>
+        </div>
+      </div>
+
+      {/* --- QUICK METRICS --- */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {(() => {
+          const avgPct = Math.round(sectionReports.reduce((a, r) => a + r.attendancePct, 0) / (sectionReports.length || 1))
+          const totalAbs = attData.filter(r => r.status === "Absent").length
+          const totalExc = attData.filter(r => r.status === "Excused").length
+          const triageCount = counselingList.length
+
+          return <>
+            <div className={`rounded-[28px] border p-5 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden group transition-all hover:-translate-y-1 ${card}`}>
+              <CircularProgress pct={avgPct} size={64} dm={dm} />
+              <p className={`text-[9px] font-black uppercase tracking-widest ${sub}`}>Overall Present</p>
+              <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            </div>
+            <div className={`rounded-[28px] border p-5 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden group transition-all hover:-translate-y-1 ${card}`}>
+              <div className="text-2xl font-black text-rose-500 italic tabular-nums">{totalAbs}</div>
+              <p className={`text-[9px] font-black uppercase tracking-widest ${sub}`}>Total Absents</p>
+              <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            </div>
+            <div className={`rounded-[28px] border p-5 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden group transition-all hover:-translate-y-1 ${card}`}>
+              <div className="text-2xl font-black text-blue-500 italic tabular-nums">{totalExc}</div>
+              <p className={`text-[9px] font-black uppercase tracking-widest ${sub}`}>Total Excused</p>
+              <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            </div>
+            <div className={`rounded-[28px] border p-5 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden group transition-all hover:-translate-y-1 ${card}`}>
+              <div className="text-2xl font-black text-amber-500 animate-pulse italic tabular-nums">{triageCount}</div>
+              <p className={`text-[9px] font-black uppercase tracking-widest ${sub}`}>High Risk Students</p>
+              <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            </div>
+          </>
+        })()}
+      </div>
+
+      {/* --- TREND ANALYTICS --- */}
+      <div className={`p-1 rounded-[32px] overflow-hidden ${card}`}>
+        <VelocityChart />
+      </div>
+
+      {/* --- FILTER & LEGEND --- */}
+      <div className={`rounded-[28px] border p-4 flex flex-col md:flex-row items-center justify-between gap-4 ${card}`}>
+        <div className="flex flex-wrap items-center gap-2">
+          {["ALL", ...mySections].map(sec => (
+            <button key={sec} onClick={() => setActiveSection(sec)}
+              className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all
+                ${activeSection === sec ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : dm ? "bg-white/5 border-white/5 hover:bg-white/10 text-slate-300" : "bg-slate-50 border-slate-200 hover:bg-slate-100/80 text-slate-500"}`}>
+              {sec}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-4 flex-wrap justify-center">
+            {[
+              { c: "bg-emerald-500", l: "Present" }, { c: "bg-amber-500", l: "Late" },
+              { c: "bg-blue-500", l: "Excused" }, { c: "bg-rose-500", l: "Absent" }
+            ].map(i => (
+              <div key={i.l} className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${i.c}`} />
+                <span className={`text-[9px] font-bold uppercase tracking-wider ${sub}`}>{i.l}</span>
+              </div>
+            ))}
+        </div>
+      </div>
+
+      {/* --- SECTION AUDIT CARDS --- */}
+      <div className="grid grid-cols-1 gap-6">
+        {filteredReports.length > 0 ? filteredReports.map(report => {
+          const isExpanded = expanded.has(report.section)
+          
+          // Calculate section-specific trend (last 5 sessions)
+          const secDates = [...new Set(attData.filter(d => {
+            const s = students.find(st => st.id === d.student_id)
+            return s?.section === report.section
+          }).map(d => d.date))].sort().slice(-5)
+          
+          const secTrend = secDates.map(date => {
+            const dayRecs = attData.filter(d => d.date === date)
+            const relevant = dayRecs.filter(d => {
+              const s = students.find(st => st.id === d.student_id)
+              return s?.section === report.section
+            })
+            const presents = relevant.filter(d => d.status === "Present" || d.status === "Late").length
+            return relevant.length > 0 ? Math.round((presents / relevant.length) * 100) : 0
+          })
+
+          const lastVal = secTrend[secTrend.length-1] || 0
+          const prevVal = secTrend[secTrend.length-2] || 0
+          const diff = lastVal - prevVal
+
+          return (
+            <div key={report.section} className={`rounded-[32px] border transition-all duration-500 overflow-hidden ${card} ${isExpanded ? "ring-2 ring-blue-500/20" : "hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-1"}`}>
+              {/* Header */}
+              <div
+                onClick={() => toggleExpand(report.section)}
+                className="p-6 md:p-8 cursor-pointer flex items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-6">
+                  <CircularProgress pct={report.attendancePct} dm={dm} size={70} strokeWidth={6} />
+                  <div>
+                    <h3 className={`text-xl font-black italic tracking-tighter uppercase ${head}`}>{report.section}</h3>
+                    <p className={`text-[10px] font-bold uppercase tracking-widest ${sub}`}>
+                      {report.totalStudents} Students • {report.subjects.length} Subjects
+                    </p>
+                    {secTrend.length > 1 && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className={`text-[9px] font-black uppercase flex items-center gap-1 ${diff >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                          {diff >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                          {diff >= 0 ? "+" : ""}{diff}% Trend
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="hidden md:block h-8 w-24">
+                     <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={secTrend.map((v, i) => ({ v, i }))} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                           <Line 
+                             type="monotone" 
+                             dataKey="v" 
+                             stroke={diff >= 0 ? "#10b981" : "#f43f5e"} 
+                             strokeWidth={4} 
+                             dot={false}
+                             activeDot={false}
+                             isAnimationActive={false}
+                           />
+                        </LineChart>
+                     </ResponsiveContainer>
+                  </div>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-500 ${isExpanded ? "rotate-180 bg-blue-500 text-white" : dm ? "bg-white/5 text-slate-400" : "bg-slate-50 text-slate-500"}`}>
+                    <ChevronDown size={20} />
+                  </div>
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div className={`px-6 md:px-10 pb-10 space-y-8 animate-in slide-in-from-top-4 duration-500`}>
+                  <div className={`max-w-md mx-auto h-2 relative`}>
+                      <StackedBar
+                        present={report.subjects.reduce((a,s) => a + s.presentCount - s.lateCount, 0)}
+                        late={report.subjects.reduce((a,s) => a + s.lateCount, 0)}
+                        excused={report.subjects.reduce((a,s) => a + s.excusedCount, 0)}
+                        absent={report.subjects.reduce((a,s) => a + s.absentCount, 0)}
+                        total={report.subjects.reduce((a,s) => a + s.totalSessions, 0)}
+                      />
+                      <div className="text-[8px] font-black uppercase text-center mt-3 tracking-widest opacity-40">Cumulative Attendance Density</div>
+                  </div>
+
+                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 pt-4`}>
+                      {report.subjects.sort((a,b)=>b.attendancePct - a.attendancePct).map((subj, idx) => (
+                        <div key={subj.subject} className={`p-5 rounded-[24px] border border-transparent flex gap-4 items-start ${glass} animate-in fade-in duration-500`} style={{ animationDelay: `${idx * 100}ms` }}>
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${dm ? "bg-white/5" : "bg-white shadow-sm"}`}>
+                             <p className="text-[10px] font-black text-blue-500">{idx+1}</p>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                             <div className="flex justify-between items-start mb-2">
+                                <p className={`text-[11px] font-black uppercase truncate leading-none ${head}`}>{subj.subject}</p>
+                                <p className={`text-[11px] font-black italic tracking-tighter ${subj.attendancePct >= 80 ? "text-emerald-500" : "text-rose-500"}`}>{subj.attendancePct}%</p>
+                             </div>
+                             <StackedBar
+                              present={subj.presentCount - subj.lateCount}
+                              late={subj.lateCount}
+                              excused={subj.excusedCount}
+                              absent={subj.absentCount}
+                              total={subj.totalSessions}
+                             />
+                             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
+                                <span className="text-[7px] font-black uppercase tracking-wider text-emerald-500">P: {subj.presentCount - subj.lateCount}</span>
+                                <span className="text-[7px] font-black uppercase tracking-wider text-amber-500">L: {subj.lateCount}</span>
+                                <span className="text-[7px] font-black uppercase tracking-wider text-blue-500">E: {subj.excusedCount}</span>
+                                <span className="text-[7px] font-black uppercase tracking-wider text-rose-500">A: {subj.absentCount}</span>
+                                <span className={`text-[7px] font-black uppercase tracking-wider ${sub} ml-auto`}>{subj.scheduledDays} Days</span>
+                             </div>
+                             <button
+                               onClick={(e) => { e.stopPropagation(); toggleSubjectFocus(report.section, subj.subject) }}
+                               className={`mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border
+                                 ${subjectFocus[report.section] === subj.subject
+                                   ? "bg-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/20"
+                                   : dm ? "bg-white/5 text-slate-400 hover:bg-white/10 border-white/5" : "bg-slate-100/80 text-slate-500 hover:bg-slate-200 border-slate-200"}`}
+                             >
+                               <Users size={9} />
+                               {subjectFocus[report.section] === subj.subject ? "Close Roster" : "View Roster"}
+                             </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* --- STUDENT ROSTER (shown when a subject is focused OR as Global fallback) --- */}
+                  {(subjectFocus[report.section] || !subjectFocus[report.section]) && (() => {
+                    const focusedSubject = subjectFocus[report.section]
+                    const isGlobal = !focusedSubject
+                    const sectionStudents = students.filter(s => s.section === report.section)
+                    
+                    const todayStr = new Date().toISOString().split("T")[0]
+                    const allStudentStats = sectionStudents.map(student => {
+                      let total = 0, present = 0, late = 0, absent = 0, excused = 0, cuttingCount = 0
+
+                      let totalExpectedDays = countActualSchoolDays(calendarEvents, semBounds.start, semBounds.end)
+                      let scheduledDays = countActualSchoolDays(calendarEvents, semBounds.start, todayStr)
+
+                      if (reportMode === "daily" || isGlobal) {
+                         const sectionRecords = attData.filter(r => r.student_id === student.id && (!focusedSubject || focusedSubject === "Daily Aggregate" || r.subject === focusedSubject))
+                         const semEndCap = semBounds.end < todayStr ? semBounds.end : todayStr
+                         const uniqueDates = [...new Set(sectionRecords.map(r => r.date))].filter(d => d >= semBounds.start && d <= semEndCap)
+                         total = scheduledDays || uniqueDates.length
+                         uniqueDates.forEach(date => {
+                             const dayRecs = sectionRecords.filter(r => r.date === date)
+                             const abs = dayRecs.filter(r => r.status === "Absent").length
+                             const ex = dayRecs.filter(r => r.status === "Excused").length
+                             if (abs > 0) {
+                               absent++; const pr = dayRecs.filter(r => r.status === "Present" || r.status === "Late").length; if (pr > 0 || ex > 0) cuttingCount++;
+                             } else if (ex === dayRecs.length) {
+                               excused++
+                             } else {
+                               present++
+                             }
+                         })
+                      } else {
+                         const recs = attData.filter(r => r.student_id === student.id && r.subject === focusedSubject)
+                         present = recs.filter(r => r.status === "Present").length
+                         late = recs.filter(r => r.status === "Late").length
+                         absent = recs.filter(r => r.status === "Absent").length
+                         excused = recs.filter(r => r.status === "Excused").length
+                         total = recs.length
+                         cuttingCount = recs.filter(r => r.notes === "CUTTING").length
+                         // By-Subject: totalExpectedDays is the actual number of sessions held
+                         const distinctDates = [...new Set(recs.map(r => r.date))].length
+                         totalExpectedDays = distinctDates
+                         scheduledDays = distinctDates
+                      }
+
+                      const pct = total > 0 ? Math.round(((present + late) / total) * 100) : 0
+                      const classification = classifyAttendanceRisk(absent, late, excused, total, totalExpectedDays)
+
+                      return { student, present, late, absent, excused, total, pct, cuttingCount, classification }
+                    }).sort((a, b) => b.absent - a.absent)
+
+                    const q = rosterSearch.trim().toLowerCase()
+                    const visibleStats = q
+                      ? allStudentStats.filter(s =>
+                          `${s.student.last_name} ${s.student.first_name}`.toLowerCase().includes(q) ||
+                          (s.student.lrn ?? "").toLowerCase().includes(q)
+                        )
+                      : allStudentStats
+
+                    const flaggedCount = allStudentStats.filter(s => s.cuttingCount > 0 || s.classification.isAtRisk || s.classification.status === "Warning").length
+
+                    const StatusBadge = ({ classification, pct }: { classification: RiskClassification; pct: number }) => {
+                      const { status } = classification;
+                      
+                      if (status === "Failed Threshold") return (
+                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 text-[7px] font-black uppercase tracking-widest border border-red-500/15 whitespace-nowrap animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.4)]">
+                           <AlertCircle size={7} /> Failed Threshold
+                         </span>
+                      )
+                      if (status === "At Risk") return (
+                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 text-[7px] font-black uppercase tracking-widest border border-orange-500/15 whitespace-nowrap shadow-[0_0_8px_rgba(249,115,22,0.3)]">
+                           <AlertCircle size={7} /> At Risk
+                         </span>
+                      )
+                      if (status === "Warning") return (
+                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-[7px] font-black uppercase tracking-widest border border-amber-500/15 whitespace-nowrap">
+                           Warning
+                         </span>
+                      )
+                      if (status === "Monitoring") return (
+                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest ${dm ? "bg-slate-500/20 text-slate-400 border border-slate-500/20" : "bg-slate-100 text-slate-500 border border-slate-200"}`}>
+                           Monitoring
+                         </span>
+                      )
+                      return (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest ${dm ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-emerald-50 text-emerald-600"}`}>
+                          Safe
+                        </span>
+                      )
+                    }
+
+                    return (
+                      <div className="animate-in slide-in-from-top-4 duration-500 mt-8 pt-6 border-t border-slate-200 dark:border-white/5">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 px-1">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <BookOpen size={12} className="text-blue-500 shrink-0" />
+                            <p className={`text-[9px] font-black uppercase tracking-widest truncate ${sub}`}>{focusedSubject || "Global Section Overview"} — Roster</p>
+                            <div className={`flex-1 h-px hidden sm:block ${dm ? "bg-white/5" : "bg-slate-200"}`} />
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {flaggedCount > 0 && (
+                              <span className="flex items-center gap-1 text-[8px] font-black uppercase text-rose-500 shrink-0">
+                                <AlertCircle size={10} /> {flaggedCount} Flagged
+                              </span>
+                            )}
+                            <div className={`relative flex items-center rounded-xl border overflow-hidden ${dm ? "bg-white/5 border-white/5" : "bg-white border-slate-200"}`}>
+                              <svg className={`absolute left-2.5 w-3 h-3 ${sub}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                              <input
+                                type="text"
+                                value={rosterSearch}
+                                onChange={e => setRosterSearch(e.target.value)}
+                                placeholder="Name or LRN…"
+                                className={`pl-7 pr-3 py-2 text-[10px] font-bold bg-transparent outline-none w-36 placeholder:opacity-40 ${head}`}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className={`rounded-[20px] overflow-hidden border ${dm ? "border-white/5" : "border-slate-200"}`}>
+                          <table className="w-full">
+                            <thead>
+                              <tr className={`${dm ? "bg-white/5" : "bg-slate-50"}`}>
+                                <th className={`px-4 py-3 text-left text-[7px] font-black uppercase tracking-widest ${sub}`}>#</th>
+                                <th className={`px-4 py-3 text-left text-[7px] font-black uppercase tracking-widest ${sub}`}>Student</th>
+                                <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-emerald-500">P</th>
+                                {(!isGlobal && reportMode !== "daily") && <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-amber-500">L</th>}
+                                <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-blue-500">E</th>
+                                <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-rose-500">A</th>
+                                <th className={`px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest ${sub}`}>Att%</th>
+                                <th className={`px-4 py-3 text-center text-[7px] font-black uppercase tracking-widest ${sub}`}>Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className={`divide-y ${divB}`}>
+                              {visibleStats.length === 0 ? (
+                                <tr><td colSpan={8} className={`px-4 py-6 text-center text-[10px] font-bold ${sub}`}>No students match your search.</td></tr>
+                              ) : visibleStats.map(({ student, present, late, absent, excused, pct, cuttingCount, classification }, i) => {
+                                  const { status } = classification;
+                                  const hasCutting = cuttingCount > 0;
+                                  let rowBgClass = dm ? "hover:bg-white/5" : "hover:bg-slate-50/80";
+                                  let dotClass = "";
+                                  let nameClass = head;
+                                  
+                                  if (status === "Failed Threshold") {
+                                      rowBgClass = dm ? "bg-red-900/10 hover:bg-red-900/15" : "bg-red-50/40 hover:bg-red-100/40";
+                                      dotClass = "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)] animate-pulse";
+                                      nameClass = "text-red-500 font-black";
+                                  } else if (status === "At Risk") {
+                                      rowBgClass = dm ? "bg-orange-900/10 hover:bg-orange-900/15" : "bg-orange-50/40 hover:bg-orange-100/40";
+                                      dotClass = "bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,0.6)] animate-pulse";
+                                      nameClass = "text-orange-500 font-black";
+                                  } else if (status === "Warning") {
+                                      rowBgClass = dm ? "bg-amber-900/10 hover:bg-amber-900/15" : "bg-amber-50/40 hover:bg-amber-100/40";
+                                      dotClass = "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.6)]";
+                                      nameClass = "text-amber-500 font-black";
+                                  } else if (status === "Monitoring") {
+                                      rowBgClass = dm ? "hover:bg-white/5" : "hover:bg-slate-50/80";
+                                      nameClass = head;
+                                  }
+                                  
+                                  // Override nameColor to show orange if cutting risk applies but not failed threshold
+                                  if (hasCutting && status !== "Failed Threshold") {
+                                      nameClass = "text-orange-500 font-black";
+                                  }
+
+                                  return (
+                                    <tr key={student.id} className={`transition-colors ${rowBgClass}`}>
+                                      <td className={`px-4 py-2.5 text-[8px] font-black opacity-40 ${sub}`}>{i + 1}</td>
+                                      <td className="px-4 py-2.5">
+                                        <div className="flex items-center gap-2.5">
+                                          {dotClass && (
+                                            <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass}`} />
+                                          )}
+                                          <div className={`w-6 h-6 rounded-lg overflow-hidden shrink-0 ${dm ? "bg-white/5" : "bg-slate-100"}`}>
+                                            {(student.two_by_two_url || student.profile_picture)
+                                              ? <img src={student.two_by_two_url || student.profile_picture || ""} alt="" className="w-full h-full object-cover" />
+                                              : <div className={`w-full h-full flex items-center justify-center text-[7px] font-black ${sub}`}>{student.first_name?.[0]}{student.last_name?.[0]}</div>
+                                            }
+                                          </div>
+                                          <div className="min-w-0 flex flex-col items-start leading-[1.2]">
+                                            <span className={`block text-[10px] uppercase tracking-tight ${nameClass}`}>
+                                              {student.last_name}, {student.first_name}
+                                            </span>
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                              {student.lrn && <span className={`text-[7px] font-bold opacity-40 leading-none ${sub}`}>{student.lrn}</span>}
+                                              {hasCutting && (
+                                                <span className="text-[7px] font-black text-orange-500 leading-none">
+                                                  {cuttingCount}x Cutting
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="px-3 py-2.5 text-center text-[10px] font-black text-emerald-500">{present}</td>
+                                      {(!isGlobal && reportMode !== "daily") && <td className="px-3 py-2.5 text-center text-[10px] font-black text-amber-500">{late}</td>}
+                                      <td className="px-3 py-2.5 text-center text-[10px] font-black text-blue-500">{excused}</td>
+                                      <td className={`px-3 py-2.5 text-center text-[10px] font-black ${absent > 0 ? "text-rose-500" : sub}`}>{absent}</td>
+                                      <td className="px-3 py-2.5 text-center">
+                                        <span className={`text-[10px] font-black ${pct >= 80 ? "text-emerald-500" : pct >= 60 ? "text-amber-500" : "text-rose-500"}`}>{pct}%</span>
+                                      </td>
+                                      <td className="px-4 py-2.5 text-center">
+                                        <StatusBadge classification={classification} pct={pct} />
+                                      </td>
+                                    </tr>
+                                  )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
+            </div>
+          )
+        }) : (
+          <div className={`rounded-[32px] border p-20 flex flex-col items-center gap-6 text-center ${card}`}>
+             <div className="w-20 h-20 rounded-full bg-slate-500/10 flex items-center justify-center animate-pulse">
+                <BarChart2 size={32} className="text-slate-400" />
+             </div>
+             <div>
+                <p className={`text-lg font-black uppercase italic tracking-tighter ${head}`}>No Matrix Data Found</p>
+                <p className={`text-xs mt-1 ${sub}`}>Attendance records for S.Y. {schoolYear} are currently empty.</p>
+             </div>
+          </div>
+        )}
+      </div>
+
+      {/* --- TRIAGE / COUNSELING LIST (driven by classifyAttendanceRisk) --- */}
+      {(() => {
+        const todayStr = new Date().toISOString().split("T")[0]
+        const filteredStudents = activeSection === "ALL" ? students : students.filter(s => s.section === activeSection)
+        const triageList = filteredStudents.map(student => {
+          const recs = attData.filter(r => r.student_id === student.id)
+          let totalAbsences = 0, totalLate = 0, totalExcused = 0, scheduledDays = 0, totalExpectedDays = 0
+          const absentBySubject: Record<string, number> = {}
+          recs.filter(r => r.status === "Absent").forEach(r => { absentBySubject[r.subject] = (absentBySubject[r.subject] || 0) + 1 })
+
+          if (reportMode === "daily") {
+            const semEndCap = semBounds.end < todayStr ? semBounds.end : todayStr
+            const uniqueDates = [...new Set(recs.map(r => r.date))].filter(d => d >= semBounds.start && d <= semEndCap)
+            scheduledDays = countActualSchoolDays(calendarEvents, semBounds.start, todayStr) || uniqueDates.length
+            totalExpectedDays = countActualSchoolDays(calendarEvents, semBounds.start, semBounds.end) || 180
+            uniqueDates.forEach(date => {
+              const dayRecs = recs.filter(r => r.date === date)
+              const abs = dayRecs.filter(r => r.status === "Absent").length
+              const ex = dayRecs.filter(r => r.status === "Excused").length
+              if (abs > 0) totalAbsences++
+              else if (ex === dayRecs.length) totalExcused++
+            })
+          } else {
+            // Subject mode: evaluate each subject independently, pick the worst
+            const subjects = [...new Set(recs.map(r => r.subject))]
+            const RISK_ORDER: Record<string, number> = { "Failed Threshold": 4, "At Risk": 3, "Warning": 2, "Safe": 1, "Monitoring": 0 }
+            let worstClassification = classifyAttendanceRisk(0, 0, 0, 0, 0) // default Monitoring
+            totalAbsences = recs.filter(r => r.status === "Absent").length
+            subjects.forEach(subj => {
+              const subjRecs = recs.filter(r => r.subject === subj)
+              const subjAbsent = subjRecs.filter(r => r.status === "Absent").length
+              const subjLate = subjRecs.filter(r => r.status === "Late").length
+              const subjExcused = subjRecs.filter(r => r.status === "Excused").length
+              const subjDistinctDates = [...new Set(subjRecs.map(r => r.date))].length
+              const subjClassification = classifyAttendanceRisk(subjAbsent, subjLate, subjExcused, subjDistinctDates, subjDistinctDates)
+              if ((RISK_ORDER[subjClassification.status] || 0) > (RISK_ORDER[worstClassification.status] || 0)) {
+                worstClassification = subjClassification
+              }
+            })
+            return { student, totalAbsences, absentBySubject, classification: worstClassification } as any
+          }
+          const classification = classifyAttendanceRisk(totalAbsences, totalLate, totalExcused, scheduledDays, totalExpectedDays)
+          return { student, totalAbsences, absentBySubject, classification }
+        }).filter(s => s.classification.status === "Warning" || s.classification.status === "At Risk" || s.classification.status === "Failed Threshold")
+         .sort((a, b) => b.totalAbsences - a.totalAbsences)
+
+        if (triageList.length === 0) return null
+
+        return (
+        <div className={`rounded-[32px] border overflow-hidden shadow-2xl shadow-rose-500/5 ${card}`}>
+          <div className={`px-8 py-6 border-b flex items-center justify-between gap-4 ${divB}`}>
+            <div className="flex items-center gap-3">
+               <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-rose-500 animate-pulse" />
+               </div>
+               <div>
+                  <h3 className={`text-sm font-black uppercase italic tracking-tighter ${head}`}>Triage Matrix</h3>
+                  <p className={`text-[9px] font-black tracking-widest ${sub} uppercase`}>Students Flagged by DepEd Risk Classification</p>
+               </div>
+            </div>
+            <div className="bg-rose-500 text-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-rose-500/30">
+               {triageList.length} RISK ALERTS
+            </div>
+          </div>
+
+          <div className={`divide-y ${divB}`}>
+            {triageList.map(({ student, totalAbsences, absentBySubject, classification }, idx) => {
+              const statusColor = classification.status === "Failed Threshold" ? "text-red-500" : classification.status === "At Risk" ? "text-orange-500" : "text-amber-500"
+              const statusBg = classification.status === "Failed Threshold" ? "bg-red-500/10 border-red-500/15" : classification.status === "At Risk" ? "bg-orange-500/10 border-orange-500/15" : "bg-amber-500/10 border-amber-500/15"
+              return (
+              <div key={student.id} className={`px-6 md:px-8 py-5 flex items-center gap-5 transition-colors group ${dm ? "hover:bg-rose-500/5" : "hover:bg-rose-50/50"} animate-in fade-in duration-500`} style={{ animationDelay: `${idx * 50}ms` }}>
+                <div className={`w-12 h-12 rounded-2xl border overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-500 ${dm ? "bg-white/5 border-white/5" : "bg-white border-slate-200 shadow-sm"}`}>
+                  {(student.two_by_two_url || student.profile_picture)
+                    ? <img src={student.two_by_two_url || student.profile_picture || ""} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center"><Users size={18} className={sub} /></div>
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-1">
+                    <p className={`text-[12px] font-black uppercase tracking-tight ${head}`}>{student.last_name}, {student.first_name}</p>
+                    <p className={`text-[9px] font-black text-blue-500 uppercase tracking-widest`}>{student.section}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${statusBg} ${statusColor}`}>
+                       <AlertCircle size={9} /> {classification.status}
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-rose-500/10 text-rose-500 text-[8px] font-black uppercase tracking-widest border border-rose-500/5">
+                       <TrendingDown size={10} /> {totalAbsences} Absences — {classification.absencesRemaining > 0 ? `${classification.absencesRemaining} remaining` : "Cap exceeded"}
+                    </div>
+                    {Object.entries(absentBySubject).filter(([,c]) => (c as number) >= COUNSELING_THRESHOLD).map(([subj, cnt]) => (
+                      <div key={subj} className="px-2 py-0.5 rounded-lg bg-slate-500/10 text-slate-500 text-[7px] font-black uppercase tracking-widest border border-slate-500/10">
+                        {subj}: {cnt as number}×
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black ${statusColor} border border-rose-500/10 ${dm ? "bg-rose-500/5" : "bg-rose-50"}`}>
+                   <Zap size={14} className="fill-current" />
+                </div>
+              </div>
+            )})}
+          </div>
+        </div>
+        )
+      })()}
+    </div>
+  )
+}

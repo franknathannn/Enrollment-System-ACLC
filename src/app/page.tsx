@@ -78,12 +78,12 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
   const [statsVisible, setStatsVisible] = useState(false)
   const statsRef = useRef<HTMLDivElement>(null)
 
-  const animIct     = useCountUp(stats.ictCount,                    1200, statsVisible)
-  const animGas     = useCountUp(stats.gasCount,                    1200, statsVisible)
+  const animIct = useCountUp(stats.ictCount, 1200, statsVisible)
+  const animGas = useCountUp(stats.gasCount, 1200, statsVisible)
   const animVacancy = useCountUp(stats.totalMax - stats.totalCount, 1400, statsVisible)
 
-  const displayIct     = isMobile ? stats.ictCount               : animIct
-  const displayGas     = isMobile ? stats.gasCount               : animGas
+  const displayIct = isMobile ? stats.ictCount : animIct
+  const displayGas = isMobile ? stats.gasCount : animGas
   const displayVacancy = isMobile ? (stats.totalMax - stats.totalCount) : animVacancy
 
   useEffect(() => {
@@ -93,11 +93,11 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
   }, [])
 
   const d = isDark
-  const isManual      = config?.control_mode === 'manual'
-  const now           = new Date()
-  const start         = config?.enrollment_start ? new Date(config.enrollment_start) : null
-  const end           = config?.enrollment_end   ? new Date(config.enrollment_end)   : null
-  const isExpired     = !isManual && end && now > end
+  const isManual = config?.control_mode === 'manual'
+  const now = new Date()
+  const start = config?.enrollment_start ? new Date(config.enrollment_start) : null
+  const end = config?.enrollment_end ? new Date(config.enrollment_end) : null
+  const isExpired = !isManual && end && now > end
   const isPortalActive = isManual
     ? config?.is_portal_active
     : (start && end && now >= start && now <= end)
@@ -125,30 +125,30 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
       )}>
         {/* Top Accent Bar — Solid ACLC Blue */}
         <div className="h-1.5 w-full bg-blue-600" />
-        
+
         {/* Centered Logo Background — Full Color */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden select-none">
-            <img 
-                src="/logo-aclc.png" 
-                alt="Logo Background" 
-                className={cn(
-                    "w-[300px] md:w-[450px] h-auto object-contain transition-all duration-1000",
-                    "opacity-[0.15] lg:group-hover/stats:scale-110 lg:group-hover/stats:opacity-[0.18]",
-                    d && "brightness-125"
-                )} 
-            />
+          <img
+            src="/logo-aclc.png"
+            alt="Logo Background"
+            className={cn(
+              "w-[300px] md:w-[450px] h-auto object-contain transition-all duration-1000",
+              "opacity-[0.15] lg:group-hover/stats:scale-110 lg:group-hover/stats:opacity-[0.18]",
+              d && "brightness-125"
+            )}
+          />
         </div>
 
         <div className="relative z-10 p-7 md:p-10 space-y-8 md:space-y-10 group">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h3 className={cn("text-xs font-black uppercase tracking-[0.3em]", d ? "text-white/40" : "text-slate-400")}>Live Metrics</h3>
+              <h3 className={cn("text-xs font-black uppercase tracking-[0.3em]", d ? "text-white/40" : "text-slate-400")}>Live Spot</h3>
               <p className={cn("text-lg font-black uppercase tracking-tight", d ? "text-white" : "text-slate-900")}>Strand Distribution</p>
             </div>
             <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300", 
-                d ? "bg-white/5 border border-white/10 group-hover:border-blue-500/50" : "bg-slate-50 border border-slate-200 shadow-sm"
+              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300",
+              d ? "bg-white/5 border border-white/10 group-hover:border-blue-500/50" : "bg-slate-50 border border-slate-200 shadow-sm"
             )}>
               <Activity size={20} className={cn(isPortalActive ? "text-blue-500 lg:animate-pulse" : d ? "text-slate-600" : "text-slate-300")} />
             </div>
@@ -169,7 +169,7 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
               <div className="absolute top-0 right-0 p-6 pointer-events-none">
                 <Orbit size={48} className={cn("opacity-10 lg:animate-spin", d ? "text-white" : "text-blue-600")} style={{ animationDuration: '15s' }} />
               </div>
-              
+
               <p className={cn("text-[10px] font-black uppercase tracking-[0.5em] mb-2", d ? "text-blue-400" : "text-blue-600")}>Remaining Slots</p>
               <div className="flex items-baseline gap-2">
                 <span className={cn("text-5xl md:text-7xl font-black tracking-tighter tabular-nums", d ? "text-white" : "text-slate-900")}>
@@ -179,17 +179,17 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
                   / {stats.totalMax}
                 </span>
               </div>
-              
+
               <div className="mt-8 flex items-center gap-3">
-                 <div className={cn("h-1 flex-1 rounded-full", d ? "bg-white/5" : "bg-slate-100 overflow-hidden shadow-inner")}>
-                    <div 
-                      className="h-full bg-blue-600 transition-all duration-1000 shadow-[0_0_10px_rgba(37,99,235,0.3)]" 
-                      style={{ width: `${(stats.totalCount / stats.totalMax) * 100}%` }}
-                    />
-                 </div>
-                 <span className={cn("text-[9px] font-black uppercase tracking-widest", d ? "text-slate-500" : "text-slate-400")}>
-                    {Math.round((stats.totalCount / stats.totalMax) * 100)}% Full
-                 </span>
+                <div className={cn("h-1 flex-1 rounded-full", d ? "bg-white/5" : "bg-slate-100 overflow-hidden shadow-inner")}>
+                  <div
+                    className="h-full bg-blue-600 transition-all duration-1000 shadow-[0_0_10px_rgba(37,99,235,0.3)]"
+                    style={{ width: `${(stats.totalCount / stats.totalMax) * 100}%` }}
+                  />
+                </div>
+                <span className={cn("text-[9px] font-black uppercase tracking-widest", d ? "text-slate-500" : "text-slate-400")}>
+                  {Math.round((stats.totalCount / stats.totalMax) * 100)}% Full
+                </span>
               </div>
             </div>
           </div>
@@ -216,8 +216,8 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
 }
 
 
-function VisualMetric({ label, current, max, color, isDark }: { label: string, current: number, max: number, color: 'blue'|'red', isDark: boolean }) {
-  const pct = Math.min((current/max)*100, 100) || 0
+function VisualMetric({ label, current, max, color, isDark }: { label: string, current: number, max: number, color: 'blue' | 'red', isDark: boolean }) {
+  const pct = Math.min((current / max) * 100, 100) || 0
   const isRed = color === 'red'
   return (
     <div className={cn(
@@ -229,7 +229,7 @@ function VisualMetric({ label, current, max, color, isDark }: { label: string, c
         <span className={cn("text-lg font-black leading-none", isDark ? "text-white" : "text-slate-900")}>{current}</span>
       </div>
       <div className={cn("h-1.5 w-full rounded-full overflow-hidden", isDark ? "bg-white/5" : "bg-slate-200")}>
-        <div 
+        <div
           className={cn("h-full transition-all duration-1000 ease-out", isRed ? "bg-red-600" : "bg-blue-600")}
           style={{ width: `${pct}%` }}
         />
@@ -262,13 +262,13 @@ export default function HomePage() {
         supabase.from('sections').select('strand, capacity'),
         supabase.from('students').select('status, strand')
       ])
-      const sections  = sectionsRes.data || []
-      const students  = studentsRes.data || []
-      const active    = students.filter(s => s.status === 'Accepted' || s.status === 'Approved')
-      const ictMax    = sections.filter(s => s.strand === 'ICT').reduce((sum, s) => sum + (s.capacity || 40), 0)
-      const ictCount  = active.filter(s => s.strand === 'ICT').length
-      const gasMax    = sections.filter(s => s.strand === 'GAS').reduce((sum, s) => sum + (s.capacity || 40), 0)
-      const gasCount  = active.filter(s => s.strand === 'GAS').length
+      const sections = sectionsRes.data || []
+      const students = studentsRes.data || []
+      const active = students.filter(s => s.status === 'Accepted' || s.status === 'Approved')
+      const ictMax = sections.filter(s => s.strand === 'ICT').reduce((sum, s) => sum + (s.capacity || 40), 0)
+      const ictCount = active.filter(s => s.strand === 'ICT').length
+      const gasMax = sections.filter(s => s.strand === 'GAS').reduce((sum, s) => sum + (s.capacity || 40), 0)
+      const gasCount = active.filter(s => s.strand === 'GAS').length
       setStats({ totalCount: ictCount + gasCount, totalMax: ictMax + gasMax, ictCount, ictMax, gasCount, gasMax })
     } catch (e) { console.error(e) }
   }, [])
@@ -276,9 +276,9 @@ export default function HomePage() {
   useEffect(() => {
     fetchDatabaseStats()
     const channel = supabase.channel('matrix-live-home')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' },     fetchDatabaseStats)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sections' },     fetchDatabaseStats)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config'}, fetchDatabaseStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, fetchDatabaseStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sections' }, fetchDatabaseStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, fetchDatabaseStats)
       .subscribe()
     const interval = setInterval(fetchDatabaseStats, 3000)
     return () => { supabase.removeChannel(channel); clearInterval(interval) }
@@ -304,7 +304,7 @@ export default function HomePage() {
     })
 
     const init = () => {
-      canvas.width  = window.innerWidth
+      canvas.width = window.innerWidth
       canvas.height = window.innerHeight
       particles = Array.from({ length: 55 }, (): Particle => ({
         x: Math.random() * canvas.width, y: Math.random() * canvas.height,
@@ -330,12 +330,12 @@ export default function HomePage() {
       ctx.beginPath();
       ctx.lineWidth = 1;
       const gridR = dark ? 255 : 0;
-      
+
       const grad = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 450);
       grad.addColorStop(0, `rgba(${gridR},${gridR},${gridR},0.08)`);
       grad.addColorStop(1, `rgba(${gridR},${gridR},${gridR},0)`);
       ctx.strokeStyle = grad;
-      
+
       const offsetX = (frameCount * 0.2) % gridSpacing;
       const offsetY = (frameCount * 0.2) % gridSpacing;
       for (let x = offsetX; x < canvas.width; x += gridSpacing) {
@@ -349,21 +349,21 @@ export default function HomePage() {
       // --- Particles Physics ---
       particles.forEach((p: Particle, i: number) => {
         const pCol = colors[i % 3]
-        
+
         p.x += p.vx; p.y += p.vy; p.pulse += p.twinkle;
-        
+
         const dx = mouse.x - p.x; const dy = mouse.y - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < 180) {
-            const force = (180 - dist) / 180;
-            p.x -= (dx / dist) * force * 1.5;
-            p.y -= (dy / dist) * force * 1.5;
+          const force = (180 - dist) / 180;
+          p.x -= (dx / dist) * force * 1.5;
+          p.y -= (dy / dist) * force * 1.5;
         }
 
-        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1
         if (p.y < 0 || p.y > canvas.height) p.vy *= -1
 
-        const mouseGlow = dist < 250 ? (1 - dist/250) * 0.8 : 0;
+        const mouseGlow = dist < 250 ? (1 - dist / 250) * 0.8 : 0;
         const baseAlpha = dark ? 0.2 : 0.4;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (1 + mouseGlow), 0, Math.PI * 2)
         ctx.fillStyle = `rgba(${pCol.join(',')},${baseAlpha + mouseGlow})`; ctx.fill()
@@ -378,10 +378,10 @@ export default function HomePage() {
             const mx = mouse.x - particles[a].x; const my = mouse.y - particles[a].y;
             const distToMouse = Math.sqrt(mx * mx + my * my);
             if (distToMouse < 380) {
-                const lCol = colors[(a + b) % 3]
-                ctx.beginPath(); ctx.lineWidth = dark ? 0.6 : 1.0;
-                ctx.strokeStyle = `rgba(${lCol.join(',')},${(1 - Math.sqrt(d2) / 110) * (1 - distToMouse/380) * 0.85})`
-                ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y); ctx.stroke()
+              const lCol = colors[(a + b) % 3]
+              ctx.beginPath(); ctx.lineWidth = dark ? 0.6 : 1.0;
+              ctx.strokeStyle = `rgba(${lCol.join(',')},${(1 - Math.sqrt(d2) / 110) * (1 - distToMouse / 380) * 0.85})`
+              ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y); ctx.stroke()
             }
           }
         }
@@ -407,20 +407,20 @@ export default function HomePage() {
       raf = requestAnimationFrame(animate)
     }
 
-    const onMove  = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY }
+    const onMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY }
     window.addEventListener("mousemove", onMove, { passive: true })
     window.addEventListener("resize", init, { passive: true })
     init(); animate()
     return () => { cancelAnimationFrame(raf); clearInterval(starSpawner); window.removeEventListener("mousemove", onMove); window.removeEventListener("resize", init) }
   }, [isMobile])
 
-  const isManual      = config?.control_mode === 'manual'
-  const now           = new Date()
-  const start         = config?.enrollment_start ? new Date(config.enrollment_start) : null
-  const end           = config?.enrollment_end   ? new Date(config.enrollment_end)   : null
-  const isExpired     = !isManual && end && now > end
+  const isManual = config?.control_mode === 'manual'
+  const now = new Date()
+  const start = config?.enrollment_start ? new Date(config.enrollment_start) : null
+  const end = config?.enrollment_end ? new Date(config.enrollment_end) : null
+  const isExpired = !isManual && end && now > end
   const isPortalActive = isManual ? config?.is_portal_active : (start && end && now >= start && now <= end)
-  const heroBadge     = config?.is_pre_enrollment ? "Pre-Enrollment" : isPortalActive ? "Enrollment Open" : "Enrollment Closed"
+  const heroBadge = config?.is_pre_enrollment ? "Pre-Enrollment" : isPortalActive ? "Enrollment Open" : "Enrollment Closed"
   const d = isDark
 
   return (
@@ -516,9 +516,9 @@ export default function HomePage() {
                   "transition-[background-color,border-color,color] duration-300",
                   isPortalActive
                     ? d ? "bg-emerald-950/60 border-emerald-500/30 text-emerald-300"
-                        : "bg-emerald-50 border-emerald-300 text-emerald-700"
+                      : "bg-emerald-50 border-emerald-300 text-emerald-700"
                     : d ? "bg-slate-900/60 border-white/10 text-slate-400"
-                        : "bg-slate-100 border-slate-300 text-slate-500"
+                      : "bg-slate-100 border-slate-300 text-slate-500"
                 )}>
                   <span className={cn("w-1.5 h-1.5 rounded-full shrink-0",
                     isPortalActive ? "bg-emerald-400 lg:animate-pulse" : "bg-slate-500")} />
@@ -536,9 +536,11 @@ export default function HomePage() {
                   <span className="block text-[clamp(3.2rem,10vw,8.8rem)]">Shape</span>
                   <span
                     className="block text-[clamp(3.2rem,10vw,8.8rem)] text-transparent bg-clip-text shimmer-text"
-                    style={{ backgroundImage: d
-                      ? "linear-gradient(90deg,#ffffff,#c2d7fb,#ffffff,#c2d7fb,#ffffff)"
-                      : "linear-gradient(90deg,#0a0f1d,#1e3a8a,#0a0f1d,#1e3a8a,#0a0f1d)" }}>
+                    style={{
+                      backgroundImage: d
+                        ? "linear-gradient(90deg,#ffffff,#c2d7fb,#ffffff,#c2d7fb,#ffffff)"
+                        : "linear-gradient(90deg,#0a0f1d,#1e3a8a,#0a0f1d,#1e3a8a,#0a0f1d)"
+                    }}>
                     Your
                   </span>
                   <span className="block text-[clamp(3.2rem,10vw,8.8rem)]">Future.</span>
@@ -570,10 +572,10 @@ export default function HomePage() {
                         "lg:hover:-translate-y-2 lg:hover:shadow-red-600/40"
                       )}>
                       <span className="absolute inset-0 bg-red-600 transition-colors duration-300 group-hover/cta:bg-red-700" />
-                      
+
                       {/* Shimmer Effect */}
                       <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/cta:animate-[shimmer_2s_infinite] pointer-events-none" style={{ backgroundSize: '200% 100%' }} />
-                      
+
                       <span className="relative flex items-center gap-4">
                         Begin Enrollment
                         <ArrowRight size={18} className="group-hover/cta:translate-x-2 transition-transform duration-300" />
@@ -660,7 +662,7 @@ export default function HomePage() {
                   title: ["Information &", "Communication", "Technology"],
                   sub: "The Digital Vanguard",
                   desc: "Master coding, systems design, and multimedia arts with ACLC's signature computer-integrated methodology.",
-                  feats: ["Full Computer Laboratory Access","Expert IT Industry Faculty","Digital Certification Paths"],
+                  feats: ["Full Computer Laboratory Access", "Expert IT Industry Faculty", "Digital Certification Paths"],
                   gradient: "from-blue-600 to-blue-900",
                   shadow: "shadow-blue-500/20"
                 },
@@ -669,7 +671,7 @@ export default function HomePage() {
                   title: ["General", "Academic", "Strand"],
                   sub: "Strategic Foundations",
                   desc: "A multidisciplinary approach to higher education, empowering students with versatile leadership and research skills.",
-                  feats: ["Holistic Academic Training","College-ready Readiness","Professional Skills Track"],
+                  feats: ["Holistic Academic Training", "College-ready Readiness", "Professional Skills Track"],
                   gradient: "from-red-600 to-red-900",
                   shadow: "shadow-red-600/20"
                 },
@@ -718,8 +720,8 @@ export default function HomePage() {
                         {feats.map((f, i) => (
                           <div key={i} className="flex items-center gap-4 group/item">
                             <div className={cn(
-                                "w-2 h-2 rounded-full transition-transform duration-300 group-hover/item:scale-150", 
-                                strand === 'ICT' ? "bg-blue-500" : "bg-red-500"
+                              "w-2 h-2 rounded-full transition-transform duration-300 group-hover/item:scale-150",
+                              strand === 'ICT' ? "bg-blue-500" : "bg-red-500"
                             )} />
                             <span className={cn("text-xs font-bold uppercase tracking-widest transition-colors duration-300", d ? "text-slate-300 group-hover/item:text-white" : "text-slate-700 group-hover/item:text-slate-900")}>{f}</span>
                           </div>
@@ -774,13 +776,13 @@ export default function HomePage() {
                         key={i}
                         className={cn(
                           "group/card p-8 rounded-[32px] border transition-all duration-300 transform",
-                          d ? "bg-white/[0.02] border-white/[0.12] lg:hover:border-blue-500/50 lg:hover:bg-blue-600/5" 
+                          d ? "bg-white/[0.02] border-white/[0.12] lg:hover:border-blue-500/50 lg:hover:bg-blue-600/5"
                             : "bg-slate-50 border-slate-100 lg:hover:bg-white lg:hover:border-blue-200 lg:hover:shadow-xl",
                           "lg:hover:-translate-y-2 cursor-pointer"
                         )} style={{ transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' }}>
                         <div className={cn(
                           "w-10 h-10 rounded-xl mb-6 flex items-center justify-center transition-all duration-300 shadow-sm",
-                          d ? "bg-white/5 text-blue-500 group-hover/card:bg-blue-600 group-hover/card:text-white" 
+                          d ? "bg-white/5 text-blue-500 group-hover/card:bg-blue-600 group-hover/card:text-white"
                             : "bg-blue-600 text-white shadow-blue-600/20 shadow-lg"
                         )}>
                           <CheckCircle2 size={18} />
@@ -873,8 +875,8 @@ export default function HomePage() {
             </p>
             <div className={cn("flex items-center gap-3 transition-opacity duration-300", d ? "opacity-25 lg:hover:opacity-60" : "opacity-35 lg:hover:opacity-70")}>
               <GraduationCap size={14} className={d ? "text-white" : "text-slate-500"} />
-              <Globe        size={14} className={d ? "text-white" : "text-slate-500"} />
-              <Activity     size={14} className={d ? "text-white" : "text-slate-500"} />
+              <Globe size={14} className={d ? "text-white" : "text-slate-500"} />
+              <Activity size={14} className={d ? "text-white" : "text-slate-500"} />
             </div>
           </div>
         </div>
@@ -887,7 +889,7 @@ export default function HomePage() {
 function PrettyBar({ label, icon, current, max, color, isDark }: {
   label: string; icon: React.ReactNode; current: number; max: number; color: string; isDark: boolean
 }) {
-  const pct    = max > 0 ? Math.min((current / max) * 100, 100) : 0
+  const pct = max > 0 ? Math.min((current / max) * 100, 100) : 0
   const isBlue = color === "blue"
   return (
     <div className="space-y-2.5">
@@ -896,7 +898,7 @@ function PrettyBar({ label, icon, current, max, color, isDark }: {
           <span className={cn("p-1 rounded-md",
             isDark
               ? isBlue ? "bg-blue-900/40 text-blue-400" : "bg-red-900/40 text-red-400"
-              : isBlue ? "bg-blue-50 text-blue-600"      : "bg-red-50 text-red-600"
+              : isBlue ? "bg-blue-50 text-blue-600" : "bg-red-50 text-red-600"
           )}>{icon}</span>
           <p className={cn("text-[10px] font-black uppercase tracking-[0.2em]", isDark ? "text-slate-300" : "text-slate-700")}>{label}</p>
         </div>

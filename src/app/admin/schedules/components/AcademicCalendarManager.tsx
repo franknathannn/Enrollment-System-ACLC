@@ -219,7 +219,7 @@ function EventFormModal({
             </button>
             <button onClick={save} disabled={saving || !title.trim()}
               className={`flex-1 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider text-white disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5
-                ${TYPE_COLORS[type].hex === "#ef4444" ? "bg-red-500 hover:bg-red-600" : TYPE_COLORS[type].hex === "#f59e0b" ? "bg-amber-500 hover:bg-amber-600" : "bg-blue-600 hover:bg-blue-700"}`}
+                ${TYPE_COLORS[type].hex === "#ef4444" ? "bg-red-500 hover:bg-red-600" : TYPE_COLORS[type].hex === "#f59e0b" ? "bg-amber-500 hover:bg-amber-600" : TYPE_COLORS[type].hex === "#10b981" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-blue-600 hover:bg-blue-700"}`}
               style={{ boxShadow: saving ? "none" : "0 4px 12px -2px rgba(37,99,235,0.3)" }}>
               {saving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
               {editing ? "Update" : "Create"}

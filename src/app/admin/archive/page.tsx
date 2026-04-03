@@ -29,6 +29,28 @@ function DocViewerModal({ url, label, isDarkMode, onClose, allDocs, initialIndex
   const current = allDocs[idx] ?? { url, label }
   const isPDF = current.url.toLowerCase().endsWith(".pdf")
 
+  const [downloading, setDownloading] = useState(false)
+  const handleDownload = async () => {
+    try {
+      setDownloading(true)
+      const res = await fetch(current.url)
+      const blob = await res.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = objectUrl
+      const ext = current.url.split('.').pop()?.split('?')[0] || "png"
+      a.download = `${current.label.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${ext}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(objectUrl)
+    } catch {
+      window.open(current.url, "_blank")
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 animate-in zoom-in duration-300" style={{ background: "rgba(0,0,0,0.9)" }} onClick={onClose}>
       <div className="relative w-full max-w-5xl h-full flex flex-col gap-4" onClick={e => e.stopPropagation()}>
@@ -39,9 +61,9 @@ function DocViewerModal({ url, label, isDarkMode, onClose, allDocs, initialIndex
             <p className="text-white text-sm font-black uppercase tracking-widest truncate">{current.label}</p>
           </div>
           <div className="flex items-center gap-2">
-            <a href={current.url} download className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
-              <Download size={14} /> <span className="hidden sm:inline">Download</span>
-            </a>
+            <button onClick={handleDownload} disabled={downloading} className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 disabled:opacity-50">
+              {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} <span className="hidden sm:inline">{downloading ? "Downloading..." : "Download"}</span>
+            </button>
             <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all">
               <X size={20} />
             </button>
@@ -106,7 +128,7 @@ function DocCard({ label, url, onOpen, isDarkMode }: { label: string; url: strin
           }
           <div className="absolute inset-0 bg-blue-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><ZoomIn className="text-white" size={18} /></div>
         </div>
-        <p className="text-[8px] font-black text-center mt-2 uppercase tracking-widest px-1 truncate" style={{ color: tc.text.secondary }}>{label}</p>
+        <p className="text-[7px] font-black text-center mt-2 uppercase tracking-wider px-1 leading-tight break-words" style={{ color: tc.text.secondary }}>{label}</p>
       </div>
     </div>
   )
@@ -114,7 +136,7 @@ function DocCard({ label, url, onOpen, isDarkMode }: { label: string; url: strin
 
 // ── Grade level badge ────────────────────────────────────────────────────────
 function GradeBadge({ gradeLevel, sectionId, strand, isDarkMode }: { gradeLevel: string; sectionId?: string | null; strand?: string | null; isDarkMode: boolean }) {
-  const isGrad = gradeLevel === "12" && !sectionId
+  const isGrad = gradeLevel === "GRADUATED" || (gradeLevel === "12" && !sectionId)
   
   if (isGrad) {
     return (
@@ -157,7 +179,7 @@ function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
     return () => { document.body.style.overflow = prev }
   }, [])
 
-  const isGraduated = student.grade_level === "12" && !student.section_id
+  const isGraduated = student.grade_level === "GRADUATED" || student.graduate_lock || (student.grade_level === "12" && !student.section_id)
   const isICT = student.strand === "ICT"
   const isGAS = student.strand === "GAS"
   const isJHS = student.student_category === "JHS Graduate"
@@ -172,7 +194,7 @@ function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
 
   // G11 section
   const g11SectionName = student.g11_section || (student.grade_level === "11" ? student.section : null)
-  const g12SectionName = student.grade_level === "12" ? (student.section || "Unassigned") : null
+  const g12SectionName = (student.grade_level === "12" || student.grade_level === "GRADUATED" || student.graduate_lock) ? (student.section || "Unassigned") : null
 
   const allDocs: { url: string; label: string }[] = []
   if (isJHS) {
@@ -214,7 +236,7 @@ function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
       <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-[40px] border border-white/10"
         style={{ backgroundColor: isDarkMode ? "rgb(8,12,24)" : "#f8fafc" }}>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col"
+        <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar flex flex-col"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Custom style to hide scrollbar */}
           <style dangerouslySetInnerHTML={{ __html: `.no-scrollbar::-webkit-scrollbar { display: none; }` }} />
@@ -359,7 +381,7 @@ function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
                         <div className="flex items-center justify-between mb-3">
                            <span className={`text-[10px] font-black px-3 py-1 rounded-full ${g12SectionName ? isGraduated ? 'bg-amber-500/20 text-amber-500' : 'bg-violet-500/20 text-violet-400' : 'bg-slate-500/20 text-slate-500'}`}>G12</span>
                            {isGraduated && <Award size={12} className="text-amber-500" />}
-                           {!isGraduated && g12SectionName && student.grade_level === "12" && <span className="text-[8px] font-black uppercase text-emerald-500 animate-pulse">Active</span>}
+                           {!isGraduated && g12SectionName && (student.grade_level === "12" || student.grade_level === "GRADUATED") && <span className="text-[8px] font-black uppercase text-emerald-500 animate-pulse">Active</span>}
                         </div>
                         <p className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-1">Grade 12 Section</p>
                         <p className="text-sm font-black truncate">{g12SectionName || "NOT RECORDED"}</p>
@@ -446,34 +468,44 @@ function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
                 </div>
 
                 {/* ── Documentary Vault (Restyled) ── */}
-                <div className="p-8 rounded-[44px] bg-slate-200/40 dark:bg-slate-900/40 border border-white/5">
+                <div className="p-8 rounded-[44px] border border-white/5" style={{ backgroundColor: isDarkMode ? "rgba(15,23,42,0.5)" : "rgba(226,232,240,0.4)" }}>
                    <div className="flex items-center justify-between mb-8">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-300/30 dark:bg-slate-800/50 flex items-center justify-center text-slate-500">
+                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-slate-500" style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.6)" : "rgba(203,213,225,0.4)" }}>
                           <BookOpen size={20} />
                         </div>
-                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500/80">Documentary Vault</h3>
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em]" style={{ color: isDarkMode ? "rgba(148,163,184,0.8)" : "rgba(100,116,139,0.8)" }}>Documentary Vault</h3>
                       </div>
-                      <div className="w-9 h-9 rounded-full bg-slate-950 flex items-center justify-center shadow-2xl">
-                        <span className="text-xs font-black text-white">{allDocs.length}</span>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center shadow-sm" style={{ backgroundColor: isDarkMode ? "#0f172a" : "#fff", border: isDarkMode ? "none" : "1px solid #e2e8f0" }}>
+                        <span className="text-xs font-black" style={{ color: isDarkMode ? "white" : "#0f172a" }}>{allDocs.length}</span>
                       </div>
                    </div>
                    
-                   <div className="space-y-4">
+                   <div className="space-y-3">
                      {allDocs.length > 0 ? (
-                       allDocs.map((doc, idx) => (
+                       allDocs.map((doc, idx) => {
+                         const isPDF = doc.url.toLowerCase().endsWith(".pdf")
+                         return (
                          <div key={idx} onClick={() => openDoc(doc.url, doc.label)}
-                          className="flex items-center gap-4 p-5 rounded-[28px] bg-white dark:bg-slate-800/80 border border-white/5 hover:border-blue-500/30 transition-all cursor-pointer group shadow-sm hover:shadow-xl active:scale-[0.98]">
-                           <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-                              <FileText size={22} />
+                          className="flex items-center gap-4 p-4 rounded-[24px] border hover:border-blue-500/30 transition-all cursor-pointer group shadow-sm hover:shadow-xl active:scale-[0.98]"
+                          style={{ backgroundColor: isDarkMode ? "rgba(30,41,59,0.8)" : "#fff", borderColor: isDarkMode ? "rgba(51,65,85,0.3)" : "rgba(226,232,240,0.6)" }}>
+                           <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border group-hover:border-blue-500/40 transition-all duration-500" style={{ borderColor: isDarkMode ? "rgba(51,65,85,0.4)" : "rgba(226,232,240,0.8)", backgroundColor: isDarkMode ? "rgba(15,23,42,0.6)" : "#f1f5f9" }}>
+                              {isPDF ? (
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-red-500/10">
+                                  <FileText size={18} className="text-red-400" />
+                                  <span className="text-[6px] font-black uppercase text-red-400 mt-0.5">PDF</span>
+                                </div>
+                              ) : (
+                                <img src={doc.url} alt={doc.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                              )}
                            </div>
                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-black uppercase text-slate-900 dark:text-white tracking-tight truncate">{doc.label}</p>
-                              <p className="text-[9px] font-bold uppercase text-slate-400 mt-0.5 tracking-wider">Verified Credential</p>
+                              <p className="text-[11px] font-black uppercase tracking-tight leading-tight" style={{ color: isDarkMode ? "#f8fafc" : "#0f172a" }}>{doc.label}</p>
+                              <p className="text-[8px] font-bold uppercase mt-0.5 tracking-wider" style={{ color: isDarkMode ? "#64748b" : "#94a3b8" }}>Verified Credential</p>
                            </div>
-                           <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                           <ChevronRight size={16} className="transition-colors shrink-0" style={{ color: isDarkMode ? "#475569" : "#cbd5e1" }} />
                          </div>
-                       ))
+                       )})
                      ) : (
                        <div className="text-center py-10 opacity-30">
                           <BookMarked size={32} className="mx-auto mb-3" />
@@ -755,9 +787,9 @@ function ArchiveContent() {
                 </tr>
               </thead>
               <tbody>
-                {students.map((s) => {
-                  const isGrad = s.grade_level === "12" && !s.section_id
-                  const pfp = s.two_by_two_url || s.profile_picture
+            {students.map((s: any) => {
+              const isGrad = s.grade_level === "GRADUATED" || s.graduate_lock || (s.grade_level === "12" && !s.section_id)
+              const pfp = s.two_by_two_url || s.profile_picture
                   return (
                     <tr key={s.id}
                       className={`group cursor-pointer transition-all duration-300 hover:-translate-y-0.5`}
@@ -842,8 +874,8 @@ function ArchiveContent() {
 
           {/* Mobile cards */}
           <div className="md:hidden divide-y" style={{ borderColor: tc.border }}>
-            {students.map(s => {
-              const isGrad = s.grade_level === "12" && !s.section_id
+            {students.map((s: any) => {
+              const isGrad = s.grade_level === "GRADUATED" || s.graduate_lock || (s.grade_level === "12" && !s.section_id)
               const pfp = s.two_by_two_url || s.profile_picture
               return (
                 <div key={s.id} className="px-4 py-3.5 flex items-center gap-3 cursor-pointer active:bg-blue-500/5" onClick={() => setSelectedStudent(s)}>

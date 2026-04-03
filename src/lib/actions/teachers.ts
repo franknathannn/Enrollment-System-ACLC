@@ -71,8 +71,8 @@ export async function updateTeacherWithAuth(
   updates: {
     full_name?: string
     email?: string
-    phone?: string
-    subject_specialization?: string
+    phone?: string | null
+    subject_specialization?: string | null
     is_active?: boolean
     password?: string
   }

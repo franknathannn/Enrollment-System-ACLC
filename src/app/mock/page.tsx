@@ -413,15 +413,21 @@ export default function MockPage() {
 
         const ids = batch.map(r => r.id)
 
-        // 2. Delete activity_logs that reference these students FIRST
-        //    (foreign key constraint: activity_logs.student_id → students.id)
+        // 2. Delete child rows that reference these students FIRST (FK constraints)
+        const { error: attErr } = await supabase
+          .from("attendance")
+          .delete()
+          .in("student_id", ids)
+
+        if (attErr) { log("error", `attendance delete: ${attErr.message}`); break }
+
         const { error: logErr } = await supabase
           .from("activity_logs")
           .delete()
           .in("student_id", ids)
 
         if (logErr) { log("error", `activity_logs delete: ${logErr.message}`); break }
-        log("info", `Cleared activity_logs for ${ids.length} mock students`)
+        log("info", `Cleared attendance + activity_logs for ${ids.length} mock students`)
 
         // 3. Now safe to delete the students themselves
         const { error: delErr } = await supabase

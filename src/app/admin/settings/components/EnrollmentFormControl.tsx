@@ -355,7 +355,7 @@ export function EnrollmentFormControl({ configId, isDarkMode }: EnrollmentFormCo
         borderColor: isDarkMode ? themeColors.dark.border : 'rgb(226 232 240)'
       }}
     >
-      <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-6">
+      <div className={`flex items-center justify-between border-b pb-6 ${isDarkMode ? 'border-slate-800' : 'border-slate-50'}`}>
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl" style={{ backgroundColor: '#3b82f6', color: 'white' }}>
             <ShieldCheck size={20} />
@@ -381,7 +381,7 @@ export function EnrollmentFormControl({ configId, isDarkMode }: EnrollmentFormCo
                 onClick={handleReset}
                 variant="outline"
                 size="sm"
-                className="text-[9px] font-bold uppercase border-slate-200 dark:border-slate-700"
+                className={`text-[9px] font-bold uppercase ${isDarkMode ? 'border-slate-700 text-slate-300' : 'border-slate-200 text-slate-700'}`}
               >
                 Reset Defaults
               </Button>
@@ -398,7 +398,7 @@ export function EnrollmentFormControl({ configId, isDarkMode }: EnrollmentFormCo
           const Icon = step.icon
           return (
             <div key={stepIdx} className="space-y-4">
-              <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className={`flex items-center gap-3 pb-3 border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
                 <div className="p-2 bg-blue-600/10 rounded-xl">
                   <Icon size={18} className="text-blue-600" />
                 </div>
@@ -421,7 +421,7 @@ export function EnrollmentFormControl({ configId, isDarkMode }: EnrollmentFormCo
                         "p-4 rounded-2xl border-2 transition-all duration-300",
                         fieldReq.required
                           ? "border-blue-500/30 bg-blue-500/5"
-                          : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30"
+                          : isDarkMode ? "border-slate-700 bg-slate-900/30" : "border-slate-200 bg-slate-50"
                       )}
                     >
                       <div className="flex items-center justify-between mb-3">
@@ -450,7 +450,7 @@ export function EnrollmentFormControl({ configId, isDarkMode }: EnrollmentFormCo
 
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-[9px] text-slate-600 dark:text-slate-400 font-medium">
+                          <span className={`text-[9px] font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                             Required Field
                           </span>
                           <Switch
@@ -462,7 +462,7 @@ export function EnrollmentFormControl({ configId, isDarkMode }: EnrollmentFormCo
                           />
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[9px] text-slate-600 dark:text-slate-400 font-medium">
+                          <span className={`text-[9px] font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                             Editable{isLocked && <span className="text-[8px] text-amber-500 ml-1">(Locked)</span>}
                           </span>
                           <Switch
@@ -482,7 +482,7 @@ export function EnrollmentFormControl({ configId, isDarkMode }: EnrollmentFormCo
         })}
       </div>
 
-      <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+      <div className={`pt-6 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
         <div className="flex items-center justify-center gap-2 text-[9px] text-slate-500 font-medium">
           {saving ? (
             <>

@@ -73,7 +73,7 @@ Whether the portal is open is controlled by `system_config` (single row): `is_po
 
 ### Admin Feature Pages
 
-- **Dashboard** (`/admin/dashboard`) — live metrics via Supabase realtime + polling; Grade 11/12 toggle persisted to `localStorage`
+- **Dashboard** (`/admin/dashboard`) — live Spot via Supabase realtime + polling; Grade 11/12 toggle persisted to `localStorage`
 - **Applicants** (`/admin/applicants`) — review pending applications; accept/reject; bulk actions
 - **Enrolled** (`/admin/enrolled`) — manage accepted students; edit requests
 - **Sections** (`/admin/sections`) — create sections, assign students, auto-scheduler, schedule grid

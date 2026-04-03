@@ -515,7 +515,7 @@ export default function AdminDashboard() {
             colorLight="#ffffff" 
             colorDark="#0f172a"
             textColor={isDarkMode ? "text-white" : "text-slate-900"}
-            icon={<Users size={64} className={isDarkMode ? "text-slate-700" : "text-slate-200"} />}
+            icon={<Users size={64} className={isDarkMode ? "text-white/5" : "text-slate-900/5"} />}
             isDarkMode={isDarkMode}
             tooltip="Total count of all students (Male + Female) currently in the system"
           />

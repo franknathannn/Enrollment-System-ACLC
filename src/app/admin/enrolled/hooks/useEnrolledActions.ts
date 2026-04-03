@@ -57,19 +57,7 @@ export function useEnrolledActions({ setStudents }: { setStudents: React.Dispatc
     }
   }, [setStudents])
 
-  const toggleAccountStatus = useCallback(async (student: any) => {
-    const newLocked = !student.is_locked
-    const label     = newLocked ? "Deactivated" : "Activated"
-    const toastId   = toast.loading(`${newLocked ? "Deactivating" : "Activating"} ${student.first_name}'s account…`)
-    try {
-      const { error } = await supabase.from('students').update({ is_locked: newLocked }).eq('id', student.id)
-      if (error) throw error
-      setStudents(prev => prev.map(s => s.id === student.id ? { ...s, is_locked: newLocked } : s))
-      toast.success(`${student.first_name} ${student.last_name} — Account ${label}`, { id: toastId })
-    } catch {
-      toast.error("Failed to update account status.", { id: toastId })
-    }
-  }, [setStudents])
+
 
   // ── Approve re-enrollment ─────────────────────────────────────────────────
   // Server-side: count reviewed (Approved+Rejected) requests to guard tries.
@@ -149,7 +137,6 @@ export function useEnrolledActions({ setStudents }: { setStudents: React.Dispatc
   return {
     updateStudentProfile,
     resetStudentToPending,
-    toggleAccountStatus,
     approveEditRequest,
     denyEditRequest,
   }

@@ -800,37 +800,50 @@ export default function PredictiveAnalytics() {
     if (!isBackground) setLoading(true)
     
     try {
-      const [configRes, historyRes, enrolledRes, pendingRes] = await Promise.all([
+      const [configRes, historyRes] = await Promise.all([
         supabase.from('system_config').select('*').single(),
-        supabase.from('enrollment_predictions_data').select('*').order('school_year', { ascending: true }),
-        supabase.from('students').select('*', { count: 'exact', head: true }).or('status.eq.Approved,status.eq.Accepted'),
-        supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'Pending')
+        supabase.from('enrollment_predictions_data').select('*').order('school_year', { ascending: true })
       ])
 
       const config = configRes.data || { school_year: '2025-2026' }
       setActiveConfig(config)
-      
-      const liveEnrolled = enrolledRes.count || 0
-      setEnrolledCount(liveEnrolled)
-      setPendingCount(pendingRes.count || 0)
+
 
       // Fetch JHS and ALS counts from students table for the active school year
       // Uses student_category field to distinguish entry types
       const currentSY = config.school_year
-      const [jhsRes, alsRes] = await Promise.all([
+      const [jhsRes, alsRes, enrolledRes, pendingRes] = await Promise.all([
         supabase
           .from('students')
           .select('*', { count: 'exact', head: true })
           .eq('school_year', currentSY)
+          .eq('is_archived', false)
           .eq('student_category', 'JHS')
           .or('status.eq.Approved,status.eq.Accepted'),
         supabase
           .from('students')
           .select('*', { count: 'exact', head: true })
           .eq('school_year', currentSY)
+          .eq('is_archived', false)
           .eq('student_category', 'ALS')
           .or('status.eq.Approved,status.eq.Accepted'),
+        supabase
+          .from('students')
+          .select('*', { count: 'exact', head: true })
+          .eq('school_year', currentSY)
+          .eq('is_archived', false)
+          .or('status.eq.Approved,status.eq.Accepted'),
+        supabase
+          .from('students')
+          .select('*', { count: 'exact', head: true })
+          .eq('school_year', currentSY)
+          .eq('is_archived', false)
+          .eq('status', 'Pending')
       ])
+      
+      const liveEnrolled = enrolledRes.count || 0
+      setEnrolledCount(liveEnrolled)
+      setPendingCount(pendingRes.count || 0)
       setJhsLiveCount(jhsRes.count || 0)
       setAlsLiveCount(alsRes.count || 0)
 

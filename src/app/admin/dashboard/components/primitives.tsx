@@ -91,7 +91,7 @@ export const MetricCard = memo(({ label, value, colorLight, colorDark, icon, isD
           </h3>
         </div>
         
-        <div className="w-20 md:w-32 h-20 md:h-32 bg-white/15 rounded-[32px] md:rounded-[48px] flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 relative z-10 shadow-2xl backdrop-blur-xl border border-white/20 ring-1 ring-white/10">
+        <div className={`w-20 md:w-32 h-20 md:h-32 rounded-[32px] md:rounded-[48px] flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 relative z-10 shadow-2xl backdrop-blur-xl border ring-1 ${isDarkMode ? 'bg-white/15 border-white/20 ring-white/10' : 'bg-slate-900/10 border-slate-900/15 ring-slate-900/5'}`}>
           <div className="scale-110 md:scale-150 drop-shadow-lg">
             {icon}
           </div>

@@ -174,6 +174,7 @@ export default function TeachersPage() {
   const [tab,      setTab]      = useState<"list" | "announcements" | "reports" | "calendar">("list")
   const [toggling, setToggling] = useState<Set<string>>(new Set())
   const [schoolYear, setSchoolYear] = useState("2025-2026")
+  const [deleteConfirm, setDeleteConfirm] = useState<{id: string, name: string} | null>(null)
 
   // Load school year for reports + calendar
   useEffect(() => {
@@ -425,7 +426,7 @@ export default function TeachersPage() {
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <button onClick={() => deleteTeacher(t.id, t.full_name)} className={`p-2 rounded-xl transition-colors ${dm ? "hover:bg-red-500/10 text-slate-600 hover:text-red-400" : "hover:bg-red-50 text-slate-300 hover:text-red-400"}`}><Trash2 size={13} /></button>
+                            <button onClick={() => setDeleteConfirm({id: t.id, name: t.full_name})} className={`p-2 rounded-xl transition-colors ${dm ? "hover:bg-red-500/10 text-slate-600 hover:text-red-400" : "hover:bg-red-50 text-slate-300 hover:text-red-400"}`}><Trash2 size={13} /></button>
                           </TooltipTrigger>
                           <TooltipContent>Delete</TooltipContent>
                         </Tooltip>
@@ -550,7 +551,35 @@ export default function TeachersPage() {
       </div>
 
       <TeacherFormDialog open={formOpen} editing={editing} isDarkMode={dm} onSave={handleSave} onClose={() => setFormOpen(false)} />
-      <TeacherDetailDrawer teacher={viewingTeacher} isDarkMode={dm} onClose={() => setViewing(null)} onEdit={openEdit} onDelete={deleteTeacher} onToggle={handleToggle} />
+      <TeacherDetailDrawer teacher={viewingTeacher} isDarkMode={dm} onClose={() => setViewing(null)} onEdit={openEdit} onDelete={(id, name) => setDeleteConfirm({id, name})} onToggle={handleToggle} />
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className={`w-full max-w-sm rounded-[32px] p-6 shadow-2xl border ${dm ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
+            <h3 className={`text-lg font-black uppercase mb-2 ${dm ? "text-white" : "text-slate-900"}`}>Confirm Deletion</h3>
+            <p className={`text-xs mb-6 ${dm ? "text-slate-400" : "text-slate-500"}`}>
+              Permanently delete teacher "{deleteConfirm.name}"? This removes them from all assigned schedules.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setDeleteConfirm(null)}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors ${dm ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-100 hover:bg-slate-200 text-slate-600"}`}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  deleteTeacher(deleteConfirm.id, deleteConfirm.name)
+                  setDeleteConfirm(null)
+                  if (viewing?.id === deleteConfirm.id) setViewing(null)
+                }}
+                className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 transition-transform active:scale-95"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </TooltipProvider>
   )

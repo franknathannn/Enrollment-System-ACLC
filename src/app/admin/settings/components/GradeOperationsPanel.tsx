@@ -5,7 +5,7 @@ import {
   Archive, ArchiveRestore, TrendingUp, TrendingDown,
   AlertTriangle, CheckCircle2, Loader2, ArrowRight,
   GraduationCap, BookMarked, ChevronDown, ChevronUp,
-  Rocket, Trophy,
+  Rocket, Trophy, RefreshCcw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -15,14 +15,16 @@ import {
   increaseGradeLevel,
   decreaseGradeLevel,
   advanceSchoolYear,
+  resetAllToGrade11,
 } from "@/lib/actions/gradeOperations"
 
 interface Props {
   isDarkMode: boolean
   schoolYear: string
+  onRefresh?: () => void
 }
 
-type OperationKey = "archive" | "unarchive" | "increase" | "decrease" | "advance"
+type OperationKey = "archive" | "unarchive" | "increase" | "decrease" | "advance" | "resetToG11"
 
 interface Operation {
   key: OperationKey
@@ -35,7 +37,7 @@ interface Operation {
   confirmBody: React.ReactNode
 }
 
-export function GradeOperationsPanel({ isDarkMode, schoolYear }: Props) {
+export function GradeOperationsPanel({ isDarkMode, schoolYear, onRefresh }: Props) {
   const [confirmOp, setConfirmOp] = useState<OperationKey | null>(null)
   const [loading, setLoading] = useState<OperationKey | null>(null)
   const [expanded, setExpanded] = useState(true)
@@ -118,6 +120,23 @@ export function GradeOperationsPanel({ isDarkMode, schoolYear }: Props) {
         </span>
       ),
     },
+    {
+      key: "resetToG11",
+      label: "Reset All to Grade 11",
+      sublabel: "G12 + Graduates → G11 · Unlocks archived graduates",
+      icon: <RefreshCcw className="text-white w-5 h-5" />,
+      color: "bg-rose-600 shadow-rose-500/20",
+      btnColor: "bg-rose-600 hover:bg-rose-700 shadow-rose-500/20",
+      confirmTitle: "Reset All to Grade 11",
+      confirmBody: (
+        <span>
+          <span className="text-rose-400">All Grade 12 and GRADUATED students</span> — including
+          archived graduates — will be unarchived, unlocked, and moved back to{" "}
+          <span className={emphasisClass}>Grade 11</span> with new section assignments.{" "}
+          <span className="text-amber-400">Use this only to undo accidental advances during testing.</span>
+        </span>
+      ),
+    },
   ]
 
   const handleConfirm = async () => {
@@ -158,9 +177,16 @@ export function GradeOperationsPanel({ isDarkMode, schoolYear }: Props) {
         if (!res.success) throw new Error(res.error)
         msg = `Advanced to S.Y. ${res.nextYear}. ${res.graduatedG12} graduated, ${res.promotedToG12} promoted to G12${res.archivedOverAge > 0 ? `, ${res.archivedOverAge} overage archived` : ""}.`
         setResults((r) => ({ ...r, advance: msg }))
+
+      } else if (confirmOp === "resetToG11") {
+        const res = await resetAllToGrade11()
+        if (!res.success) throw new Error(res.error)
+        msg = `${res.reset} student(s) reset to Grade 11.`
+        setResults((r) => ({ ...r, resetToG11: msg }))
       }
 
       toast.success(msg, { id: toastId, duration: 7000 })
+      if (onRefresh) onRefresh()
     } catch (err: any) {
       toast.error(err?.message || "Operation failed.", { id: toastId })
     } finally {
@@ -217,6 +243,10 @@ export function GradeOperationsPanel({ isDarkMode, schoolYear }: Props) {
             <p className="flex items-start gap-2">
               <ArrowRight size={12} className="text-orange-500 mt-0.5 shrink-0" />
               <span><span className="text-orange-400">Decrease Grade Level</span> — G12 → G11 (sections cleared).</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <ArrowRight size={12} className="text-rose-500 mt-0.5 shrink-0" />
+              <span><span className="text-rose-400">Reset All to Grade 11</span> — moves G12 and GRADUATED (including archived graduates) back to G11. Use only to undo accidental advances in testing.</span>
             </p>
           </div>
 

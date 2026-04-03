@@ -2,7 +2,7 @@ import { memo, useState, useMemo } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Eye, Copy, Shield, RotateCcw, Activity, Star, CalendarDays, Power, PowerOff, ChevronLeft, ChevronRight } from "lucide-react"
+import { Eye, Copy, Shield, RotateCcw, Activity, Star, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 import { ThemedCard } from "@/components/ThemedCard"
 import { OptimizedImage } from "./OptimizedImage"
 import { toast } from "sonner"
@@ -15,7 +15,7 @@ interface EnrolledTableProps {
   isDarkMode: boolean
   onView: (student: any) => void
   onReset: (student: any) => void
-  onToggleStatus: (student: any) => void
+
   animatingIds?: Set<string>
   totalCount: number
   totalFilteredCount: number
@@ -79,7 +79,7 @@ const handleCopyLRN = (e: React.MouseEvent, lrn: string) => {
 }
 
 export const EnrolledTable = memo(({ 
-  students, isDarkMode, onView, onReset, onToggleStatus, animatingIds,
+  students, isDarkMode, onView, onReset, animatingIds,
   totalCount, totalFilteredCount, currentPage, totalPages, setCurrentPage, loading
 }: EnrolledTableProps) => {
   const [scheduleStudent, setScheduleStudent] = useState<any>(null)
@@ -209,24 +209,35 @@ export const EnrolledTable = memo(({
                 </div>
 
                 {/* Action Dock */}
-                <div className={`p-2 flex flex-col gap-1.5 border-t ${theme.dockBg} ${theme.border}`}>
-                  <div className="flex items-center gap-1.5">
-                    <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onView(s) }} className={`flex-1 h-11 rounded-2xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>
-                      <Eye size={14} className="mr-1.5" /> View
-                    </Button>
+                <div className={`p-2 flex items-center gap-1.5 border-t ${theme.dockBg} ${theme.border}`}>
                     {s.section && s.section !== 'Unassigned' && (
-                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setScheduleStudent(s) }} className={`flex-1 h-11 rounded-2xl text-[8px] font-black uppercase tracking-widest text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all active:scale-95`}>
-                        <CalendarDays size={14} className="mr-1.5" /> Schedule
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={(e) => { e.stopPropagation(); setScheduleStudent(s); }} 
+                        className={`flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest text-blue-500 transition-all active:scale-95 ${isDarkMode ? 'hover:bg-blue-600 hover:text-white' : 'hover:bg-blue-500 hover:text-white'}`}
+                      >
+                        <CalendarDays size={14} className="mr-2" /> Schedule
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onToggleStatus(s) }} className={`flex-1 h-11 rounded-2xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${isLocked ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20' : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'}`}>
-                      {isLocked ? <Power size={14} className="mr-1.5" /> : <PowerOff size={14} className="mr-1.5" />}
-                      {isLocked ? 'Activate' : 'Deactivate'}
+                    
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={(e) => { e.stopPropagation(); onReset(s); }} 
+                      className={`flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest text-amber-600 transition-all active:scale-95 ${isDarkMode ? 'hover:bg-amber-600 hover:text-white' : 'hover:bg-amber-500 hover:text-white'}`}
+                    >
+                      <RotateCcw size={14} className="mr-2" /> Reset
                     </Button>
-                  </div>
-                  <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onReset(s) }} className="w-full h-9 rounded-2xl text-[8px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all active:scale-95">
-                    <RotateCcw size={14} className="mr-1.5" /> Reset
-                  </Button>
+
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={(e) => { e.stopPropagation(); onView(s); }} 
+                      className={`w-12 h-12 p-0 rounded-2xl transition-all active:scale-95 ${isDarkMode ? 'text-slate-400 hover:bg-white hover:text-slate-900' : 'text-slate-500 hover:bg-slate-900 hover:text-white'}`}
+                    >
+                      <Eye size={18} />
+                    </Button>
                 </div>
               </ThemedCard>
             )
@@ -247,32 +258,28 @@ export const EnrolledTable = memo(({
         </div>
 
         {/* Desktop View - Premium SaaS Rows */}
-        <div className="hidden md:block overflow-x-auto pb-4">
-          <Table className="border-separate border-spacing-y-4 min-w-full">
+        <div className="hidden md:block overflow-x-hidden pb-4">
+          <Table className="border-separate border-spacing-y-4 w-full table-fixed">
             <TableHeader className="bg-transparent">
               <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="pl-12 py-2 font-black uppercase text-[10px] tracking-widest text-slate-500">Student Identity</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center text-slate-500">Gender</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center text-slate-500">Strand</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center text-slate-500">Section</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center text-slate-500">Category</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center text-slate-500">Status</TableHead>
-                
-                {/* Header Pagination integrated between Status and Actions */}
-                <TableHead className="px-2 text-center pointer-events-auto">
-                   {totalPages > 1 && (
-                     <div className="flex justify-center">
-                       <HeaderPagination 
-                         currentPage={currentPage} 
-                         totalPages={totalPages} 
-                         setCurrentPage={setCurrentPage} 
-                         isDarkMode={isDarkMode} 
-                       />
-                     </div>
-                   )}
+                <TableHead className="pl-12 py-2 font-black uppercase text-[10px] tracking-widest text-slate-500 w-[30%]">Student Identity</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center text-slate-500 w-[7%]">Gender</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center text-slate-500 w-[7%]">Strand</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center text-slate-500 w-[12%]">Section</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center text-slate-500 w-[12%]">Category</TableHead>
+                <TableHead className="text-right pr-12 font-black uppercase text-[10px] tracking-widest text-slate-500 w-[32%]">
+                  <div className="flex items-center justify-end gap-3">
+                    {totalPages > 1 && (
+                      <HeaderPagination 
+                        currentPage={currentPage} 
+                        totalPages={totalPages} 
+                        setCurrentPage={setCurrentPage} 
+                        isDarkMode={isDarkMode} 
+                      />
+                    )}
+                    <span>Actions</span>
+                  </div>
                 </TableHead>
-
-                <TableHead className="text-right pr-12 font-black uppercase text-[10px] tracking-widest text-slate-500">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -326,43 +333,78 @@ export const EnrolledTable = memo(({
                     </TableCell>
 
                     <TableCell className={`text-center border-y transition-all duration-300 ${theme.cardBg} ${theme.border} group-hover:bg-blue-500/[0.03] dark:group-hover:bg-blue-400/[0.03]`}>
-                       <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider ${s.student_category?.includes('ALS') ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                       <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider whitespace-nowrap ${s.student_category?.includes('ALS') ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400'}`}>
                         {s.student_category || 'Regular'}
                        </span>
                     </TableCell>
 
-                    <TableCell className={`text-center border-y transition-all duration-300 ${theme.cardBg} ${theme.border} group-hover:bg-blue-500/[0.03] dark:group-hover:bg-blue-400/[0.03]`}>
-                        <button
-                          onClick={() => onToggleStatus(s)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all duration-300 active:scale-90 border ${
-                            isLocked
-                              ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white hover:shadow-[0_4px_12px_rgba(239,68,68,0.3)]'
-                              : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500 hover:text-white hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)]'
-                          }`}
-                        >
-                          {isLocked ? <PowerOff size={10} /> : <Power size={10} />}
-                          {isLocked ? 'Inactive' : 'Active'}
-                        </button>
-                    </TableCell>
 
-                    {/* Spacer Cell matching header pagination column */}
-                    <TableCell className={`w-[140px] border-y transition-all duration-300 ${theme.cardBg} ${theme.border} group-hover:bg-blue-500/[0.03] dark:group-hover:bg-blue-400/[0.03]`} />
 
-                    <TableCell className={`pr-12 text-right rounded-r-[32px] border-y border-r transition-all duration-300 ${theme.cardBg} ${theme.border} group-hover:bg-blue-500/[0.03] dark:group-hover:bg-blue-400/[0.03]`}>
-                       <div className="flex items-center justify-end gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => onView(s)} className="h-10 px-4 rounded-2xl text-slate-500 font-black text-[9px] uppercase tracking-widest transition-all duration-300 hover:bg-slate-900 hover:text-white hover:scale-105 active:scale-95">
-                            <Eye size={14} className="mr-1.5" /> View
-                          </Button>
 
+
+                    <TableCell className={`pr-12 text-right rounded-r-[32px] border-y border-r transition-all duration-300 ${theme.cardBg} ${theme.border} group-hover:bg-blue-500/[0.03]`}>
+                       <div className="flex items-center justify-end gap-2 whitespace-nowrap shrink-0">
                           {s.section && s.section !== 'Unassigned' && (
-                            <Button size="sm" variant="ghost" onClick={() => setScheduleStudent(s)} className="h-10 px-4 rounded-2xl text-blue-500 font-black text-[9px] uppercase tracking-widest transition-all duration-300 hover:bg-blue-500 hover:text-white hover:shadow-[0_4px_12px_rgba(59,130,246,0.3)] hover:scale-105 active:scale-95">
-                              <CalendarDays size={14} className="mr-1.5" /> Schedule
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); setScheduleStudent(s); }}
+                                  className="h-9 px-4 rounded-xl text-blue-500 font-black text-[9px] uppercase tracking-[0.2em] transition-all inline-flex items-center justify-center bg-transparent border-0"
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgb(59 130 246)'
+                                    e.currentTarget.style.color = 'white'
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent'
+                                    e.currentTarget.style.color = 'rgb(59 130 246)'
+                                  }}
+                                >
+                                  <CalendarDays size={14} className="mr-2" /> Schedule
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-blue-900 text-blue-100 border-blue-800"><p>View Subject Schedule</p></TooltipContent>
+                            </Tooltip>
                           )}
 
-                          <Button size="sm" variant="ghost" onClick={() => onReset(s)} className="h-10 px-4 rounded-2xl text-amber-600 font-black text-[9px] uppercase tracking-widest transition-all duration-300 hover:bg-amber-500 hover:text-white hover:shadow-[0_4px_12px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95">
-                            <RotateCcw size={14} className="mr-1.5" /> Reset
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); onReset(s); }}
+                                className="h-9 px-4 rounded-xl text-amber-600 font-black text-[9px] uppercase tracking-[0.2em] transition-all inline-flex items-center justify-center bg-transparent border-0"
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgb(245 158 11)'
+                                  e.currentTarget.style.color = 'white'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent'
+                                  e.currentTarget.style.color = 'rgb(217 119 6)'
+                                }}
+                              >
+                                <RotateCcw size={14} className="mr-2" /> Reset
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-amber-900 text-amber-100 border-amber-800"><p>Reset Credentials</p></TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); onView(s); }}
+                                className="h-9 w-9 p-0 rounded-xl transition-all inline-flex items-center justify-center text-slate-400 bg-transparent border-0"
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = isDarkMode ? 'white' : 'rgb(15 23 42)'
+                                  e.currentTarget.style.color = isDarkMode ? 'rgb(15 23 42)' : 'white'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent'
+                                  e.currentTarget.style.color = 'rgb(148 163 184)'
+                                }}
+                              >
+                                <Eye size={16} />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View Profile</p></TooltipContent>
+                          </Tooltip>
                        </div>
                     </TableCell>
                   </TableRow>

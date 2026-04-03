@@ -96,7 +96,6 @@ export function useTeachers() {
 
   // ── Delete teacher ────────────────────────────────────────────────────────
   const deleteTeacher = useCallback(async (id: string, name: string) => {
-    if (!confirm(`Permanently delete teacher "${name}"? This removes them from all assigned schedules.`)) return
     try {
       await deleteTeacherWithAuth(id)
       toast.success(`"${name}" deleted`)

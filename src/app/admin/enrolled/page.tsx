@@ -49,7 +49,6 @@ export default function EnrolledPage() {
   const {
     updateStudentProfile,
     resetStudentToPending,
-    toggleAccountStatus,
     approveEditRequest,
     denyEditRequest
   } = useEnrolledActions({ setStudents })
@@ -169,7 +168,6 @@ export default function EnrolledPage() {
                 isDarkMode={isDarkMode}
                 onView={setSelectedStudent}
                 onReset={resetStudentToPending}
-                onToggleStatus={toggleAccountStatus}
                 animatingIds={animatingIds}
                 totalCount={students.length}
                 totalFilteredCount={filteredStudents.length}

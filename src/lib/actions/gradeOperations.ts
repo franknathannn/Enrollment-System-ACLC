@@ -563,6 +563,66 @@ export async function advanceSchoolYear(): Promise<{
   }
 }
 
+export async function resetAllToGrade11(): Promise<{
+  success: boolean; reset: number; error?: string
+}> {
+  try {
+    const supabase = createAdminClient()
+
+    // Fetch ALL students that are G12 or GRADUATED (archived or not), Accepted/Approved, non-mock
+    const { data: students, error: fetchErr } = await supabase
+      .from("students")
+      .select("id, gender, strand")
+      .in("grade_level", ["12", "GRADUATED"])
+      .in("status", ["Accepted", "Approved"])
+      .or("mock.is.null,mock.eq.false")
+
+    if (fetchErr) throw fetchErr
+    if (!students || students.length === 0) return { success: true, reset: 0 }
+
+    // First unblock all of them so assignStudentsToSections can query G11 sections freely
+    const ids = students.map((s: any) => s.id)
+    const chunkSize = 50
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const { error } = await supabase
+        .from("students")
+        .update({ is_archived: false, graduate_lock: false, grade_level: "11", section_id: null, section: "Unassigned" })
+        .in("id", ids.slice(i, i + chunkSize))
+      if (error) throw error
+    }
+
+    // Now assign to G11 sections using gender-balance
+    const assignments = await assignStudentsToSections(supabase, students, "11")
+
+    // Group by assigned section for batched writes
+    const updatesBySection: Record<string, string[]> = {}
+    for (const student of students) {
+      const assigned = assignments[student.id]
+      const key = assigned?.section_id ?? "null"
+      if (!updatesBySection[key]) updatesBySection[key] = []
+      updatesBySection[key].push(student.id)
+    }
+
+    for (const [secId, studentIds] of Object.entries(updatesBySection)) {
+      const sectionId   = secId === "null" ? null : secId
+      const sectionName = secId === "null" ? "Unassigned" : (assignments[studentIds[0]]?.section_name ?? "Unassigned")
+      for (let i = 0; i < studentIds.length; i += chunkSize) {
+        const { error } = await supabase
+          .from("students")
+          .update({ section_id: sectionId, section: sectionName })
+          .in("id", studentIds.slice(i, i + chunkSize))
+        if (error) throw error
+      }
+    }
+
+    revalidateAll()
+    return { success: true, reset: students.length }
+  } catch (err: any) {
+    console.error("Reset All to G11 Error:", err)
+    return { success: false, reset: 0, error: err?.message || "Unknown error" }
+  }
+}
+
 export async function unarchiveSingleStudent(studentId: string): Promise<{
   success: boolean; error?: string
 }> {

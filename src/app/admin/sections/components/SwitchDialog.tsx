@@ -19,8 +19,8 @@ export const SwitchDialog = memo(function SwitchDialog({ student, allSections, o
           Switch
         </Button>
       </DialogTrigger>
-      <DialogContent className="rounded-[32px] md:rounded-[40px] w-[95vw] md:w-full max-w-sm p-0 overflow-hidden border-none shadow-2xl bg-slate-900">
-        <DialogHeader className="p-6 md:p-8 bg-blue-600 dark:bg-slate-900 text-white relative overflow-hidden flex flex-col items-center text-center">
+      <DialogContent className={`rounded-[32px] md:rounded-[40px] w-[95vw] md:w-full max-w-sm p-0 overflow-hidden border-none shadow-2xl ${isDarkMode ? 'bg-slate-900' : 'bg-white'}`}>
+        <DialogHeader className={`p-6 md:p-8 text-white relative overflow-hidden flex flex-col items-center text-center ${isDarkMode ? 'bg-slate-900' : 'bg-blue-600'}`}>
           <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
           <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/30 blur-[60px] rounded-full -mr-10 -mt-10 pointer-events-none" />
           
@@ -46,7 +46,7 @@ export const SwitchDialog = memo(function SwitchDialog({ student, allSections, o
           </div>
         </DialogHeader>
         
-        <div className="p-4 space-y-2 max-h-[350px] overflow-y-auto custom-scrollbar bg-slate-800">
+        <div className={`p-4 space-y-2 max-h-[350px] overflow-y-auto custom-scrollbar ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
           <p className="px-4 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
             Select Destination Matrix
           </p>
@@ -61,21 +61,29 @@ export const SwitchDialog = memo(function SwitchDialog({ student, allSections, o
               key={sec.id} 
               disabled={isCurrent || isFull}
               onClick={() => !isCurrent && !isFull && onSwitch(student.id, sec.section_name)} 
-              className={`w-full group flex items-center justify-between p-3 md:p-4 rounded-2xl border transition-colors duration-300 relative overflow-hidden
+              className={`w-full group flex items-center justify-between p-3 md:p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden
                 ${isCurrent || isFull
-                  ? 'bg-slate-900/50 border-slate-800 opacity-60 cursor-not-allowed' 
-                  : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-blue-500 hover:shadow-lg hover:-translate-y-0.5'
+                  ? isDarkMode
+                    ? 'bg-slate-900/50 border-slate-800 opacity-60 cursor-not-allowed'
+                    : 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-slate-900 border-slate-800 hover:border-blue-500 hover:shadow-lg hover:-translate-y-0.5'
+                    : 'bg-white border-slate-200 hover:border-blue-500 hover:shadow-lg hover:-translate-y-0.5'
                 }`}
             >
               <div className="flex items-center gap-4 relative z-10">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs shadow-sm ${
-                  isCurrent || isFull ? 'bg-slate-800 text-slate-700' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors'
+                  isCurrent || isFull
+                    ? isDarkMode ? 'bg-slate-800 text-slate-700' : 'bg-slate-200 text-slate-400'
+                    : isDarkMode
+                      ? 'bg-blue-900/20 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors'
+                      : 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors'
                 }`}>
                    {sec.section_name.substring(0, 1)}
                 </div>
                 <div className="flex flex-col items-start text-left">
                   <span className={`font-black uppercase text-xs tracking-tight ${
-                    isCurrent || isFull ? 'text-slate-400' : 'text-slate-900 dark:text-white'
+                    isCurrent || isFull ? 'text-slate-400' : isDarkMode ? 'text-white' : 'text-slate-900'
                   }`}>
                     {sec.section_name}
                   </span>
@@ -86,15 +94,15 @@ export const SwitchDialog = memo(function SwitchDialog({ student, allSections, o
               </div>
               
               {isCurrent ? (
-                 <div className="px-3 py-1 bg-slate-700 rounded-lg text-[8px] font-black uppercase text-slate-400 tracking-widest">
+                 <div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500'}`}>
                    Current
                  </div>
               ) : isFull ? (
-                 <div className="px-3 py-1 bg-red-100 dark:bg-red-900/20 rounded-lg text-[8px] font-black uppercase text-red-500 dark:text-red-400 tracking-widest">
+                 <div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-red-900/20 text-red-400' : 'bg-red-100 text-red-500'}`}>
                    FULL
                  </div>
               ) : (
-                 <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                 <div className={`w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all ${isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400'}`}>
                     <ArrowRightLeft size={14} />
                  </div>
               )}

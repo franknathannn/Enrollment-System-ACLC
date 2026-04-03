@@ -523,6 +523,7 @@ export default function SettingsPage() {
             <GradeOperationsPanel
               isDarkMode={isDarkMode}
               schoolYear={config.schoolYear}
+              onRefresh={loadSettings}
             />
 
             <SettingsActions
