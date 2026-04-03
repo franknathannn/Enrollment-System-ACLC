@@ -17,6 +17,7 @@ interface Props {
 export function TurnstileWidget({ onVerify, onExpire, theme = "auto" }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const rendered = useRef(false)
+  const widgetId = useRef<string | undefined>(undefined)
 
   useEffect(() => {
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
@@ -25,7 +26,7 @@ export function TurnstileWidget({ onVerify, onExpire, theme = "auto" }: Props) {
     const tryRender = () => {
       if (rendered.current || !ref.current || !window.turnstile) return
       rendered.current = true
-      window.turnstile.render(ref.current, {
+      widgetId.current = window.turnstile.render(ref.current, {
         sitekey: siteKey,
         callback: onVerify,
         "expired-callback": onExpire ?? (() => {}),
@@ -55,7 +56,12 @@ export function TurnstileWidget({ onVerify, onExpire, theme = "auto" }: Props) {
       }
     }, 100)
 
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      if (widgetId.current !== undefined && window.turnstile) {
+        window.turnstile.remove(widgetId.current)
+      }
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={ref} />

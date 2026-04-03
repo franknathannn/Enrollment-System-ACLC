@@ -65,7 +65,7 @@ export default function SettingsPage() {
     try {
       // Use maybeSingle() to avoid crashing if table is empty or RLS blocks it
       let { data: configData, error: configError } = await supabase.from('system_config').select('*').maybeSingle()
-      
+
       if (configError) {
         console.error("Error fetching system_config:", configError)
         toast.error("Failed to load settings. Check console for details.")
@@ -75,8 +75,8 @@ export default function SettingsPage() {
       if (!configData && !configError) {
         const { data: newConfig, error: insertError } = await supabase
           .from('system_config')
-          .insert({ 
-            school_year: '2025-2026', 
+          .insert({
+            school_year: '2025-2026',
             capacity: 1000,
             voucher_value: 22500,
             control_mode: 'automatic',
@@ -85,7 +85,7 @@ export default function SettingsPage() {
           })
           .select()
           .single()
-          
+
         if (!insertError) {
           configData = newConfig
         } else {
@@ -93,11 +93,11 @@ export default function SettingsPage() {
           toast.error("Failed to initialize settings. Check database permissions.")
         }
       }
-      
+
       const { count } = await supabase.from('students')
         .select('*', { count: 'exact', head: true })
         .or('status.eq.Accepted,status.eq.Approved')
-      
+
       if (configData) {
         const controlMode = (configData.control_mode === 'manual' || configData.control_mode === 'automatic')
           ? configData.control_mode
@@ -146,16 +146,16 @@ export default function SettingsPage() {
           const now = new Date()
           const start = new Date(config.startDate)
           const end = new Date(config.endDate)
-          now.setHours(0,0,0,0)
-          start.setHours(0,0,0,0)
-          end.setHours(23,59,59,999)
+          now.setHours(0, 0, 0, 0)
+          start.setHours(0, 0, 0, 0)
+          end.setHours(23, 59, 59, 999)
           finalPortalStatus = now >= start && now <= end
         }
       }
       const { error } = await supabase.from('system_config')
-        .update({ 
+        .update({
           control_mode: newMode,
-          is_portal_active: finalPortalStatus 
+          is_portal_active: finalPortalStatus
         })
         .eq('id', config.id)
       if (error) throw error
@@ -177,15 +177,15 @@ export default function SettingsPage() {
     const prevOpen = config.isOpen;
     const prevPreEnrollment = config.isPreEnrollment;
 
-    setConfig(prev => ({ 
-      ...prev, 
+    setConfig(prev => ({
+      ...prev,
       isOpen: checked,
-      isPreEnrollment: checked ? prev.isPreEnrollment : false 
+      isPreEnrollment: checked ? prev.isPreEnrollment : false
     }));
 
     try {
       await toggleEnrollment(checked)
-      
+
       if (!checked) {
         await supabase.from('system_config')
           .update({ is_pre_enrollment: false })
@@ -211,7 +211,7 @@ export default function SettingsPage() {
       const { error } = await supabase.from('system_config')
         .update({ is_pre_enrollment: checked })
         .eq('id', config.id)
-      
+
       if (error) throw error
       toast.success(`Pre-Enrollment Mode ${checked ? 'ENABLED' : 'DISABLED'}`)
     } catch (err) {
@@ -247,9 +247,9 @@ export default function SettingsPage() {
     try {
       const currentCap = Number(config.capacity)
       if (currentAccepted >= currentCap) {
-        const { error } = await supabase.from('system_config').update({ 
+        const { error } = await supabase.from('system_config').update({
           is_portal_active: false,
-          control_mode: 'manual' 
+          control_mode: 'manual'
         }).eq('id', config.id)
         if (error) throw error
         setConfig(prev => ({ ...prev, isOpen: false, controlMode: 'manual' }))
@@ -275,7 +275,7 @@ export default function SettingsPage() {
     if (config.voucherValue === "" || config.voucherValue === null) {
       return toast.error("Financial Error: Voucher Value cannot be blank.")
     }
-    
+
     const numericCapacity = Number(config.capacity)
     const numericVoucher = Number(config.voucherValue)
 
@@ -336,7 +336,7 @@ export default function SettingsPage() {
         .eq('id', config.id)
 
       if (error) throw error
-      
+
       await updateCapacity(numericCapacity)
       setConfig(prev => ({ ...prev, isOpen: calculatedStatus }))
       toast.success("Configuration Committed Successfully")
@@ -383,16 +383,16 @@ export default function SettingsPage() {
 
       const { error } = await supabase.from('system_config')
         .update({
-          school_year:      config.schoolYear,
+          school_year: config.schoolYear,
           enrollment_start: config.startDate || null,
-          enrollment_end:   config.endDate || null,
+          enrollment_end: config.endDate || null,
           is_portal_active: calculatedStatus,
         })
         .eq('id', config.id)
 
       if (error) throw error
       setConfig(prev => ({ ...prev, isOpen: calculatedStatus }))
-      toast.success("Enrollment Matrix committed.")
+      toast.success("Enrollment Changes committed.")
     } catch (err: unknown) {
       console.error(err)
       toast.error("Commit failed. Please try again.")
@@ -417,8 +417,8 @@ export default function SettingsPage() {
 
   return (
     <TooltipProvider delayDuration={100}>
-    {/* Thin themed scrollbar — adapts to dark/light mode */}
-    <style>{`
+      {/* Thin themed scrollbar — adapts to dark/light mode */}
+      <style>{`
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: ${isDarkMode ? 'rgba(51,65,85,0.3)' : 'rgba(226,232,240,0.6)'}; border-radius: 99px; }
       ::-webkit-scrollbar-thumb { background: ${isDarkMode ? 'rgba(100,116,139,0.7)' : 'rgba(148,163,184,0.8)'}; border-radius: 99px; }
@@ -459,7 +459,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className={`p-3 rounded-2xl ${config.grade12Enabled ? "bg-emerald-500/10" : isDarkMode ? "bg-slate-800" : "bg-slate-100"}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={config.grade12Enabled ? "text-emerald-400" : "text-slate-400"}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={config.grade12Enabled ? "text-emerald-400" : "text-slate-400"}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
                   </div>
                   <div>
                     <p className={`text-xs font-black uppercase tracking-[0.2em] ${isDarkMode ? "text-white" : "text-slate-900"}`}>Grade 12 Enrollment</p>
@@ -492,10 +492,10 @@ export default function SettingsPage() {
               controlMode={config.controlMode}
               isDarkMode={isDarkMode}
               isCommitting={isCommittingMatrix}
-              onSchoolYearChange={(value) => setConfig({...config, schoolYear: value})}
-              onStartDateChange={(value) => setConfig({...config, startDate: value})}
-              onEndDateChange={(value) => setConfig({...config, endDate: value})}
-              onClearFields={() => setConfig({...config, schoolYear: "", startDate: "", endDate: ""})}
+              onSchoolYearChange={(value) => setConfig({ ...config, schoolYear: value })}
+              onStartDateChange={(value) => setConfig({ ...config, startDate: value })}
+              onEndDateChange={(value) => setConfig({ ...config, endDate: value })}
+              onClearFields={() => setConfig({ ...config, schoolYear: "", startDate: "", endDate: "" })}
               onCommit={handleMatrixCommit}
             />
 
@@ -505,14 +505,14 @@ export default function SettingsPage() {
               capacityPercentage={capacityPercentage}
               isDarkMode={isDarkMode}
               updating={updating}
-              onCapacityChange={(value) => setConfig({...config, capacity: value})}
+              onCapacityChange={(value) => setConfig({ ...config, capacity: value })}
               onIntegrityScan={runCapacityGuardian}
             />
 
             <FinancialHub
               voucherValue={config.voucherValue}
               isDarkMode={isDarkMode}
-              onVoucherValueChange={(value) => setConfig({...config, voucherValue: value})}
+              onVoucherValueChange={(value) => setConfig({ ...config, voucherValue: value })}
             />
 
             <EnrollmentFormControl

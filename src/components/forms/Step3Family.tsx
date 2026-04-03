@@ -149,7 +149,7 @@ export default function Step3Family() {
 
   const onSubmit = useCallback((data: any) => {
     updateFormData(data); setStep(4)
-    toast.success("Contact Details Submitted", { icon: <img src="/logo-aclc.png" className="w-5 h-5" alt="" /> })
+    toast.success("Contact Details Submitted", { icon: <span className="w-5 h-5 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-white"><img src="/logo-aclc.png" className="w-full h-full object-contain" alt="" /></span> })
   }, [updateFormData, setStep])
 
   const onError = (errors: any) => {

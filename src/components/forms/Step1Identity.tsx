@@ -585,7 +585,7 @@ export default function Step1Identity() {
         : nameQuery.or('middle_name.is.null,middle_name.eq.""')
       const { data: existingName } = await nameQuery.maybeSingle()
       if (existingName) { toast.error("Student identity already exists."); setChecking(false); return }
-      updateFormData(data); setStep(2); toast.success("Identity Verified & Submitted", { icon: <img src="/logo-aclc.png" className="w-5 h-5" alt="" /> })
+      updateFormData(data); setStep(2); toast.success("Identity Verified & Submitted", { icon: <span className="w-5 h-5 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-white"><img src="/logo-aclc.png" className="w-full h-full object-contain" alt="" /></span> })
     } catch { toast.error("System validation failed. Please try again.") }
   }
   const onError = (errors: any) => {

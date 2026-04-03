@@ -94,6 +94,9 @@ export default function TeacherLoginPage() {
   const [showPass, setShowPass] = useState(false)
   const [loading,  setLoading]  = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [failedAttempts, setFailedAttempts] = useState(0)
+  const [turnstileKey, setTurnstileKey] = useState(0)
+  const MAX_ATTEMPTS = 5
 
   useEffect(() => {
     document.body.style.overflow = "hidden"
@@ -110,17 +113,18 @@ export default function TeacherLoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (failedAttempts >= MAX_ATTEMPTS) return
     const trimmed = email.toLowerCase().trim()
     if (!trimmed || !password) {
-      toast.error("Enter your email and password", { style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+      toast.error("Please enter your email and password.", { style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
       return
     }
     if (!turnstileToken) {
-      toast.error("Security check pending. Please wait a moment and try again.", { style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+      toast.error("Please complete the security check first.", { style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
       return
     }
     setLoading(true)
-    const toastId = toast.loading("Authenticating credentials...", { style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+    const toastId = toast.loading("Signing in...", { style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
     const isHuman = await verifyTurnstile(turnstileToken)
     if (!isHuman) {
       toast.error("Security check failed. Please refresh and try again.", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
@@ -130,14 +134,17 @@ export default function TeacherLoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: trimmed, password })
       if (error) {
-        toast.error("Access Denied: Invalid credentials", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+        setFailedAttempts(prev => prev + 1)
+        setTurnstileToken(null)
+        setTurnstileKey(k => k + 1)
+        toast.error("Incorrect email or password.", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
         setLoading(false)
         return
       }
-      toast.success("Identity Confirmed. Redirecting...", { id: toastId, duration: 1000, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+      toast.success("Signed in. Redirecting...", { id: toastId, duration: 1000, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
       window.location.href = "/teacher/dashboard"
     } catch {
-      toast.error("Connection Error. Check your network.", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+      toast.error("Connection error. Check your network.", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
       setLoading(false)
     }
   }
@@ -166,8 +173,8 @@ export default function TeacherLoginPage() {
           <div className="w-16 h-16 md:w-20 md:h-20 bg-slate-50 dark:bg-slate-800 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-5 md:mb-6 border border-slate-100 dark:border-white/5 transition-transform hover:rotate-6">
             <Lock className="w-6 h-6 md:w-8 md:h-8 text-slate-900 dark:text-blue-400" />
           </div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">Login Panel</h1>
-          <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 font-medium italic">Verify Teacher Identity</p>
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">Teacher Login</h1>
+          <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 font-medium italic">Sign in to your account</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5 md:space-y-6">
@@ -186,7 +193,7 @@ export default function TeacherLoginPage() {
           </div>
           <div className="space-y-2 group">
             <Label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest group-focus-within:text-blue-500 transition-colors">
-              Security Key
+              Password
             </Label>
             <div className="relative">
               <Input
@@ -205,12 +212,26 @@ export default function TeacherLoginPage() {
           </div>
           <div className="flex justify-center">
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-3 py-2">
-              <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme="light" />
+              <TurnstileWidget key={turnstileKey} onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme="light" />
             </div>
           </div>
-          <Button type="submit" disabled={loading}
+          {failedAttempts > 0 && (
+            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+              failedAttempts >= MAX_ATTEMPTS
+                ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/50'
+                : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50'
+            }`}>
+              <span className="text-base leading-none">⚠</span>
+              {failedAttempts >= MAX_ATTEMPTS
+                ? 'Too many failed attempts. Please wait before trying again.'
+                : `${failedAttempts} of ${MAX_ATTEMPTS} attempts used · ${MAX_ATTEMPTS - failedAttempts} remaining`
+              }
+            </div>
+          )}
+
+          <Button type="submit" disabled={loading || failedAttempts >= MAX_ATTEMPTS}
             className="w-full h-14 md:h-16 bg-slate-900 dark:bg-blue-600 hover:bg-black dark:hover:bg-blue-700 text-white rounded-[20px] md:rounded-[24px] text-xs font-black uppercase tracking-[0.2em] gap-3 shadow-2xl transition-all active:scale-95 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed">
-            {loading ? <Loader2 className="animate-spin" size={20} /> : <><span>Verify Access</span><ShieldCheck size={18} className="group-hover:rotate-12 transition-transform" /></>}
+            {loading ? <Loader2 className="animate-spin" size={20} /> : <><span>Sign In</span><ShieldCheck size={18} className="group-hover:rotate-12 transition-transform" /></>}
           </Button>
         </form>
       </Card>

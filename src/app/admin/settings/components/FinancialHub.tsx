@@ -18,7 +18,7 @@ export function FinancialHub({
   onVoucherValueChange
 }: FinancialHubProps) {
   return (
-    <ThemedCard 
+    <ThemedCard
       className="p-10 rounded-[48px] space-y-8 border transition-all duration-500"
       style={{
         backgroundColor: isDarkMode ? themeColors.dark.surface : '#ffffff',
@@ -30,7 +30,7 @@ export function FinancialHub({
           <Banknote size={20} />
         </div>
         <ThemedText variant="h3" className="text-xs font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>
-          Financial Estimator
+          Financial Calculator
         </ThemedText>
       </div>
       <div className="space-y-6">
@@ -40,9 +40,9 @@ export function FinancialHub({
           </ThemedText>
           <div className="relative">
             <Landmark className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-            <Input 
-              type="text" 
-              value={voucherValue === 0 || voucherValue === null ? "" : voucherValue} 
+            <Input
+              type="text"
+              value={voucherValue === 0 || voucherValue === null ? "" : voucherValue}
               onChange={(e) => {
                 const val = e.target.value;
                 if (val === "" || val === " ") {
@@ -52,12 +52,12 @@ export function FinancialHub({
                   if (!isNaN(parsed)) onVoucherValueChange(parsed);
                 }
               }}
-              className="h-14 rounded-2xl border-none font-bold text-lg pl-12 focus-visible:ring-emerald-500 transition-all duration-500" 
+              className="h-14 rounded-2xl border-none font-bold text-lg pl-12 focus-visible:ring-emerald-500 transition-all duration-500"
               style={{ backgroundColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(241 245 249)', color: isDarkMode ? '#ffffff' : '#000000' }}
             />
           </div>
           <p className="text-[9px] text-slate-400 font-medium italic mt-2 px-2">
-            Used for real-time revenue matrix calculations on the Dashboard.
+            Used for real-time revenue calculations on the Dashboard.
           </p>
         </div>
       </div>

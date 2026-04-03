@@ -64,24 +64,24 @@ function SectionStatsPopover({ sections, isDarkMode }: { sections: any[]; isDark
       secs.reduce((acc, s) => acc + (s.capacity || 40), 0)
 
     const rows = [
-      { label: "ICT — Grade 11", color: "blue",   sections: ict11, students: countStudents(ict11), cap: countCap(ict11) },
+      { label: "ICT — Grade 11", color: "blue", sections: ict11, students: countStudents(ict11), cap: countCap(ict11) },
       { label: "ICT — Grade 12", color: "violet", sections: ict12, students: countStudents(ict12), cap: countCap(ict12) },
       { label: "GAS — Grade 11", color: "orange", sections: gas11, students: countStudents(gas11), cap: countCap(gas11) },
-      { label: "GAS — Grade 12", color: "rose",   sections: gas12, students: countStudents(gas12), cap: countCap(gas12) },
+      { label: "GAS — Grade 12", color: "rose", sections: gas12, students: countStudents(gas12), cap: countCap(gas12) },
     ]
 
-    const totalSecs     = sections.length
+    const totalSecs = sections.length
     const totalStudents = rows.reduce((a, r) => a + r.students, 0)
-    const totalCap      = rows.reduce((a, r) => a + r.cap, 0)
+    const totalCap = rows.reduce((a, r) => a + r.cap, 0)
 
     return { rows, totalSecs, totalStudents, totalCap }
   })()
 
   const colorMap: Record<string, { bg: string; text: string; bar: string; badge: string }> = {
-    blue:   { bg: isDarkMode ? "bg-blue-950/40"   : "bg-blue-50",   text: isDarkMode ? "text-blue-300"   : "text-blue-700",   bar: "bg-blue-500",   badge: isDarkMode ? "bg-blue-900/60 text-blue-300"   : "bg-blue-100 text-blue-700"   },
+    blue: { bg: isDarkMode ? "bg-blue-950/40" : "bg-blue-50", text: isDarkMode ? "text-blue-300" : "text-blue-700", bar: "bg-blue-500", badge: isDarkMode ? "bg-blue-900/60 text-blue-300" : "bg-blue-100 text-blue-700" },
     violet: { bg: isDarkMode ? "bg-violet-950/40" : "bg-violet-50", text: isDarkMode ? "text-violet-300" : "text-violet-700", bar: "bg-violet-500", badge: isDarkMode ? "bg-violet-900/60 text-violet-300" : "bg-violet-100 text-violet-700" },
     orange: { bg: isDarkMode ? "bg-orange-950/40" : "bg-orange-50", text: isDarkMode ? "text-orange-300" : "text-orange-700", bar: "bg-orange-500", badge: isDarkMode ? "bg-orange-900/60 text-orange-300" : "bg-orange-100 text-orange-700" },
-    rose:   { bg: isDarkMode ? "bg-rose-950/40"   : "bg-rose-50",   text: isDarkMode ? "text-rose-300"   : "text-rose-700",   bar: "bg-rose-500",   badge: isDarkMode ? "bg-rose-900/60 text-rose-300"   : "bg-rose-100 text-rose-700"   },
+    rose: { bg: isDarkMode ? "bg-rose-950/40" : "bg-rose-50", text: isDarkMode ? "text-rose-300" : "text-rose-700", bar: "bg-rose-500", badge: isDarkMode ? "bg-rose-900/60 text-rose-300" : "bg-rose-100 text-rose-700" },
   }
 
   return (
@@ -102,13 +102,12 @@ function SectionStatsPopover({ sections, isDarkMode }: { sections: any[]; isDark
         <div className="flex items-center gap-3">
           <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
           <ThemedText variant="body" className="text-[10px] md:text-xs font-bold opacity-60 uppercase tracking-[0.2em]" isDarkMode={isDarkMode}>
-            AMA ACLC NORTHBAY SECTION MANAGING
+            AMA ACLC NORTHBAY SECTIONS
           </ThemedText>
-          <span className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors ${
-            open
+          <span className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors ${open
               ? "bg-blue-600 text-white"
               : isDarkMode ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500"
-          }`}>
+            }`}>
             <Info size={9} /> Stats
           </span>
         </div>
@@ -131,9 +130,8 @@ function SectionStatsPopover({ sections, isDarkMode }: { sections: any[]; isDark
               zIndex: 9999,
               width: Math.min(400, window.innerWidth - 24),
             }}
-            className={`rounded-[24px] shadow-2xl border overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 ${
-              isDarkMode ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"
-            }`}
+            className={`rounded-[24px] shadow-2xl border overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 ${isDarkMode ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"
+              }`}
           >
             {/* Header */}
             <div className={`flex items-center justify-between px-5 pt-4 pb-3 border-b ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
@@ -145,9 +143,8 @@ function SectionStatsPopover({ sections, isDarkMode }: { sections: any[]; isDark
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className={`w-5 h-5 flex items-center justify-center rounded-full transition-colors ${
-                  isDarkMode ? "hover:bg-slate-800 text-slate-500" : "hover:bg-slate-100 text-slate-400"
-                }`}
+                className={`w-5 h-5 flex items-center justify-center rounded-full transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-500" : "hover:bg-slate-100 text-slate-400"
+                  }`}
               >
                 <X size={11} />
               </button>
@@ -222,7 +219,7 @@ export const SectionsHeader = memo(({
   };
 
   return (
-    <ThemedCard 
+    <ThemedCard
       className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 p-6 md:p-10 rounded-[32px] md:rounded-[48px] backdrop-blur-3xl shadow-none border transition-all duration-700 bg-clip-padding outline outline-1 outline-transparent isolate"
       style={{
         backgroundColor: theme.surface,
@@ -235,42 +232,42 @@ export const SectionsHeader = memo(({
       {/* 📊 PERSISTENT FILTER DOCK (Fitted & Minimized) */}
       <div className="flex flex-col gap-2 w-full sm:w-auto">
         {/* Strand Filter */}
-        <div 
+        <div
           className="flex p-1.5 rounded-[22px] border shadow-inner transition-all duration-500 bg-clip-padding isolate transform-gpu w-full sm:w-auto justify-center sm:justify-start"
-          style={{ 
+          style={{
             backgroundColor: theme.filterBg,
             borderColor: theme.filterBorder
           }}
         >
-           <FilterButton 
-             label="All" 
-             active={strandFilter === 'ALL'} 
-             onClick={() => setStrandFilter('ALL')} 
-             icon={<Layers size={14}/>} 
-             type="ALL" 
-             isDarkMode={isDarkMode} 
-           />
-           <FilterButton 
-             label="ICT" 
-             active={strandFilter === 'ICT'} 
-             onClick={() => setStrandFilter('ICT')} 
-             icon={<Cpu size={14}/>} 
-             type="ICT" 
-             isDarkMode={isDarkMode} 
-           />
-           <FilterButton 
-             label="GAS" 
-             active={strandFilter === 'GAS'} 
-             onClick={() => setStrandFilter('GAS')} 
-             icon={<BookOpen size={14}/>} 
-             type="GAS" 
-             isDarkMode={isDarkMode} 
-           />
+          <FilterButton
+            label="All"
+            active={strandFilter === 'ALL'}
+            onClick={() => setStrandFilter('ALL')}
+            icon={<Layers size={14} />}
+            type="ALL"
+            isDarkMode={isDarkMode}
+          />
+          <FilterButton
+            label="ICT"
+            active={strandFilter === 'ICT'}
+            onClick={() => setStrandFilter('ICT')}
+            icon={<Cpu size={14} />}
+            type="ICT"
+            isDarkMode={isDarkMode}
+          />
+          <FilterButton
+            label="GAS"
+            active={strandFilter === 'GAS'}
+            onClick={() => setStrandFilter('GAS')}
+            icon={<BookOpen size={14} />}
+            type="GAS"
+            isDarkMode={isDarkMode}
+          />
         </div>
         {/* Grade Level Filter */}
-        <div 
+        <div
           className="flex p-1.5 rounded-[22px] border shadow-inner transition-all duration-500 bg-clip-padding isolate transform-gpu w-full sm:w-auto justify-center sm:justify-start"
-          style={{ 
+          style={{
             backgroundColor: theme.filterBg,
             borderColor: theme.filterBorder
           }}
@@ -279,42 +276,41 @@ export const SectionsHeader = memo(({
             <button
               key={gl}
               onClick={() => setGradeLevelFilter(gl)}
-              className={`px-4 py-2 rounded-[18px] text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
-                gradeLevelFilter === gl
+              className={`px-4 py-2 rounded-[18px] text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${gradeLevelFilter === gl
                   ? "bg-blue-600 text-white shadow-md"
                   : isDarkMode ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-800"
-              }`}
+                }`}
             >
               {gl === "ALL" ? "All Grades" : `Grade ${gl}`}
             </button>
           ))}
         </div>
       </div>
-      
+
       {/* 🎮 COMMAND ACTIONS */}
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
         {sectionSelection.size > 0 && (
-           <Tooltip>
-             <TooltipTrigger asChild>
-               <Button 
-                 onClick={() => setConfirmDeleteSelect(true)} 
-                 variant="destructive" 
-                 className="rounded-[18px] h-11 px-6 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-red-500/20 transition-all transform-gpu animate-in fade-in zoom-in slide-in-from-left-4 duration-500"
-               >
-                  <Trash className="mr-2" size={14}/> Wipe ({sectionSelection.size})
-               </Button>
-             </TooltipTrigger>
-             <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Delete Selected Sections</p></TooltipContent>
-           </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => setConfirmDeleteSelect(true)}
+                variant="destructive"
+                className="rounded-[18px] h-11 px-6 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-red-500/20 transition-all transform-gpu animate-in fade-in zoom-in slide-in-from-left-4 duration-500"
+              >
+                <Trash className="mr-2" size={14} /> Wipe ({sectionSelection.size})
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Delete Selected Sections</p></TooltipContent>
+          </Tooltip>
         )}
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <DeleteManagementDialog 
-              sections={sections} 
-              onDelete={handleDeleteSection} 
-              onClearStudents={handleClearAllStudents} 
-              isDarkMode={isDarkMode} 
+            <DeleteManagementDialog
+              sections={sections}
+              onDelete={handleDeleteSection}
+              onClearStudents={handleClearAllStudents}
+              isDarkMode={isDarkMode}
             />
           </TooltipTrigger>
           <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Manage & Delete Sections</p></TooltipContent>
@@ -329,7 +325,7 @@ export const SectionsHeader = memo(({
               disabled={isProcessing}
               className="rounded-[18px] bg-purple-600 hover:bg-purple-700 h-11 px-4 sm:px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-purple-500/20 transition-all transform-gpu active:scale-90 col-span-2 sm:col-span-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed text-white"
             >
-              <Scale className="mr-1.5" size={14}/> Balance {strandFilter}
+              <Scale className="mr-1.5" size={14} /> Balance {strandFilter}
             </Button>
           </TooltipTrigger>
           <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Auto-distribute Students</p></TooltipContent>
@@ -337,25 +333,25 @@ export const SectionsHeader = memo(({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button 
-              onClick={() => initiateAdd('ICT')} 
-              disabled={isProcessing} 
+            <Button
+              onClick={() => initiateAdd('ICT')}
+              disabled={isProcessing}
               className="rounded-[18px] bg-blue-600 hover:bg-blue-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-blue-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none text-white"
             >
-              <Plus className="mr-2" size={16}/> Add ICT
+              <Plus className="mr-2" size={16} /> Add ICT
             </Button>
           </TooltipTrigger>
           <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Create New ICT Section</p></TooltipContent>
         </Tooltip>
-        
+
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button 
-              onClick={() => initiateAdd('GAS')} 
-              disabled={isProcessing} 
+            <Button
+              onClick={() => initiateAdd('GAS')}
+              disabled={isProcessing}
               className="rounded-[18px] bg-orange-600 hover:bg-orange-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-orange-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none text-white"
             >
-              <Plus className="mr-2" size={16}/> Add GAS
+              <Plus className="mr-2" size={16} /> Add GAS
             </Button>
           </TooltipTrigger>
           <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Create New GAS Section</p></TooltipContent>

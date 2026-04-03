@@ -25,7 +25,7 @@ export default function Step4Documents() {
   const isJHS = formData.student_category === "JHS Graduate"
   const { isFieldRequired } = useEnrollmentValidation()
 
-  useEffect(() => { 
+  useEffect(() => {
     const raf = requestAnimationFrame(() => window.scrollTo(0, 0))
     return () => cancelAnimationFrame(raf)
   }, [])
@@ -44,7 +44,7 @@ export default function Step4Documents() {
       if (error) throw error
       const { data: { publicUrl } } = supabase.storage.from('enrollment-docs').getPublicUrl(fileName)
       updateFormData({ [field]: publicUrl })
-      toast.success("Document Synced", { icon: <img src="/logo-aclc.png" className="w-5 h-5" alt="" /> })
+      toast.success("Document Uploaded", { icon: <span className="w-5 h-5 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-white"><img src="/logo-aclc.png" className="w-full h-full object-contain" alt="" /></span> })
     } catch (error: any) {
       toast.error("Upload failed: " + error.message)
     } finally {
@@ -57,7 +57,7 @@ export default function Step4Documents() {
   const handleFinalizeStep = () => {
     const missing: string[] = []
     const check = (f: string) => { if (isFieldRequired(f as any) && !formData[f]) missing.push(f) }
-    
+
     check('profile_2x2_url')
     check('birth_certificate_url')
     if (isJHS) { check('form_138_url'); check('good_moral_url') }
@@ -225,17 +225,17 @@ export default function Step4Documents() {
         {/* UPLOAD GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
           <UploaderBox label="2x2 Identification" field="profile_2x2_url" />
-          <UploaderBox label="Birth Certificate"  field="birth_certificate_url" />
+          <UploaderBox label="Birth Certificate" field="birth_certificate_url" />
           {isJHS ? (
             <>
-              <UploaderBox label="F-138 (Report Card)"  field="form_138_url" />
+              <UploaderBox label="F-138 (Report Card)" field="form_138_url" />
               <UploaderBox label="Certificate of Moral" field="good_moral_url" />
             </>
           ) : (
             <>
-              <UploaderBox label="ALS COR"    field="cor_url" />
+              <UploaderBox label="ALS COR" field="cor_url" />
               <UploaderBox label="ALS Diploma" field="diploma_url" />
-              <UploaderBox label="AF5 Form"   field="af5_url" />
+              <UploaderBox label="AF5 Form" field="af5_url" />
             </>
           )}
         </div>

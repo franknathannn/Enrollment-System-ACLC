@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { getEnrollmentStatus } from "@/lib/actions/settings"
-import { verifyTurnstile } from "@/lib/actions/turnstile"
+import { verifyTurnstile, checkEnrollmentRateLimit } from "@/lib/actions/turnstile"
 import { TurnstileWidget } from "@/components/TurnstileWidget"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
@@ -29,6 +29,7 @@ export default function Step5Review() {
   const [loading, setLoading] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [turnstileKey, setTurnstileKey] = useState(0)
   const [activeSY, setActiveSY] = useState("...")
   const router = useRouter()
   const isJHS = formData.student_category === "JHS Graduate"
@@ -42,6 +43,11 @@ export default function Step5Review() {
     supabase.from('system_config').select('school_year').single().then(({ data }) => { if (data) setActiveSY(data.school_year) })
   }, [])
 
+  const resetTurnstile = () => {
+    setTurnstileToken(null)
+    setTurnstileKey(k => k + 1)
+  }
+
   const handleFinalSubmit = async () => {
     if (!turnstileToken) {
       const el = document.getElementById("security_gate_container")
@@ -49,35 +55,49 @@ export default function Step5Review() {
         el.scrollIntoView({ behavior: "smooth", block: "center" })
         toast.error("Security Authentication Required", { description: "Please complete the validation protocol below.", duration: 4000 })
       } else {
-        toast.error("Security check pending. Please wait a moment and try again.")
+        toast.error("Please complete the security check first.")
       }
       return
     }
     setLoading(true)
-    const toastId = toast.loading(formData.id ? "Syncing corrections..." : "Transmitting application...")
+    const toastId = toast.loading(formData.id ? "Syncing corrections..." : "Submitting application...")
     try {
+      const allowed = await checkEnrollmentRateLimit()
+      if (!allowed) {
+        toast.error("Too many submissions. Please wait a few minutes and try again.", { id: toastId })
+        resetTurnstile()
+        setLoading(false)
+        return
+      }
+
       const isHuman = await verifyTurnstile(turnstileToken)
       if (!isHuman) {
-        toast.error("Security check failed. Please refresh and try again.", { id: toastId })
+        toast.error("Security check failed. Please complete it again.", { id: toastId })
+        resetTurnstile()
         setLoading(false)
         return
       }
       const isSystemOpen = await getEnrollmentStatus()
-      if (!isSystemOpen && !formData.id) { toast.error("Admissions window is currently closed.", { id: toastId }); return }
+      if (!isSystemOpen && !formData.id) {
+        toast.error("Admissions window is currently closed.", { id: toastId })
+        resetTurnstile()
+        setLoading(false)
+        return
+      }
 
       const { data: existingLrn } = await supabase.from('students').select('id').eq('lrn', formData.lrn).neq('id', formData.id || '00000000-0000-0000-0000-000000000000').maybeSingle()
-      if (existingLrn) { toast.error("Validation Error: LRN already exists.", { id: toastId }); setLoading(false); return }
+      if (existingLrn) { toast.error("Validation Error: LRN already exists.", { id: toastId }); resetTurnstile(); setLoading(false); return }
 
       if (formData.email) {
         const { data: existingEmail } = await supabase.from('students').select('id').ilike('email', formData.email.trim()).neq('id', formData.id || '00000000-0000-0000-0000-000000000000').maybeSingle()
-        if (existingEmail) { toast.error("Validation Error: Email already registered.", { id: toastId }); setLoading(false); return }
+        if (existingEmail) { toast.error("Validation Error: Email already registered.", { id: toastId }); resetTurnstile(); setLoading(false); return }
       }
 
       let nameQuery = supabase.from('students').select('id').ilike('first_name', formData.first_name.trim()).ilike('last_name', formData.last_name.trim()).neq('id', formData.id || '00000000-0000-0000-0000-000000000000')
       if (formData.middle_name?.trim()) nameQuery = nameQuery.ilike('middle_name', formData.middle_name.trim())
       else nameQuery = nameQuery.or('middle_name.is.null,middle_name.eq.""')
       const { data: existingName } = await nameQuery.maybeSingle()
-      if (existingName) { toast.error("Validation Error: Student identity already exists.", { id: toastId }); setLoading(false); return }
+      if (existingName) { toast.error("Validation Error: Student identity already exists.", { id: toastId }); resetTurnstile(); setLoading(false); return }
 
       const studentData: any = {
         first_name: formData.first_name, middle_name: formData.middle_name, last_name: formData.last_name,
@@ -111,7 +131,7 @@ export default function Step5Review() {
       })
 
       setLoading(false)
-      toast.success("Application Initialized", { id: toastId, icon: <img src="/logo-aclc.png" className="w-5 h-5" alt="" /> })
+      toast.success("Application Initialized", { id: toastId, icon: <span className="w-5 h-5 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-white"><img src="/logo-aclc.png" className="w-full h-full object-contain" alt="" /></span> })
       setShowCelebration(true)
       setTimeout(() => { 
         resetForm(); 
@@ -119,6 +139,7 @@ export default function Step5Review() {
       }, 3500)
     } catch (error: any) {
       toast.error(error.message, { id: toastId })
+      resetTurnstile()
       setLoading(false)
     }
   }
@@ -272,7 +293,7 @@ export default function Step5Review() {
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-2 py-1 transform scale-[0.85] sm:scale-100">
-            <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme="light" />
+            <TurnstileWidget key={turnstileKey} onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme="light" />
           </div>
         </div>
       </div>

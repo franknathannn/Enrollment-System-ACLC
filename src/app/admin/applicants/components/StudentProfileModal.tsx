@@ -16,20 +16,20 @@ export function StudentProfileModal({ isOpen, onClose, student, onOpenFile, isDa
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-     <DialogContent className="w-[95vw] md:w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[32px] md:rounded-[48px] p-0 border-none shadow-2xl [&>button]:hidden">
-      <DialogHeader className="sr-only">
-       <DialogTitle>Profile Detail: {student.first_name} {student.last_name}</DialogTitle>
-       <DialogDescription>Verification matrix for applicant {student.lrn}</DialogDescription>
-      </DialogHeader>
-      <StudentDossier 
-       student={student} 
-       onOpenFile={onOpenFile}
-       isDarkMode={isDarkMode}
-       onClose={onClose}
-       onUpdate={onUpdate}
-       sections={sections}
-      />
-     </DialogContent>
+      <DialogContent className="w-[95vw] md:w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[32px] md:rounded-[48px] p-0 border-none shadow-2xl [&>button]:hidden">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Profile Detail: {student.first_name} {student.last_name}</DialogTitle>
+          <DialogDescription>Verification Information for applicant {student.lrn}</DialogDescription>
+        </DialogHeader>
+        <StudentDossier
+          student={student}
+          onOpenFile={onOpenFile}
+          isDarkMode={isDarkMode}
+          onClose={onClose}
+          onUpdate={onUpdate}
+          sections={sections}
+        />
+      </DialogContent>
     </Dialog>
   )
 }

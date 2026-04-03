@@ -52,7 +52,7 @@ export function EnrollmentMatrix({
             <CalendarDays size={20} />
           </div>
           <ThemedText variant="h3" className="text-xs font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>
-            Enrollment Matrix
+            Enrollment Date
           </ThemedText>
         </div>
         <div className="flex items-center gap-2">

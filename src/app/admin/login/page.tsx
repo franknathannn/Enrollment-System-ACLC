@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, memo, useCallback, useRef, Suspense } from "react"
+import { useState, useEffect, memo, useRef, Suspense } from "react"
 import { supabase } from "@/lib/supabase/admin-client"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card"
 import { toast } from "sonner"
 import { Lock, Loader2, GraduationCap, ShieldCheck } from "lucide-react"
 import { TurnstileWidget } from "@/components/TurnstileWidget"
-import { verifyTurnstile } from "@/lib/actions/turnstile"
+import { verifyTurnstile, checkAdminEmail } from "@/lib/actions/turnstile"
 
 // --- OPTIMIZED CONSTELLATION ENGINE ---
 const LoginConstellation = memo(function LoginConstellation() {
@@ -126,9 +126,13 @@ function LoginContent() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [failedAttempts, setFailedAttempts] = useState(0)
+  const [turnstileKey, setTurnstileKey] = useState(0)
   const searchParams = useSearchParams()
+  const MAX_ATTEMPTS = 5
 
-  const redirectTo = searchParams.get('redirect') || '/admin/dashboard'
+  const raw = searchParams.get('redirect') || ''
+  const redirectTo = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/admin/dashboard'
   
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -153,23 +157,16 @@ function LoginContent() {
     }
   }, [])
 
-  const AUTHORIZED_EMAILS = new Set([
-    "adminaclc@edu.ph",
-    "admissionoffice@gmail.com",
-    "franknathan12@gmail.com"
-  ])
-
-  const isAuthorizedEmail = useCallback((email: string) => {
-    return AUTHORIZED_EMAILS.has(email.toLowerCase().trim())
-  }, [])
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
+    if (failedAttempts >= MAX_ATTEMPTS) return
+
     const trimmedEmail = email.toLowerCase().trim()
-    
-    if (!isAuthorizedEmail(trimmedEmail)) {
-      toast.error("Unauthorized: Identity not found in Admin Registry", {
+
+    const authorized = await checkAdminEmail(trimmedEmail)
+    if (!authorized) {
+      toast.error("This email is not authorized to access the admin panel.", {
         duration: 3000,
         style: { fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }
       })
@@ -177,7 +174,7 @@ function LoginContent() {
     }
 
     if (password.length < 6) {
-      toast.error("Security Key must be at least 6 characters", {
+      toast.error("Password must be at least 6 characters.", {
         duration: 3000,
         style: { fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }
       })
@@ -185,7 +182,7 @@ function LoginContent() {
     }
 
     if (!turnstileToken) {
-      toast.error("Security check pending. Please wait a moment and try again.", {
+      toast.error("Please complete the security check first.", {
         duration: 3000,
         style: { fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }
       })
@@ -193,7 +190,7 @@ function LoginContent() {
     }
 
     setLoading(true)
-    const toastId = toast.loading("Authenticating credentials...", {
+    const toastId = toast.loading("Signing in...", {
       style: { fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }
     })
 
@@ -214,22 +211,24 @@ function LoginContent() {
       })
 
       if (error) {
-        toast.error("Access Denied: Invalid Security Key", { 
+        setFailedAttempts(prev => prev + 1)
+        setTurnstileToken(null)
+        setTurnstileKey(k => k + 1)
+        toast.error("Incorrect email or password.", {
           id: toastId,
           style: { fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }
         })
         setLoading(false)
       } else {
-        toast.success("Identity Confirmed. Redirecting...", { 
+        toast.success("Signed in. Redirecting...", {
           id: toastId,
           duration: 1000,
           style: { fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }
         })
-        
         window.location.href = redirectTo
       }
     } catch (err: any) {
-      toast.error("Connection Error. Check your network.", { 
+      toast.error("Connection error. Check your network.", {
         id: toastId,
         style: { fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }
       })
@@ -262,13 +261,13 @@ function LoginContent() {
           <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-100 dark:border-white/5 transition-transform hover:rotate-6">
              <Lock className="w-8 h-8 text-slate-900 dark:text-blue-400" />
           </div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">Login Panel</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium italic">Verify Administrator Identity</p>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">Admin Login</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium italic">Sign in to your account</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2 group">
-            <Label htmlFor="email" className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest group-focus-within:text-blue-500 transition-colors">Admin Email</Label>
+            <Label htmlFor="email" className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest group-focus-within:text-blue-500 transition-colors">Email</Label>
             <Input 
               id="email"
               type="email" 
@@ -282,7 +281,7 @@ function LoginContent() {
           </div>
 
           <div className="space-y-2 group">
-            <Label htmlFor="password" className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest group-focus-within:text-blue-500 transition-colors">Security Key</Label>
+            <Label htmlFor="password" className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest group-focus-within:text-blue-500 transition-colors">Password</Label>
             <Input 
               id="password"
               type="password" 
@@ -297,20 +296,34 @@ function LoginContent() {
 
           <div className="flex justify-center">
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-3 py-2">
-              <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme="light" />
+              <TurnstileWidget key={turnstileKey} onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme="light" />
             </div>
           </div>
 
+          {failedAttempts > 0 && (
+            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+              failedAttempts >= MAX_ATTEMPTS
+                ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/50'
+                : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50'
+            }`}>
+              <span className="text-base leading-none">⚠</span>
+              {failedAttempts >= MAX_ATTEMPTS
+                ? 'Too many failed attempts. Please wait before trying again.'
+                : `${failedAttempts} of ${MAX_ATTEMPTS} attempts used · ${MAX_ATTEMPTS - failedAttempts} remaining`
+              }
+            </div>
+          )}
+
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || failedAttempts >= MAX_ATTEMPTS}
             className="w-full h-16 bg-slate-900 dark:bg-blue-600 hover:bg-black dark:hover:bg-blue-700 text-white rounded-[24px] text-xs font-black uppercase tracking-[0.2em] gap-3 shadow-2xl transition-all active:scale-95 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <Loader2 className="animate-spin" size={20} />
             ) : (
               <>
-                Verify Access 
+                Sign In
                 <ShieldCheck size={18} className="group-hover:rotate-12 transition-transform" />
               </>
             )}

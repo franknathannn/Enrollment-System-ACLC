@@ -513,7 +513,7 @@ export default function Step2Academic() {
         .maybeSingle()
       if (existingLrn) { toast.error("LRN is already registered in the database."); setChecking(false); return }
       updateFormData(data); setStep(3)
-      toast.success("Academic Background Submitted", { icon: <img src="/logo-aclc.png" className="w-5 h-5" alt="" /> })
+      toast.success("Academic Background Submitted", { icon: <span className="w-5 h-5 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-white"><img src="/logo-aclc.png" className="w-full h-full object-contain" alt="" /></span> })
     } catch (e) {
       console.error("Validation check failed:", e)
       toast.error("System validation failed. Please try again.")

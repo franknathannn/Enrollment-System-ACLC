@@ -81,22 +81,22 @@ const localDateStr = (d: Date = new Date()) => {
   return `${y}-${m}-${day}`
 }
 const todayStr = () => localDateStr()
-const nowTime  = () => new Date().toTimeString().slice(0, 8)
+const nowTime = () => new Date().toTimeString().slice(0, 8)
 const fmtT = (t: string) => {
   if (!t) return ""
   const [h, m] = t.slice(0, 5).split(":").map(Number)
   return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`
 }
 const monthName = (m: number) =>
-  ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m]
+  ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m]
 
 function SourceBadge({ notes, time, size = "sm" }: { notes?: string | null; time?: string; size?: "xs" | "sm" }) {
-  const isQR      = notes === "QR_SCAN"
+  const isQR = notes === "QR_SCAN"
   const isCutting = notes === "CUTTING"
   const px = size === "xs" ? "px-1.5 py-px text-[7px]" : "px-2 py-0.5 text-[8px]"
   if (isQR) return (
     <span className={`inline-flex items-center gap-0.5 font-black rounded-full shrink-0 ${px} bg-blue-500/15 text-blue-400 border border-blue-500/20`}>
-      <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h2v2h-2zM18 14h3M14 18h3M18 18h3"/></svg>
+      <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><path d="M14 14h2v2h-2zM18 14h3M14 18h3M18 18h3" /></svg>
       Scanned
     </span>
   )
@@ -133,7 +133,7 @@ declare global { interface Window { QRCode?: new (el: HTMLElement, opts: { text:
 
 /** Same layout & PNG as status `StudentQRCard` — QR payload is `student.id` (scanner also accepts LRN). */
 function QRViewerModal({ student, onClose }: { student: Student; onClose: () => void }) {
-  const darkRef  = useRef<HTMLDivElement>(null)
+  const darkRef = useRef<HTMLDivElement>(null)
   const lightRef = useRef<HTMLDivElement>(null)
   const [theme, setTheme] = useState<StudentAttendanceQrThemeKey>("dark")
   const [darkOk, setDarkOk] = useState(false)
@@ -147,7 +147,7 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
     setDarkOk(false)
     setLightOk(false)
     const generate = () => {
-      if (darkRef.current)  generateStudentAttendanceQr(darkRef.current,  student.id, SZ, "dark",  () => setDarkOk(true))
+      if (darkRef.current) generateStudentAttendanceQr(darkRef.current, student.id, SZ, "dark", () => setDarkOk(true))
       if (lightRef.current) generateStudentAttendanceQr(lightRef.current, student.id, SZ, "light", () => setLightOk(true))
     }
     if (window.QRCode) { generate(); return }
@@ -266,7 +266,7 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
 
             <div className="flex justify-center py-4">
               <div className="relative p-2.5 rounded-[16px]" style={{ background: QR_THEMES[theme].qrLight }}>
-                <div ref={darkRef}  style={{ display: theme === "dark"  && darkOk  ? "block" : "none", width: SZ, height: SZ }} />
+                <div ref={darkRef} style={{ display: theme === "dark" && darkOk ? "block" : "none", width: SZ, height: SZ }} />
                 <div ref={lightRef} style={{ display: theme === "light" && lightOk ? "block" : "none", width: SZ, height: SZ }} />
                 {!isOk && (
                   <div style={{ width: SZ, height: SZ }} className="flex items-center justify-center">
@@ -311,13 +311,13 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
 const ATT_TAB_KEY = "att_active_tab"
 
 export function AttendanceTab({ schedules, students, dm, session, schoolYear }: Props) {
-  const realDayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+  const realDayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
   const [tab, setTab] = useState<"scanner" | "calendar">(() => {
     try { return (sessionStorage.getItem(ATT_TAB_KEY) as "scanner" | "calendar") || "scanner" } catch { return "scanner" }
   })
   const setTabPersist = (t: "scanner" | "calendar") => {
-    try { sessionStorage.setItem(ATT_TAB_KEY, t) } catch {}
+    try { sessionStorage.setItem(ATT_TAB_KEY, t) } catch { }
     setTab(t)
   }
   /** Date used for scanner attendance rows — set from calendar when opening Scanner, else today. */
@@ -349,16 +349,16 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     return d.toLocaleDateString("en-US", { month: "long", day: "numeric" }).toUpperCase()
   }, [scannerAttendanceDate])
 
-  const [period, setPeriod]       = useState<ScheduleRow | null>(null)
-  const [scanning, setScanning]   = useState(false)
-  const [camErr, setCamErr]       = useState<string | null>(null)
-  const [lastScan, setLastScan]   = useState<{ name: string; ok: boolean } | null>(null)
+  const [period, setPeriod] = useState<ScheduleRow | null>(null)
+  const [scanning, setScanning] = useState(false)
+  const [camErr, setCamErr] = useState<string | null>(null)
+  const [lastScan, setLastScan] = useState<{ name: string; ok: boolean } | null>(null)
   const [attendance, setAttendance] = useState<Record<string, AttRecord>>({})
   const [attLoading, setAttLoading] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const scannerActionLockRef = useRef<Set<string>>(new Set())
   // Two-layer search: input value updates instantly, debounced value drives the filter
-  const [search, setSearch]           = useState("")
+  const [search, setSearch] = useState("")
   const [searchDebounced, setSearchDebounced] = useState("")
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const setSearchWithDebounce = (v: string) => {
@@ -367,54 +367,54 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     searchDebounceRef.current = setTimeout(() => setSearchDebounced(v), 180)
   }
   const [statusFilter, setStatusFilter] = useState<"ALL" | "Present" | "Late" | "Excused" | "Absent" | "Not Scanned">("ALL")
-  const [sortMode, setSortMode]           = useState<"alpha" | "scan_time" | "manual" | "late" | "absent">("scan_time")
+  const [sortMode, setSortMode] = useState<"alpha" | "scan_time" | "manual" | "late" | "absent">("scan_time")
   // ── FIX: graceMins state + ref so handleScan closure always reads latest value ──
   const [graceMins, setGraceMins] = useState(0)
   const graceMinsRef = useRef(0)
-  const [calDayExcuses, setCalDayExcuses] = useState<Array<{student_id:string;subject:string|null;reason:string}>>([])
-  const [isOnline, setIsOnline]   = useState(true)
-  const [pending, setPending]     = useState<PendingItem[]>(() => getQueue())
-  const [syncing, setSyncing]     = useState(false)
+  const [calDayExcuses, setCalDayExcuses] = useState<Array<{ student_id: string; subject: string | null; reason: string }>>([])
+  const [isOnline, setIsOnline] = useState(true)
+  const [pending, setPending] = useState<PendingItem[]>(() => getQueue())
+  const [syncing, setSyncing] = useState(false)
   const [jsQRReady, setJsQRReady] = useState(false)
   const [qrViewStudent, setQrViewStudent] = useState<Student | null>(null)
   const [isFrontCamera, setIsFrontCamera] = useState(false)
-  const [forcedOpen, setForcedOpen]       = useState(false)
+  const [forcedOpen, setForcedOpen] = useState(false)
   const [scannerClosed, setScannerClosed] = useState(false)
   const [showLiveMonitoring, setShowLiveMonitoring] = useState(false)
 
-  const [calSection, setCalSection]       = useState<string>("")
-  const [calYear, setCalYear]             = useState(() => new Date().getFullYear())
-  const [calMonth, setCalMonth]           = useState(() => new Date().getMonth())
-  const [calDayData, setCalDayData]       = useState<Record<string, { present: number; total: number; excused: number; bySubject: Record<string, { present: number; total: number }> }>>({})
-  const [calLoading, setCalLoading]       = useState(false)
-  const [selectedDay, setSelectedDay]     = useState<string | null>(null)
+  const [calSection, setCalSection] = useState<string>("")
+  const [calYear, setCalYear] = useState(() => new Date().getFullYear())
+  const [calMonth, setCalMonth] = useState(() => new Date().getMonth())
+  const [calDayData, setCalDayData] = useState<Record<string, { present: number; total: number; excused: number; bySubject: Record<string, { present: number; total: number }> }>>({})
+  const [calLoading, setCalLoading] = useState(false)
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
 
   const goToScannerTab = () => {
     setTabPersist("scanner")
     setScannerAttendanceDate(selectedDay ?? localDateStr())
   }
-  const [dayRecords, setDayRecords]       = useState<AttRecord[]>([])
-  const [dayLoading, setDayLoading]       = useState(false)
-  const [dayView, setDayView]             = useState<"by-subject" | "by-student">("by-subject")
+  const [dayRecords, setDayRecords] = useState<AttRecord[]>([])
+  const [dayLoading, setDayLoading] = useState(false)
+  const [dayView, setDayView] = useState<"by-subject" | "by-student">("by-subject")
   const [calendarEvents, setCalendarEvents] = useState<Array<{
     id: string; title: string; event_date: string; end_date?: string
     event_type: string; school_year: string
   }>>([])
 
-  const videoRef      = useRef<HTMLVideoElement>(null)
-  const canvasRef     = useRef<HTMLCanvasElement>(null)
-  const streamRef     = useRef<MediaStream | null>(null)
-  const rafRef        = useRef<number>(0)
-  const lockRef       = useRef(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const rafRef = useRef<number>(0)
+  const lockRef = useRef(false)
   const scanCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const frameCountRef = useRef(0)
   const scannerListRef = useRef<HTMLDivElement>(null)
 
-  const card  = dm ? "bg-slate-900/60 border-slate-700/50" : "bg-white border-slate-200"
+  const card = dm ? "bg-slate-900/60 border-slate-700/50" : "bg-white border-slate-200"
   const card2 = dm ? "bg-slate-800/40 border-slate-700/40" : "bg-slate-50 border-slate-200"
-  const sub   = dm ? "text-slate-400" : "text-slate-500"
-  const head  = dm ? "text-white" : "text-slate-900"
-  const divB  = dm ? "border-slate-700/40" : "border-slate-100"
+  const sub = dm ? "text-slate-400" : "text-slate-500"
+  const head = dm ? "text-white" : "text-slate-900"
+  const divB = dm ? "border-slate-700/40" : "border-slate-100"
 
   const tabBtn = (a: boolean) =>
     `px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all
@@ -434,10 +434,10 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     if (!period || !scanning || !isScannerLive) return
     const check = () => {
       if (forcedOpen) return
-      const now  = new Date()
+      const now = new Date()
       const [eh, em] = period.end_time.slice(0, 5).split(":").map(Number)
-      const endMins  = eh * 60 + em
-      const nowMins  = now.getHours() * 60 + now.getMinutes()
+      const endMins = eh * 60 + em
+      const nowMins = now.getHours() * 60 + now.getMinutes()
       if (nowMins >= endMins) {
         stopCam()
         setScannerClosed(true)
@@ -478,9 +478,9 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
         setIsOnline(true)
       } catch { setIsOnline(false) }
     }
-    const onOnline  = () => probe()
+    const onOnline = () => probe()
     const onOffline = () => setIsOnline(false)
-    window.addEventListener("online",  onOnline)
+    window.addEventListener("online", onOnline)
     window.addEventListener("offline", onOffline)
     probe()
     probeTimer = setInterval(probe, 8000)
@@ -635,7 +635,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     if (tab === "scanner" && scanning && streamRef.current && videoRef.current) {
       if (videoRef.current.srcObject !== streamRef.current) {
         videoRef.current.srcObject = streamRef.current
-        videoRef.current.play().catch(() => {})
+        videoRef.current.play().catch(() => { })
       }
     }
   }, [tab, scanning])
@@ -691,7 +691,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     if (beepOn) {
       try {
         const a = new Audio("/beep.mp3")
-        void a.play().catch(() => {})
+        void a.play().catch(() => { })
       } catch { /* ignore */ }
     }
 
@@ -725,13 +725,13 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     const rec: AttRecord = existing
       ? { ...existing, status: newStatus, notes: "MANUAL" }
       : {
-          student_id: studentId, lrn: student.lrn,
-          student_name: `${student.last_name}, ${student.first_name}`,
-          section: period.section, strand: student.strand || "",
-          subject: period.subject, date: scannerAttendanceDate, time: nowTime(),
-          status: newStatus, school_year: schoolYear,
-          notes: "MANUAL",
-        }
+        student_id: studentId, lrn: student.lrn,
+        student_name: `${student.last_name}, ${student.first_name}`,
+        section: period.section, strand: student.strand || "",
+        subject: period.subject, date: scannerAttendanceDate, time: nowTime(),
+        status: newStatus, school_year: schoolYear,
+        notes: "MANUAL",
+      }
     setAttendance(prev => ({ ...prev, [studentId]: rec }))
 
     if (!isOnline) {
@@ -755,8 +755,8 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     } finally { setUpdatingId(null) }
   }
 
-  const [calOverrideId, setCalOverrideId]   = useState<string | null>(null)
-  const [calDaySearch,  setCalDaySearch]    = useState("")
+  const [calOverrideId, setCalOverrideId] = useState<string | null>(null)
+  const [calDaySearch, setCalDaySearch] = useState("")
   const [calDaySearchDebounced, setCalDaySearchDebounced] = useState("")
   const calDaySearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const setCalDaySearchWithDebounce = (v: string) => {
@@ -765,14 +765,14 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     calDaySearchDebounceRef.current = setTimeout(() => setCalDaySearchDebounced(v), 180)
   }
   const calActionLockRef = useRef<Set<string>>(new Set())
-  const dayDetailRef    = useRef<HTMLDivElement>(null)
+  const dayDetailRef = useRef<HTMLDivElement>(null)
   const scannerPanelRef = useRef<HTMLDivElement>(null)
   const pendingScrollRef = useRef<number | null>(null)
   const [collapsedSubjs, setCollapsedSubjs] = useState<Set<string>>(new Set())
-  const [collapsedStus,  setCollapsedStus]  = useState<Set<string>>(new Set())
-  const [calSortMode,    setCalSortMode]    = useState<"alpha" | "status">("alpha")
+  const [collapsedStus, setCollapsedStus] = useState<Set<string>>(new Set())
+  const [calSortMode, setCalSortMode] = useState<"alpha" | "status">("alpha")
   const toggleSubj = (key: string) => setCollapsedSubjs(p => { const s = new Set(p); s.has(key) ? s.delete(key) : s.add(key); return s })
-  const toggleStu  = (key: string) => setCollapsedStus(p => { const s = new Set(p); s.has(key) ? s.delete(key) : s.add(key); return s })
+  const toggleStu = (key: string) => setCollapsedStus(p => { const s = new Set(p); s.has(key) ? s.delete(key) : s.add(key); return s })
 
   const updateCalendarDayStatus = async (
     student: Student,
@@ -791,14 +791,14 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
       const rec: AttRecord = existingRec
         ? { ...existingRec, status: newStatus }
         : {
-            student_id: student.id, lrn: student.lrn,
-            student_name: `${student.last_name}, ${student.first_name}`,
-            section: student.section, strand: student.strand || "",
-            subject, date: dateStr,
-            time: sched?.start_time?.slice(0, 8) || "00:00:00",
-            status: newStatus, school_year: schoolYear,
-            notes: "MANUAL",
-          }
+          student_id: student.id, lrn: student.lrn,
+          student_name: `${student.last_name}, ${student.first_name}`,
+          section: student.section, strand: student.strand || "",
+          subject, date: dateStr,
+          time: sched?.start_time?.slice(0, 8) || "00:00:00",
+          status: newStatus, school_year: schoolYear,
+          notes: "MANUAL",
+        }
 
       pendingScrollRef.current = dayDetailRef.current?.scrollTop ?? 0
       setDayRecords(prev => {
@@ -843,10 +843,10 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
             .eq("student_id", p.record.student_id).eq("date", p.record.date).eq("subject", p.record.subject)
           if (!error) { removeFromQueue(p.key); synced++ }
         }
-      } catch {}
+      } catch { }
     }
     setPending(getQueue()); setSyncing(false)
-    if (synced > 0) { toast.success(`Synced ${synced} offline record${synced > 1 ? "s" : ""}`); if (period) loadAttendance(period) }
+    if (synced > 0) { toast.success(`Saved ${synced} offline record${synced > 1 ? "s" : ""}`); if (period) loadAttendance(period) }
   }
 
   // Stable ref so loadCalMonth never re-creates when students array identity changes
@@ -961,11 +961,11 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     if (statusFilter !== "ALL") return attendance[s.id]?.status === statusFilter
     return true
   })
-  const presentCount  = Object.values(attendance).filter(r => r.status === "Present").length
-  const lateCount     = Object.values(attendance).filter(r => r.status === "Late").length
-  const absentCount   = Object.values(attendance).filter(r => r.status === "Absent").length
-  const excusedCount  = Object.values(attendance).filter(r => r.status === "Excused").length
-  const notYetCount   = sectionStudents.length - Object.keys(attendance).length
+  const presentCount = Object.values(attendance).filter(r => r.status === "Present").length
+  const lateCount = Object.values(attendance).filter(r => r.status === "Late").length
+  const absentCount = Object.values(attendance).filter(r => r.status === "Absent").length
+  const excusedCount = Object.values(attendance).filter(r => r.status === "Excused").length
+  const notYetCount = sectionStudents.length - Object.keys(attendance).length
 
   useEffect(() => {
     if (!selectedDay || !calSection) { setCalDayExcuses([]); return }
@@ -982,9 +982,9 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     return (now.getHours() * 60 + now.getMinutes()) - (sh * 60 + sm) >= 15
   })() : false
 
-  const daysInMonth    = new Date(calYear, calMonth + 1, 0).getDate()
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
   const firstDayOfWeek = new Date(calYear, calMonth, 1).getDay()
-  const calSections    = [...new Set(schedules.map(s => s.section))].filter(Boolean)
+  const calSections = [...new Set(schedules.map(s => s.section))].filter(Boolean)
   const calDayStudents = selectedDay ? students.filter(s => s.section === calSection) : []
 
   const scheduleByDay = useMemo(() => {
@@ -1025,7 +1025,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     if (!selectedDay) return []
     const dow = new Date(selectedDay + "T00:00:00").toLocaleDateString("en-US", { weekday: "long" })
     const scheduled = [...new Set(schedules.filter(s => s.section === calSection && s.day === dow).map(s => s.subject))].sort()
-    const recorded  = [...new Set(dayRecords.map(r => r.subject))].sort()
+    const recorded = [...new Set(dayRecords.map(r => r.subject))].sort()
     return [...scheduled, ...recorded.filter(s => !scheduled.includes(s))]
   }, [selectedDay, schedules, calSection, dayRecords])
 
@@ -1066,7 +1066,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
       {(!isOnline || pending.length > 0) && (
         <div className={`rounded-2xl border px-4 py-3 flex items-center justify-between gap-3
           ${!isOnline ? (dm ? "bg-amber-500/10 border-amber-500/30" : "bg-amber-50 border-amber-200")
-                      : (dm ? "bg-blue-500/10 border-blue-500/30" : "bg-blue-50 border-blue-200")}`}>
+            : (dm ? "bg-blue-500/10 border-blue-500/30" : "bg-blue-50 border-blue-200")}`}>
           <div className="flex items-center gap-2">
             {!isOnline ? <WifiOff size={14} className="text-amber-500" /> : <Wifi size={14} className="text-blue-500" />}
             <div>
@@ -1098,128 +1098,128 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
       </div>
 
       <div style={{ display: tab === "scanner" ? "contents" : "none" }}>
-          {!isScannerLive && (
-            <div className={`rounded-2xl border px-4 py-3 flex flex-wrap items-center gap-2 ${dm ? "bg-red-500/10 border-red-500/25" : "bg-red-50 border-red-200"}`}>
-              <p className={`text-[10px] font-bold ${dm ? "text-slate-300" : "text-slate-700"}`}>
-                Recording attendance for a selected calendar date (not live today). Same scanner and roster as that day&apos;s schedule.
-              </p>
-              <span className="text-[10px] font-black tracking-wide text-red-600 dark:text-red-400">
-                ({scannerDateBanner})
-              </span>
-            </div>
-          )}
+        {!isScannerLive && (
+          <div className={`rounded-2xl border px-4 py-3 flex flex-wrap items-center gap-2 ${dm ? "bg-red-500/10 border-red-500/25" : "bg-red-50 border-red-200"}`}>
+            <p className={`text-[10px] font-bold ${dm ? "text-slate-300" : "text-slate-700"}`}>
+              Recording attendance for a selected calendar date (not live today). Same scanner and roster as that day&apos;s schedule.
+            </p>
+            <span className="text-[10px] font-black tracking-wide text-red-600 dark:text-red-400">
+              ({scannerDateBanner})
+            </span>
+          </div>
+        )}
 
-          <div className={`rounded-2xl md:rounded-3xl border p-5 ${card}`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-              <div>
-                <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>
-                  {isScannerLive ? "Today's Periods" : "Periods for this day"}
+        <div className={`rounded-2xl md:rounded-3xl border p-5 ${card}`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div>
+              <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>
+                {isScannerLive ? "Today's Periods" : "Periods for this day"}
+              </p>
+              <div className="flex items-center gap-3 mt-0.5">
+                <p className={`text-xs font-bold ${head}`}>
+                  {scannerDayName}
+                  {!isScannerLive && (
+                    <span className="ml-2 text-[10px] font-black text-red-600 dark:text-red-400">({scannerDateBanner})</span>
+                  )}
                 </p>
-                <div className="flex items-center gap-3 mt-0.5">
-                  <p className={`text-xs font-bold ${head}`}>
-                    {scannerDayName}
-                    {!isScannerLive && (
-                      <span className="ml-2 text-[10px] font-black text-red-600 dark:text-red-400">({scannerDateBanner})</span>
-                    )}
-                  </p>
-                </div>
               </div>
-              
-              <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar shrink-0">
-                <div className="relative group">
-                  <input
-                    type="date"
-                    value={scannerAttendanceDate}
-                    onChange={e => {
-                      if (e.target.value) setScannerAttendanceDate(e.target.value)
-                    }}
-                    className={`appearance-none rounded-xl border px-3 pr-8 py-1.5 text-[10px] font-black uppercase tracking-wider outline-none transition-all cursor-pointer shadow-sm
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar shrink-0">
+              <div className="relative group">
+                <input
+                  type="date"
+                  value={scannerAttendanceDate}
+                  onChange={e => {
+                    if (e.target.value) setScannerAttendanceDate(e.target.value)
+                  }}
+                  className={`appearance-none rounded-xl border px-3 pr-8 py-1.5 text-[10px] font-black uppercase tracking-wider outline-none transition-all cursor-pointer shadow-sm
                       focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 group-hover:border-blue-500/50
                       ${dm ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-white border-slate-200 text-slate-700"}`}
-                  />
-                  <div className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors 
+                />
+                <div className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors 
                     ${dm ? "text-slate-500 group-hover:text-blue-400" : "text-slate-400 group-hover:text-blue-500"}`}>
-                    <CalendarDays size={12} />
-                  </div>
+                  <CalendarDays size={12} />
                 </div>
-                {period && (
-                  <button onClick={() => setShowLiveMonitoring(true)}
-                    className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-sm shrink-0
+              </div>
+              {period && (
+                <button onClick={() => setShowLiveMonitoring(true)}
+                  className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-sm shrink-0
                       ${dm ? "bg-blue-600 text-white hover:bg-blue-500" : "bg-blue-600 text-white hover:bg-blue-700"}`}>
-                    <Eye size={12} /> Live Monitor
-                  </button>
-                )}
-                {isPossiblyLate && period && (
-                  <div className={`hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[9px] font-black uppercase shrink-0
+                  <Eye size={12} /> Live Monitor
+                </button>
+              )}
+              {isPossiblyLate && period && (
+                <div className={`hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[9px] font-black uppercase shrink-0
                     ${dm ? "bg-amber-500/10 border-amber-500/20 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-600"}`}>
-                    <AlertTriangle size={10} /> Grace period ended
-                  </div>
-                )}
-              </div>
+                  <AlertTriangle size={10} /> Grace period ended
+                </div>
+              )}
             </div>
-
-            {scannerSchedules.length === 0 ? (
-              <div className="py-8 text-center">
-                <BookOpen size={28} className={`mx-auto mb-2 ${dm ? "text-slate-700" : "text-slate-300"}`} />
-                <p className={`text-xs ${sub}`}>No classes on {scannerDayName}</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {scannerSchedules.sort((a, b) => a.start_time.localeCompare(b.start_time)).map(p => {
-                  const active = period?.id === p.id
-                  const cnt = students.filter(s => s.section === p.section).length
-                  const scanned = active ? Object.keys(attendance).length : 0
-                  return (
-                    <button key={p.id} onClick={() => setPeriod(active ? null : p)}
-                      className={`text-left p-3.5 rounded-2xl border transition-all
-                        ${active ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20"
-                          : dm ? "bg-slate-800/40 border-slate-700/40 hover:bg-slate-700/40" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`}>
-                      <p className={`text-[10px] font-black uppercase truncate ${active ? "text-white" : head}`}>{p.subject}</p>
-                      <p className={`text-[9px] mt-0.5 ${active ? "text-blue-200" : sub}`}>{fmt(p.start_time)} – {fmt(p.end_time)} · {p.section}</p>
-                      {active && <p className="text-[9px] text-blue-200 mt-0.5">{scanned}/{cnt} scanned</p>}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
           </div>
 
-          {period && (
-            <div className={`rounded-2xl md:rounded-3xl border overflow-hidden ${card}`}>
-              <div className={`px-5 py-4 border-b ${divB} flex items-center justify-between`}>
-                <div>
-                  <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>QR Scanner</p>
-                  <div className="mt-1">
-                    <Select value={period.id} onValueChange={val => {
-                      const next = scannerSchedules.find(s => s.id === val)
-                      if (next) setPeriod(next)
-                    }}>
-                      <SelectTrigger className={`border-none ring-0 focus:ring-0 shadow-none bg-transparent h-fit py-1 px-0 -ml-1 gap-1 text-[13px] font-black outline-none cursor-pointer transition-opacity text-left w-auto max-w-full [&>span]:line-clamp-none
+          {scannerSchedules.length === 0 ? (
+            <div className="py-8 text-center">
+              <BookOpen size={28} className={`mx-auto mb-2 ${dm ? "text-slate-700" : "text-slate-300"}`} />
+              <p className={`text-xs ${sub}`}>No classes on {scannerDayName}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {scannerSchedules.sort((a, b) => a.start_time.localeCompare(b.start_time)).map(p => {
+                const active = period?.id === p.id
+                const cnt = students.filter(s => s.section === p.section).length
+                const scanned = active ? Object.keys(attendance).length : 0
+                return (
+                  <button key={p.id} onClick={() => setPeriod(active ? null : p)}
+                    className={`text-left p-3.5 rounded-2xl border transition-all
+                        ${active ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20"
+                        : dm ? "bg-slate-800/40 border-slate-700/40 hover:bg-slate-700/40" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`}>
+                    <p className={`text-[10px] font-black uppercase truncate ${active ? "text-white" : head}`}>{p.subject}</p>
+                    <p className={`text-[9px] mt-0.5 ${active ? "text-blue-200" : sub}`}>{fmt(p.start_time)} – {fmt(p.end_time)} · {p.section}</p>
+                    {active && <p className="text-[9px] text-blue-200 mt-0.5">{scanned}/{cnt} scanned</p>}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {period && (
+          <div className={`rounded-2xl md:rounded-3xl border overflow-hidden ${card}`}>
+            <div className={`px-5 py-4 border-b ${divB} flex items-center justify-between`}>
+              <div>
+                <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>QR Scanner</p>
+                <div className="mt-1">
+                  <Select value={period.id} onValueChange={val => {
+                    const next = scannerSchedules.find(s => s.id === val)
+                    if (next) setPeriod(next)
+                  }}>
+                    <SelectTrigger className={`border-none ring-0 focus:ring-0 shadow-none bg-transparent h-fit py-1 px-0 -ml-1 gap-1 text-[13px] font-black outline-none cursor-pointer transition-opacity text-left w-auto max-w-full [&>span]:line-clamp-none
                         ${head} hover:opacity-80`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className={`z-[150] ${dm ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"}`}>
-                        {scannerSchedules.map(p => (
-                          <SelectItem key={p.id} value={p.id} className="text-xs font-bold cursor-pointer transition-colors max-w-[300px] sm:max-w-none">
-                            {p.subject} ({p.section})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <p className={`text-[10px] mt-0.5 ${sub}`}>{period.section} · {fmt(period.start_time)}</p>
-                  {!isScannerLive && (
-                    <p className="text-[10px] font-black text-red-600 dark:text-red-400 mt-1">Selected date · ({scannerDateBanner})</p>
-                  )}
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className={`z-[150] ${dm ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"}`}>
+                      {scannerSchedules.map(p => (
+                        <SelectItem key={p.id} value={p.id} className="text-xs font-bold cursor-pointer transition-colors max-w-[300px] sm:max-w-none">
+                          {p.subject} ({p.section})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={scanning ? stopCam : () => startCam(scannerClosed)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all
+                <p className={`text-[10px] mt-0.5 ${sub}`}>{period.section} · {fmt(period.start_time)}</p>
+                {!isScannerLive && (
+                  <p className="text-[10px] font-black text-red-600 dark:text-red-400 mt-1">Selected date · ({scannerDateBanner})</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={scanning ? stopCam : () => startCam(scannerClosed)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all
                       ${scanning
-                        ? "bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20"
-                        : scannerClosed
-                          ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
-                          : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"}`}>
+                      ? "bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20"
+                      : scannerClosed
+                        ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
+                        : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"}`}>
                   {scanning
                     ? <><CameraOff size={11} /> Stop</>
                     : scannerClosed
@@ -1227,352 +1227,352 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                       : <><Camera size={11} /> {jsQRReady ? "Start Scanner" : "Loading..."}</>
                   }
                 </button>
-                </div>
-              </div>
-
-              <div className="p-4 space-y-4">
-                {camErr && (
-                  <div className={`rounded-xl border p-3 flex items-center gap-2 ${dm ? "bg-red-500/10 border-red-500/20" : "bg-red-50 border-red-200"}`}>
-                    <CameraOff size={14} className="text-red-500" />
-                    <p className="text-[10px] text-red-500 font-bold">{camErr}</p>
-                  </div>
-                )}
-
-                {scannerClosed && !scanning && (
-                  <div className={`rounded-xl border p-3 flex items-center justify-between gap-3 ${dm ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50 border-amber-200"}`}>
-                    <div className="flex items-center gap-2">
-                      <Clock size={13} className="text-amber-500 shrink-0" />
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-wide text-amber-500">Scanner Auto-Closed</p>
-                        <p className={`text-[9px] ${dm ? "text-amber-400/70" : "text-amber-700/70"}`}>
-                          {period ? `${period.subject} ended at ${fmtT(period.end_time)}` : "Period ended"}
-                        </p>
-                      </div>
-                    </div>
-                    <button onClick={() => startCam(true)}
-                      className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 text-white text-[8px] font-black uppercase tracking-wide hover:bg-amber-600 transition-colors">
-                      <Camera size={10} /> Force Open
-                    </button>
-                  </div>
-                )}
-
-                <div className={`relative rounded-2xl overflow-hidden aspect-video flex items-center justify-center ${dm ? "bg-slate-800" : "bg-slate-100"}`}>
-                  <video ref={videoRef} className={`w-full h-full object-cover ${scanning ? "opacity-100" : "opacity-0 absolute"}`} muted playsInline
-                    style={isFrontCamera ? { transform: "scaleX(-1)" } : undefined} />
-                  <canvas ref={canvasRef} className="hidden" />
-
-                  {!scanning && (
-                    <div className="flex flex-col items-center gap-3 py-8">
-                      <div className={`p-5 rounded-2xl border ${dm ? "bg-slate-700/40 border-slate-600/40" : "bg-white border-slate-200"}`}>
-                        <ScanLine size={36} className={dm ? "text-slate-500" : "text-slate-400"} />
-                      </div>
-                      <p className={`text-[10px] font-black uppercase tracking-widest ${sub}`}>Camera off</p>
-                    </div>
-                  )}
-
-                  {scanning && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="relative w-72 h-72">
-                        {["top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-xl",
-                          "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-xl",
-                          "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-xl",
-                          "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-xl",
-                        ].map((c, i) => <div key={i} className={`absolute w-10 h-10 border-blue-400 ${c}`} />)}
-                        <div className="absolute inset-x-0 top-0 h-0.5 bg-blue-400/90"
-                          style={{ animation: "scanLine 2s ease-in-out infinite", boxShadow: "0 0 10px 3px rgba(96,165,250,0.7)" }} />
-                      </div>
-                    </div>
-                  )}
-
-                  {lastScan && (
-                    <div className={`absolute bottom-3 left-3 right-3 rounded-xl px-3 py-2.5 flex items-center gap-2
-                      ${lastScan.ok ? "bg-green-600/90" : "bg-amber-600/90"} backdrop-blur-sm`}>
-                      {lastScan.ok ? <CheckCircle2 size={14} className="text-white shrink-0" /> : <AlertTriangle size={14} className="text-white shrink-0" />}
-                      <div>
-                        <p className="text-[10px] font-black text-white">{lastScan.name}</p>
-                        <p className="text-[8px] text-white/70">{lastScan.ok ? "Marked Present" : "Not registered / already scanned"}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className={`flex items-center justify-between gap-3 px-1 ${dm ? "text-slate-200" : "text-slate-800"}`}>
-                  <span className="text-[11px] font-bold">Beep</span>
-                  <Switch
-                    checked={beepOn}
-                    onCheckedChange={setBeepPersist}
-                    className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-slate-400"
-                  />
-                </div>
-
-                {sectionStudents.length > 0 && (
-                  <div className="grid grid-cols-5 gap-2">
-                    {[
-                      { label: "Present",  val: presentCount, color: "text-green-500",  bg: dm ? "bg-green-500/10 border-green-500/20" : "bg-green-50 border-green-200" },
-                      { label: "Late",     val: lateCount,    color: "text-amber-500",  bg: dm ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50 border-amber-200" },
-                      { label: "Excused",  val: excusedCount, color: "text-blue-500",   bg: dm ? "bg-blue-500/10 border-blue-500/20"   : "bg-blue-50 border-blue-200"   },
-                      { label: "Absent",   val: absentCount,  color: "text-red-500",    bg: dm ? "bg-red-500/10 border-red-500/20"     : "bg-red-50 border-red-200"     },
-                      { label: "Pending",  val: notYetCount,  color: sub,               bg: card2 },
-                    ].map(s => (
-                      <div key={s.label} className={`rounded-xl border p-2.5 text-center ${s.bg}`}>
-                        <p className={`text-lg font-black ${s.color}`}>{s.val}</p>
-                        <p className={`text-[8px] font-bold uppercase tracking-wider ${s.color === sub ? sub : s.color}`}>{s.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {isPossiblyLate && (
-                  <div className={`rounded-xl border px-3 py-2 flex items-start gap-2 ${dm ? "bg-amber-500/8 border-amber-500/20" : "bg-amber-50 border-amber-200"}`}>
-                    <AlertTriangle size={12} className="text-amber-500 mt-0.5 shrink-0" />
-                    <p className={`text-[9px] font-bold ${dm ? "text-amber-400" : "text-amber-700"}`}>
-                      Grace period ended. New scans are marked <strong>Present</strong> — override to <strong>Late</strong> below if needed.
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
-          )}
 
-          {period && (
-            <div className={`rounded-2xl md:rounded-3xl border overflow-hidden ${card}`}>
-              <div className={`px-5 py-4 border-b ${divB}`}>
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div>
-                    <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>Attendance List</p>
-                    <p className={`text-xs font-black mt-0.5 ${head}`}>{period.section} · {sectionStudents.length} students</p>
-                    {!isScannerLive && (
-                      <p className="text-[10px] font-black text-red-600 dark:text-red-400 mt-0.5">({scannerDateBanner})</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {attLoading && <Loader2 size={14} className="animate-spin text-blue-400" />}
-                    <button
-                      onClick={async () => {
-                        const unscanned = sectionStudents.filter(s => !attendance[s.id])
-                        if (!unscanned.length) { toast.info("All students already recorded"); return }
-                        const now = nowTime()
-                        const recs = unscanned.map(s => ({
-                          student_id: s.id, lrn: s.lrn,
-                          student_name: `${s.last_name}, ${s.first_name}`,
-                          section: period.section, strand: s.strand || "",
-                          subject: period.subject, date: scannerAttendanceDate, time: now,
-                          status: "Present" as AttStatus, school_year: schoolYear,
-                          notes: "MANUAL",
-                        }))
-                        const newMap = { ...attendance }
-                        recs.forEach(r => { newMap[r.student_id] = r })
-                        setAttendance(newMap)
-                        const { error } = await supabase.from("attendance").insert(recs)
-                        if (error) { toast.error("Failed: " + error.message); return }
-                        toast.success(`${recs.length} student${recs.length !== 1 ? "s" : ""} marked Present`)
-                      }}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide border transition-all
-                        ${dm ? "bg-green-500/15 border-green-500/20 text-green-400 hover:bg-green-500/25" : "bg-green-50 border-green-200 text-green-600 hover:bg-green-100"}`}>
-                      <CheckCircle2 size={10} /> All Present
-                    </button>
-                  </div>
+            <div className="p-4 space-y-4">
+              {camErr && (
+                <div className={`rounded-xl border p-3 flex items-center gap-2 ${dm ? "bg-red-500/10 border-red-500/20" : "bg-red-50 border-red-200"}`}>
+                  <CameraOff size={14} className="text-red-500" />
+                  <p className="text-[10px] text-red-500 font-bold">{camErr}</p>
                 </div>
-              </div>
+              )}
 
-              <div className={`px-4 py-3 border-b ${divB}`}>
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${dm ? "bg-slate-800/60 border-slate-700/40" : "bg-slate-50 border-slate-200"}`}>
-                  <Search size={12} className={sub} />
-                  <input value={search} onChange={e => setSearchWithDebounce(e.target.value)} placeholder="Search student..."
-                    className={`flex-1 text-[11px] font-bold bg-transparent outline-none ${head}`} />
-                  {search && <button onClick={() => { setSearch(""); setSearchDebounced("") }}><X size={12} className={sub} /></button>}
-                </div>
-              </div>
-
-              <div className={`px-4 py-3 border-b ${divB} space-y-2`}>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                  {([
-                    { val: "ALL",         label: "All"         },
-                    { val: "Present",     label: "Present"     },
-                    { val: "Late",        label: "Late"        },
-                    { val: "Excused",     label: "Excused"     },
-                    { val: "Absent",      label: "Absent"      },
-                    { val: "Not Scanned", label: "Not Scanned" },
-                  ] as { val: typeof statusFilter; label: string }[]).map(f => {
-                    const cnt = f.val === "Not Scanned" ? notYetCount
-                      : f.val === "Present" ? presentCount
-                      : f.val === "Late" ? lateCount
-                      : f.val === "Excused" ? excusedCount
-                      : f.val === "Absent" ? absentCount : null
-                    const activeStyle = f.val === "Present" ? "bg-green-500/20 text-green-500 border border-green-500/30"
-                      : f.val === "Late"    ? "bg-amber-500/20 text-amber-500 border border-amber-500/30"
-                      : f.val === "Excused" ? "bg-blue-500/20 text-blue-500 border border-blue-500/30"
-                      : f.val === "Absent"  ? "bg-red-500/20 text-red-500 border border-red-500/30"
-                      : dm ? "bg-slate-700 text-white border border-slate-600" : "bg-slate-200 text-slate-800 border border-slate-300"
-                    return (
-                      <button key={f.val} onClick={() => setStatusFilter(f.val)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all whitespace-nowrap shrink-0 flex items-center gap-1
-                          ${statusFilter === f.val ? activeStyle : dm ? "text-slate-500 hover:text-white" : "text-slate-400 hover:text-slate-700"}`}>
-                        {f.label}
-                        {cnt !== null && <span className="tabular-nums opacity-80">{cnt}</span>}
-                      </button>
-                    )
-                  })}
-                </div>
-                <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
-                  <span className={`text-[8px] font-black uppercase tracking-wider shrink-0 ${sub}`}>Sort:</span>
-                  {([
-                    { val: "alpha",     label: "A–Z" },
-                    { val: "scan_time", label: "Scan Time" },
-                    { val: "manual",    label: "Manual" },
-                    { val: "late",      label: "Late" },
-                    { val: "absent",    label: "Absent" },
-                  ] as { val: typeof sortMode; label: string }[]).map(s => (
-                    <button key={s.val} onClick={() => setSortMode(s.val)}
-                      className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all whitespace-nowrap shrink-0
-                        ${sortMode === s.val ? (dm ? "bg-slate-700 text-white" : "bg-slate-200 text-slate-800") : (dm ? "text-slate-600 hover:text-slate-300" : "text-slate-400 hover:text-slate-600")}`}>
-                      {s.label}
-                    </button>
-                  ))}
-                  <div className="flex-1" />
-                  {/* ── Auto-Late selector ── */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`text-[8px] font-black uppercase tracking-wide ${sub}`}>Auto-Late after:</span>
-                    <Select
-                      value={String(graceMins)}
-                      onValueChange={v => {
-                        const val = Number(v)
-                        setGraceMins(val)
-                        graceMinsRef.current = val // ── FIX: update ref immediately on change ──
-                      }}
-                    >
-                      <SelectTrigger className={`h-6 w-20 rounded-xl border px-2 text-[9px] font-black uppercase shadow-sm outline-none ring-0 focus:ring-2 focus:ring-blue-500/50
-                        ${dm ? "bg-slate-800 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className={`z-[150] ${dm ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"}`}>
-                        {[0,10,20,30,40,50].map(m => (
-                          <SelectItem key={m} value={String(m)} className="text-[9px] font-black uppercase cursor-pointer">
-                            {m === 0 ? "Off" : `${m} min`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                ref={scannerListRef}
-                className={`divide-y overflow-y-auto thin-scroll ${dm ? "divide-slate-700/30" : "divide-slate-100"}`}
-                style={{ maxHeight: "min(480px, 60svh)", overflowAnchor: "none" }}
-                onWheel={e => {
-                  const el = scannerListRef.current
-                  if (!el) return
-                  const atTop    = el.scrollTop === 0
-                  const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1
-                  if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) return
-                  e.stopPropagation()
-                }}
-              >
-                {(() => {
-                  const sorted = [...filtered].sort((a, b) => {
-                    if (sortMode === "alpha") return a.last_name.localeCompare(b.last_name)
-                    if (sortMode === "scan_time") {
-                      const ta = attendance[a.id]?.time || "99:99"
-                      const tb = attendance[b.id]?.time || "99:99"
-                      return ta.localeCompare(tb)
-                    }
-                    if (sortMode === "manual") {
-                      const isManualA = attendance[a.id] && attendance[a.id].time === "00:00:00" ? 0 : 1
-                      const isManualB = attendance[b.id] && attendance[b.id].time === "00:00:00" ? 0 : 1
-                      return isManualA - isManualB
-                    }
-                    if (sortMode === "late") {
-                      const isLateA = attendance[a.id]?.status === "Late" ? 0 : 1
-                      const isLateB = attendance[b.id]?.status === "Late" ? 0 : 1
-                      return isLateA - isLateB
-                    }
-                    if (sortMode === "absent") {
-                      const isAbsentA = (!attendance[a.id] || attendance[a.id].status === "Absent") ? 0 : 1
-                      const isAbsentB = (!attendance[b.id] || attendance[b.id].status === "Absent") ? 0 : 1
-                      return isAbsentA - isAbsentB
-                    }
-                    return 0
-                  })
-                  return sorted
-                })().map(student => {
-                  const att = attendance[student.id]
-                  const isPending = pending.some(p => p.record.student_id === student.id && p.record.subject === period.subject)
-                  return (
-                    <div key={student.id} className={`flex items-start gap-2 sm:gap-3 px-3 sm:px-4 py-3 transition-colors ${dm ? "hover:bg-slate-800/30" : "hover:bg-slate-50"}`}>
-                      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden shrink-0 mt-0.5 ${dm ? "bg-slate-700" : "bg-slate-100"}`}>
-                        {(student.two_by_two_url || student.profile_picture)
-                          ? <img src={student.two_by_two_url || student.profile_picture || ""} alt="" className="w-full h-full object-cover" />
-                          : <div className="w-full h-full flex items-center justify-center"><User size={14} className={sub} /></div>}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className={`text-[11px] font-black uppercase truncate ${head}`}>{student.last_name}, {student.first_name}</p>
-                          {att && <SourceBadge notes={att.notes} time={att.time} size="xs" />}
-                          {isPending && <span className="text-[7px] font-black bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded-full shrink-0">Pending</span>}
-                        </div>
-                        {att ? (
-                          <div key={att.status} className="flex items-center gap-1.5 status-pop">
-                            {att.status === "Present" && <CheckCircle2 size={11} className="text-green-500 shrink-0" />}
-                            {att.status === "Late"    && <Clock size={11} className="text-amber-500 shrink-0" />}
-                            {att.status === "Excused" && <ShieldCheck size={11} className="text-blue-500 shrink-0" />}
-                            {att.status === "Absent"  && <MinusCircle size={11} className="text-red-500 shrink-0" />}
-                            <p className={`text-[9px] font-bold ${att.status === "Present" ? "text-green-500" : att.status === "Late" ? "text-amber-500" : att.status === "Excused" ? "text-blue-500" : "text-red-500"}`}>
-                              {att.status}{att.time && att.time !== "00:00:00" ? ` · ${fmtT(att.time)}` : ""}
-                            </p>
-                          </div>
-                        ) : (
-                          <p className={`text-[9px] font-bold ${sub}`}>Not yet scanned</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-0.5 shrink-0" style={{ minWidth: 120 }}>
-                        {updatingId === student.id
-                          ? <div className="flex-1 flex justify-center"><Loader2 size={14} className="animate-spin text-blue-400" /></div>
-                          : <>
-                              <button onClick={() => setQrViewStudent(student)}
-                                className={`p-2 rounded-lg transition-colors touch-manipulation ${dm ? "text-slate-500 hover:text-blue-400 hover:bg-blue-500/10" : "text-slate-300 hover:text-blue-500 hover:bg-blue-50"}`}
-                                title="View QR Code"><Eye size={15} /></button>
-                              {([
-                                { st: "Present" as AttStatus, icon: <CheckCircle2 size={16} />, active: "bg-green-500/20 text-green-500" },
-                                { st: "Late"    as AttStatus, icon: <Clock size={16} />,         active: "bg-amber-500/20 text-amber-500" },
-                                { st: "Excused" as AttStatus, icon: <ShieldCheck size={16} />,   active: "bg-blue-500/20 text-blue-500"  },
-                                { st: "Absent"  as AttStatus, icon: <MinusCircle size={16} />,   active: "bg-red-500/20 text-red-500"    },
-                              ]).map(({ st, icon, active }) => (
-                                <button key={st} onClick={() => updateStatus(student.id, st)} title={st}
-                                  className={`p-2 rounded-lg transition-colors touch-manipulation
-                                    ${att?.status === st ? active : dm ? "text-slate-600 active:text-white" : "text-slate-300 active:text-slate-700"}`}>
-                                  {icon}
-                                </button>
-                              ))}
-                            </>
-                        }
-                      </div>
+              {scannerClosed && !scanning && (
+                <div className={`rounded-xl border p-3 flex items-center justify-between gap-3 ${dm ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50 border-amber-200"}`}>
+                  <div className="flex items-center gap-2">
+                    <Clock size={13} className="text-amber-500 shrink-0" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wide text-amber-500">Scanner Auto-Closed</p>
+                      <p className={`text-[9px] ${dm ? "text-amber-400/70" : "text-amber-700/70"}`}>
+                        {period ? `${period.subject} ended at ${fmtT(period.end_time)}` : "Period ended"}
+                      </p>
                     </div>
-                  )
-                })}
-                {filtered.length === 0 && (
-                  <div className="py-10 text-center">
-                    <Users size={28} className={`mx-auto mb-2 ${dm ? "text-slate-700" : "text-slate-300"}`} />
-                    <p className={`text-xs ${sub}`}>No students found</p>
                   </div>
-                )}
-              </div>
-
-              {period && sectionStudents.length > 0 && (
-                <div className={`px-4 py-3 border-t ${divB} flex items-center justify-between gap-3`}>
-                  <p className={`text-[9px] ${sub}`}>{Object.keys(attendance).length}/{sectionStudents.length} recorded</p>
-                  <button
-                    onClick={() => sectionStudents.filter(s => !attendance[s.id]).forEach(s => updateStatus(s.id, "Absent"))}
-                    className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide flex items-center gap-1 transition-all
-                      ${dm ? "bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/20" : "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"}`}>
-                    <MinusCircle size={10} /> Mark Remaining Absent
+                  <button onClick={() => startCam(true)}
+                    className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 text-white text-[8px] font-black uppercase tracking-wide hover:bg-amber-600 transition-colors">
+                    <Camera size={10} /> Force Open
                   </button>
                 </div>
               )}
+
+              <div className={`relative rounded-2xl overflow-hidden aspect-video flex items-center justify-center ${dm ? "bg-slate-800" : "bg-slate-100"}`}>
+                <video ref={videoRef} className={`w-full h-full object-cover ${scanning ? "opacity-100" : "opacity-0 absolute"}`} muted playsInline
+                  style={isFrontCamera ? { transform: "scaleX(-1)" } : undefined} />
+                <canvas ref={canvasRef} className="hidden" />
+
+                {!scanning && (
+                  <div className="flex flex-col items-center gap-3 py-8">
+                    <div className={`p-5 rounded-2xl border ${dm ? "bg-slate-700/40 border-slate-600/40" : "bg-white border-slate-200"}`}>
+                      <ScanLine size={36} className={dm ? "text-slate-500" : "text-slate-400"} />
+                    </div>
+                    <p className={`text-[10px] font-black uppercase tracking-widest ${sub}`}>Camera off</p>
+                  </div>
+                )}
+
+                {scanning && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="relative w-72 h-72">
+                      {["top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-xl",
+                        "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-xl",
+                        "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-xl",
+                        "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-xl",
+                      ].map((c, i) => <div key={i} className={`absolute w-10 h-10 border-blue-400 ${c}`} />)}
+                      <div className="absolute inset-x-0 top-0 h-0.5 bg-blue-400/90"
+                        style={{ animation: "scanLine 2s ease-in-out infinite", boxShadow: "0 0 10px 3px rgba(96,165,250,0.7)" }} />
+                    </div>
+                  </div>
+                )}
+
+                {lastScan && (
+                  <div className={`absolute bottom-3 left-3 right-3 rounded-xl px-3 py-2.5 flex items-center gap-2
+                      ${lastScan.ok ? "bg-green-600/90" : "bg-amber-600/90"} backdrop-blur-sm`}>
+                    {lastScan.ok ? <CheckCircle2 size={14} className="text-white shrink-0" /> : <AlertTriangle size={14} className="text-white shrink-0" />}
+                    <div>
+                      <p className="text-[10px] font-black text-white">{lastScan.name}</p>
+                      <p className="text-[8px] text-white/70">{lastScan.ok ? "Marked Present" : "Not registered / already scanned"}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className={`flex items-center justify-between gap-3 px-1 ${dm ? "text-slate-200" : "text-slate-800"}`}>
+                <span className="text-[11px] font-bold">Beep</span>
+                <Switch
+                  checked={beepOn}
+                  onCheckedChange={setBeepPersist}
+                  className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-slate-400"
+                />
+              </div>
+
+              {sectionStudents.length > 0 && (
+                <div className="grid grid-cols-5 gap-2">
+                  {[
+                    { label: "Present", val: presentCount, color: "text-green-500", bg: dm ? "bg-green-500/10 border-green-500/20" : "bg-green-50 border-green-200" },
+                    { label: "Late", val: lateCount, color: "text-amber-500", bg: dm ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50 border-amber-200" },
+                    { label: "Excused", val: excusedCount, color: "text-blue-500", bg: dm ? "bg-blue-500/10 border-blue-500/20" : "bg-blue-50 border-blue-200" },
+                    { label: "Absent", val: absentCount, color: "text-red-500", bg: dm ? "bg-red-500/10 border-red-500/20" : "bg-red-50 border-red-200" },
+                    { label: "Pending", val: notYetCount, color: sub, bg: card2 },
+                  ].map(s => (
+                    <div key={s.label} className={`rounded-xl border p-2.5 text-center ${s.bg}`}>
+                      <p className={`text-lg font-black ${s.color}`}>{s.val}</p>
+                      <p className={`text-[8px] font-bold uppercase tracking-wider ${s.color === sub ? sub : s.color}`}>{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {isPossiblyLate && (
+                <div className={`rounded-xl border px-3 py-2 flex items-start gap-2 ${dm ? "bg-amber-500/8 border-amber-500/20" : "bg-amber-50 border-amber-200"}`}>
+                  <AlertTriangle size={12} className="text-amber-500 mt-0.5 shrink-0" />
+                  <p className={`text-[9px] font-bold ${dm ? "text-amber-400" : "text-amber-700"}`}>
+                    Grace period ended. New scans are marked <strong>Present</strong> — override to <strong>Late</strong> below if needed.
+                  </p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {period && (
+          <div className={`rounded-2xl md:rounded-3xl border overflow-hidden ${card}`}>
+            <div className={`px-5 py-4 border-b ${divB}`}>
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>Attendance List</p>
+                  <p className={`text-xs font-black mt-0.5 ${head}`}>{period.section} · {sectionStudents.length} students</p>
+                  {!isScannerLive && (
+                    <p className="text-[10px] font-black text-red-600 dark:text-red-400 mt-0.5">({scannerDateBanner})</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {attLoading && <Loader2 size={14} className="animate-spin text-blue-400" />}
+                  <button
+                    onClick={async () => {
+                      const unscanned = sectionStudents.filter(s => !attendance[s.id])
+                      if (!unscanned.length) { toast.info("All students already recorded"); return }
+                      const now = nowTime()
+                      const recs = unscanned.map(s => ({
+                        student_id: s.id, lrn: s.lrn,
+                        student_name: `${s.last_name}, ${s.first_name}`,
+                        section: period.section, strand: s.strand || "",
+                        subject: period.subject, date: scannerAttendanceDate, time: now,
+                        status: "Present" as AttStatus, school_year: schoolYear,
+                        notes: "MANUAL",
+                      }))
+                      const newMap = { ...attendance }
+                      recs.forEach(r => { newMap[r.student_id] = r })
+                      setAttendance(newMap)
+                      const { error } = await supabase.from("attendance").insert(recs)
+                      if (error) { toast.error("Failed: " + error.message); return }
+                      toast.success(`${recs.length} student${recs.length !== 1 ? "s" : ""} marked Present`)
+                    }}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide border transition-all
+                        ${dm ? "bg-green-500/15 border-green-500/20 text-green-400 hover:bg-green-500/25" : "bg-green-50 border-green-200 text-green-600 hover:bg-green-100"}`}>
+                    <CheckCircle2 size={10} /> All Present
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className={`px-4 py-3 border-b ${divB}`}>
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${dm ? "bg-slate-800/60 border-slate-700/40" : "bg-slate-50 border-slate-200"}`}>
+                <Search size={12} className={sub} />
+                <input value={search} onChange={e => setSearchWithDebounce(e.target.value)} placeholder="Search student..."
+                  className={`flex-1 text-[11px] font-bold bg-transparent outline-none ${head}`} />
+                {search && <button onClick={() => { setSearch(""); setSearchDebounced("") }}><X size={12} className={sub} /></button>}
+              </div>
+            </div>
+
+            <div className={`px-4 py-3 border-b ${divB} space-y-2`}>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {([
+                  { val: "ALL", label: "All" },
+                  { val: "Present", label: "Present" },
+                  { val: "Late", label: "Late" },
+                  { val: "Excused", label: "Excused" },
+                  { val: "Absent", label: "Absent" },
+                  { val: "Not Scanned", label: "Not Scanned" },
+                ] as { val: typeof statusFilter; label: string }[]).map(f => {
+                  const cnt = f.val === "Not Scanned" ? notYetCount
+                    : f.val === "Present" ? presentCount
+                      : f.val === "Late" ? lateCount
+                        : f.val === "Excused" ? excusedCount
+                          : f.val === "Absent" ? absentCount : null
+                  const activeStyle = f.val === "Present" ? "bg-green-500/20 text-green-500 border border-green-500/30"
+                    : f.val === "Late" ? "bg-amber-500/20 text-amber-500 border border-amber-500/30"
+                      : f.val === "Excused" ? "bg-blue-500/20 text-blue-500 border border-blue-500/30"
+                        : f.val === "Absent" ? "bg-red-500/20 text-red-500 border border-red-500/30"
+                          : dm ? "bg-slate-700 text-white border border-slate-600" : "bg-slate-200 text-slate-800 border border-slate-300"
+                  return (
+                    <button key={f.val} onClick={() => setStatusFilter(f.val)}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all whitespace-nowrap shrink-0 flex items-center gap-1
+                          ${statusFilter === f.val ? activeStyle : dm ? "text-slate-500 hover:text-white" : "text-slate-400 hover:text-slate-700"}`}>
+                      {f.label}
+                      {cnt !== null && <span className="tabular-nums opacity-80">{cnt}</span>}
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+                <span className={`text-[8px] font-black uppercase tracking-wider shrink-0 ${sub}`}>Sort:</span>
+                {([
+                  { val: "alpha", label: "A–Z" },
+                  { val: "scan_time", label: "Scan Time" },
+                  { val: "manual", label: "Manual" },
+                  { val: "late", label: "Late" },
+                  { val: "absent", label: "Absent" },
+                ] as { val: typeof sortMode; label: string }[]).map(s => (
+                  <button key={s.val} onClick={() => setSortMode(s.val)}
+                    className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all whitespace-nowrap shrink-0
+                        ${sortMode === s.val ? (dm ? "bg-slate-700 text-white" : "bg-slate-200 text-slate-800") : (dm ? "text-slate-600 hover:text-slate-300" : "text-slate-400 hover:text-slate-600")}`}>
+                    {s.label}
+                  </button>
+                ))}
+                <div className="flex-1" />
+                {/* ── Auto-Late selector ── */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`text-[8px] font-black uppercase tracking-wide ${sub}`}>Auto-Late after:</span>
+                  <Select
+                    value={String(graceMins)}
+                    onValueChange={v => {
+                      const val = Number(v)
+                      setGraceMins(val)
+                      graceMinsRef.current = val // ── FIX: update ref immediately on change ──
+                    }}
+                  >
+                    <SelectTrigger className={`h-6 w-20 rounded-xl border px-2 text-[9px] font-black uppercase shadow-sm outline-none ring-0 focus:ring-2 focus:ring-blue-500/50
+                        ${dm ? "bg-slate-800 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className={`z-[150] ${dm ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"}`}>
+                      {[0, 10, 20, 30, 40, 50].map(m => (
+                        <SelectItem key={m} value={String(m)} className="text-[9px] font-black uppercase cursor-pointer">
+                          {m === 0 ? "Off" : `${m} min`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <div
+              ref={scannerListRef}
+              className={`divide-y overflow-y-auto thin-scroll ${dm ? "divide-slate-700/30" : "divide-slate-100"}`}
+              style={{ maxHeight: "min(480px, 60svh)", overflowAnchor: "none" }}
+              onWheel={e => {
+                const el = scannerListRef.current
+                if (!el) return
+                const atTop = el.scrollTop === 0
+                const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1
+                if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) return
+                e.stopPropagation()
+              }}
+            >
+              {(() => {
+                const sorted = [...filtered].sort((a, b) => {
+                  if (sortMode === "alpha") return a.last_name.localeCompare(b.last_name)
+                  if (sortMode === "scan_time") {
+                    const ta = attendance[a.id]?.time || "99:99"
+                    const tb = attendance[b.id]?.time || "99:99"
+                    return ta.localeCompare(tb)
+                  }
+                  if (sortMode === "manual") {
+                    const isManualA = attendance[a.id] && attendance[a.id].time === "00:00:00" ? 0 : 1
+                    const isManualB = attendance[b.id] && attendance[b.id].time === "00:00:00" ? 0 : 1
+                    return isManualA - isManualB
+                  }
+                  if (sortMode === "late") {
+                    const isLateA = attendance[a.id]?.status === "Late" ? 0 : 1
+                    const isLateB = attendance[b.id]?.status === "Late" ? 0 : 1
+                    return isLateA - isLateB
+                  }
+                  if (sortMode === "absent") {
+                    const isAbsentA = (!attendance[a.id] || attendance[a.id].status === "Absent") ? 0 : 1
+                    const isAbsentB = (!attendance[b.id] || attendance[b.id].status === "Absent") ? 0 : 1
+                    return isAbsentA - isAbsentB
+                  }
+                  return 0
+                })
+                return sorted
+              })().map(student => {
+                const att = attendance[student.id]
+                const isPending = pending.some(p => p.record.student_id === student.id && p.record.subject === period.subject)
+                return (
+                  <div key={student.id} className={`flex items-start gap-2 sm:gap-3 px-3 sm:px-4 py-3 transition-colors ${dm ? "hover:bg-slate-800/30" : "hover:bg-slate-50"}`}>
+                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden shrink-0 mt-0.5 ${dm ? "bg-slate-700" : "bg-slate-100"}`}>
+                      {(student.two_by_two_url || student.profile_picture)
+                        ? <img src={student.two_by_two_url || student.profile_picture || ""} alt="" className="w-full h-full object-cover" />
+                        : <div className="w-full h-full flex items-center justify-center"><User size={14} className={sub} /></div>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className={`text-[11px] font-black uppercase truncate ${head}`}>{student.last_name}, {student.first_name}</p>
+                        {att && <SourceBadge notes={att.notes} time={att.time} size="xs" />}
+                        {isPending && <span className="text-[7px] font-black bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded-full shrink-0">Pending</span>}
+                      </div>
+                      {att ? (
+                        <div key={att.status} className="flex items-center gap-1.5 status-pop">
+                          {att.status === "Present" && <CheckCircle2 size={11} className="text-green-500 shrink-0" />}
+                          {att.status === "Late" && <Clock size={11} className="text-amber-500 shrink-0" />}
+                          {att.status === "Excused" && <ShieldCheck size={11} className="text-blue-500 shrink-0" />}
+                          {att.status === "Absent" && <MinusCircle size={11} className="text-red-500 shrink-0" />}
+                          <p className={`text-[9px] font-bold ${att.status === "Present" ? "text-green-500" : att.status === "Late" ? "text-amber-500" : att.status === "Excused" ? "text-blue-500" : "text-red-500"}`}>
+                            {att.status}{att.time && att.time !== "00:00:00" ? ` · ${fmtT(att.time)}` : ""}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className={`text-[9px] font-bold ${sub}`}>Not yet scanned</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0" style={{ minWidth: 120 }}>
+                      {updatingId === student.id
+                        ? <div className="flex-1 flex justify-center"><Loader2 size={14} className="animate-spin text-blue-400" /></div>
+                        : <>
+                          <button onClick={() => setQrViewStudent(student)}
+                            className={`p-2 rounded-lg transition-colors touch-manipulation ${dm ? "text-slate-500 hover:text-blue-400 hover:bg-blue-500/10" : "text-slate-300 hover:text-blue-500 hover:bg-blue-50"}`}
+                            title="View QR Code"><Eye size={15} /></button>
+                          {([
+                            { st: "Present" as AttStatus, icon: <CheckCircle2 size={16} />, active: "bg-green-500/20 text-green-500" },
+                            { st: "Late" as AttStatus, icon: <Clock size={16} />, active: "bg-amber-500/20 text-amber-500" },
+                            { st: "Excused" as AttStatus, icon: <ShieldCheck size={16} />, active: "bg-blue-500/20 text-blue-500" },
+                            { st: "Absent" as AttStatus, icon: <MinusCircle size={16} />, active: "bg-red-500/20 text-red-500" },
+                          ]).map(({ st, icon, active }) => (
+                            <button key={st} onClick={() => updateStatus(student.id, st)} title={st}
+                              className={`p-2 rounded-lg transition-colors touch-manipulation
+                                    ${att?.status === st ? active : dm ? "text-slate-600 active:text-white" : "text-slate-300 active:text-slate-700"}`}>
+                              {icon}
+                            </button>
+                          ))}
+                        </>
+                      }
+                    </div>
+                  </div>
+                )
+              })}
+              {filtered.length === 0 && (
+                <div className="py-10 text-center">
+                  <Users size={28} className={`mx-auto mb-2 ${dm ? "text-slate-700" : "text-slate-300"}`} />
+                  <p className={`text-xs ${sub}`}>No students found</p>
+                </div>
+              )}
+            </div>
+
+            {period && sectionStudents.length > 0 && (
+              <div className={`px-4 py-3 border-t ${divB} flex items-center justify-between gap-3`}>
+                <p className={`text-[9px] ${sub}`}>{Object.keys(attendance).length}/{sectionStudents.length} recorded</p>
+                <button
+                  onClick={() => sectionStudents.filter(s => !attendance[s.id]).forEach(s => updateStatus(s.id, "Absent"))}
+                  className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide flex items-center gap-1 transition-all
+                      ${dm ? "bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/20" : "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"}`}>
+                  <MinusCircle size={10} /> Mark Remaining Absent
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div style={{ display: tab === "calendar" ? "contents" : "none" }}>
         <div className={`rounded-2xl md:rounded-3xl border overflow-hidden ${card}`}>
@@ -1619,7 +1619,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
             {!calLoading && calSection && (
               <>
                 <div className="grid grid-cols-7 mb-1">
-                  {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => (
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
                     <div key={d} className={`text-center text-[11px] font-black uppercase tracking-widest py-1 ${sub}`}>{d}</div>
                   ))}
                 </div>
@@ -1630,8 +1630,8 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                     const day = i + 1
                     const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
                     const data = calDayData[dateStr]
-                    const isToday    = dateStr === todayStr()
-                    const isFuture   = dateStr > todayStr()
+                    const isToday = dateStr === todayStr()
+                    const isFuture = dateStr > todayStr()
                     const isSelected = dateStr === selectedDay
 
                     const dayOfWeek = new Date(calYear, calMonth, day).toLocaleDateString("en-US", { weekday: "long" })
@@ -1666,10 +1666,10 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
 
                     const hasData = !!data
 
-                    const dayCalEvents  = getCalendarEventsForDate(dateStr)
-                    const isHoliday     = dayCalEvents.some(e => e.event_type === "holiday")
-                    const isSuspended   = dayCalEvents.some(e => e.event_type === "suspension")
-                    const isSpecial     = isHoliday || isSuspended
+                    const dayCalEvents = getCalendarEventsForDate(dateStr)
+                    const isHoliday = dayCalEvents.some(e => e.event_type === "holiday")
+                    const isSuspended = dayCalEvents.some(e => e.event_type === "suspension")
+                    const isSpecial = isHoliday || isSuspended
                     const calEventLabel = isHoliday ? "HOLIDAY" : isSuspended ? "SUSPENDED" : null
                     const firstEventTitle = dayCalEvents[0]?.title
 
@@ -1679,8 +1679,8 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
 
                     const cellClass = isSpecial
                       ? (dm
-                          ? `${isHoliday ? "bg-red-500/20 text-red-400" : "bg-orange-500/20 text-orange-400"} cursor-default`
-                          : `${isHoliday ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"} cursor-default`)
+                        ? `${isHoliday ? "bg-red-500/20 text-red-400" : "bg-orange-500/20 text-orange-400"} cursor-default`
+                        : `${isHoliday ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"} cursor-default`)
                       : hasData
                         ? pct >= 0.8
                           ? (dm ? "bg-green-500/20 hover:bg-green-500/30 text-green-400 cursor-pointer" : "bg-green-100 hover:bg-green-200 text-green-700 cursor-pointer")
@@ -1815,9 +1815,9 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
 
                 <div className="flex items-center gap-4 mt-3 flex-wrap">
                   {[
-                    { color: dm ? "bg-green-500/20" : "bg-green-100",   label: "≥80% present" },
-                    { color: dm ? "bg-amber-500/20" : "bg-amber-100",   label: "50–79%" },
-                    { color: dm ? "bg-red-500/20"   : "bg-red-100",     label: "<50% / Absent" },
+                    { color: dm ? "bg-green-500/20" : "bg-green-100", label: "≥80% present" },
+                    { color: dm ? "bg-amber-500/20" : "bg-amber-100", label: "50–79%" },
+                    { color: dm ? "bg-red-500/20" : "bg-red-100", label: "<50% / Absent" },
                     { color: dm ? "bg-red-500/20 border border-red-500/40" : "bg-red-100 border border-red-300", label: "Holiday" },
                     { color: dm ? "bg-orange-500/20 border border-orange-500/40" : "bg-orange-100 border border-orange-300", label: "Suspended" },
                   ].map(l => (
@@ -1841,7 +1841,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
               onWheel={e => {
                 const el = dayDetailRef.current
                 if (!el) return
-                const atTop    = el.scrollTop === 0
+                const atTop = el.scrollTop === 0
                 const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1
                 if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) return
                 e.stopPropagation()
@@ -1857,10 +1857,10 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                     return (
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         {[
-                          { label: "Present",     val: p,  cls: "text-green-500 bg-green-500/10" },
-                          { label: "Late",        val: l,  cls: "text-amber-500 bg-amber-500/10" },
-                          { label: "Excused",     val: e2, cls: "text-blue-500 bg-blue-500/10"  },
-                          { label: "Absent",      val: a,  cls: "text-red-500 bg-red-500/10"    },
+                          { label: "Present", val: p, cls: "text-green-500 bg-green-500/10" },
+                          { label: "Late", val: l, cls: "text-amber-500 bg-amber-500/10" },
+                          { label: "Excused", val: e2, cls: "text-blue-500 bg-blue-500/10" },
+                          { label: "Absent", val: a, cls: "text-red-500 bg-red-500/10" },
                           { label: "Not Scanned", val: ns, cls: `${sub} ${dm ? "bg-slate-700/40" : "bg-slate-100"}` },
                         ].map(x => (
                           <span key={x.label} className={`text-[9px] font-black px-2.5 py-1 rounded-full ${x.cls}`}>
@@ -1875,94 +1875,94 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                   </p>
                 </div>
 
-              <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${dm ? "bg-slate-800/60 border-slate-700/40" : "bg-slate-50 border-slate-200"}`}>
-                <Search size={12} className={sub} />
-                <input value={calDaySearch} onChange={e => setCalDaySearchWithDebounce(e.target.value)}
-                  placeholder="Search student…"
-                  className={`flex-1 text-[11px] font-bold bg-transparent outline-none ${head}`} />
-                {calDaySearch && <button onClick={() => { setCalDaySearch(""); setCalDaySearchDebounced("") }}><X size={12} className={sub} /></button>}
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap mt-2">
-                <div className={`flex gap-1 p-1 rounded-xl border ${dm ? "bg-slate-800/30 border-slate-700/40" : "bg-slate-100 border-slate-200"}`}>
-                  <button onClick={() => setCalSortMode("alpha")}
-                    className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wide transition-all
-                      ${calSortMode === "alpha" ? (dm ? "bg-slate-700 text-white" : "bg-white text-slate-800 shadow-sm") : sub}`}>A–Z</button>
-                  <button onClick={() => setCalSortMode("status")}
-                    className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wide transition-all
-                      ${calSortMode === "status" ? (dm ? "bg-slate-700 text-white" : "bg-white text-slate-800 shadow-sm") : sub}`}>Scan Time</button>
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${dm ? "bg-slate-800/60 border-slate-700/40" : "bg-slate-50 border-slate-200"}`}>
+                  <Search size={12} className={sub} />
+                  <input value={calDaySearch} onChange={e => setCalDaySearchWithDebounce(e.target.value)}
+                    placeholder="Search student…"
+                    className={`flex-1 text-[11px] font-bold bg-transparent outline-none ${head}`} />
+                  {calDaySearch && <button onClick={() => { setCalDaySearch(""); setCalDaySearchDebounced("") }}><X size={12} className={sub} /></button>}
                 </div>
-                <button
-                  onClick={async () => {
-                    if (!selectedDay) return
-                    const sectionStu = students.filter(s => s.section === calSection)
-                    const dayOfWeek2 = new Date((selectedDay!) + "T00:00:00").toLocaleDateString("en-US", { weekday: "long" })
-                    const subjsOnDay = [...new Set(schedules.filter(s => s.section === calSection && s.day === dayOfWeek2).map(s => s.subject))]
-                    const toInsert: AttRecord[] = []
-                    sectionStu.forEach(s => {
-                      subjsOnDay.forEach(subj => {
-                        const existing = dayRecords.find(r => r.student_id === s.id && r.subject === subj)
-                        if (!existing) {
-                          const sched = schedules.find(sc => sc.subject === subj && sc.section === s.section)
-                          toInsert.push({
-                            student_id: s.id, lrn: s.lrn,
-                            student_name: `${s.last_name}, ${s.first_name}`,
-                            section: s.section, strand: s.strand || "",
-                            subject: subj, date: selectedDay!,
-                            time: sched?.start_time?.slice(0, 8) || "00:00:00",
-                            status: "Present" as AttStatus, school_year: schoolYear,
-                            notes: "MANUAL",
-                          })
-                        }
-                      })
-                    })
-                    if (!toInsert.length) { toast.info("All students already recorded"); return }
-                    pendingScrollRef.current = dayDetailRef.current?.scrollTop ?? 0
-                    setDayRecords(prev => {
-                      const updated = [...prev]
-                      toInsert.forEach(r => {
-                        if (!updated.find(x => x.student_id === r.student_id && x.subject === r.subject)) updated.push(r)
-                      })
-                      return updated
-                    })
-                    const { error } = await supabase.from("attendance").insert(toInsert)
-                    if (error) {
-                      toast.error("Failed: " + error.message)
-                      setDayRecords(prev => prev.filter(r => !toInsert.some(x => x.student_id === r.student_id && x.subject === r.subject && !r.id)))
-                    } else {
-                      toast.success(`${toInsert.length} record${toInsert.length !== 1 ? "s" : ""} marked Present`)
-                    }
-                  }}
-                  className={`flex items-center gap-1 px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-wide border transition-all touch-manipulation
-                    ${dm ? "bg-green-500/15 border-green-500/20 text-green-400 active:bg-green-500/25" : "bg-green-50 border-green-200 text-green-600 active:bg-green-100"}`}>
-                  <CheckCircle2 size={10} /> Mark All Present
-                </button>
-              </div>
 
-              {(() => {
-                const evts = getCalendarEventsForDate(selectedDay)
-                if (!evts.length) return null
-                return (
-                  <div className="flex flex-col gap-1 w-full">
-                    {evts.map(e => {
-                      const isH = e.event_type === "holiday"
-                      const isS = e.event_type === "suspension"
-                      if (!isH && !isS) return null
-                      return (
-                        <div key={e.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[9px] font-bold w-full
-                          ${isH
-                            ? (dm ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-red-50 border-red-200 text-red-700")
-                            : (dm ? "bg-orange-500/10 border-orange-500/20 text-orange-400" : "bg-orange-50 border-orange-200 text-orange-700")}`}>
-                          <span className="text-[8px] font-black uppercase tracking-widest">
-                            {isH ? "🎌 HOLIDAY" : "⛔ SUSPENDED"}
-                          </span>
-                          <span className="font-medium">{e.title}</span>
-                        </div>
-                      )
-                    })}
+                <div className="flex items-center gap-2 flex-wrap mt-2">
+                  <div className={`flex gap-1 p-1 rounded-xl border ${dm ? "bg-slate-800/30 border-slate-700/40" : "bg-slate-100 border-slate-200"}`}>
+                    <button onClick={() => setCalSortMode("alpha")}
+                      className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wide transition-all
+                      ${calSortMode === "alpha" ? (dm ? "bg-slate-700 text-white" : "bg-white text-slate-800 shadow-sm") : sub}`}>A–Z</button>
+                    <button onClick={() => setCalSortMode("status")}
+                      className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wide transition-all
+                      ${calSortMode === "status" ? (dm ? "bg-slate-700 text-white" : "bg-white text-slate-800 shadow-sm") : sub}`}>Scan Time</button>
                   </div>
-                )
-              })()}
+                  <button
+                    onClick={async () => {
+                      if (!selectedDay) return
+                      const sectionStu = students.filter(s => s.section === calSection)
+                      const dayOfWeek2 = new Date((selectedDay!) + "T00:00:00").toLocaleDateString("en-US", { weekday: "long" })
+                      const subjsOnDay = [...new Set(schedules.filter(s => s.section === calSection && s.day === dayOfWeek2).map(s => s.subject))]
+                      const toInsert: AttRecord[] = []
+                      sectionStu.forEach(s => {
+                        subjsOnDay.forEach(subj => {
+                          const existing = dayRecords.find(r => r.student_id === s.id && r.subject === subj)
+                          if (!existing) {
+                            const sched = schedules.find(sc => sc.subject === subj && sc.section === s.section)
+                            toInsert.push({
+                              student_id: s.id, lrn: s.lrn,
+                              student_name: `${s.last_name}, ${s.first_name}`,
+                              section: s.section, strand: s.strand || "",
+                              subject: subj, date: selectedDay!,
+                              time: sched?.start_time?.slice(0, 8) || "00:00:00",
+                              status: "Present" as AttStatus, school_year: schoolYear,
+                              notes: "MANUAL",
+                            })
+                          }
+                        })
+                      })
+                      if (!toInsert.length) { toast.info("All students already recorded"); return }
+                      pendingScrollRef.current = dayDetailRef.current?.scrollTop ?? 0
+                      setDayRecords(prev => {
+                        const updated = [...prev]
+                        toInsert.forEach(r => {
+                          if (!updated.find(x => x.student_id === r.student_id && x.subject === r.subject)) updated.push(r)
+                        })
+                        return updated
+                      })
+                      const { error } = await supabase.from("attendance").insert(toInsert)
+                      if (error) {
+                        toast.error("Failed: " + error.message)
+                        setDayRecords(prev => prev.filter(r => !toInsert.some(x => x.student_id === r.student_id && x.subject === r.subject && !r.id)))
+                      } else {
+                        toast.success(`${toInsert.length} record${toInsert.length !== 1 ? "s" : ""} marked Present`)
+                      }
+                    }}
+                    className={`flex items-center gap-1 px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-wide border transition-all touch-manipulation
+                    ${dm ? "bg-green-500/15 border-green-500/20 text-green-400 active:bg-green-500/25" : "bg-green-50 border-green-200 text-green-600 active:bg-green-100"}`}>
+                    <CheckCircle2 size={10} /> Mark All Present
+                  </button>
+                </div>
+
+                {(() => {
+                  const evts = getCalendarEventsForDate(selectedDay)
+                  if (!evts.length) return null
+                  return (
+                    <div className="flex flex-col gap-1 w-full">
+                      {evts.map(e => {
+                        const isH = e.event_type === "holiday"
+                        const isS = e.event_type === "suspension"
+                        if (!isH && !isS) return null
+                        return (
+                          <div key={e.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[9px] font-bold w-full
+                          ${isH
+                              ? (dm ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-red-50 border-red-200 text-red-700")
+                              : (dm ? "bg-orange-500/10 border-orange-500/20 text-orange-400" : "bg-orange-50 border-orange-200 text-orange-700")}`}>
+                            <span className="text-[8px] font-black uppercase tracking-widest">
+                              {isH ? "🎌 HOLIDAY" : "⛔ SUSPENDED"}
+                            </span>
+                            <span className="font-medium">{e.title}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
 
                 <div className="flex items-center gap-2">
                   <div className={`flex gap-1 p-1 rounded-xl border ${dm ? "bg-slate-800/40 border-slate-700/40" : "bg-slate-100 border-slate-200"}`}>
@@ -1989,16 +1989,16 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
               ) : (() => {
                 // Use memoized values — no recomputation on every render
                 const sectionStuForDay = calDaySectionStudents
-                const daySubjects      = calDaySubjects
-                const matrix           = calDayMatrix
+                const daySubjects = calDaySubjects
+                const matrix = calDayMatrix
 
                 const statusDot = (r: AttRecord | undefined) => {
                   if (!r) return <span className={`text-[8px] font-black ${sub}`}>—</span>
                   return (
                     <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full
                       ${r.status === "Present" ? "bg-green-500/15 text-green-500"
-                      : r.status === "Late"    ? "bg-amber-500/15 text-amber-500"
-                      :                          "bg-red-500/15 text-red-500"}`}>
+                        : r.status === "Late" ? "bg-amber-500/15 text-amber-500"
+                          : "bg-red-500/15 text-red-500"}`}>
                       {r.status === "Present" ? "P" : r.status === "Late" ? "L" : "A"}
                     </span>
                   )
@@ -2013,9 +2013,9 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                       {daySubjects.map(subject => {
                         const subSchedule = schedules.find(s => s.subject === subject && s.section === calSection)
                         const presentStudents = sectionStuForDay.filter(s => { const r = matrix[s.id]?.[subject]; return r && r.status === "Present" })
-                        const lateStudents    = sectionStuForDay.filter(s => { const r = matrix[s.id]?.[subject]; return r && r.status === "Late" })
-                        const absentStudents  = sectionStuForDay.filter(s => { const r = matrix[s.id]?.[subject]; return !r || r.status === "Absent" })
-                        const excStudents     = sectionStuForDay.filter(s => { const r = matrix[s.id]?.[subject]; return r && r.status === "Excused" })
+                        const lateStudents = sectionStuForDay.filter(s => { const r = matrix[s.id]?.[subject]; return r && r.status === "Late" })
+                        const absentStudents = sectionStuForDay.filter(s => { const r = matrix[s.id]?.[subject]; return !r || r.status === "Absent" })
+                        const excStudents = sectionStuForDay.filter(s => { const r = matrix[s.id]?.[subject]; return r && r.status === "Excused" })
                         const absentButPresentElsewhere = absentStudents.filter(s =>
                           daySubjects.some(other => other !== subject && matrix[s.id]?.[other] &&
                             (matrix[s.id][other].status === "Present" || matrix[s.id][other].status === "Late"))
@@ -2031,12 +2031,12 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                               </div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 {presentStudents.length > 0 && <span className="flex items-center gap-1 text-[9px] font-black text-green-500"><CheckCircle2 size={10} /> {presentStudents.length}</span>}
-                                {lateStudents.length > 0    && <span className="flex items-center gap-1 text-[9px] font-black text-amber-500"><Clock size={10} /> {lateStudents.length}</span>}
-                                {excStudents.length > 0     && <span className="flex items-center gap-1 text-[9px] font-black text-blue-500"><ShieldCheck size={10} /> {excStudents.length}</span>}
-                                {absentStudents.length > 0  && <span className="flex items-center gap-1 text-[9px] font-black text-red-500"><MinusCircle size={10} /> {absentStudents.length}</span>}
+                                {lateStudents.length > 0 && <span className="flex items-center gap-1 text-[9px] font-black text-amber-500"><Clock size={10} /> {lateStudents.length}</span>}
+                                {excStudents.length > 0 && <span className="flex items-center gap-1 text-[9px] font-black text-blue-500"><ShieldCheck size={10} /> {excStudents.length}</span>}
+                                {absentStudents.length > 0 && <span className="flex items-center gap-1 text-[9px] font-black text-red-500"><MinusCircle size={10} /> {absentStudents.length}</span>}
                                 <span className={`text-[9px] font-bold ${sub}`}>{presentStudents.length + lateStudents.length}/{sectionStuForDay.length}</span>
                               </div>
-                              <svg className={`w-3.5 h-3.5 shrink-0 transition-transform ${isSubjCollapsed ? "" : "rotate-180"} ${sub}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
+                              <svg className={`w-3.5 h-3.5 shrink-0 transition-transform ${isSubjCollapsed ? "" : "rotate-180"} ${sub}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                             </button>
 
                             {!isSubjCollapsed && presentStudents.length > 0 && (() => {
@@ -2050,7 +2050,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                                       <span className="text-[9px] font-black uppercase tracking-wider text-green-500">Present</span>
                                       <span className={`text-[8px] font-bold ml-1 ${dm ? "text-green-400" : "text-green-700"}`}>{presentStudents.length}</span>
                                     </div>
-                                    <svg className={`w-3 h-3 transition-transform ${collapsed ? "" : "rotate-180"} ${sub}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
+                                    <svg className={`w-3 h-3 transition-transform ${collapsed ? "" : "rotate-180"} ${sub}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                                   </button>
                                   {!collapsed && (
                                     <div className="px-4 pb-3 flex flex-col gap-1.5">
@@ -2076,13 +2076,13 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                                                   className={`p-1 rounded-lg transition-colors ${dm ? "text-slate-500 hover:text-blue-400 hover:bg-blue-500/10" : "text-slate-300 hover:text-blue-500 hover:bg-blue-50"}`}>
                                                   <QrCode size={13} />
                                                 </button>
-                                                {(["Present","Late","Absent"] as AttStatus[]).map(st => (
+                                                {(["Present", "Late", "Absent"] as AttStatus[]).map(st => (
                                                   <button key={st} onClick={() => updateCalendarDayStatus(s, subject, r, st, selectedDay!)}
                                                     disabled={r.status === st} title={st}
                                                     className={`p-1 rounded-lg transition-colors ${r.status === st
                                                       ? st === "Present" ? "bg-green-500/20 text-green-500 cursor-default"
                                                         : st === "Late" ? "bg-amber-500/20 text-amber-500 cursor-default"
-                                                        : "bg-red-500/20 text-red-500 cursor-default"
+                                                          : "bg-red-500/20 text-red-500 cursor-default"
                                                       : dm ? "text-slate-600 hover:text-white hover:bg-slate-700" : "text-slate-300 hover:text-slate-700 hover:bg-slate-100"}`}>
                                                     {st === "Present" ? <CheckCircle2 size={13} /> : st === "Late" ? <Clock size={13} /> : <MinusCircle size={13} />}
                                                   </button>
@@ -2109,7 +2109,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                                       <span className="text-[9px] font-black uppercase tracking-wider text-amber-500">Late</span>
                                       <span className={`text-[8px] font-bold ml-1 ${dm ? "text-amber-400" : "text-amber-700"}`}>{lateStudents.length}</span>
                                     </div>
-                                    <svg className={`w-3 h-3 transition-transform ${collapsed ? "" : "rotate-180"} ${sub}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
+                                    <svg className={`w-3 h-3 transition-transform ${collapsed ? "" : "rotate-180"} ${sub}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                                   </button>
                                   {!collapsed && (
                                     <div className="px-4 pb-3 flex flex-col gap-1.5">
@@ -2135,13 +2135,13 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                                                   className={`p-1 rounded-lg transition-colors ${dm ? "text-slate-500 hover:text-blue-400 hover:bg-blue-500/10" : "text-slate-300 hover:text-blue-500 hover:bg-blue-50"}`}>
                                                   <QrCode size={13} />
                                                 </button>
-                                                {(["Present","Late","Absent"] as AttStatus[]).map(st => (
+                                                {(["Present", "Late", "Absent"] as AttStatus[]).map(st => (
                                                   <button key={st} onClick={() => updateCalendarDayStatus(s, subject, r, st, selectedDay!)}
                                                     disabled={r.status === st} title={st}
                                                     className={`p-1 rounded-lg transition-colors ${r.status === st
                                                       ? st === "Present" ? "bg-green-500/20 text-green-500 cursor-default"
                                                         : st === "Late" ? "bg-amber-500/20 text-amber-500 cursor-default"
-                                                        : "bg-red-500/20 text-red-500 cursor-default"
+                                                          : "bg-red-500/20 text-red-500 cursor-default"
                                                       : dm ? "text-slate-600 hover:text-white hover:bg-slate-700" : "text-slate-300 hover:text-slate-700 hover:bg-slate-100"}`}>
                                                     {st === "Present" ? <CheckCircle2 size={13} /> : st === "Late" ? <Clock size={13} /> : <MinusCircle size={13} />}
                                                   </button>
@@ -2168,7 +2168,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                                       <span className="text-[9px] font-black uppercase tracking-wider text-red-500">Absent / No Record</span>
                                       <span className={`text-[8px] font-bold ml-1 ${dm ? "text-red-400" : "text-red-700"}`}>{absentStudents.length}</span>
                                     </div>
-                                    <svg className={`w-3 h-3 transition-transform ${collapsed ? "" : "rotate-180"} ${sub}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
+                                    <svg className={`w-3 h-3 transition-transform ${collapsed ? "" : "rotate-180"} ${sub}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                                   </button>
                                   {!collapsed && (
                                     <div className="px-4 pb-3 flex flex-col gap-1.5">
@@ -2217,7 +2217,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                                                   className={`p-1.5 rounded-lg transition-colors ${dm ? "text-slate-500 hover:text-blue-400 hover:bg-blue-500/10" : "text-slate-300 hover:text-blue-500 hover:bg-blue-50"}`}>
                                                   <QrCode size={14} />
                                                 </button>
-                                                {(["Present","Late","Absent"] as AttStatus[]).map(st => {
+                                                {(["Present", "Late", "Absent"] as AttStatus[]).map(st => {
                                                   const isCurrent = existingRec?.status === st || (!existingRec && st === "Absent")
                                                   return (
                                                     <button key={st}
@@ -2226,7 +2226,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                                                       className={`p-1.5 rounded-lg transition-colors ${isCurrent
                                                         ? st === "Present" ? "bg-green-500/20 text-green-500 cursor-default"
                                                           : st === "Late" ? "bg-amber-500/20 text-amber-500 cursor-default"
-                                                          : "bg-red-500/20 text-red-500 cursor-default"
+                                                            : "bg-red-500/20 text-red-500 cursor-default"
                                                         : dm ? "text-slate-600 hover:text-white hover:bg-slate-700" : "text-slate-300 hover:text-slate-700 hover:bg-slate-100"}`}>
                                                       {st === "Present" ? <CheckCircle2 size={14} /> : st === "Late" ? <Clock size={14} /> : <MinusCircle size={14} />}
                                                     </button>
@@ -2265,7 +2265,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                       const presentCount2 = Object.values(studentRecs).filter(r => r.status === "Present" || r.status === "Late").length
                       const totalSubjects = daySubjects.length
                       const presentSubjects = daySubjects.filter(s => studentRecs[s] && (studentRecs[s].status === "Present" || studentRecs[s].status === "Late"))
-                      const absentSubjects  = daySubjects.filter(s => !studentRecs[s] || studentRecs[s].status === "Absent")
+                      const absentSubjects = daySubjects.filter(s => !studentRecs[s] || studentRecs[s].status === "Absent")
                       const hasInconsistency = presentSubjects.length > 0 && absentSubjects.length > 0
                       const isStuCollapsed = collapsedStus.has(student.id)
                       return (
@@ -2293,7 +2293,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                             ) : presentCount2 === 0 ? (
                               <span className="text-[8px] font-black px-2 py-1 rounded-full bg-red-500/15 text-red-500 shrink-0">All Absent</span>
                             ) : null}
-                            <svg className={`w-3.5 h-3.5 ml-1 shrink-0 transition-transform ${isStuCollapsed ? "" : "rotate-180"} ${sub}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
+                            <svg className={`w-3.5 h-3.5 ml-1 shrink-0 transition-transform ${isStuCollapsed ? "" : "rotate-180"} ${sub}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                           </button>
 
                           {!isStuCollapsed && daySubjects.length > 0 && (
@@ -2336,7 +2336,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                                           className={`p-1 rounded-lg transition-colors ${dm ? "text-slate-500 hover:text-blue-400 hover:bg-blue-500/10" : "text-slate-300 hover:text-blue-500 hover:bg-blue-50"}`}>
                                           <QrCode size={12} />
                                         </button>
-                                        {(["Present","Late","Absent"] as AttStatus[]).map(st => {
+                                        {(["Present", "Late", "Absent"] as AttStatus[]).map(st => {
                                           const current = !r ? st === "Absent" : r.status === st
                                           return (
                                             <button key={st}
@@ -2345,7 +2345,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                                               className={`p-1 rounded-lg transition-colors ${current
                                                 ? st === "Present" ? "bg-green-500/20 text-green-500 cursor-default"
                                                   : st === "Late" ? "bg-amber-500/20 text-amber-500 cursor-default"
-                                                  : "bg-red-500/20 text-red-500 cursor-default"
+                                                    : "bg-red-500/20 text-red-500 cursor-default"
                                                 : dm ? "text-slate-600 hover:text-white hover:bg-slate-700" : "text-slate-300 hover:text-slate-700 hover:bg-slate-100"}`}>
                                               {st === "Present" ? <CheckCircle2 size={12} /> : st === "Late" ? <Clock size={12} /> : <MinusCircle size={12} />}
                                             </button>

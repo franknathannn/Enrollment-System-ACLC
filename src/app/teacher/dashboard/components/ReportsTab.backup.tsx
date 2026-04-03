@@ -93,13 +93,13 @@ const CircularProgress = ({ pct, size = 60, strokeWidth = 5, dm }: { pct: number
 }
 
 export function ReportsTab({ schedules, students, dm, session, schoolYear }: Props) {
-  const [attData, setAttData]   = useState<AttRow[]>([])
-  const [loading, setLoading]   = useState(false)
+  const [attData, setAttData] = useState<AttRow[]>([])
+  const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [activeSection, setActiveSection] = useState<string>("ALL")
   const [subjectFocus, setSubjectFocus] = useState<Record<string, string | null>>({})
   const [rosterSearch, setRosterSearch] = useState("")
-  const [printSubject, setPrintSubject] = useState<{section: string; subject: string} | null | undefined>(undefined)
+  const [printSubject, setPrintSubject] = useState<{ section: string; subject: string } | null | undefined>(undefined)
 
   const toggleSubjectFocus = (section: string, subject: string) => {
     setRosterSearch("")
@@ -107,11 +107,11 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
   }
   const printRef = useRef<HTMLDivElement>(null)
 
-  const card  = dm ? "bg-slate-900/40 backdrop-blur-xl border-white/5" : "bg-white/80 backdrop-blur-xl border-slate-200"
+  const card = dm ? "bg-slate-900/40 backdrop-blur-xl border-white/5" : "bg-white/80 backdrop-blur-xl border-slate-200"
   const glass = dm ? "bg-white/5 border-white/5 hover:bg-white/10" : "bg-slate-50 border-slate-200 hover:bg-slate-100/80"
-  const sub   = dm ? "text-slate-400" : "text-slate-500"
-  const head  = dm ? "text-white" : "text-slate-900"
-  const divB  = dm ? "border-white/5" : "border-slate-100"
+  const sub = dm ? "text-slate-400" : "text-slate-500"
+  const head = dm ? "text-white" : "text-slate-900"
+  const divB = dm ? "border-white/5" : "border-slate-100"
 
   const mySections = useMemo(
     () => [...new Set(schedules.map(s => s.section))].filter(Boolean),
@@ -166,8 +166,8 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
         )
         const distinctDates = [...new Set(recs.map(r => r.date))].length
         const presentCount = recs.filter(r => r.status === "Present" || r.status === "Late").length
-        const absentCount  = recs.filter(r => r.status === "Absent").length
-        const lateCount    = recs.filter(r => r.status === "Late").length
+        const absentCount = recs.filter(r => r.status === "Absent").length
+        const lateCount = recs.filter(r => r.status === "Late").length
         const excusedCount = recs.filter(r => r.status === "Excused").length
         const totalExpected = distinctDates * sectionStudents.length
         const pct = totalExpected > 0 ? Math.round((presentCount / totalExpected) * 100) : 0
@@ -178,12 +178,12 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
         }
       })
 
-      const totalAbsents  = subjectReports.reduce((a, s) => a + s.absentCount, 0)
+      const totalAbsents = subjectReports.reduce((a, s) => a + s.absentCount, 0)
       const totalPresents = subjectReports.reduce((a, s) => a + s.presentCount, 0)
       const totalExpected = subjectReports.reduce((a, s) => a + s.totalSessions, 0)
-      const avgAbsents    = sectionStudents.length > 0 ? Math.round(totalAbsents / sectionStudents.length) : 0
-      const avgPresents   = sectionStudents.length > 0 ? Math.round(totalPresents / sectionStudents.length) : 0
-      const overallPct    = totalExpected > 0 ? Math.round((totalPresents / totalExpected) * 100) : 0
+      const avgAbsents = sectionStudents.length > 0 ? Math.round(totalAbsents / sectionStudents.length) : 0
+      const avgPresents = sectionStudents.length > 0 ? Math.round(totalPresents / sectionStudents.length) : 0
+      const overallPct = totalExpected > 0 ? Math.round((totalPresents / totalExpected) * 100) : 0
 
       return {
         section, subjects: subjectReports, totalStudents: sectionStudents.length,
@@ -208,7 +208,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
   const filteredCounseling = activeSection === "ALL" ? counselingList : counselingList.filter(s => s.student.section === activeSection)
 
   const handleDownloadPDF = () => {
-    let focused: {section: string; subject: string} | null = null
+    let focused: { section: string; subject: string } | null = null
     for (const sec of filteredReports) {
       const fs = subjectFocus[sec.section]
       if (fs) { focused = { section: sec.section, subject: fs }; break }
@@ -259,8 +259,8 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
       const presents = relevantRecs.filter(r => r.status === "Present" || r.status === "Late").length
       const total = relevantRecs.length
       const pct = total > 0 ? Math.round((presents / total) * 100) : 0
-      
-      return { 
+
+      return {
         name: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         fullDate: date,
         attendance: pct,
@@ -278,62 +278,62 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
 
   const VelocityChart = () => (
     <div className={`h-[300px] w-full mt-4 rounded-3xl p-4 md:p-6 overflow-hidden relative ${dm ? "bg-slate-900/20" : "bg-slate-50/50"}`}>
-       <div className="flex justify-between items-start mb-6">
-          <div>
-            <h4 className={`text-[10px] font-black uppercase tracking-widest ${sub}`}>Attendance Velocity</h4>
-            <p className={`text-2xl font-black italic tracking-tighter ${head}`}>
-              {trendData.length > 0 ? trendData[trendData.length-1].attendance : 0}% 
-              <span className={`ml-2 text-xs not-italic ${overallVelocity >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
-                {overallVelocity >= 0 ? "+" : ""}{overallVelocity}% vs prev session
-              </span>
-            </p>
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h4 className={`text-[10px] font-black uppercase tracking-widest ${sub}`}>Attendance Velocity</h4>
+          <p className={`text-2xl font-black italic tracking-tighter ${head}`}>
+            {trendData.length > 0 ? trendData[trendData.length - 1].attendance : 0}%
+            <span className={`ml-2 text-xs not-italic ${overallVelocity >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+              {overallVelocity >= 0 ? "+" : ""}{overallVelocity}% vs prev session
+            </span>
+          </p>
+        </div>
+        {overallVelocity !== 0 && (
+          <div className={`p-2 rounded-xl ${overallVelocity > 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+            {overallVelocity > 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
           </div>
-          {overallVelocity !== 0 && (
-            <div className={`p-2 rounded-xl ${overallVelocity > 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
-              {overallVelocity > 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-            </div>
-          )}
-       </div>
-       <ResponsiveContainer width="100%" height="80%">
-          <AreaChart data={trendData} margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
-            <defs>
-              <linearGradient id="velocityGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={dm ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)"} />
-            <XAxis 
-              dataKey="label" 
-              axisLine={false} tickLine={false} 
-              tick={{ fontSize: 9, fontWeight: 900, fill: dm ? "#64748b" : "#94a3b8" }}
-              dy={10}
-            />
-            <YAxis 
-              hide domain={[0, 110]}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                borderRadius: '16px', border: 'none', 
-                backgroundColor: dm ? '#1e293b' : '#ffffff',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' 
-              }}
-              labelStyle={{ fontSize: '10px', fontWeight: 900, color: '#3b82f6', textTransform: 'uppercase', marginBottom: '4px' }}
-              itemStyle={{ fontSize: '12px', fontWeight: 900, color: dm ? '#f8fafc' : '#0f172a' }}
-            />
-            <Area 
-              type="monotone" 
-              dataKey="attendance" 
-              stroke="#3b82f6" 
-              strokeWidth={4} 
-              fillOpacity={1} 
-              fill="url(#velocityGradient)" 
-              animationDuration={2000}
-              dot={false}
-              activeDot={{ r: 4, strokeWidth: 0, fill: '#3b82f6' }}
-            />
-          </AreaChart>
-       </ResponsiveContainer>
+        )}
+      </div>
+      <ResponsiveContainer width="100%" height="80%">
+        <AreaChart data={trendData} margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
+          <defs>
+            <linearGradient id="velocityGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={dm ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)"} />
+          <XAxis
+            dataKey="label"
+            axisLine={false} tickLine={false}
+            tick={{ fontSize: 9, fontWeight: 900, fill: dm ? "#64748b" : "#94a3b8" }}
+            dy={10}
+          />
+          <YAxis
+            hide domain={[0, 110]}
+          />
+          <Tooltip
+            contentStyle={{
+              borderRadius: '16px', border: 'none',
+              backgroundColor: dm ? '#1e293b' : '#ffffff',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+            }}
+            labelStyle={{ fontSize: '10px', fontWeight: 900, color: '#3b82f6', textTransform: 'uppercase', marginBottom: '4px' }}
+            itemStyle={{ fontSize: '12px', fontWeight: 900, color: dm ? '#f8fafc' : '#0f172a' }}
+          />
+          <Area
+            type="monotone"
+            dataKey="attendance"
+            stroke="#3b82f6"
+            strokeWidth={4}
+            fillOpacity={1}
+            fill="url(#velocityGradient)"
+            animationDuration={2000}
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 0, fill: '#3b82f6' }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   )
 
@@ -493,7 +493,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
             </div>
             <div className="grid grid-cols-3 gap-6 mb-10">
               <div className="print-card text-center">
-                <p className="text-3xl font-black">{Math.round(sectionReports.reduce((a,r)=>a+r.attendancePct,0)/sectionReports.length || 0)}%</p>
+                <p className="text-3xl font-black">{Math.round(sectionReports.reduce((a, r) => a + r.attendancePct, 0) / sectionReports.length || 0)}%</p>
                 <p className="text-[10px] font-bold uppercase text-gray-400">Average Attendance</p>
               </div>
               <div className="print-card text-center">
@@ -507,32 +507,32 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
             </div>
             <h2 className="text-xl font-black uppercase mb-6 border-b-2 border-gray-100 pb-2">Section Performance</h2>
             {sectionReports.map(r => (
-                <div key={r.section} className="print-card">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-black uppercase">{r.section}</h3>
-                    <span className="text-sm font-bold">{r.attendancePct}% Present</span>
-                  </div>
-                  <table className="w-full text-xs text-left">
-                    <thead><tr className="border-b uppercase text-[8px] text-gray-500">
-                      <th className="py-2">Subject</th>
-                      <th>Present</th>
-                      <th>Absent</th>
-                      <th>Late</th>
-                      <th>Excused</th>
-                    </tr></thead>
-                    <tbody className="divide-y">
-                      {r.subjects.map(s => (
-                        <tr key={s.subject}>
-                          <td className="py-2 font-bold">{s.subject}</td>
-                          <td>{s.presentCount - s.lateCount}</td>
-                          <td className="text-red-600">{s.absentCount}</td>
-                          <td className="text-amber-600">{s.lateCount}</td>
-                          <td className="text-blue-600">{s.excusedCount}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              <div key={r.section} className="print-card">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-black uppercase">{r.section}</h3>
+                  <span className="text-sm font-bold">{r.attendancePct}% Present</span>
                 </div>
+                <table className="w-full text-xs text-left">
+                  <thead><tr className="border-b uppercase text-[8px] text-gray-500">
+                    <th className="py-2">Subject</th>
+                    <th>Present</th>
+                    <th>Absent</th>
+                    <th>Late</th>
+                    <th>Excused</th>
+                  </tr></thead>
+                  <tbody className="divide-y">
+                    {r.subjects.map(s => (
+                      <tr key={s.subject}>
+                        <td className="py-2 font-bold">{s.subject}</td>
+                        <td>{s.presentCount - s.lateCount}</td>
+                        <td className="text-red-600">{s.absentCount}</td>
+                        <td className="text-amber-600">{s.lateCount}</td>
+                        <td className="text-blue-600">{s.excusedCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ))}
           </>
         )}
@@ -542,36 +542,36 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
       <div className={`rounded-[32px] border p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-2xl overflow-hidden relative group ${card}`}>
         <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
         <div className="flex items-center gap-5">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border border-white/10 ${dm ? "bg-blue-600/20 shadow-[0_0_20px_rgba(37,99,235,0.1)]" : "bg-blue-50 shadow-sm shadow-blue-500/10"}`}>
-               <BarChart2 className="w-7 h-7 text-blue-500" />
-            </div>
-            <div>
-              <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${sub}`}>Attendance Report</p>
-              <h2 className={`text-2xl font-black italic tracking-tighter uppercase ${head}`}>S.Y. {schoolYear} ANALYTICS</h2>
-            </div>
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border border-white/10 ${dm ? "bg-blue-600/20 shadow-[0_0_20px_rgba(37,99,235,0.1)]" : "bg-blue-50 shadow-sm shadow-blue-500/10"}`}>
+            <BarChart2 className="w-7 h-7 text-blue-500" />
+          </div>
+          <div>
+            <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${sub}`}>Attendance Report</p>
+            <h2 className={`text-2xl font-black italic tracking-tighter uppercase ${head}`}>S.Y. {schoolYear} ANALYTICS</h2>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-            <button
-               onClick={() => load()}
-               className={`h-12 px-6 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 group border ${dm ? "bg-white/5 border-white/5 hover:bg-white/10 text-white" : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-600"}`}
-            >
-              <RefreshCw className={`w-4 h-4 text-blue-500 ${loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-700"}`} />
-              Update Matrix
-            </button>
-            <button
-               onClick={handleDownloadPDF}
-               className="h-12 px-6 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 group bg-slate-900 border-none text-white hover:bg-black shadow-xl shadow-slate-950/20"
-            >
-              <FileDown className="w-4 h-4 text-blue-400 group-hover:-translate-y-0.5 transition-transform" />
-              {(() => {
-                for (const sec of filteredReports) {
-                  const fs = subjectFocus[sec.section]
-                  if (fs) return `PDF: ${sec.section} · ${fs}`
-                }
-                return "Download PDF"
-              })()}
-            </button>
+          <button
+            onClick={() => load()}
+            className={`h-12 px-6 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 group border ${dm ? "bg-white/5 border-white/5 hover:bg-white/10 text-white" : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-600"}`}
+          >
+            <RefreshCw className={`w-4 h-4 text-blue-500 ${loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-700"}`} />
+            Update Matrix
+          </button>
+          <button
+            onClick={handleDownloadPDF}
+            className="h-12 px-6 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 group bg-slate-900 border-none text-white hover:bg-black shadow-xl shadow-slate-950/20"
+          >
+            <FileDown className="w-4 h-4 text-blue-400 group-hover:-translate-y-0.5 transition-transform" />
+            {(() => {
+              for (const sec of filteredReports) {
+                const fs = subjectFocus[sec.section]
+                if (fs) return `PDF: ${sec.section} · ${fs}`
+              }
+              return "Download PDF"
+            })()}
+          </button>
         </div>
       </div>
 
@@ -625,15 +625,15 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
           ))}
         </div>
         <div className="flex items-center gap-4 flex-wrap justify-center">
-            {[
-              { c: "bg-emerald-500", l: "Present" }, { c: "bg-amber-500", l: "Late" },
-              { c: "bg-blue-500", l: "Excused" }, { c: "bg-rose-500", l: "Absent" }
-            ].map(i => (
-              <div key={i.l} className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${i.c}`} />
-                <span className={`text-[9px] font-bold uppercase tracking-wider ${sub}`}>{i.l}</span>
-              </div>
-            ))}
+          {[
+            { c: "bg-emerald-500", l: "Present" }, { c: "bg-amber-500", l: "Late" },
+            { c: "bg-blue-500", l: "Excused" }, { c: "bg-rose-500", l: "Absent" }
+          ].map(i => (
+            <div key={i.l} className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${i.c}`} />
+              <span className={`text-[9px] font-bold uppercase tracking-wider ${sub}`}>{i.l}</span>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -641,13 +641,13 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
       <div className="grid grid-cols-1 gap-6">
         {filteredReports.length > 0 ? filteredReports.map(report => {
           const isExpanded = expanded.has(report.section)
-          
+
           // Calculate section-specific trend (last 5 sessions)
           const secDates = [...new Set(attData.filter(d => {
             const s = students.find(st => st.id === d.student_id)
             return s?.section === report.section
           }).map(d => d.date))].sort().slice(-5)
-          
+
           const secTrend = secDates.map(date => {
             const dayRecs = attData.filter(d => d.date === date)
             const relevant = dayRecs.filter(d => {
@@ -658,8 +658,8 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
             return relevant.length > 0 ? Math.round((presents / relevant.length) * 100) : 0
           })
 
-          const lastVal = secTrend[secTrend.length-1] || 0
-          const prevVal = secTrend[secTrend.length-2] || 0
+          const lastVal = secTrend[secTrend.length - 1] || 0
+          const prevVal = secTrend[secTrend.length - 2] || 0
           const diff = lastVal - prevVal
 
           return (
@@ -688,19 +688,19 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="hidden md:block h-8 w-24">
-                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={secTrend.map((v, i) => ({ v, i }))} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                           <Line 
-                             type="monotone" 
-                             dataKey="v" 
-                             stroke={diff >= 0 ? "#10b981" : "#f43f5e"} 
-                             strokeWidth={4} 
-                             dot={false}
-                             activeDot={false}
-                             isAnimationActive={false}
-                           />
-                        </LineChart>
-                     </ResponsiveContainer>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={secTrend.map((v, i) => ({ v, i }))} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                        <Line
+                          type="monotone"
+                          dataKey="v"
+                          stroke={diff >= 0 ? "#10b981" : "#f43f5e"}
+                          strokeWidth={4}
+                          dot={false}
+                          activeDot={false}
+                          isAnimationActive={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-500 ${isExpanded ? "rotate-180 bg-blue-500 text-white" : dm ? "bg-white/5 text-slate-400" : "bg-slate-50 text-slate-500"}`}>
                     <ChevronDown size={20} />
@@ -711,54 +711,54 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
               {isExpanded && (
                 <div className={`px-6 md:px-10 pb-10 space-y-8 animate-in slide-in-from-top-4 duration-500`}>
                   <div className={`max-w-md mx-auto h-2 relative`}>
-                      <StackedBar
-                        present={report.subjects.reduce((a,s) => a + s.presentCount - s.lateCount, 0)}
-                        late={report.subjects.reduce((a,s) => a + s.lateCount, 0)}
-                        excused={report.subjects.reduce((a,s) => a + s.excusedCount, 0)}
-                        absent={report.subjects.reduce((a,s) => a + s.absentCount, 0)}
-                        total={report.subjects.reduce((a,s) => a + s.totalSessions, 0)}
-                      />
-                      <div className="text-[8px] font-black uppercase text-center mt-3 tracking-widest opacity-40">Cumulative Attendance Density</div>
+                    <StackedBar
+                      present={report.subjects.reduce((a, s) => a + s.presentCount - s.lateCount, 0)}
+                      late={report.subjects.reduce((a, s) => a + s.lateCount, 0)}
+                      excused={report.subjects.reduce((a, s) => a + s.excusedCount, 0)}
+                      absent={report.subjects.reduce((a, s) => a + s.absentCount, 0)}
+                      total={report.subjects.reduce((a, s) => a + s.totalSessions, 0)}
+                    />
+                    <div className="text-[8px] font-black uppercase text-center mt-3 tracking-widest opacity-40">Cumulative Attendance Density</div>
                   </div>
 
                   <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 pt-4`}>
-                      {report.subjects.sort((a,b)=>b.attendancePct - a.attendancePct).map((subj, idx) => (
-                        <div key={subj.subject} className={`p-5 rounded-[24px] border border-transparent flex gap-4 items-start ${glass} animate-in fade-in duration-500`} style={{ animationDelay: `${idx * 100}ms` }}>
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${dm ? "bg-white/5" : "bg-white shadow-sm"}`}>
-                             <p className="text-[10px] font-black text-blue-500">{idx+1}</p>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                             <div className="flex justify-between items-start mb-2">
-                                <p className={`text-[11px] font-black uppercase truncate leading-none ${head}`}>{subj.subject}</p>
-                                <p className={`text-[11px] font-black italic tracking-tighter ${subj.attendancePct >= 80 ? "text-emerald-500" : "text-rose-500"}`}>{subj.attendancePct}%</p>
-                             </div>
-                             <StackedBar
-                              present={subj.presentCount - subj.lateCount}
-                              late={subj.lateCount}
-                              excused={subj.excusedCount}
-                              absent={subj.absentCount}
-                              total={subj.totalSessions}
-                             />
-                             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
-                                <span className="text-[7px] font-black uppercase tracking-wider text-emerald-500">P: {subj.presentCount - subj.lateCount}</span>
-                                <span className="text-[7px] font-black uppercase tracking-wider text-amber-500">L: {subj.lateCount}</span>
-                                <span className="text-[7px] font-black uppercase tracking-wider text-blue-500">E: {subj.excusedCount}</span>
-                                <span className="text-[7px] font-black uppercase tracking-wider text-rose-500">A: {subj.absentCount}</span>
-                                <span className={`text-[7px] font-black uppercase tracking-wider ${sub} ml-auto`}>{subj.scheduledDays} Days</span>
-                             </div>
-                             <button
-                               onClick={(e) => { e.stopPropagation(); toggleSubjectFocus(report.section, subj.subject) }}
-                               className={`mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border
-                                 ${subjectFocus[report.section] === subj.subject
-                                   ? "bg-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/20"
-                                   : dm ? "bg-white/5 text-slate-400 hover:bg-white/10 border-white/5" : "bg-slate-100/80 text-slate-500 hover:bg-slate-200 border-slate-200"}`}
-                             >
-                               <Users size={9} />
-                               {subjectFocus[report.section] === subj.subject ? "Close Roster" : "View Roster"}
-                             </button>
-                          </div>
+                    {report.subjects.sort((a, b) => b.attendancePct - a.attendancePct).map((subj, idx) => (
+                      <div key={subj.subject} className={`p-5 rounded-[24px] border border-transparent flex gap-4 items-start ${glass} animate-in fade-in duration-500`} style={{ animationDelay: `${idx * 100}ms` }}>
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${dm ? "bg-white/5" : "bg-white shadow-sm"}`}>
+                          <p className="text-[10px] font-black text-blue-500">{idx + 1}</p>
                         </div>
-                      ))}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-2">
+                            <p className={`text-[11px] font-black uppercase truncate leading-none ${head}`}>{subj.subject}</p>
+                            <p className={`text-[11px] font-black italic tracking-tighter ${subj.attendancePct >= 80 ? "text-emerald-500" : "text-rose-500"}`}>{subj.attendancePct}%</p>
+                          </div>
+                          <StackedBar
+                            present={subj.presentCount - subj.lateCount}
+                            late={subj.lateCount}
+                            excused={subj.excusedCount}
+                            absent={subj.absentCount}
+                            total={subj.totalSessions}
+                          />
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
+                            <span className="text-[7px] font-black uppercase tracking-wider text-emerald-500">P: {subj.presentCount - subj.lateCount}</span>
+                            <span className="text-[7px] font-black uppercase tracking-wider text-amber-500">L: {subj.lateCount}</span>
+                            <span className="text-[7px] font-black uppercase tracking-wider text-blue-500">E: {subj.excusedCount}</span>
+                            <span className="text-[7px] font-black uppercase tracking-wider text-rose-500">A: {subj.absentCount}</span>
+                            <span className={`text-[7px] font-black uppercase tracking-wider ${sub} ml-auto`}>{subj.scheduledDays} Days</span>
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleSubjectFocus(report.section, subj.subject) }}
+                            className={`mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border
+                                 ${subjectFocus[report.section] === subj.subject
+                                ? "bg-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/20"
+                                : dm ? "bg-white/5 text-slate-400 hover:bg-white/10 border-white/5" : "bg-slate-100/80 text-slate-500 hover:bg-slate-200 border-slate-200"}`}
+                          >
+                            <Users size={9} />
+                            {subjectFocus[report.section] === subj.subject ? "Close List" : "View List"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   {/* --- STUDENT ROSTER (shown when a subject is focused via View Roster) --- */}
@@ -782,9 +782,9 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
                     const q = rosterSearch.trim().toLowerCase()
                     const visibleStats = q
                       ? allStudentStats.filter(s =>
-                          `${s.student.last_name} ${s.student.first_name}`.toLowerCase().includes(q) ||
-                          (s.student.lrn ?? "").toLowerCase().includes(q)
-                        )
+                        `${s.student.last_name} ${s.student.first_name}`.toLowerCase().includes(q) ||
+                        (s.student.lrn ?? "").toLowerCase().includes(q)
+                      )
                       : allStudentStats
 
                     const flaggedCount = allStudentStats.filter(s => s.isCutting || s.isEndangered).length
@@ -834,7 +834,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
                             )}
                             {/* Search */}
                             <div className={`relative flex items-center rounded-xl border overflow-hidden ${dm ? "bg-white/5 border-white/5" : "bg-white border-slate-200"}`}>
-                              <svg className={`absolute left-2.5 w-3 h-3 ${sub}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                              <svg className={`absolute left-2.5 w-3 h-3 ${sub}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
                               <input
                                 type="text"
                                 value={rosterSearch}
@@ -916,13 +916,13 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
           )
         }) : (
           <div className={`rounded-[32px] border p-20 flex flex-col items-center gap-6 text-center ${card}`}>
-             <div className="w-20 h-20 rounded-full bg-slate-500/10 flex items-center justify-center animate-pulse">
-                <BarChart2 size={32} className="text-slate-400" />
-             </div>
-             <div>
-                <p className={`text-lg font-black uppercase italic tracking-tighter ${head}`}>No Matrix Data Found</p>
-                <p className={`text-xs mt-1 ${sub}`}>Attendance records for S.Y. {schoolYear} are currently empty.</p>
-             </div>
+            <div className="w-20 h-20 rounded-full bg-slate-500/10 flex items-center justify-center animate-pulse">
+              <BarChart2 size={32} className="text-slate-400" />
+            </div>
+            <div>
+              <p className={`text-lg font-black uppercase italic tracking-tighter ${head}`}>No Matrix Data Found</p>
+              <p className={`text-xs mt-1 ${sub}`}>Attendance records for S.Y. {schoolYear} are currently empty.</p>
+            </div>
           </div>
         )}
       </div>
@@ -932,16 +932,16 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
         <div className={`rounded-[32px] border overflow-hidden shadow-2xl shadow-rose-500/5 ${card}`}>
           <div className={`px-8 py-6 border-b flex items-center justify-between gap-4 ${divB}`}>
             <div className="flex items-center gap-3">
-               <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center">
-                  <AlertCircle className="w-5 h-5 text-rose-500 animate-pulse" />
-               </div>
-               <div>
-                  <h3 className={`text-sm font-black uppercase italic tracking-tighter ${head}`}>Triage Matrix</h3>
-                  <p className={`text-[9px] font-black tracking-widest ${sub} uppercase`}>Students Requiring Critical Counseling</p>
-               </div>
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-rose-500 animate-pulse" />
+              </div>
+              <div>
+                <h3 className={`text-sm font-black uppercase italic tracking-tighter ${head}`}>Triage Matrix</h3>
+                <p className={`text-[9px] font-black tracking-widest ${sub} uppercase`}>Students Requiring Critical Counseling</p>
+              </div>
             </div>
             <div className="bg-rose-500 text-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-rose-500/30">
-               {filteredCounseling.length} RISK ALERTS
+              {filteredCounseling.length} RISK ALERTS
             </div>
           </div>
 
@@ -961,9 +961,9 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-rose-500/10 text-rose-500 text-[8px] font-black uppercase tracking-widest border border-rose-500/5">
-                       <TrendingDown size={10} /> {totalAbsents} Total Absences
+                      <TrendingDown size={10} /> {totalAbsents} Total Absences
                     </div>
-                    {Object.entries(absentBySubject).filter(([,c]) => c >= COUNSELING_THRESHOLD).map(([subj, cnt]) => (
+                    {Object.entries(absentBySubject).filter(([, c]) => c >= COUNSELING_THRESHOLD).map(([subj, cnt]) => (
                       <div key={subj} className="px-2 py-0.5 rounded-lg bg-slate-500/10 text-slate-500 text-[7px] font-black uppercase tracking-widest border border-slate-500/10">
                         {subj}: {cnt}× Risk
                       </div>
@@ -971,7 +971,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
                   </div>
                 </div>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-rose-500 border border-rose-500/10 ${dm ? "bg-rose-500/5" : "bg-rose-50"}`}>
-                   <Zap size={14} className="fill-rose-500" />
+                  <Zap size={14} className="fill-rose-500" />
                 </div>
               </div>
             ))}
@@ -980,4 +980,4 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
       )}
     </div>
   )
-}
+}

@@ -5,8 +5,8 @@
 import { useEffect, useState, useCallback, memo } from "react"
 import { supabase } from "@/lib/supabase/admin-client"
 import { formatDistanceToNow } from "date-fns"
-import { 
-  Search, Filter, Undo2, AlertTriangle, CheckCircle2, 
+import {
+  Search, Filter, Undo2, AlertTriangle, CheckCircle2,
   XCircle, User, ShieldAlert, History, RefreshCw,
   ArrowRightLeft, Trash2, FileText, Loader2
 } from "lucide-react"
@@ -14,8 +14,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { 
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter 
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/hooks/useTheme"
@@ -25,7 +25,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 // Optimized Background
 const StarConstellation = memo(function StarConstellation() {
-  const [stars, setStars] = useState<Array<{x: number, y: number, size: number}>>([])
+  const [stars, setStars] = useState<Array<{ x: number, y: number, size: number }>>([])
   useEffect(() => {
     const newStars = Array.from({ length: 30 }, () => ({
       x: Math.random() * 100,
@@ -100,7 +100,7 @@ export default function ActivityLogsPage() {
   useEffect(() => {
     checkUser()
     fetchLogs()
-    
+
     const channel = supabase
       .channel('activity_logs_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, () => {
@@ -116,7 +116,7 @@ export default function ActivityLogsPage() {
 
   const getRevertStatus = useCallback((log: any) => {
     if (!log) return 'Pending'
-    
+
     if (log.action_type === 'PENDING') {
       const details = log.details?.toLowerCase() || ''
       if (details.includes('from accepted') || details.includes('from approved')) {
@@ -130,7 +130,7 @@ export default function ActivityLogsPage() {
 
   const handleUndo = async () => {
     if (!activeLog) return
-    
+
     if (!['ACCEPTED', 'APPROVED', 'REJECTED', 'PENDING', 'DELETED'].includes(activeLog.action_type)) {
       toast.error("Action restricted.")
       setUndoOpen(false)
@@ -138,9 +138,9 @@ export default function ActivityLogsPage() {
     }
 
     if (activeLog.action_type === 'DELETED') {
-       toast.error("Cannot revert: Record was permanently deleted.")
-       setUndoOpen(false)
-       return
+      toast.error("Cannot revert: Record was permanently deleted.")
+      setUndoOpen(false)
+      return
     }
 
     if (!activeLog.student_id) {
@@ -168,7 +168,7 @@ export default function ActivityLogsPage() {
     try {
       // Use server action to ensure section unassignment and proper status update
       const result = await updateApplicantStatus(activeLog.student_id, targetStatus, targetStatus === 'Rejected' ? 'Reverted from logs' : undefined)
-      
+
       if (!result.success) throw new Error("Failed to update student status")
 
       // Log the undo action
@@ -184,7 +184,7 @@ export default function ActivityLogsPage() {
 
       // Delete the original log entry to clean up history
       await supabase.from('activity_logs').delete().eq('id', activeLog.id)
-      
+
       toast.success("Action Reverted", { id: toastId })
       setExitingIds(prev => new Set(prev).add(activeLog.id))
       setTimeout(() => {
@@ -199,7 +199,7 @@ export default function ActivityLogsPage() {
   const filteredLogs = logs.filter(log => {
     const search = searchTerm.toLowerCase()
     return (
-      log.student_name?.toLowerCase().includes(search) || 
+      log.student_name?.toLowerCase().includes(search) ||
       log.admin_name?.toLowerCase().includes(search) ||
       log.details?.toLowerCase().includes(search)
     ) && (filter === "ALL" || log.action_type === filter)
@@ -248,7 +248,7 @@ export default function ActivityLogsPage() {
   }
 
   const revertStatus = activeLog ? getRevertStatus(activeLog) : 'Pending'
-  
+
   const getModalStyles = (status: string) => {
     switch (status) {
       case 'Approved':
@@ -274,243 +274,243 @@ export default function ActivityLogsPage() {
         }
     }
   }
-  
+
   const modalStyles = getModalStyles(revertStatus)
 
   return (
     <TooltipProvider delayDuration={100}>
-    {/* Thin themed scrollbar — adapts to dark/light mode */}
-    <style>{`
+      {/* Thin themed scrollbar — adapts to dark/light mode */}
+      <style>{`
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: ${isDarkMode ? 'rgba(51,65,85,0.3)' : 'rgba(226,232,240,0.6)'}; border-radius: 99px; }
       ::-webkit-scrollbar-thumb { background: ${isDarkMode ? 'rgba(100,116,139,0.7)' : 'rgba(148,163,184,0.8)'}; border-radius: 99px; }
       ::-webkit-scrollbar-thumb:hover { background: ${isDarkMode ? 'rgba(148,163,184,0.9)' : 'rgba(100,116,139,0.9)'}; }
       * { scrollbar-width: thin; scrollbar-color: ${isDarkMode ? 'rgba(100,116,139,0.7) rgba(51,65,85,0.3)' : 'rgba(148,163,184,0.8) rgba(226,232,240,0.6)'}; }
     `}</style>
-    <div className="relative min-h-screen transition-colors duration-500">
-      <StarConstellation />
+      <div className="relative min-h-screen transition-colors duration-500">
+        <StarConstellation />
 
-      <div className="relative z-10 p-4 md:p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700 pb-32">
-        
-        {/* HEADER SECTION */}
-        <div
-          className="relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-end gap-6 p-6 md:p-8 rounded-[32px] shadow-xl border transition-all duration-500"
-          style={{
-            backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.85)' : '#ffffff',
-            borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.6)' : '#e2e8f0',
-          }}
-        >
-          {/* Top accent strip */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
-          {/* Ambient glow */}
-          <div className={`absolute -top-16 -right-16 w-48 h-48 rounded-full blur-[60px] pointer-events-none ${isDarkMode ? 'bg-violet-500/6' : 'bg-blue-400/5'}`} />
+        <div className="relative z-10 p-4 md:p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700 pb-32">
 
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}`} />
-              <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Audit Trail</p>
+          {/* HEADER SECTION */}
+          <div
+            className="relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-end gap-6 p-6 md:p-8 rounded-[32px] shadow-xl border transition-all duration-500"
+            style={{
+              backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.85)' : '#ffffff',
+              borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.6)' : '#e2e8f0',
+            }}
+          >
+            {/* Top accent strip */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
+            {/* Ambient glow */}
+            <div className={`absolute -top-16 -right-16 w-48 h-48 rounded-full blur-[60px] pointer-events-none ${isDarkMode ? 'bg-violet-500/6' : 'bg-blue-400/5'}`} />
+
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}`} />
+                <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Audit Trail</p>
+              </div>
+              <h1 className={`text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>System Logs</h1>
+              <p className={`text-[11px] font-semibold italic mt-1.5 flex items-center gap-2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                <History size={12} className="text-blue-500 shrink-0" />
+                Activity Logs · {user?.user_metadata?.full_name || "Authorized Admin"}
+              </p>
             </div>
-            <h1 className={`text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>System Logs</h1>
-            <p className={`text-[11px] font-semibold italic mt-1.5 flex items-center gap-2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-              <History size={12} className="text-blue-500 shrink-0" />
-              Activity Logs · {user?.user_metadata?.full_name || "Authorized Admin"}
-            </p>
-          </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
-             <Tooltip>
-               <TooltipTrigger asChild>
-                 <Button onClick={() => setClearAllOpen(true)} variant="ghost" className="h-12 px-4 rounded-2xl text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-all font-black uppercase text-[10px] tracking-widest shrink-0">Clear Logs</Button>
-               </TooltipTrigger>
-               <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Permanently delete all activity logs</p></TooltipContent>
-             </Tooltip>
-             <Tooltip>
-               <TooltipTrigger asChild>
-                 <Button onClick={() => fetchLogs(false)} variant="ghost" className="h-12 w-12 rounded-2xl text-slate-400 hover:text-blue-600 transition-transform hover:scale-110 active:scale-95"><RefreshCw className={loading ? "animate-spin" : ""} size={20}/></Button>
-               </TooltipTrigger>
-               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Reload activity logs</p></TooltipContent>
-             </Tooltip>
-             <div className="relative flex-1 md:w-64">
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={() => setClearAllOpen(true)} variant="ghost" className="h-12 px-4 rounded-2xl text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-all font-black uppercase text-[10px] tracking-widest shrink-0">Clear Logs</Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Permanently delete all activity logs</p></TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={() => fetchLogs(false)} variant="ghost" className="h-12 w-12 rounded-2xl text-slate-400 hover:text-blue-600 transition-transform hover:scale-110 active:scale-95"><RefreshCw className={loading ? "animate-spin" : ""} size={20} /></Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Reload activity logs</p></TooltipContent>
+              </Tooltip>
+              <div className="relative flex-1 md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input 
-                  placeholder="Search..." 
-                  className="pl-10 h-12 rounded-2xl border-slate-200 dark:border-white/10 font-bold text-sm focus:scale-[1.02] transition-transform" 
-                  value={searchTerm} 
+                <Input
+                  placeholder="Search..."
+                  className="pl-10 h-12 rounded-2xl border-slate-200 dark:border-white/10 font-bold text-sm focus:scale-[1.02] transition-transform"
+                  value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   style={{
                     backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
                     color: isDarkMode ? themeColors.dark.text.primary : themeColors.light.text.primary
                   }}
                 />
-             </div>
-          </div>
-        </div>
-
-
-        {/* PAGINATION — TOP */}
-        {totalLogsPages > 1 && (
-          <div className="flex items-center justify-between px-2">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-              {filteredLogs.length} log{filteredLogs.length !== 1 ? "s" : ""} · Page {logsPage} of {totalLogsPages}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setLogsPage(p => Math.max(1, p - 1))} disabled={logsPage <= 1}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
-                style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
-              >‹</button>
-              {Array.from({ length: totalLogsPages }, (_, i) => i + 1)
-                .filter(p => p === 1 || p === totalLogsPages || Math.abs(p - logsPage) <= 1)
-                .reduce<(number | string)[]>((acc, p, i, arr) => {
-                  if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push("…")
-                  acc.push(p); return acc
-                }, [])
-                .map((p, i) => typeof p === "string" ? (
-                  <span key={`e${i}`} className="text-[10px] px-1 text-slate-400">…</span>
-                ) : (
-                  <button key={p} onClick={() => setLogsPage(p as number)}
-                    className="w-9 h-9 rounded-xl text-[10px] font-black transition-all shadow-sm border"
-                    style={logsPage === p
-                      ? { backgroundColor: '#2563eb', color: '#ffffff', borderColor: '#2563eb' }
-                      : { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#94a3b8' : '#64748b' }}
-                  >{p}</button>
-                ))}
-              <button
-                onClick={() => setLogsPage(p => Math.min(totalLogsPages, p + 1))} disabled={logsPage >= totalLogsPages}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
-                style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
-              >›</button>
+              </div>
             </div>
           </div>
-        )}
 
-        {/* FEED SECTION */}
-        <div className="space-y-4">
-          {filteredLogs.length === 0 ? (
-            <div 
-              className="text-center py-20 text-slate-400 font-bold uppercase text-xs tracking-widest rounded-[32px] border-2 border-dashed border-slate-100 dark:border-white/5 transition-all duration-500"
-              style={{ backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(255, 255, 255, 0.5)' }}
-            >
-              No Node Data Recorded
+
+          {/* PAGINATION — TOP */}
+          {totalLogsPages > 1 && (
+            <div className="flex items-center justify-between px-2">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                {filteredLogs.length} log{filteredLogs.length !== 1 ? "s" : ""} · Page {logsPage} of {totalLogsPages}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setLogsPage(p => Math.max(1, p - 1))} disabled={logsPage <= 1}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
+                  style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
+                >‹</button>
+                {Array.from({ length: totalLogsPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalLogsPages || Math.abs(p - logsPage) <= 1)
+                  .reduce<(number | string)[]>((acc, p, i, arr) => {
+                    if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push("…")
+                    acc.push(p); return acc
+                  }, [])
+                  .map((p, i) => typeof p === "string" ? (
+                    <span key={`e${i}`} className="text-[10px] px-1 text-slate-400">…</span>
+                  ) : (
+                    <button key={p} onClick={() => setLogsPage(p as number)}
+                      className="w-9 h-9 rounded-xl text-[10px] font-black transition-all shadow-sm border"
+                      style={logsPage === p
+                        ? { backgroundColor: '#2563eb', color: '#ffffff', borderColor: '#2563eb' }
+                        : { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#94a3b8' : '#64748b' }}
+                    >{p}</button>
+                  ))}
+                <button
+                  onClick={() => setLogsPage(p => Math.min(totalLogsPages, p + 1))} disabled={logsPage >= totalLogsPages}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
+                  style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
+                >›</button>
+              </div>
             </div>
-          ) : (
-            pagedLogs.map((log) => (
-              <LogItem 
-                key={log.id} 
-                log={log}
-                adminProfile={adminProfiles[log.admin_id]}
-                onUndo={() => { setActiveLog(log); setUndoOpen(true); }} 
-                onDelete={() => { setActiveLog(log); setDeleteOpen(true); }}
-                isExiting={exitingIds.has(log.id)}
-                isDarkMode={isDarkMode}
-              />
-            ))
+          )}
+
+          {/* FEED SECTION */}
+          <div className="space-y-4">
+            {filteredLogs.length === 0 ? (
+              <div
+                className="text-center py-20 text-slate-400 font-bold uppercase text-xs tracking-widest rounded-[32px] border-2 border-dashed border-slate-100 dark:border-white/5 transition-all duration-500"
+                style={{ backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(255, 255, 255, 0.5)' }}
+              >
+                No Node Data Recorded
+              </div>
+            ) : (
+              pagedLogs.map((log) => (
+                <LogItem
+                  key={log.id}
+                  log={log}
+                  adminProfile={adminProfiles[log.admin_id]}
+                  onUndo={() => { setActiveLog(log); setUndoOpen(true); }}
+                  onDelete={() => { setActiveLog(log); setDeleteOpen(true); }}
+                  isExiting={exitingIds.has(log.id)}
+                  isDarkMode={isDarkMode}
+                />
+              ))
+            )}
+          </div>
+
+          {/* PAGINATION */}
+          {totalLogsPages > 1 && (
+            <div className="flex items-center justify-between px-2">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                {filteredLogs.length} log{filteredLogs.length !== 1 ? "s" : ""} · Page {logsPage} of {totalLogsPages}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setLogsPage(p => Math.max(1, p - 1))} disabled={logsPage <= 1}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
+                  style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
+                >‹</button>
+                {Array.from({ length: totalLogsPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalLogsPages || Math.abs(p - logsPage) <= 1)
+                  .reduce<(number | string)[]>((acc, p, i, arr) => {
+                    if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push("…")
+                    acc.push(p); return acc
+                  }, [])
+                  .map((p, i) => typeof p === "string" ? (
+                    <span key={`e${i}`} className="text-[10px] px-1 text-slate-400">…</span>
+                  ) : (
+                    <button key={p} onClick={() => setLogsPage(p as number)}
+                      className="w-9 h-9 rounded-xl text-[10px] font-black transition-all shadow-sm border"
+                      style={logsPage === p
+                        ? { backgroundColor: '#2563eb', color: '#ffffff', borderColor: '#2563eb' }
+                        : { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#94a3b8' : '#64748b' }}
+                    >{p}</button>
+                  ))}
+                <button
+                  onClick={() => setLogsPage(p => Math.min(totalLogsPages, p + 1))} disabled={logsPage >= totalLogsPages}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
+                  style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
+                >›</button>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* PAGINATION */}
-        {totalLogsPages > 1 && (
-          <div className="flex items-center justify-between px-2">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-              {filteredLogs.length} log{filteredLogs.length !== 1 ? "s" : ""} · Page {logsPage} of {totalLogsPages}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setLogsPage(p => Math.max(1, p - 1))} disabled={logsPage <= 1}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
-                style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
-              >‹</button>
-              {Array.from({ length: totalLogsPages }, (_, i) => i + 1)
-                .filter(p => p === 1 || p === totalLogsPages || Math.abs(p - logsPage) <= 1)
-                .reduce<(number | string)[]>((acc, p, i, arr) => {
-                  if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push("…")
-                  acc.push(p); return acc
-                }, [])
-                .map((p, i) => typeof p === "string" ? (
-                  <span key={`e${i}`} className="text-[10px] px-1 text-slate-400">…</span>
-                ) : (
-                  <button key={p} onClick={() => setLogsPage(p as number)}
-                    className="w-9 h-9 rounded-xl text-[10px] font-black transition-all shadow-sm border"
-                    style={logsPage === p
-                      ? { backgroundColor: '#2563eb', color: '#ffffff', borderColor: '#2563eb' }
-                      : { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#94a3b8' : '#64748b' }}
-                  >{p}</button>
-                ))}
-              <button
-                onClick={() => setLogsPage(p => Math.min(totalLogsPages, p + 1))} disabled={logsPage >= totalLogsPages}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all disabled:opacity-30 border shadow-sm"
-                style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', borderColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#64748b' }}
-              >›</button>
+        {/* REVERSAL MODAL */}
+        <Dialog open={undoOpen} onOpenChange={setUndoOpen}>
+          <DialogContent
+            className="w-[95vw] max-w-sm rounded-[32px] p-0 overflow-hidden border-none shadow-2xl z-[100] max-h-[90vh] flex flex-col transition-colors duration-500"
+            style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface }}
+          >
+            <div className={`${modalStyles.header} p-8 text-white border-b-4`}>
+              <DialogTitle className="text-xl font-black uppercase italic tracking-tighter">Confirm Reversal</DialogTitle>
+              <DialogDescription className={`${modalStyles.subtext} text-[10px] font-bold uppercase tracking-widest mt-1`}>Undo Action Node</DialogDescription>
             </div>
-          </div>
-        )}
+            <div className="p-8 space-y-4">
+              <p className="text-sm font-bold text-slate-600 dark:text-slate-300 italic">
+                This will revert <span className="text-blue-600 dark:text-blue-400">{activeLog?.student_name}</span> back to <span className={modalStyles.highlight}>{revertStatus.toUpperCase()}</span> status.
+              </p>
+              <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:gap-0">
+                <Button variant="ghost" onClick={() => setUndoOpen(false)} className="w-full sm:w-auto rounded-xl font-black uppercase text-[10px] hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">Abort</Button>
+                <Button onClick={handleUndo} className={`w-full sm:w-auto rounded-xl text-white font-black uppercase text-[10px] tracking-widest hover:scale-[1.02] transition-transform active:scale-95 shadow-xl ${modalStyles.button}`}>Revert Action</Button>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* DELETE MODAL */}
+        <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <DialogContent
+            className="w-[95vw] max-w-sm rounded-[32px] p-0 overflow-hidden border-none shadow-2xl z-[100] max-h-[90vh] flex flex-col transition-colors duration-500"
+            style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface }}
+          >
+            <div className="bg-red-600 p-8 text-white border-b-4 border-red-800">
+              <DialogTitle className="text-xl font-black uppercase italic tracking-tighter text-white">Confirm Purge</DialogTitle>
+              <DialogDescription className="text-red-200 text-[10px] font-bold uppercase tracking-widest mt-1">Permanent Deletion</DialogDescription>
+            </div>
+            <div className="p-8 space-y-4">
+              <p className="text-sm font-bold text-slate-600 dark:text-slate-300 italic">
+                Are you sure you want to permanently delete this log entry for <span className="text-red-600 dark:text-red-400">{activeLog?.student_name}</span>?
+              </p>
+              <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:gap-0">
+                <Button variant="ghost" onClick={() => setDeleteOpen(false)} className="w-full sm:w-auto rounded-xl font-black uppercase text-[10px] dark:text-slate-400 dark:hover:text-white">Cancel</Button>
+                <Button onClick={confirmDeleteLog} className="w-full sm:w-auto rounded-xl bg-red-600 text-white font-black uppercase text-[10px] tracking-widest hover:bg-red-700 transition-transform active:scale-95 shadow-xl shadow-red-500/20">Purge Log</Button>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* SYSTEM WIPE MODAL */}
+        <Dialog open={clearAllOpen} onOpenChange={setClearAllOpen}>
+          <DialogContent
+            className="w-[95vw] max-w-sm rounded-[32px] p-0 overflow-hidden border-none shadow-2xl z-[100] max-h-[90vh] flex flex-col transition-colors duration-500"
+            style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface }}
+          >
+            <div className="bg-slate-950 p-8 text-white border-b-4 border-blue-600">
+              <DialogTitle className="text-xl font-black uppercase italic tracking-tighter text-white">System Wipe</DialogTitle>
+              <DialogDescription className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mt-1">Delete All Activity Records</DialogDescription>
+            </div>
+            <div className="p-8 space-y-4">
+              <p className="text-sm font-bold text-slate-600 dark:text-slate-300 italic">
+                This will permanently delete <span className="text-red-600 font-black">ALL</span> activity logs. This action cannot be undone.
+              </p>
+              <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:gap-0">
+                <Button variant="ghost" onClick={() => setClearAllOpen(false)} className="w-full sm:w-auto rounded-xl font-black uppercase text-[10px] dark:text-slate-400 dark:hover:text-white">Cancel</Button>
+                <Button onClick={handleClearAllLogs} className="w-full sm:w-auto rounded-xl bg-slate-950 text-white font-black uppercase text-[10px] tracking-widest hover:bg-black transition-transform active:scale-95 shadow-xl">Confirm Wipe</Button>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* REVERSAL MODAL */}
-      <Dialog open={undoOpen} onOpenChange={setUndoOpen}>
-        <DialogContent 
-          className="w-[95vw] max-w-sm rounded-[32px] p-0 overflow-hidden border-none shadow-2xl z-[100] max-h-[90vh] flex flex-col transition-colors duration-500"
-          style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface }}
-        >
-          <div className={`${modalStyles.header} p-8 text-white border-b-4`}>
-            <DialogTitle className="text-xl font-black uppercase italic tracking-tighter">Confirm Reversal</DialogTitle>
-            <DialogDescription className={`${modalStyles.subtext} text-[10px] font-bold uppercase tracking-widest mt-1`}>Undo Action Node</DialogDescription>
-          </div>
-          <div className="p-8 space-y-4">
-            <p className="text-sm font-bold text-slate-600 dark:text-slate-300 italic">
-              This will revert <span className="text-blue-600 dark:text-blue-400">{activeLog?.student_name}</span> back to <span className={modalStyles.highlight}>{revertStatus.toUpperCase()}</span> status.
-            </p>
-            <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:gap-0">
-              <Button variant="ghost" onClick={() => setUndoOpen(false)} className="w-full sm:w-auto rounded-xl font-black uppercase text-[10px] hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">Abort</Button>
-              <Button onClick={handleUndo} className={`w-full sm:w-auto rounded-xl text-white font-black uppercase text-[10px] tracking-widest hover:scale-[1.02] transition-transform active:scale-95 shadow-xl ${modalStyles.button}`}>Revert Matrix</Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* DELETE MODAL */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent 
-          className="w-[95vw] max-w-sm rounded-[32px] p-0 overflow-hidden border-none shadow-2xl z-[100] max-h-[90vh] flex flex-col transition-colors duration-500"
-          style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface }}
-        >
-          <div className="bg-red-600 p-8 text-white border-b-4 border-red-800">
-            <DialogTitle className="text-xl font-black uppercase italic tracking-tighter text-white">Confirm Purge</DialogTitle>
-            <DialogDescription className="text-red-200 text-[10px] font-bold uppercase tracking-widest mt-1">Permanent Deletion</DialogDescription>
-          </div>
-          <div className="p-8 space-y-4">
-            <p className="text-sm font-bold text-slate-600 dark:text-slate-300 italic">
-              Are you sure you want to permanently delete this log entry for <span className="text-red-600 dark:text-red-400">{activeLog?.student_name}</span>?
-            </p>
-            <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:gap-0">
-              <Button variant="ghost" onClick={() => setDeleteOpen(false)} className="w-full sm:w-auto rounded-xl font-black uppercase text-[10px] dark:text-slate-400 dark:hover:text-white">Cancel</Button>
-              <Button onClick={confirmDeleteLog} className="w-full sm:w-auto rounded-xl bg-red-600 text-white font-black uppercase text-[10px] tracking-widest hover:bg-red-700 transition-transform active:scale-95 shadow-xl shadow-red-500/20">Purge Log</Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* SYSTEM WIPE MODAL */}
-      <Dialog open={clearAllOpen} onOpenChange={setClearAllOpen}>
-        <DialogContent 
-          className="w-[95vw] max-w-sm rounded-[32px] p-0 overflow-hidden border-none shadow-2xl z-[100] max-h-[90vh] flex flex-col transition-colors duration-500"
-          style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface }}
-        >
-          <div className="bg-slate-950 p-8 text-white border-b-4 border-blue-600">
-            <DialogTitle className="text-xl font-black uppercase italic tracking-tighter text-white">System Wipe</DialogTitle>
-            <DialogDescription className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mt-1">Delete All Activity Records</DialogDescription>
-          </div>
-          <div className="p-8 space-y-4">
-            <p className="text-sm font-bold text-slate-600 dark:text-slate-300 italic">
-              This will permanently delete <span className="text-red-600 font-black">ALL</span> activity logs. This action cannot be undone.
-            </p>
-            <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:gap-0">
-              <Button variant="ghost" onClick={() => setClearAllOpen(false)} className="w-full sm:w-auto rounded-xl font-black uppercase text-[10px] dark:text-slate-400 dark:hover:text-white">Cancel</Button>
-              <Button onClick={handleClearAllLogs} className="w-full sm:w-auto rounded-xl bg-slate-950 text-white font-black uppercase text-[10px] tracking-widest hover:bg-black transition-transform active:scale-95 shadow-xl">Confirm Wipe</Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
     </TooltipProvider>
   )
 }
@@ -528,10 +528,10 @@ const LogItem = memo(function LogItem({ log, adminProfile, onUndo, onDelete, isE
       isExiting ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100',
       "hover:shadow-xl dark:hover:shadow-blue-500/5 hover:scale-[1.01]"
     )}
-    style={{
-      backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
-      borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgb(241 245 249)'
-    }}>
+      style={{
+        backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface,
+        borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgb(241 245 249)'
+      }}>
       {/* NO-SHIFT RIBBON INDICATOR */}
       <div className={cn(
         "absolute left-0 top-0 bottom-0 w-[4px] opacity-0 group-hover:opacity-100 transition-opacity z-10",
@@ -577,10 +577,10 @@ const LogItem = memo(function LogItem({ log, adminProfile, onUndo, onDelete, isE
         {isUndoable && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                onClick={(e) => { e.stopPropagation(); onUndo(); }} 
-                size="sm" 
-                variant="ghost" 
+              <Button
+                onClick={(e) => { e.stopPropagation(); onUndo(); }}
+                size="sm"
+                variant="ghost"
                 className="rounded-lg h-9 px-4 text-[9px] font-black uppercase tracking-widest text-blue-500 dark:text-blue-400 transition-colors w-28 hover:scale-105 active:scale-95 border border-transparent"
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgb(37 99 235)'; e.currentTarget.style.color = 'white'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = isDarkMode ? 'rgb(96 165 250)' : 'rgb(59 130 246)'; }}
@@ -593,15 +593,15 @@ const LogItem = memo(function LogItem({ log, adminProfile, onUndo, onDelete, isE
         )}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button 
-                onClick={(e) => { e.stopPropagation(); onDelete(); }} 
-                size="sm" 
-                variant="ghost" 
-                className="rounded-lg h-9 px-4 text-[9px] font-black uppercase tracking-widest text-red-400 dark:text-red-500 transition-colors w-28 hover:scale-105 active:scale-90 border border-transparent"
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgb(220 38 38)'; e.currentTarget.style.color = 'white'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = isDarkMode ? 'rgb(239 68 68)' : 'rgb(248 113 113)'; }}
+            <Button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              size="sm"
+              variant="ghost"
+              className="rounded-lg h-9 px-4 text-[9px] font-black uppercase tracking-widest text-red-400 dark:text-red-500 transition-colors w-28 hover:scale-105 active:scale-90 border border-transparent"
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgb(220 38 38)'; e.currentTarget.style.color = 'white'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = isDarkMode ? 'rgb(239 68 68)' : 'rgb(248 113 113)'; }}
             >
-                <Trash2 size={12} className="mr-2" /> Purge
+              <Trash2 size={12} className="mr-2" /> Purge
             </Button>
           </TooltipTrigger>
           <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Permanently delete this log entry</p></TooltipContent>

@@ -35,7 +35,7 @@ export function ResultCard({ result, onFixApplication }: Props) {
     Accepted: "bg-green-500",
     Approved: "bg-green-500",
     Rejected: "bg-red-500",
-    Pending:  "bg-amber-400",
+    Pending: "bg-amber-400",
   }[result.status] ?? "bg-amber-400"
 
   const Section = ({ title, open, onToggle, children, icon }: {
@@ -94,7 +94,7 @@ export function ResultCard({ result, onFixApplication }: Props) {
             title="My Attendance QR Code"
             open={showQR}
             onToggle={() => setShowQR(v => !v)}
-            icon={<span className="text-[14px]">📱</span>}
+            icon={<span className="text-[14px]"></span>}
           >
             <StudentQRCard
               studentId={result.id}

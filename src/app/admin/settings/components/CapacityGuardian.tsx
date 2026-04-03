@@ -28,7 +28,7 @@ export function CapacityGuardian({
   onIntegrityScan
 }: CapacityGuardianProps) {
   return (
-    <ThemedCard 
+    <ThemedCard
       className="p-10 rounded-[48px] space-y-8 border transition-all duration-500"
       style={{
         backgroundColor: isDarkMode ? themeColors.dark.surface : '#ffffff',
@@ -46,10 +46,10 @@ export function CapacityGuardian({
         </div>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button 
-              onClick={onIntegrityScan} 
-              disabled={updating} 
-              variant="outline" 
+            <Button
+              onClick={onIntegrityScan}
+              disabled={updating}
+              variant="outline"
               className="rounded-full text-[9px] font-bold uppercase border-red-100 dark:border-red-900 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm transition-all active:scale-95"
             >
               <ShieldAlert size={14} className="mr-2" /> Integrity Scan
@@ -64,11 +64,11 @@ export function CapacityGuardian({
       <div className="space-y-8">
         <div className="space-y-3">
           <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>
-            Educational Capacity (MORE THAN 50)
+            School Capacity (MORE THAN 50)
           </ThemedText>
-          <Input 
-            type="text" 
-            value={capacity === 0 || capacity === null ? "" : capacity} 
+          <Input
+            type="text"
+            value={capacity === 0 || capacity === null ? "" : capacity}
             onChange={(e) => {
               const val = e.target.value;
               if (val === "" || val === " ") {
@@ -77,8 +77,8 @@ export function CapacityGuardian({
                 const parsed = parseInt(val);
                 if (!isNaN(parsed)) onCapacityChange(parsed);
               }
-            }} 
-            className="h-16 rounded-3xl border-none font-bold text-2xl px-8 focus-visible:ring-indigo-500 shadow-inner transition-all duration-500" 
+            }}
+            className="h-16 rounded-3xl border-none font-bold text-2xl px-8 focus-visible:ring-indigo-500 shadow-inner transition-all duration-500"
             placeholder="50+"
             style={{ backgroundColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(241 245 249)', color: isDarkMode ? '#ffffff' : '#000000' }}
           />
@@ -96,13 +96,12 @@ export function CapacityGuardian({
             <span className="text-xl font-bold text-white">{Math.round(capacityPercentage)}%</span>
           </div>
           <div className="h-3 bg-white/10 rounded-full overflow-hidden shadow-inner relative z-10">
-            <div 
-              className={`h-full transition-all duration-1000 ease-out ${
-                capacityPercentage > 95 ? 'bg-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 
-                capacityPercentage > 80 ? 'bg-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)]' : 
-                'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]'
-              }`} 
-              style={{ width: `${capacityPercentage}%` }} 
+            <div
+              className={`h-full transition-all duration-1000 ease-out ${capacityPercentage > 95 ? 'bg-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]' :
+                  capacityPercentage > 80 ? 'bg-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)]' :
+                    'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]'
+                }`}
+              style={{ width: `${capacityPercentage}%` }}
             />
           </div>
         </div>
