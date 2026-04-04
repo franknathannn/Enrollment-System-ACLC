@@ -65,30 +65,32 @@ export function VerifyForm({
     <form onSubmit={onSubmit} className="space-y-4 relative z-10">
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none opacity-30 rounded-3xl" />
 
-      {/* LRN */}
-      <div className="relative group">
-        <Fingerprint
-          className={cn(
-            "absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors z-10",
-            isLrnComplete ? "text-blue-400" : "text-slate-700"
-          )}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* LRN */}
+        <div className="relative group">
+          <Fingerprint
+            className={cn(
+              "absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors z-10",
+              isLrnComplete ? "text-blue-400" : "text-slate-700"
+            )}
+          />
+          <Input
+            placeholder="12-DIGIT LRN"
+            value={lrn}
+            onChange={e => onLrnChange(e.target.value.replace(/\D/g, ""))}
+            maxLength={12}
+            className={cn(baseInput, "pl-14")}
+          />
+        </div>
+
+        {/* Surname */}
         <Input
-          placeholder="12-DIGIT LRN"
-          value={lrn}
-          onChange={e => onLrnChange(e.target.value.replace(/\D/g, ""))}
-          maxLength={12}
-          className={cn(baseInput, "pl-14")}
+          placeholder="SURNAME (LAST NAME)"
+          value={lastName}
+          onChange={e => onLastNameChange(e.target.value)}
+          className={cn(baseInput, "px-8 uppercase")}
         />
       </div>
-
-      {/* Surname */}
-      <Input
-        placeholder="SURNAME (LAST NAME)"
-        value={lastName}
-        onChange={e => onLastNameChange(e.target.value)}
-        className={cn(baseInput, "px-8 uppercase")}
-      />
 
       {/* Tracking ID (first segment of UUID only) */}
       <div className="space-y-1">

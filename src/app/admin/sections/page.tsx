@@ -17,7 +17,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 // ===== MAIN COMPONENT =====
 export default function SectionsPage() {
   const {
-    config, isDarkMode, sections, loading, isProcessing, selectedSectionName, setSelectedSectionName,
+    config, isDarkMode, sections, teachers, loading, isProcessing, selectedSectionName, setSelectedSectionName,
     searchTerm, setSearchTerm, debouncedSearch, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter, sectionSelection,
     confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, ictExpanded, setIctExpanded,
     gasExpanded, setGasExpanded, exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
@@ -26,7 +26,7 @@ export default function SectionsPage() {
     currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
     handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections, handleToggleLock, updateStudentProfile,
-    allSchedules
+    allSchedules, handleAdviserChange
   } = useSections()
 
   if (loading && sections.length === 0) return (
@@ -88,6 +88,8 @@ export default function SectionsPage() {
             animatingIds={animatingIds}
             onToggleLock={handleToggleLock}
             allSchedules={allSchedules}
+            teachers={teachers}
+            onChangeAdviser={handleAdviserChange}
           />
         )
       })() : (
@@ -106,6 +108,8 @@ export default function SectionsPage() {
             initiateAdd={initiateAdd}
             onBalance={handleBalance}
             isProcessing={isProcessing}
+            config={config}
+            allSchedules={allSchedules}
           />
           
           {['ICT', 'GAS'].map(strand => (strandFilter === 'ALL' || strandFilter === strand) && (

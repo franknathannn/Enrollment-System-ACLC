@@ -37,6 +37,7 @@ export default function TeacherDashboard() {
   const [online,        setOnline]        = useState(true)
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [schoolYear,    setSchoolYear]    = useState("2025-2026")
+  const [advisorySections, setAdvisorySections] = useState<string[]>([])
 
   // Persistent dark mode — initialise as false (safe for SSR), then sync from
   // localStorage in a useEffect so server and client HTML always start identical.
@@ -116,8 +117,8 @@ export default function TeacherDashboard() {
     setLoading(true)
     try {
       const [{ data: byId }, { data: byName }, { data: config }] = await Promise.all([
-        supabase.from("schedules").select("*").eq("teacher_id", sess.id).order("day").order("start_time"),
-        supabase.from("schedules").select("*").ilike("teacher", sess.full_name).order("day").order("start_time"),
+        supabase.from("schedules").select("*, rooms(name)").eq("teacher_id", sess.id).order("day").order("start_time"),
+        supabase.from("schedules").select("*, rooms(name)").ilike("teacher", sess.full_name).order("day").order("start_time"),
         supabase.from("system_config").select("school_year").single(),
       ])
 
@@ -128,7 +129,10 @@ export default function TeacherDashboard() {
         if (seen.has(r.id)) return false
         seen.add(r.id)
         return true
-      })
+      }).map((r: any) => ({
+        ...r,
+        room: r.rooms?.name || r.room
+      }))
       setSchedules(merged)
 
       const sectionNames = [...new Set(merged.map(s => s.section))].filter(Boolean)
@@ -149,6 +153,37 @@ export default function TeacherDashboard() {
           if (!studErr) setStudents(studData ?? [])
         }
         setStudLoad(false)
+      }
+
+      // ── Fetch advisory sections ────────────────────────────────────────
+      const { data: advRows } = await supabase
+        .from("sections")
+        .select("section_name")
+        .eq("adviser_id", sess.id)
+      const advSections = (advRows ?? []).map(r => r.section_name).filter(Boolean)
+      setAdvisorySections(advSections)
+
+      // Merge advisory students that aren't already loaded
+      if (advSections.length > 0) {
+        const advOnlySections = advSections.filter(s => !sectionNames.includes(s))
+        if (advOnlySections.length > 0) {
+          const { data: advSecRows } = await supabase
+            .from("sections").select("id").in("section_name", advOnlySections)
+          const advSecIds = (advSecRows ?? []).map(s => s.id)
+          if (advSecIds.length > 0) {
+            const { data: advStudents } = await supabase
+              .from("students")
+              .select("id, first_name, last_name, middle_name, lrn, gender, section, strand, status, profile_picture, two_by_two_url")
+              .in("section_id", advSecIds)
+              .not("status", "eq", "Pending")
+            if (advStudents?.length) {
+              setStudents(prev => {
+                const existingIds = new Set(prev.map(s => s.id))
+                return [...prev, ...advStudents.filter(s => !existingIds.has(s.id))]
+              })
+            }
+          }
+        }
       }
 
       const { data: ann } = await supabase
@@ -299,6 +334,7 @@ export default function TeacherDashboard() {
             dm={dm}
             session={session}
             schoolYear={schoolYear}
+            advisorySections={advisorySections}
           />
         )}
 
@@ -309,6 +345,7 @@ export default function TeacherDashboard() {
             dm={dm}
             session={session}
             schoolYear={schoolYear}
+            advisorySections={advisorySections}
           />
         )}
 
@@ -319,6 +356,7 @@ export default function TeacherDashboard() {
             dm={dm}
             session={session}
             schoolYear={schoolYear}
+            advisorySections={advisorySections}
           />
         )}
 

@@ -88,10 +88,10 @@ export default function Step4Documents() {
         </Label>
 
         <div className={cn(
-          "group relative rounded-[40px] overflow-hidden border-2 transition-all duration-500",
+          "group relative rounded-[40px] overflow-hidden border-2 spring-upload-box",
           currentFileUrl
             ? isDark ? "border-blue-500/30 shadow-[0_20px_50px_rgba(59,130,246,0.2)]" : "border-blue-500/20 shadow-xl"
-            : isDark ? "border-white/5 lg:hover:border-blue-500/30 bg-white/5" : "border-slate-200 lg:hover:border-blue-400/30 bg-slate-50/50"
+            : isDark ? "border-white/5 bg-white/5" : "border-slate-200 bg-slate-50/50"
         )}>
           <div className={cn(
             "relative transition-all duration-500 min-h-[180px] sm:min-h-[220px] flex flex-col items-center justify-center",
@@ -111,7 +111,7 @@ export default function Step4Documents() {
                 <div className={cn("absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 sm:gap-4 transition-all duration-300 p-4", isDark ? "bg-slate-950/80" : "bg-white/80")}>
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="secondary" size="sm" className="w-full max-w-[220px] h-12 rounded-2xl font-black text-[10px] uppercase bg-white text-slate-950 shadow-xl active:scale-95 lg:hover:scale-105 transition-transform touch-manipulation border-none">
+                      <Button variant="secondary" size="sm" className="spring-btn-blue w-full max-w-[220px] h-12 rounded-2xl font-black text-[10px] uppercase bg-white text-slate-950 shadow-xl active:scale-95 touch-manipulation border-none">
                         <Search className="w-4 h-4 mr-2 text-blue-600" /> Preview Document
                       </Button>
                     </DialogTrigger>
@@ -124,7 +124,7 @@ export default function Step4Documents() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Button onClick={() => handleRemove(field)} variant="destructive" size="sm" className="w-full max-w-[220px] h-12 rounded-2xl font-black text-[10px] uppercase bg-red-600/10 text-red-500 border-2 border-red-500/20 active:scale-95 lg:hover:bg-red-600 lg:hover:text-white shadow-xl touch-manipulation transition-all">
+                  <Button onClick={() => handleRemove(field)} variant="destructive" size="sm" className="spring-btn-red w-full max-w-[220px] h-12 rounded-2xl font-black text-[10px] uppercase bg-red-600/10 text-red-500 border-2 border-red-500/20 active:scale-95 lg:hover:bg-red-600 lg:hover:text-white shadow-xl touch-manipulation">
                     <Trash2 className="w-4 h-4 mr-2" /> Discard File
                   </Button>
                 </div>
@@ -170,6 +170,30 @@ export default function Step4Documents() {
           will-change: transform;
         }
         @media (prefers-reduced-motion: reduce) { .animate-step-in { animation: none; } }
+        .spring-btn-blue {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      box-shadow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
+        }
+        .spring-btn-red {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      box-shadow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      background-color 0.3s ease, color 0.3s ease;
+        }
+        .spring-back-btn {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
+        }
+        .spring-upload-box {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      box-shadow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      border-color 0.35s ease;
+        }
+        @media (min-width: 1024px) {
+          .spring-btn-blue:hover   { transform: translateY(-3px) scale(1.04) !important; box-shadow: 0 8px 25px rgba(59,130,246,0.35) !important; }
+          .spring-btn-red:hover    { transform: translateY(-3px) scale(1.04) !important; box-shadow: 0 8px 25px rgba(220,38,38,0.3) !important; }
+          .spring-back-btn:hover   { transform: translateY(-2px) scale(1.02) !important; }
+          .spring-upload-box:hover { transform: translateY(-4px) scale(1.02) !important; box-shadow: 0 8px 25px rgba(59,130,246,0.2) !important; border-color: rgba(59,130,246,0.45) !important; }
+        }
       `}</style>
 
       {/* BACKGROUND BRANDING */}
@@ -246,10 +270,10 @@ export default function Step4Documents() {
         <div style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }} className="flex flex-col gap-3">
           <Button onClick={handleFinalizeStep}
             className={cn(
-              "w-full min-h-[52px] md:h-16 rounded-[28px]",
+              "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
               "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-              "shadow-[0_20px_50px_rgba(59,130,246,0.3)] lg:hover:shadow-blue-600/20",
-              "transition-all duration-500 active:scale-[0.98]",
+              "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
+              "active:scale-[0.98]",
               "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
             )}
           >
@@ -261,7 +285,7 @@ export default function Step4Documents() {
             </div>
           </Button>
           <button type="button" onClick={() => setStep(3)}
-            className="min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 transition-colors py-3 touch-manipulation active:scale-[0.98]">
+            className="spring-back-btn min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 py-3 touch-manipulation active:scale-[0.98]">
             <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
           </button>
         </div>

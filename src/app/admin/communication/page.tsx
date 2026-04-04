@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback, memo } from "react";
 import { supabase } from "@/lib/supabase/admin-client";
 import { 
   Send, User as UserIcon, Loader2, MoreVertical, 
-  Trash2, Edit3, X, Check, Wifi, WifiOff, Eye, MessageSquare, ShieldCheck, Sparkles 
+  Trash2, Edit3, X, Check, Wifi, WifiOff, Eye, MessageSquare, ShieldCheck, Sparkles, SmilePlus 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +70,46 @@ export default function CommunicationPage() {
       `)
       .order('created_at', { ascending: true });
     
-    if (!error) setMessages(data || []);
+    if (error || !data) {
+      setLoading(false);
+      return;
+    }
+
+    // Fetch reactions separately so a missing table won't break chat
+    let reactionsMap: Record<string, any[]> = {};
+    try {
+      const { data: reactionsData, error: reactionsError } = await supabase
+        .from('message_reactions')
+        .select('id, emoji, user_id, message_id');
+      
+      if (!reactionsError && reactionsData && reactionsData.length > 0) {
+        // Get unique user IDs from reactions to look up names
+        const userIds = [...new Set(reactionsData.map((r: any) => r.user_id))];
+        const { data: profiles } = await supabase
+          .from('admin_profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+        
+        const profileMap: Record<string, string> = {};
+        profiles?.forEach((p: any) => { profileMap[p.id] = p.full_name; });
+
+        reactionsData.forEach((r: any) => {
+          if (!reactionsMap[r.message_id]) reactionsMap[r.message_id] = [];
+          reactionsMap[r.message_id].push({
+            ...r,
+            profiles: { full_name: profileMap[r.user_id] || "Admin Staff" }
+          });
+        });
+      }
+    } catch { /* table may not exist yet */ }
+
+    // Merge reactions into messages
+    const merged = data.map((msg: any) => ({
+      ...msg,
+      message_reactions: reactionsMap[msg.id] || []
+    }));
+
+    setMessages(merged);
     setLoading(false);
   }, []);
 
@@ -104,6 +143,9 @@ export default function CommunicationPage() {
           fetchMessages();
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'message_reads' }, () => {
+          fetchMessages();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions' }, () => {
           fetchMessages();
         })
         .subscribe(async (status: string) => {
@@ -174,6 +216,51 @@ export default function CommunicationPage() {
     setEditingId(msg.id);
     setEditContent(msg.content);
   }, []);
+
+  const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
+    if (!currentUser || messageId.toString().startsWith('optimistic')) return;
+    const uid = currentUser.id;
+    const userName = currentUser.user_metadata?.full_name || "Admin Staff";
+
+    // Optimistic UI update — instant, zero delay
+    setMessages(prev => prev.map(msg => {
+      if (msg.id !== messageId) return msg;
+      const existing = (msg.message_reactions || []) as any[];
+      const myReaction = existing.find((r: any) => String(r.user_id) === String(uid));
+      
+      let updated: any[];
+      if (myReaction && myReaction.emoji === emoji) {
+        // Same emoji = unreact
+        updated = existing.filter((r: any) => String(r.user_id) !== String(uid));
+      } else {
+        // Different emoji or no reaction = replace/add
+        updated = [
+          ...existing.filter((r: any) => String(r.user_id) !== String(uid)),
+          { id: `optimistic-${Date.now()}`, emoji, user_id: uid, message_id: messageId, profiles: { full_name: userName } }
+        ];
+      }
+      return { ...msg, message_reactions: updated };
+    }));
+
+    // DB sync in background
+    // 1. Remove ALL existing reactions by this user on this message
+    await supabase.from('message_reactions').delete()
+      .eq('message_id', messageId)
+      .eq('user_id', uid);
+
+    // 2. Check if we need to insert (i.e. not unreacting the same emoji)
+    const oldMsg = (messages.find(m => m.id === messageId) as any);
+    const oldReaction = (oldMsg?.message_reactions || []).find((r: any) => String(r.user_id) === String(uid));
+    const wasUnreact = oldReaction && oldReaction.emoji === emoji;
+
+    if (!wasUnreact) {
+      await supabase.from('message_reactions').insert({
+        message_id: messageId,
+        user_id: uid,
+        emoji
+      });
+    }
+  }, [currentUser, messages]);
 
   if (loading || !currentUser) return (
     <div className="h-[70vh] flex flex-col items-center justify-center rounded-[48px] border shadow-2xl relative overflow-hidden"
@@ -269,6 +356,7 @@ export default function CommunicationPage() {
                 onStartEdit={startEditing}
                 onCancelEdit={() => setEditingId(null)}
                 onDelete={deleteMessage}
+                onToggleReaction={toggleReaction}
               />
             ))
           )}
@@ -302,12 +390,46 @@ export default function CommunicationPage() {
   );
 }
 
-const MessageItem = memo(({ msg, currentUser, isDarkMode, editingId, editContent, setEditContent, onSaveEdit, onStartEdit, onCancelEdit, onDelete }: any) => {
+const EMOJI_MAP: Record<string, { icon: string; label: string }> = {
+  heart: { icon: "❤️", label: "Heart" },
+  thumbs_up: { icon: "👍", label: "Thumbs Up" },
+  haha: { icon: "😂", label: "Haha" },
+  wow: { icon: "😮", label: "Wow" },
+  angry: { icon: "😡", label: "Angry" },
+};
+
+const MessageItem = memo(({ msg, currentUser, isDarkMode, editingId, editContent, setEditContent, onSaveEdit, onStartEdit, onCancelEdit, onDelete, onToggleReaction }: any) => {
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const pickerTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMe = String(msg.sender_id) === String(currentUser?.id);
   const isOptimistic = msg.id.toString().startsWith('optimistic');
   const displayName = msg.profiles?.full_name || "Admin Staff";
   const readers = msg.message_reads?.filter((r: any) => r.user_id !== msg.sender_id);
   const formattedDate = msg.created_at ? format(new Date(msg.created_at), 'MMMM d, yyyy || h:mma') : 'Syncing...';
+
+  // Group reactions by emoji
+  const reactions = msg.message_reactions || [];
+  const groupedReactions: Record<string, { count: number; users: string[]; myReaction: boolean }> = {};
+  reactions.forEach((r: any) => {
+    if (!groupedReactions[r.emoji]) {
+      groupedReactions[r.emoji] = { count: 0, users: [], myReaction: false };
+    }
+    groupedReactions[r.emoji].count += 1;
+    groupedReactions[r.emoji].users.push(r.profiles?.full_name || "Admin Staff");
+    if (String(r.user_id) === String(currentUser?.id)) {
+      groupedReactions[r.emoji].myReaction = true;
+    }
+  });
+
+  const hasReactions = Object.keys(groupedReactions).length > 0;
+
+  const handlePickerEnter = () => {
+    if (pickerTimeout.current) clearTimeout(pickerTimeout.current);
+    setShowEmojiPicker(true);
+  };
+  const handlePickerLeave = () => {
+    pickerTimeout.current = setTimeout(() => setShowEmojiPicker(false), 300);
+  };
 
   return (
     <div className={cn(
@@ -341,43 +463,138 @@ const MessageItem = memo(({ msg, currentUser, isDarkMode, editingId, editContent
               <button onClick={onCancelEdit} className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-xl hover:scale-110 transition-transform"><X size={14}/></button>
             </div>
           ) : (
-            <div className={cn(
-              "p-4 md:p-5 rounded-[24px] text-[13px] font-bold leading-relaxed shadow-sm transition-all duration-300 relative overflow-hidden border",
-              isMe 
-                ? 'bg-slate-900 text-white rounded-tr-sm shadow-blue-500/10' 
-                : 'rounded-tl-sm'
-            )}
-            style={isMe ? 
-              { backgroundColor: isDarkMode ? themeColors.dark.primary : 'rgb(37, 99, 235)', border: 'none' } : 
-              { backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface, color: isDarkMode ? themeColors.dark.text.primary : themeColors.light.text.primary, borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border }
-            }>
-              {msg.content}
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-20 transition-opacity">
-                <Sparkles size={12} />
+            <div className="relative">
+              <div className={cn(
+                "p-4 md:p-5 rounded-[24px] text-[13px] font-bold leading-relaxed shadow-sm transition-all duration-300 relative overflow-hidden border",
+                isMe 
+                  ? 'bg-slate-900 text-white rounded-tr-sm shadow-blue-500/10' 
+                  : 'rounded-tl-sm'
+              )}
+              style={isMe ? 
+                { backgroundColor: isDarkMode ? themeColors.dark.primary : 'rgb(37, 99, 235)', border: 'none' } : 
+                { backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface, color: isDarkMode ? themeColors.dark.text.primary : themeColors.light.text.primary, borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border }
+              }>
+                {msg.content}
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-20 transition-opacity">
+                  <Sparkles size={12} />
+                </div>
               </div>
+
+              {/* Reaction pills displayed under the bubble */}
+              {hasReactions && (
+                <div className={cn("flex items-center gap-1 flex-wrap mt-1", isMe ? "justify-end" : "justify-start")}>
+                  {Object.entries(groupedReactions).map(([emoji, data]) => (
+                    <TooltipProvider key={emoji}>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => onToggleReaction(msg.id, emoji)}
+                            className={cn(
+                              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border transition-all hover:scale-105 active:scale-95",
+                              data.myReaction
+                                ? isDarkMode
+                                  ? "bg-blue-500/20 border-blue-500/40 text-blue-300"
+                                  : "bg-blue-50 border-blue-200 text-blue-700"
+                                : isDarkMode
+                                  ? "bg-slate-800/80 border-slate-700/50 text-slate-300"
+                                  : "bg-white border-slate-200 text-slate-600"
+                            )}
+                          >
+                            <span className="text-sm leading-none">{EMOJI_MAP[emoji]?.icon}</span>
+                            <span className="text-[10px]">{data.count}</span>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-[10px] font-bold bg-slate-900 text-white border-slate-800 max-w-[200px]">
+                          {data.users.join(", ")}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {isMe && !editingId && !isOptimistic && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="h-8 w-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all active:scale-90">
-                  <MoreVertical size={16} />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                align={isMe ? "end" : "start"} 
-                className="rounded-2xl p-2 shadow-2xl min-w-[150px] z-[100] transition-colors duration-500"
-                style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface, borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgb(241 245 249)' }}
+          {/* Emoji Trigger + Action Menu */}
+          {!editingId && !isOptimistic && (
+            <div className="flex items-center gap-0.5 relative">
+              {/* Emoji react trigger */}
+              <div 
+                className="relative"
+                onMouseEnter={handlePickerEnter}
+                onMouseLeave={handlePickerLeave}
               >
-                <DropdownMenuItem onClick={() => onStartEdit(msg)} className="gap-3 text-[10px] font-black uppercase tracking-widest px-4 py-3 rounded-xl cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
-                  <Edit3 size={14} className="text-blue-500" /> Edit Message
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDelete(msg.id)} className="gap-3 text-[10px] font-black uppercase tracking-widest text-red-600 hover:!text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 px-4 py-3 rounded-xl cursor-pointer transition-colors">
-                  <Trash2 size={14} /> Delete Message
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <button 
+                  className="h-8 w-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all active:scale-90"
+                  onClick={() => setShowEmojiPicker(prev => !prev)}
+                >
+                  <SmilePlus size={16} />
+                </button>
+
+                {/* Emoji Picker Popup */}
+                {showEmojiPicker && (
+                  <div 
+                    className={cn(
+                      "absolute z-50 flex items-center gap-0.5 p-1.5 rounded-full border shadow-xl animate-in zoom-in-75 fade-in duration-200",
+                      isMe ? "right-0" : "left-0",
+                      "bottom-full mb-2"
+                    )}
+                    style={{ 
+                      backgroundColor: isDarkMode ? 'rgb(15, 23, 42)' : '#ffffff', 
+                      borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgb(226 232 240)',
+                      boxShadow: isDarkMode ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.12)'
+                    }}
+                    onMouseEnter={handlePickerEnter}
+                    onMouseLeave={handlePickerLeave}
+                  >
+                    {Object.entries(EMOJI_MAP).map(([key, { icon, label }], i) => (
+                      <TooltipProvider key={key}>
+                        <Tooltip delayDuration={0}>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => {
+                                onToggleReaction(msg.id, key);
+                                setShowEmojiPicker(false);
+                              }}
+                              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:scale-125 active:scale-90 text-lg"
+                              style={{ animationDelay: `${i * 30}ms` }}
+                            >
+                              {icon}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white border-slate-800">
+                            {label}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Edit/Delete dropdown - only for own messages */}
+              {isMe && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="h-8 w-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all active:scale-90">
+                      <MoreVertical size={16} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    align={isMe ? "end" : "start"} 
+                    className="rounded-2xl p-2 shadow-2xl min-w-[150px] z-[100] transition-colors duration-500"
+                    style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface, borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgb(241 245 249)' }}
+                  >
+                    <DropdownMenuItem onClick={() => onStartEdit(msg)} className="gap-3 text-[10px] font-black uppercase tracking-widest px-4 py-3 rounded-xl cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
+                      <Edit3 size={14} className="text-blue-500" /> Edit Message
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDelete(msg.id)} className="gap-3 text-[10px] font-black uppercase tracking-widest text-red-600 hover:!text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 px-4 py-3 rounded-xl cursor-pointer transition-colors">
+                      <Trash2 size={14} /> Delete Message
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           )}
         </div>
 

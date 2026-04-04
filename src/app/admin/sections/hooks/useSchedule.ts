@@ -23,12 +23,16 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
     try {
       const { data, error } = await supabase
         .from("schedules")
-        .select("*")
+        .select("*, rooms(name)")
         .eq("section", sectionName)
         .order("day")
         .order("start_time")
       if (error) throw error
-      setSchedules(data ?? [])
+      const mapped = (data ?? []).map((r: any) => ({
+        ...r,
+        room: r.rooms?.name || r.room
+      }))
+      setSchedules(mapped)
     } catch (err: any) {
       if (!isBackground) toast.error("Failed to load schedule")
     } finally {
@@ -54,9 +58,12 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
 
   // ── Shared: fetch ALL schedules for cross-section conflict checking ────────
   const fetchAllSchedules = useCallback(async (): Promise<ScheduleRow[]> => {
-    const { data, error } = await supabase.from("schedules").select("*")
+    const { data, error } = await supabase.from("schedules").select("*, rooms(name)")
     if (error) throw error
-    return data ?? []
+    return (data ?? []).map((r: any) => ({
+      ...r,
+      room: r.rooms?.name || r.room
+    }))
   }, [])
 
   // ── Add single entry ──────────────────────────────────────────────────────
@@ -70,7 +77,7 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
    * HARD BLOCKS on any conflict — nothing is saved if conflicts exist.
    */
   const addEntry = useCallback(async (
-    data: Omit<ScheduleRow, "id" | "created_at">
+    data: Omit<ScheduleRow, "id" | "created_at"> & { room_id?: string | null }
   ) => {
     if (data.start_time >= data.end_time) {
       const msg = "End time must be after start time."
@@ -87,6 +94,10 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
       throw new Error("Schedule conflict detected — entry not saved.")
     }
 
+    const { data: dbRooms } = await supabase.from("rooms").select("id, name")
+    const rMap = (dbRooms || []).reduce((acc: any, r: any) => ({ ...acc, [r.name]: r.id }), {})
+    if (data.room && rMap[data.room]) data.room_id = rMap[data.room]
+
     const { error } = await supabase.from("schedules").insert([data])
     if (error) { toast.error(error.message); throw error }
     toast.success(`Added: ${data.subject} on ${data.day}`)
@@ -100,7 +111,7 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
    */
   const updateEntry = useCallback(async (
     id: string,
-    data: Omit<ScheduleRow, "id" | "created_at">
+    data: Omit<ScheduleRow, "id" | "created_at"> & { room_id?: string | null }
   ) => {
     if (data.start_time >= data.end_time) {
       const msg = "End time must be after start time."
@@ -116,6 +127,10 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
       conflicts.forEach(c => toast.error(c.detail, { duration: 6000 }))
       throw new Error("Schedule conflict detected — entry not saved.")
     }
+
+    const { data: dbRooms } = await supabase.from("rooms").select("id, name")
+    const rMap = (dbRooms || []).reduce((acc: any, r: any) => ({ ...acc, [r.name]: r.id }), {})
+    if (data.room && rMap[data.room]) data.room_id = rMap[data.room]
 
     const { error } = await supabase.from("schedules").update(data).eq("id", id)
     if (error) { toast.error(error.message); throw error }
@@ -145,11 +160,17 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
     try {
       const { data: othersData, error: othersErr } = await supabase
         .from("schedules")
-        .select("*")
+        .select("*, rooms(name)")
         .neq("section", sectionName)
       if (othersErr) throw othersErr
 
-      const otherSchedules: ScheduleRow[] = othersData ?? []
+      const otherSchedules: ScheduleRow[] = (othersData ?? []).map((r: any) => ({
+        ...r,
+        room: r.rooms?.name || r.room
+      }))
+
+      const { data: dbRooms } = await supabase.from("rooms").select("id, name")
+      const rMap = (dbRooms || []).reduce((acc: any, r: any) => ({ ...acc, [r.name]: r.id }), {})
 
       const inserts = rows.map(r => ({
         section:     sectionName,
@@ -160,6 +181,7 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
         school_year: r.school_year,
         teacher:     r.teacher ?? null,
         room:        r.room    ?? null,
+        room_id:     r.room ? rMap[r.room] : null,
         notes:       r.notes   ?? null,
       }))
 
@@ -219,6 +241,9 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
         (existing ?? []).map((r: any) => `${r.subject}|${r.day}`)
       )
 
+      const { data: dbRooms } = await supabase.from("rooms").select("id, name")
+      const rMap = (dbRooms || []).reduce((acc: any, r: any) => ({ ...acc, [r.name]: r.id }), {})
+
       // 3. Build insert list — skip any row whose subject+day already exists
       const inserts = rows
         .map(r => ({
@@ -231,6 +256,7 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
           teacher:     r.teacher     ?? null,
           teacher_id:  (r as any).teacher_id ?? null,
           room:        r.room        ?? null,
+          room_id:     r.room ? rMap[r.room] : null,
           notes:       r.notes       ?? null,
         }))
         .filter(r => !alreadyPlaced.has(`${r.subject}|${r.day}`))

@@ -68,7 +68,7 @@ function StatusContent() {
           .eq("id", result.id)
           .single()
         if (data) {
-          setResult(data as StudentRecord)
+          setResult(data as unknown as StudentRecord)
           toast.success("Status updated live!", { icon: <Orbit className="animate-spin text-blue-500 w-4 h-4" /> })
         }
       })
@@ -133,8 +133,10 @@ function StatusContent() {
     updateFormData({
       ...result,
       id: result!.id,
-      profile_2x2_url: result!.two_by_two_url,
-      phone: result!.phone || result!.contact_no,
+      middle_name: result!.middle_name || undefined,
+      gender: result!.gender || undefined,
+      profile_2x2_url: result!.two_by_two_url || undefined,
+      phone: result!.phone || result!.contact_no || undefined,
     })
     setStep(1)
     setTimeout(() => {
@@ -149,7 +151,7 @@ function StatusContent() {
     !result.is_locked
 
   return (
-    <div className="max-w-md w-full space-y-8 animate-in fade-in slide-in-from-bottom-12 duration-1000 relative z-10">
+    <div className="max-w-md md:max-w-xl w-full space-y-8 animate-in fade-in slide-in-from-bottom-12 duration-1000 relative z-10">
 
       {/* Back link */}
       <div className="flex justify-start">

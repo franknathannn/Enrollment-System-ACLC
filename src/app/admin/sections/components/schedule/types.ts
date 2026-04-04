@@ -25,6 +25,7 @@ export interface ScheduleImportRow {
   school_year: string
   teacher?: string
   room?: string
+  room_id?: string
   notes?: string
   // validation
   _errors?: string[]

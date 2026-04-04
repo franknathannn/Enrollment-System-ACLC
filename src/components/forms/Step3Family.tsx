@@ -192,6 +192,18 @@ export default function Step3Family() {
           will-change: transform;
         }
         @media (prefers-reduced-motion: reduce) { .animate-step-in { animation: none; } }
+        .spring-btn-blue {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      box-shadow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
+        }
+        .spring-back-btn {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
+        }
+        @media (min-width: 1024px) {
+          .spring-btn-blue:hover  { transform: translateY(-3px) scale(1.04) !important; box-shadow: 0 8px 25px rgba(59,130,246,0.35) !important; }
+          .spring-back-btn:hover  { transform: translateY(-2px) scale(1.02) !important; }
+        }
       `}</style>
 
       {/* BACKGROUND BRANDING */}
@@ -320,10 +332,10 @@ export default function Step3Family() {
           <Button
             type="submit"
             className={cn(
-              "w-full min-h-[52px] md:h-16 rounded-[28px]",
+              "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
               "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-              "shadow-[0_20px_50px_rgba(59,130,246,0.3)] lg:hover:shadow-blue-600/20",
-              "transition-all duration-500 active:scale-[0.98]",
+              "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
+              "active:scale-[0.98]",
               "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
             )}
           >
@@ -335,7 +347,7 @@ export default function Step3Family() {
             </div>
           </Button>
           <button type="button" onClick={() => setStep(2)}
-            className="min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 transition-colors py-3 touch-manipulation active:scale-[0.98]">
+            className="spring-back-btn min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 py-3 touch-manipulation active:scale-[0.98]">
             <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
           </button>
         </div>

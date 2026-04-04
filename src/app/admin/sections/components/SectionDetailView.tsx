@@ -7,6 +7,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { StudentTable } from "./StudentTable"
 import { ScheduleTab } from "./schedule/ScheduleTab"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AdviserPicker } from "./AsyncTeacherSelect"
+import { Shield } from "lucide-react"
 
 export const SectionDetailView = memo(function SectionDetailView({
   sectionName,
@@ -38,9 +41,14 @@ export const SectionDetailView = memo(function SectionDetailView({
   animatingIds,
   onToggleLock,
   allSchedules,
+  teachers = [],
+  onChangeAdviser,
 }: any) {
   
   const isICT = currentSection?.strand === 'ICT'
+  
+  const adviserMatch = teachers?.find((t: any) => t.id === currentSection?.adviser_id)
+  const adviserName = adviserMatch ? adviserMatch.full_name : undefined
   
   const strandGradient = isICT 
     ? 'from-[#020617] via-[#0f172a] to-[#020617]' 
@@ -148,7 +156,7 @@ export const SectionDetailView = memo(function SectionDetailView({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
-                  onClick={() => onExport(sectionName, sortedStudents)} 
+                  onClick={() => onExport(sectionName, sortedStudents, adviserName)} 
                   className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 px-8 transition-all active:scale-95 shadow-2xl flex items-center justify-center ${
                     isDarkMode 
                       ? 'bg-white text-black hover:bg-slate-200' 
@@ -213,6 +221,14 @@ export const SectionDetailView = memo(function SectionDetailView({
                 </div>
               </div>
 
+              <div className="space-y-3 md:space-y-5 mb-6 md:mb-8">
+                <div className="flex items-center gap-2">
+                  <Shield size={14} className={isICT ? 'text-blue-400' : 'text-orange-400'} />
+                  <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Section Adviser</span>
+                  <span className="text-[9px] md:text-[10px] font-bold opacity-50 ml-1">{adviserName || '—'}</span>
+                </div>
+              </div>
+
               <div className="space-y-3 md:space-y-5">
                 <div className="flex justify-between items-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em]">
                   <span className="opacity-30">Gender Bar</span>
@@ -231,7 +247,17 @@ export const SectionDetailView = memo(function SectionDetailView({
 
       {/* 📊 TABS */}
       <Tabs defaultValue="all" className="w-full">
-        <div className="flex justify-center mb-8 md:mb-16 px-0 md:px-4">
+        <div className="flex flex-col md:flex-row items-center gap-4 mb-8 md:mb-16 px-2 md:px-4">
+          {/* 🎓 Adviser Selector */}
+          <AdviserPicker
+            value={currentSection?.adviser_id || null}
+            onValueChange={(val) => onChangeAdviser && onChangeAdviser(currentSection.id, val)}
+            initialTeachers={teachers || []}
+            isDarkMode={isDarkMode}
+            isICT={isICT}
+          />
+
+          {/* Tabs */}
           <TabsList 
             className={`w-full md:w-auto flex p-1 h-auto rounded-[20px] md:rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-xl bg-clip-padding outline outline-1 outline-transparent ${
               isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-white/60 border-slate-200'
@@ -311,6 +337,7 @@ export const SectionDetailView = memo(function SectionDetailView({
             schoolYear={config?.school_year ?? "2025-2026"}
             students={activeStudents}
             allSchedules={allSchedules ?? []}
+            adviserName={adviserName}
           />
         </TabsContent>
 

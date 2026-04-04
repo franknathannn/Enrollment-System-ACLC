@@ -27,6 +27,7 @@ import {
   ArrowRight, ChevronLeft, GraduationCap, CalendarDays, Loader2,
   Fingerprint, Star, Sparkles, AlertTriangle, MapPin,
   Facebook, Monitor, Clock, Search, X, Globe,
+  School, Building2, Library, HelpCircle, PlusCircle,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -145,10 +146,87 @@ const CheckCard = memo(function CheckCard({
 // ─────────────────────────────────────────────────────────────────────────────
 // SchoolSearchPicker — memo'd, NO useThemeStore
 // ─────────────────────────────────────────────────────────────────────────────
-const SchoolSearchPicker = memo(function SchoolSearchPicker({
-  value, onChange, error, disabled,
+// SchoolItem — memoized to prevent re-renders in the list
+const SchoolItem = memo(function SchoolItem({
+  school, isSelected, isDark, query, onSelect
 }: {
-  value: string; onChange: (val: string) => void; error?: string; disabled?: boolean
+  school: any; isSelected: boolean; isDark: boolean; query: string; onSelect: (name: string) => void
+}) {
+  const Icon = school.type === "University" ? Library : school.type === "Private" ? Building2 : School
+  const iconColor = school.type === "University" ? "text-purple-500 border-purple-500/20 bg-purple-500/10" : 
+                   school.type === "Private" ? "text-amber-500 border-amber-500/20 bg-amber-500/10" : 
+                   "text-blue-500 border-blue-500/20 bg-blue-500/10"
+
+  const highlightedName = useMemo(() => {
+    if (!query || !school.name.toLowerCase().includes(query.toLowerCase())) return school.name
+    const idx = school.name.toLowerCase().indexOf(query.toLowerCase())
+    return (
+      <>
+        {school.name.substring(0, idx)}
+        <span className="text-blue-600 underline underline-offset-2">{school.name.substring(idx, idx + query.length)}</span>
+        {school.name.substring(idx + query.length)}
+      </>
+    )
+  }, [school.name, query])
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(school.name)}
+      className={cn(
+        "w-full text-left px-5 py-3.5 flex items-center gap-4 transition-all relative group/item",
+        isSelected
+          ? isDark ? "bg-blue-600/20" : "bg-blue-50"
+          : isDark ? "hover:bg-white/5" : "hover:bg-slate-50"
+      )}
+    >
+      <div className={cn(
+        "w-10 h-10 rounded-2xl border flex items-center justify-center shrink-0 transition-all group-hover/item:scale-110",
+        isSelected ? "border-blue-500/30 bg-blue-500/20 text-blue-400" : iconColor
+      )}>
+        <Icon size={18} strokeWidth={2.5} />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className={cn(
+            "text-[12px] font-black tracking-tight block truncate transition-colors",
+            isSelected ? "text-blue-500" : isDark ? "text-slate-100" : "text-slate-900"
+          )}>
+            {highlightedName}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", 
+              school.type === "University" ? "bg-purple-500" : 
+              school.type === "Private" ? "bg-amber-500" : "bg-blue-500"
+            )} />
+            <span className="text-[9px] font-bold uppercase tracking-widest t-text-muted">{school.type}</span>
+          </div>
+          {school.region && (
+            <div className="flex items-center gap-1">
+              <MapPin size={8} className="text-slate-500 shrink-0" strokeWidth={3} />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">{school.region}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isSelected && (
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,1)] animate-pulse" />
+      )}
+      {isSelected && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600" />
+      )}
+    </button>
+  )
+})
+
+const SchoolSearchPicker = memo(function SchoolSearchPicker({
+  value, onChange, error, disabled, isDark,
+}: {
+  value: string; onChange: (val: string) => void; error?: string; disabled?: boolean; isDark: boolean
 }) {
   const [query, setQuery] = useState(value && value !== NOT_LISTED ? value : "")
   const [open, setOpen]   = useState(false)
@@ -180,8 +258,11 @@ const SchoolSearchPicker = memo(function SchoolSearchPicker({
 
   return (
     <div ref={containerRef} className="relative">
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-700 pointer-events-none" />
+      <div className="relative group">
+        <Search className={cn(
+          "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-300 pointer-events-none",
+          query ? "text-blue-500" : "text-slate-400 group-focus-within:text-blue-400"
+        )} />
         <input
           type="text"
           value={query}
@@ -192,9 +273,9 @@ const SchoolSearchPicker = memo(function SchoolSearchPicker({
           className={cn(
             "w-full min-h-[44px] h-11 md:h-12 rounded-xl border-2 pl-12 pr-10",
             "font-medium outline-none text-xs md:text-sm",
-            "transition-[border-color,background-color] duration-150 t-input",
-            value ? "filled" : "",
-            error ? "error" : "",
+            "transition-all duration-300 t-input",
+            value ? "filled border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.1)]" : "lg:hover:border-blue-500/20",
+            error ? "error shadow-[0_0_20px_rgba(239,68,68,0.1)]" : "focus:border-blue-500/50 focus:shadow-[0_0_20px_rgba(59,130,246,0.15)]",
             disabled && "opacity-50 cursor-not-allowed"
           )}
         />
@@ -202,50 +283,67 @@ const SchoolSearchPicker = memo(function SchoolSearchPicker({
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 t-text-muted lg:hover:t-text transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-slate-500/10 t-text-muted lg:hover:t-text transition-all active:scale-90"
           >
-            <X size={14} />
+            <X size={14} strokeWidth={3} />
           </button>
         )}
       </div>
 
       {open && !disabled && (
-        <div className="absolute top-full left-0 w-full mt-2 rounded-xl border shadow-2xl z-50 overflow-hidden t-surface">
+        <div
+          className={cn(
+            "absolute top-[calc(100%+8px)] left-0 w-full rounded-[24px] border shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] z-50 overflow-hidden",
+            "backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200",
+            isDark ? "bg-[#0f1117]/95 border-white/10" : "bg-white/95 border-slate-200"
+          )}
+        >
           <button
             type="button"
             onClick={() => handleSelect(NOT_LISTED)}
             className={cn(
-              "w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wider border-b transition-colors",
-              "border-slate-800",
+              "w-full text-left px-5 py-4 flex items-center gap-4 transition-all relative group/btn",
+              isDark ? "border-b border-white/5" : "border-b border-slate-100",
               value === NOT_LISTED
-                ? "bg-amber-900/30 text-amber-400"
-                : "text-amber-500/80 lg:hover:bg-amber-900/20 lg:hover:text-amber-400"
+                ? "bg-amber-500/20 text-amber-500"
+                : isDark ? "hover:bg-amber-500/10 text-slate-400 hover:text-amber-400" : "hover:bg-amber-50 text-slate-600 hover:text-amber-600"
             )}
           >
-            ⚠ School Not Listed / Not Found
+            <div className={cn(
+              "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover/btn:scale-110",
+              value === NOT_LISTED ? "bg-amber-500/30" : isDark ? "bg-white/5" : "bg-slate-100"
+            )}>
+              <HelpCircle size={16} />
+            </div>
+            <div className="flex-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.15em] block leading-none">School Not Listed</span>
+              <p className="text-[9px] mt-1 opacity-70 font-medium">Click if you can't find your school</p>
+            </div>
+            <PlusCircle size={14} className="opacity-40 group-hover/btn:opacity-100 group-hover/btn:translate-x-0.5 transition-all text-amber-500" />
+            
+            {value === NOT_LISTED && (
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />
+            )}
           </button>
-          <div className="max-h-52 overflow-y-auto">
+
+          <div className="max-h-64 overflow-y-auto custom-scrollbar overscroll-contain">
             {filtered.length === 0 ? (
-              <p className="text-[10px] t-text-faint text-center py-4 uppercase tracking-widest">
-                No match — select "Not Listed" above or keep typing
-              </p>
+              <div className="px-6 py-8 text-center space-y-2">
+                <Search className="mx-auto w-8 h-8 text-slate-700/30" strokeWidth={1.5} />
+                <p className="text-[10px] t-text-faint uppercase font-black tracking-[0.2em]">
+                  No schools found
+                </p>
+                <p className="text-[9px] t-text-faint">Try a different name or use "Not Listed" above</p>
+              </div>
             ) : filtered.map(school => (
-              <button
+              <SchoolItem 
                 key={school.name}
-                type="button"
-                onClick={() => handleSelect(school.name)}
-                className={cn(
-                  "w-full text-left px-4 py-2.5 transition-colors",
-                  value === school.name
-                    ? "bg-blue-900/30 text-blue-400"
-                    : "t-text-muted lg:hover:bg-white/5 lg:hover:t-text"
-                )}
-              >
-                <span className="text-[11px] font-semibold block t-text">{school.name}</span>
-                <span className="text-[9px] text-slate-600 uppercase tracking-wider">
-                  {school.type}{school.region ? ` · ${school.region}` : ""}
-                </span>
-              </button>
+                school={school}
+                isSelected={value === school.name}
+                isDark={isDark}
+                query={query}
+                onSelect={handleSelect}
+              />
             ))}
           </div>
         </div>
@@ -256,6 +354,18 @@ const SchoolSearchPicker = memo(function SchoolSearchPicker({
           <AlertTriangle size={10} /> {error}
         </p>
       )}
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+          background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}; 
+          border-radius: 10px; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
+          background: ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}; 
+        }
+      `}</style>
     </div>
   )
 })
@@ -464,7 +574,6 @@ export default function Step2Academic() {
   const selectedModality   = watch("preferred_modality")
   const selectedShift      = watch("preferred_shift")
   const selectedSchoolType = watch("school_type")
-  const watchLastSchool    = watch("last_school_attended")
   const selectedGradeLevel = watch("grade_level")
 
   useEffect(() => {
@@ -550,6 +659,18 @@ export default function Step2Academic() {
           will-change: transform;
         }
         @media (prefers-reduced-motion: reduce) { .animate-step-in { animation: none; } }
+        .spring-btn-blue {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      box-shadow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
+        }
+        .spring-back-btn {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
+        }
+        @media (min-width: 1024px) {
+          .spring-btn-blue:hover  { transform: translateY(-3px) scale(1.04) !important; box-shadow: 0 8px 25px rgba(59,130,246,0.35) !important; }
+          .spring-back-btn:hover  { transform: translateY(-2px) scale(1.02) !important; }
+        }
       `}</style>
 
       {/* BACKGROUND BRANDING */}
@@ -804,10 +925,11 @@ export default function Step2Academic() {
           </p>
           <input type="hidden" {...register("last_school_attended", { required: isFieldRequired("last_school_attended") ? "Required" : false })} />
           <SchoolSearchPicker
-            value={watchLastSchool || ""}
+            value={getValues("last_school_attended") || ""}
             onChange={v => setValue("last_school_attended", v, { shouldValidate: true })}
             error={(errors as any).last_school_attended?.message}
             disabled={!isFieldEditable("last_school_attended")}
+            isDark={isDark}
           />
         </div>
 
@@ -957,10 +1079,10 @@ export default function Step2Academic() {
             type="submit"
             disabled={fetchingYear || checking}
             className={cn(
-              "w-full min-h-[52px] md:h-16 rounded-[28px]",
+              "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
               "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-              "shadow-[0_20px_50px_rgba(59,130,246,0.3)] lg:hover:shadow-blue-600/20",
-              "transition-all duration-500 active:scale-[0.98]",
+              "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
+              "active:scale-[0.98]",
               "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
             )}
           >
@@ -979,7 +1101,7 @@ export default function Step2Academic() {
             updateFormData(getValues() as any)
             setStep(1)
           }}
-            className="min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 transition-colors py-3 touch-manipulation active:scale-[0.98]">
+            className="spring-back-btn min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 py-3 touch-manipulation active:scale-[0.98]">
             <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
           </button>
         </div>

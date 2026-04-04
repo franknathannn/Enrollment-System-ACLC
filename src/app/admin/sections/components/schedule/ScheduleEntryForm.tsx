@@ -5,7 +5,7 @@ import { X, Save, Clock, ChevronDown, Search, User, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DAYS } from "./types"
 import type { ScheduleRow } from "./types"
-import { ROOMS } from "./autoScheduler"
+import { useRooms } from "../../hooks/useRooms"
 
 export interface TeacherOption {
   id:         string
@@ -299,12 +299,13 @@ function TeacherSelect({ value, teachers, onChange, isDarkMode, isICT, error }: 
 function RoomSelect({ value, onChange, isDarkMode, isICT, error }: {
   value: string; onChange: (v: string) => void; isDarkMode: boolean; isICT: boolean; error?: string
 }) {
+  const roomsList         = useRooms()
   const [open, setOpen]   = useState(false)
   const [query, setQuery] = useState("")
   const ref               = useRef<HTMLDivElement>(null)
   const filtered          = query.trim()
-    ? [...ROOMS].filter(r => r.toLowerCase().includes(query.toLowerCase()))
-    : [...ROOMS]
+    ? roomsList.filter(r => r.name.toLowerCase().includes(query.toLowerCase()))
+    : roomsList
 
   const accentRing   = isICT ? "ring-blue-500/40 border-blue-500" : "ring-orange-500/40 border-orange-500"
   const accentActive = isICT ? "bg-blue-600 text-white"           : "bg-orange-600 text-white"
@@ -352,10 +353,10 @@ function RoomSelect({ value, onChange, isDarkMode, isICT, error }: {
               — None —
             </button>
             {filtered.map(r => (
-              <button key={r} type="button" onClick={() => { onChange(r); setOpen(false); setQuery("") }}
+              <button key={r.id} type="button" onClick={() => { onChange(r.name); setOpen(false); setQuery("") }}
                 className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors
-                  ${r === value ? accentActive : isDarkMode ? "text-white hover:bg-slate-700/50" : "text-slate-900 hover:bg-slate-50"}`}>
-                {r}
+                  ${r.name === value ? accentActive : isDarkMode ? "text-white hover:bg-slate-700/50" : "text-slate-900 hover:bg-slate-50"}`}>
+                {r.name}
               </button>
             ))}
             {filtered.length === 0 && (

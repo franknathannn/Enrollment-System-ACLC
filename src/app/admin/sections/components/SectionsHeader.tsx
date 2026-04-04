@@ -10,6 +10,7 @@ import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { DeleteManagementDialog } from "./DeleteManagementDialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { BulkScheduleManagerDialog } from "./schedule/BulkScheduleManagerDialog"
 
 interface SectionsHeaderProps {
   isDarkMode: boolean
@@ -25,6 +26,8 @@ interface SectionsHeaderProps {
   initiateAdd: (strand: "ICT" | "GAS") => void
   onBalance: (strand: "ICT" | "GAS" | "ALL") => void
   isProcessing: boolean
+  config: any
+  allSchedules: any[]
 }
 
 
@@ -207,8 +210,11 @@ function SectionStatsPopover({ sections, isDarkMode }: { sections: any[]; isDark
 export const SectionsHeader = memo(({
   isDarkMode, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter,
   sectionSelection, setConfirmDeleteSelect,
-  sections, handleDeleteSection, handleClearAllStudents, initiateAdd, onBalance, isProcessing
+  sections, handleDeleteSection, handleClearAllStudents, initiateAdd, onBalance, isProcessing,
+  config, allSchedules
 }: SectionsHeaderProps) => {
+
+  const [scheduleManagerOpen, setScheduleManagerOpen] = useState(false)
 
   // 🧪 PROP-BASED THEME ENGINE (Ignoring Tailwind dark: for state sync)
   const theme = {
@@ -356,7 +362,28 @@ export const SectionsHeader = memo(({
           </TooltipTrigger>
           <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Create New GAS Section</p></TooltipContent>
         </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={() => setScheduleManagerOpen(true)}
+              className="rounded-[18px] bg-indigo-600 hover:bg-indigo-700 h-11 px-4 sm:px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-indigo-500/20 transition-all transform-gpu active:scale-90 col-span-2 sm:col-span-1 sm:flex-none text-white border border-indigo-400/20"
+            >
+              <Layers className="mr-1.5" size={14} /> Schedule Manager
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Open Bulk Schedule Editor</p></TooltipContent>
+        </Tooltip>
       </div>
+
+      <BulkScheduleManagerDialog 
+        open={scheduleManagerOpen} 
+        onOpenChange={setScheduleManagerOpen} 
+        sections={sections} 
+        isDarkMode={isDarkMode} 
+        config={config} 
+        allSchedules={allSchedules} 
+      />
     </ThemedCard>
   )
 })

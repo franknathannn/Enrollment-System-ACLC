@@ -23,6 +23,7 @@ interface Props {
   dm: boolean
   session: TeacherSession
   schoolYear: string
+  advisorySections?: string[]
 }
 
 interface AttRow {
@@ -141,7 +142,7 @@ const CircularProgress = ({ pct, size = 60, strokeWidth = 5, dm }: { pct: number
 
 
 
-export function ReportsTab({ schedules, students, dm, session, schoolYear }: Props) {
+export function ReportsTab({ schedules, students, dm, session, schoolYear, advisorySections = [] }: Props) {
   const [attData, setAttData] = useState<AttRow[]>([])
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -165,9 +166,19 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
   const divideB = dm ? "divide-slate-800/60" : "divide-slate-100"
 
   const mySections = useMemo(
-    () => [...new Set(schedules.map(s => s.section))].filter(Boolean),
-    [schedules]
+    () => [...new Set([...schedules.map(s => s.section), ...advisorySections])].filter(Boolean).sort(),
+    [schedules, advisorySections]
   )
+
+  /** Check if the teacher is an adviser of this section (regardless of whether they also teach there) */
+  const isAdvisory = useCallback((section: string) => {
+    return advisorySections.includes(section)
+  }, [advisorySections])
+
+  /** Check if a section is advisory-ONLY (adviser but does NOT teach any subject there) */
+  const isAdvisoryOnly = useCallback((section: string) => {
+    return advisorySections.includes(section) && !schedules.some(s => s.section === section)
+  }, [advisorySections, schedules])
 
   const load = useCallback(async (silent = false) => {
     const myStudentIds = students.map(s => s.id)
@@ -211,7 +222,17 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
     return mySections.map(section => {
       const sectionStudents = students.filter(s => s.section === section)
       const sectionSchedules = schedules.filter(s => s.section === section)
-      const uniqueSubjects = [...new Set(sectionSchedules.map(s => s.subject))]
+
+      // If adviser of this section, show ALL subjects (from attendance data)
+      // merged with scheduled subjects. This covers:
+      // - Advisory-only: shows all subjects from attendance
+      // - Both teacher + adviser: shows taught subjects + all other subjects from attendance
+      const isAdv = advisorySections.includes(section)
+      const scheduledSubjects = [...new Set(sectionSchedules.map(s => s.subject))]
+      const attendanceSubjects = isAdv
+        ? [...new Set(attData.filter(r => sectionStudents.some(s => s.id === r.student_id)).map(r => r.subject))]
+        : []
+      const uniqueSubjects = [...new Set([...scheduledSubjects, ...attendanceSubjects])].sort()
 
       const subjectReports: SubjectReport[] = uniqueSubjects.map(subject => {
         const recs = attData.filter(r =>
@@ -241,7 +262,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
         avgAbsents, avgPresents, attendancePct: overallPct,
       }
     })
-  }, [mySections, students, schedules, attData])
+  }, [mySections, students, schedules, attData, advisorySections])
 
   const triageList: TriageStudent[] = useMemo(() => {
     return students.map(student => {
@@ -815,7 +836,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
             <button key={sec} onClick={() => setActiveSection(sec)}
               className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all
                 ${activeSection === sec ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : dm ? "bg-white/5 border-white/5 hover:bg-white/10 text-slate-300" : "bg-slate-50 border-slate-200 hover:bg-slate-100/80 text-slate-500"}`}>
-              {sec}
+              {sec}{sec !== "ALL" && isAdvisory(sec) ? " (Advisory)" : ""}
             </button>
           ))}
         </div>
@@ -867,7 +888,14 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
                 <div className="flex items-center gap-6">
                   <CircularProgress pct={report.attendancePct} dm={dm} size={70} strokeWidth={6} />
                   <div>
-                    <h3 className={`text-xl font-black italic tracking-tighter uppercase ${head}`}>{report.section}</h3>
+                    <h3 className={`text-xl font-black italic tracking-tighter uppercase ${head}`}>
+                      {report.section}
+                      {isAdvisory(report.section) && (
+                        <span className={`ml-2 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest not-italic border ${isAdvisoryOnly(report.section) ? "bg-violet-500/15 text-violet-500 border-violet-500/20" : "bg-emerald-500/15 text-emerald-500 border-emerald-500/20"}`}>
+                          Advisory{isAdvisoryOnly(report.section) ? " · Read Only" : ""}
+                        </span>
+                      )}
+                    </h3>
                     <p className={`text-[10px] font-bold uppercase tracking-widest ${sub}`}>
                       {report.totalStudents} Students • {report.subjects.length} Subjects
                     </p>

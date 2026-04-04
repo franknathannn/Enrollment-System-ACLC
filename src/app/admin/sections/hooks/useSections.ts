@@ -12,6 +12,7 @@ export function useSections() {
   const { isDarkMode: themeDarkMode } = useTheme()
   const [isDarkMode, setIsDarkMode] = useState(themeDarkMode)
   const [sections, setSections] = useState<any[]>([])
+  const [teachers, setTeachers] = useState<any[]>([])
   const [allSchedules, setAllSchedules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -144,6 +145,9 @@ export function useSections() {
       // the same slot as ICT 11-A.
       const { data: schedData } = await supabase.from('schedules').select('*')
       setAllSchedules(schedData || [])
+
+      const { data: tData } = await supabase.from('teachers').select('id, full_name, email, is_active, created_at').order('full_name', { ascending: true }).limit(5)
+      setTeachers(tData || [])
     } catch (err: any) {
       console.error("Registrar Sync Error:", err?.message || err?.code || JSON.stringify(err) || err)
       if (!isBackground) toast.error("Registrar Sync Error — check console for details")
@@ -436,8 +440,8 @@ export function useSections() {
     } catch (err) { toast.error("Transfer failed") }
   }, [sections, fetchSections])
 
-  const exportSectionCSV = useCallback((sectionName: string, students: any[]) => {
-    downloadSectionRecord(sectionName, students, config?.school_year)
+  const exportSectionCSV = useCallback((sectionName: string, students: any[], adviserName?: string) => {
+    downloadSectionRecord(sectionName, students, config?.school_year, adviserName)
   }, [config])
   
   const handleToggleLock = useCallback(async (id: string, isLocked: boolean) => {
@@ -565,8 +569,21 @@ export function useSections() {
     } catch (error: any) { console.error("Update error:", error.message || error); throw error }
   }, [])
 
+  const handleAdviserChange = useCallback(async (sectionId: string, teacherId: string | null) => {
+    try {
+      const { error } = await supabase.from('sections').update({ adviser_id: teacherId }).eq('id', sectionId)
+      if (error) throw error
+      setSections(prev => prev.map(s => s.id === sectionId ? { ...s, adviser_id: teacherId } : s))
+      toast.success(teacherId ? "Adviser assigned" : "Adviser removed")
+      return true
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update adviser")
+      return false
+    }
+  }, [])
+
   return {
-    config, isDarkMode, sections, allSchedules, loading, isProcessing, selectedSectionName, setSelectedSectionName,
+    config, isDarkMode, sections, teachers, allSchedules, loading, isProcessing, selectedSectionName, setSelectedSectionName,
     searchTerm, setSearchTerm, debouncedSearch, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter, sectionSelection,
     confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, ictExpanded, setIctExpanded,
     gasExpanded, setGasExpanded, exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
@@ -575,6 +592,6 @@ export function useSections() {
     currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
     handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections, handleToggleLock, updateStudentProfile,
-    navigateDocument, canNavigatePrev, canNavigateNext
+    navigateDocument, canNavigatePrev, canNavigateNext, handleAdviserChange
   }
 }

@@ -1,7 +1,7 @@
 // src/app/admin/sections/api/exportSectionRecord.ts
 import { toast } from "sonner";
 
-export async function downloadSectionRecord(sectionName: string, students: any[], schoolYear: string) {
+export async function downloadSectionRecord(sectionName: string, students: any[], schoolYear: string, adviserName?: string) {
   const toastId = toast.loading("Connecting to Grade Registry...");
 
   try {
@@ -27,6 +27,11 @@ export async function downloadSectionRecord(sectionName: string, students: any[]
     sheet.cell("X5").value("401144");
     sheet.cell("K7").value(sectionName ? sectionName.toUpperCase() : "UNKNOWN");
     sheet.cell("AG5").value(schoolYear || "");
+    if (adviserName) {
+      // Common cells for Teacher/Adviser in DepEd Class Records
+      sheet.cell("W7").value(adviserName.toUpperCase());
+      sheet.cell("Y7").value(adviserName.toUpperCase());
+    }
 
     // 2. Sort Students
     const sorted = Array.isArray(students) 

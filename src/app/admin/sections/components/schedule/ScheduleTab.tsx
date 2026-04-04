@@ -25,13 +25,14 @@ interface ScheduleTabProps {
    * auto-schedule wizard and import flow.
    */
   allSchedules: ScheduleRow[]
+  adviserName?: string
 }
 
 type PanelMode = "none" | "add" | "edit" | "import" | "wizard"
 
 export const ScheduleTab = memo(function ScheduleTab({
   sectionName, isICT, isDarkMode, schoolYear,
-  students, allSchedules,
+  students, allSchedules, adviserName,
 }: ScheduleTabProps) {
 
   const [mode,       setMode]    = useState<PanelMode>("none")
@@ -59,6 +60,8 @@ export const ScheduleTab = memo(function ScheduleTab({
     addEntry, updateEntry, deleteEntry,
     importSchedules, addSchedules, clearSchedules,
   } = useSchedule({ sectionName, schoolYear })
+
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
 
   const close = () => { setMode("none"); setEditing(null) }
 
@@ -163,6 +166,7 @@ export const ScheduleTab = memo(function ScheduleTab({
       <div className={`rounded-3xl border p-5 ${panelBg} ${panelBorder}`}>
         <ScheduleToolbar
           sectionName={sectionName}
+          adviserName={adviserName}
           schedules={schedules}
           isICT={isICT}
           isDarkMode={isDarkMode}
@@ -171,7 +175,7 @@ export const ScheduleTab = memo(function ScheduleTab({
           onAutoSchedule={() => setMode(mode === "wizard" ? "none" : "wizard")}
           onImportClick={() => setMode(mode === "import" ? "none" : "import")}
           onRefresh={() => fetchSchedules(false)}
-          onClearAll={clearSchedules}
+          onClearAll={() => setClearConfirmOpen(true)}
         />
       </div>
 
@@ -242,6 +246,41 @@ export const ScheduleTab = memo(function ScheduleTab({
           onDelete={handleDelete}
         />
       </div>
+
+      {/* ── Clear Confirmation Modal ── */}
+      {clearConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className={`w-full max-w-sm rounded-[24px] border p-6 shadow-2xl animate-in zoom-in-95 duration-200 ${isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"}`}>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-500/10 text-red-500 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              </div>
+              <h3 className={`text-lg font-black mb-2 ${isDarkMode ? "text-white" : "text-slate-900"}`}>Clear Entire Schedule?</h3>
+              <p className={`text-sm mb-6 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                This will permanently delete formatting and data for <strong>{schedules.length}</strong> period{schedules.length !== 1 ? 's' : ''} in <span className="font-bold">{sectionName}</span>. This action cannot be undone.
+              </p>
+              
+              <div className="flex w-full gap-3">
+                <button
+                  onClick={() => setClearConfirmOpen(false)}
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border ${isDarkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await clearSchedules()
+                    setClearConfirmOpen(false)
+                  }}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold transition-all bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/25 active:scale-95"
+                >
+                  Yes, Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 })

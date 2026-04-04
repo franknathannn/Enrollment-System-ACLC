@@ -1,11 +1,12 @@
 "use client"
 
 import React, { useEffect, useState, useRef, useCallback } from "react"
+import { createPortal } from "react-dom"
 import { supabase } from "@/lib/supabase/admin-client"
 import { useTheme } from "@/hooks/useTheme"
 import { themeColors } from "@/lib/themeColors"
 import { toast } from "sonner"
-import { CalendarRange, Loader2, RefreshCw, Clock, Layers, ChevronDown, Search, CalendarDays } from "lucide-react"
+import { CalendarRange, Loader2, RefreshCw, Clock, Layers, ChevronDown, Search, CalendarDays, MonitorPlay } from "lucide-react"
 
 import {
   ScheduleRow, SectionRow, StrandFilter, Day,
@@ -17,6 +18,7 @@ import { StrandGrid } from "./components/StrandGrid"
 import { EditModal  } from "./components/EditModal"
 import { validateSlot } from "../sections/components/schedule/autoScheduler"
 import { AcademicCalendarManager } from "./components/AcademicCalendarManager"
+import { RoomMonitoringTab } from "./components/RoomMonitoringTab"
 
 // ── Beautiful time picker used for From/To controls ──────────────────────────
 function PageTimeSelect({
@@ -47,14 +49,31 @@ function PageTimeSelect({
   const label = options.find(o => toMins(o.value) === value)?.label ?? toDisp(value)
   const parts = label.match(/^(\d+:\d+)\s*(AM|PM)$/)
 
+  const inputRef = useRef<HTMLInputElement>(null)
+
   const openDropdown = () => {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + 8, left: r.left, width: Math.max(r.width, 200) })
+      const dropdownW = Math.max(r.width, 200)
+      // Clamp so the dropdown never overflows the viewport edges
+      const maxLeft = window.innerWidth - dropdownW - 16
+      const clampedLeft = Math.max(8, Math.min(r.left, maxLeft))
+      setPos({ top: r.bottom + 8, left: clampedLeft, width: dropdownW })
     }
     setOpen(true)
     setQuery("")
   }
+
+  // Focus input after dropdown opens — using useEffect instead of autoFocus
+  // to prevent the browser from scrolling the page to make the input visible
+  useEffect(() => {
+    if (open && inputRef.current) {
+      // Small delay to ensure the portal is rendered
+      requestAnimationFrame(() => {
+        inputRef.current?.focus({ preventScroll: true })
+      })
+    }
+  }, [open])
 
   return (
     <div style={{ position: "relative" }}>
@@ -85,11 +104,11 @@ function PageTimeSelect({
         <ChevronDown size={10} style={{ color: muted, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
       </button>
 
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <>
           {/* Backdrop — closes on outside click */}
           <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => { setOpen(false); setQuery("") }} />
-          {/* Dropdown — fixed, escapes all overflow containers */}
+          {/* Dropdown — fixed, rendered via portal to fully escape overflow containers */}
           <div style={{
             position: "fixed",
             top: pos.top, left: pos.left, width: Math.max(pos.width, 200),
@@ -102,7 +121,7 @@ function PageTimeSelect({
             <div style={{ padding: "8px 8px 5px" }}>
               <div style={{ position: "relative" }}>
                 <Clock size={11} style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: muted }} />
-                <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+                <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
                   placeholder='Search time…'
                   style={{
                     width: "100%", height: 32, borderRadius: 9,
@@ -147,7 +166,8 @@ function PageTimeSelect({
               {filtered.length === 0 && <div style={{ padding: 12, fontSize: 10, color: muted, textAlign: "center" }}>No results</div>}
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   )
@@ -174,7 +194,7 @@ export default function SchedulesPage() {
   const [saving,       setSaving]       = useState(false)
   const [deleting,     setDeleting]     = useState(false)
   // ── New: page-level tab (timetable vs academic calendar) ──────────────────
-  const [pageTab,      setPageTab]      = useState<"timetable" | "calendar">("timetable")
+  const [pageTab,      setPageTab]      = useState<"timetable" | "calendar" | "rooms">("timetable")
   const [schoolYear,   setSchoolYear]   = useState("2025-2026")
 
   const ghostRef       = useRef<HTMLDivElement | null>(null)
@@ -182,6 +202,9 @@ export default function SchedulesPage() {
     id: string; dur: number; offsetY: number
     colEl: HTMLElement; origStart: number
   } | null>(null)
+  // Mouse drag-to-scroll for the grid wrapper
+  const gridScrollRef  = useRef<HTMLDivElement | null>(null)
+  const gridDragState  = useRef<{ isDown: boolean; startX: number; scrollLeft: number }>({ isDown: false, startX: 0, scrollLeft: 0 })
   // Pending drag: mouse is held but hasn't moved enough to start drag yet
   const pendingDragRef = useRef<{
     row: ScheduleRow; colEl: HTMLElement
@@ -197,14 +220,18 @@ export default function SchedulesPage() {
       const [{ data: secData, error: secErr }, { data: schData, error: schErr }, { data: tchData }, { data: cfgData }] =
         await Promise.all([
           supabase.from("sections").select("*").order("section_name"),
-          supabase.from("schedules").select("*").order("start_time"),
+          supabase.from("schedules").select("*, rooms(name)").order("start_time"),
           supabase.from("teachers").select("id, full_name").eq("is_active", true).order("full_name"),
           supabase.from("system_config").select("school_year").single(),
         ])
       if (secErr) throw secErr
       if (schErr) throw schErr
       setAllSections((secData ?? []) as SectionRow[])
-      setScheduleRows((schData ?? []) as ScheduleRow[])
+      const mappedSchedules = (schData ?? []).map((r: any) => ({
+        ...r,
+        room: r.rooms?.name || r.room
+      })) as ScheduleRow[]
+      setScheduleRows(mappedSchedules)
       setTeachers((tchData ?? []) as { id: string; full_name: string }[])
       if (cfgData?.school_year) setSchoolYear(cfgData.school_year)
     } catch (e: any) {
@@ -269,11 +296,20 @@ export default function SchedulesPage() {
           return
         }
       }
-      const { error } = await supabase.from("schedules").update({
+      const { data: dbRooms } = await supabase.from("rooms").select("id, name")
+      const rMap = (dbRooms || []).reduce((acc: any, r: any) => ({ ...acc, [r.name]: r.id }), {})
+
+      const updateData: any = {
         start_time: toStr(st) + ":00",
         end_time:   toStr(en) + ":00",
         ...extra,
-      }).eq("id", id)
+      }
+      if (extra?.room) {
+        updateData.room = extra.room
+        if (rMap[extra.room]) updateData.room_id = rMap[extra.room]
+      }
+
+      const { error } = await supabase.from("schedules").update(updateData).eq("id", id)
       if (error) throw error
       toast.success("Schedule updated")
       setEditRow(null); load()
@@ -462,11 +498,13 @@ export default function SchedulesPage() {
       <style>{`
         html {
           -webkit-text-size-adjust: 100%;
+          overflow-x: hidden !important;
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
         }
         body {
-          overflow-x: hidden;
+          overflow-x: hidden !important;
+          max-width: 100vw !important;
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
         }
@@ -543,8 +581,9 @@ export default function SchedulesPage() {
 
       {/* ── PAGE TAB SWITCHER ────────────────────────────────────────────── */}
       <div
-        className="flex gap-1 p-1.5 rounded-2xl border w-fit"
+        className="flex gap-1 p-1.5 rounded-2xl border w-full overflow-x-auto sm:w-fit"
         style={{
+          scrollbarWidth: "none",
           background: isDarkMode ? 'rgba(15,23,42,0.6)' : 'rgba(248,250,252,0.8)',
           borderColor: bdr,
           backdropFilter: "blur(8px)",
@@ -554,7 +593,8 @@ export default function SchedulesPage() {
         {([
           { key: "timetable", label: "Timetable",        icon: <CalendarRange size={11} /> },
           { key: "calendar",  label: "Academic Calendar", icon: <CalendarDays  size={11} /> },
-        ] as const).map(t => (
+          { key: "rooms",     label: "Room Monitoring",  icon: <MonitorPlay size={11} /> },
+        ] as { key: "timetable"|"calendar"|"rooms"; label: string; icon: React.ReactNode }[]).map(t => (
           <button
             key={t.key}
             onClick={() => setPageTab(t.key)}
@@ -584,6 +624,17 @@ export default function SchedulesPage() {
           muted={muted}
           schoolYear={schoolYear}
         />
+      )}
+
+      {/* ── ROOM MONITORING ───────────────────────────────────────────── */}
+      {pageTab === "rooms" && (
+        <div style={{ animation: "saas-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
+          <RoomMonitoringTab 
+            schedules={scheduleRows}
+            isDarkMode={isDarkMode}
+            schoolYear={schoolYear}
+          />
+        </div>
       )}
 
       {pageTab === "timetable" && (
@@ -787,8 +838,9 @@ export default function SchedulesPage() {
           </p>
         </div>
       ) : (
-        // Grid wrapper: allow horizontal scroll, hide scrollbar
+        // Grid wrapper: allow horizontal scroll, hide scrollbar + mouse drag-to-scroll
         <div
+          ref={gridScrollRef}
           className="w-full"
           style={{
             overflowX: "auto",
@@ -797,7 +849,35 @@ export default function SchedulesPage() {
             msOverflowStyle: "none",
             WebkitOverflowScrolling: "touch",
             animation: "saas-fade-up 0.4s cubic-bezier(0.16,1,0.3,1) 0.2s both",
+            cursor: gridDragState.current.isDown ? "grabbing" : "grab",
           } as React.CSSProperties}
+          onMouseDown={(e) => {
+            // Only activate on primary mouse button and not on interactive elements
+            if (e.button !== 0) return
+            const tag = (e.target as HTMLElement).tagName
+            if (["BUTTON", "INPUT", "SELECT", "TEXTAREA", "A"].includes(tag)) return
+            const el = gridScrollRef.current
+            if (!el) return
+            gridDragState.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft }
+            el.style.cursor = "grabbing"
+            e.preventDefault()
+          }}
+          onMouseMove={(e) => {
+            if (!gridDragState.current.isDown) return
+            const el = gridScrollRef.current
+            if (!el) return
+            const x = e.pageX - el.offsetLeft
+            const walk = (x - gridDragState.current.startX) * 1.5
+            el.scrollLeft = gridDragState.current.scrollLeft - walk
+          }}
+          onMouseUp={() => {
+            gridDragState.current.isDown = false
+            if (gridScrollRef.current) gridScrollRef.current.style.cursor = "grab"
+          }}
+          onMouseLeave={() => {
+            gridDragState.current.isDown = false
+            if (gridScrollRef.current) gridScrollRef.current.style.cursor = "grab"
+          }}
         >
           <StrandGrid
             strandFilter={strand}

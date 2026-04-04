@@ -5,6 +5,7 @@
 import { memo, useEffect, useState, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { ArrowUpRight } from "lucide-react"
+import Link from "next/link"
 import { ThemedText } from "@/components/ThemedText"
 import { themeColors } from "@/lib/themeColors"
 import { 
@@ -116,7 +117,7 @@ export const MetricCard = memo(({ label, value, colorLight, colorDark, icon, isD
 })
 MetricCard.displayName = "MetricCard"
 
-export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode, highlightColor, tooltip }: any) => {
+export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode, highlightColor, tooltip, href }: any) => {
   const isHighlighted = !isDarkMode && highlightColor;
 
   // Derive a top-accent color from the `color` prop (e.g. "text-emerald-600 dark:text-emerald-400" → emerald)
@@ -177,11 +178,17 @@ export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode
     </Card>
   );
 
+  const wrappedContent = href ? (
+    <Link href={href} className="block cursor-pointer">
+      {content}
+    </Link>
+  ) : content;
+
   if (tooltip) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          {content}
+          {wrappedContent}
         </TooltipTrigger>
         <TooltipContent className="bg-slate-950 text-white border-slate-800">
           <p className="font-medium text-xs">{tooltip}</p>
@@ -190,7 +197,7 @@ export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode
     )
   }
 
-  return content;
+  return wrappedContent;
 })
 StatCard.displayName = "StatCard"
 

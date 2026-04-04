@@ -55,6 +55,7 @@ interface Props {
   dm: boolean
   session: TeacherSession
   schoolYear: string
+  advisorySections?: string[]
 }
 
 const localDateStr = (d: Date = new Date()) => {
@@ -152,7 +153,7 @@ function ExcuseModal({ student, subject, date, dm, session, onClose, onSaved }: 
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
-export function CuttingClassDetector({ schedules, students, dm, session, schoolYear }: Props) {
+export function CuttingClassDetector({ schedules, students, dm, session, schoolYear, advisorySections = [] }: Props) {
   const [date, setDate] = useState(todayStr())
   const [records, setRecords] = useState<AttRecord[]>([])
   const [excuses, setExcuses] = useState<Excuse[]>([])
@@ -172,6 +173,11 @@ export function CuttingClassDetector({ schedules, students, dm, session, schoolY
   const glass = dm ? "bg-white/5 backdrop-blur-xl border-white/5" : "bg-slate-50 border-slate-200"
   const sub = dm ? "text-slate-500" : "text-slate-400"
   const head = dm ? "text-white" : "text-slate-900"
+
+  /** Check if a student is in an advisory-only section (not taught by this teacher) */
+  const isAdvisoryOnlyStudent = useCallback((student: Student) => {
+    return advisorySections.includes(student.section) && !schedules.some(s => s.section === student.section)
+  }, [advisorySections, schedules])
 
   // Derive Suspects with Timeline
   const suspects = useMemo(() => {
@@ -366,6 +372,7 @@ export function CuttingClassDetector({ schedules, students, dm, session, schoolY
   const toggleSelect = (id: string) => {
     const susp = suspects.find(s => s.student.id === id)
     if (susp?.isExcused || susp?.isReported) return // Prevent selection for closed cases
+    if (susp && isAdvisoryOnlyStudent(susp.student)) return // Prevent selection for advisory-only students
     const next = new Set(selectedIds)
     if (next.has(id)) next.delete(id); else next.add(id)
     setSelectedIds(next)
@@ -548,7 +555,15 @@ export function CuttingClassDetector({ schedules, students, dm, session, schoolY
 
                       {/* Actions */}
                       <div className="flex flex-col sm:flex-row lg:flex-row justify-center lg:justify-end items-center gap-3 w-full lg:w-auto">
-                        {(susp.isExcused || susp.isReported) ? (
+                        {isAdvisoryOnlyStudent(susp.student) ? (
+                          <div className={`flex items-center gap-2.5 px-4 h-12 rounded-xl ${dm ? "bg-violet-500/5 border border-violet-500/10" : "bg-violet-50 border border-violet-100 shadow-sm"}`}>
+                            <Eye className="text-violet-500" size={14} />
+                            <div>
+                              <p className="text-[9px] font-black uppercase tracking-widest text-violet-500">Advisory View</p>
+                              <p className={`text-[8px] font-bold italic ${sub}`}>Read-only access</p>
+                            </div>
+                          </div>
+                        ) : (susp.isExcused || susp.isReported) ? (
                           <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
                             <div className={`flex items-center gap-2.5 px-4 h-12 rounded-xl w-full sm:w-auto ${dm ? "bg-blue-500/5 border border-blue-500/10" : "bg-blue-50 border border-blue-100 shadow-sm"}`}>
                               <ShieldCheck className="text-blue-500" size={14} />

@@ -4,10 +4,7 @@ import { useState, useEffect } from "react"
 import { Loader2, X, Save, AlertCircle, Edit3, Trash2, Clock, ChevronDown, Search } from "lucide-react"
 import { ScheduleRow, toMins, toDisp, toStr, TIME_OPTS } from "./types"
 
-const ROOMS = [
-  "Comlab 1", "Comlab 2", "Library", "Science Lab",
-  "Room 201", "Room 301", "Room 302", "Room 303", "Room 401", "Room 402",
-]
+import { useRooms, Room } from "../../sections/hooks/useRooms"
 
 interface Props {
   row: ScheduleRow
@@ -316,6 +313,8 @@ export function EditModal({
   onChangeRow, onChangeStart, onChangeEnd,
   onSave, onDelete, onClose,
 }: Props) {
+  const roomsList = useRooms()
+  const roomNames = roomsList.map((r: Room) => r.name)
   const teacherNames = teachers.map(t => t.full_name)
   const labelStyle: React.CSSProperties = {
     fontSize: 8.5, fontWeight: 800, textTransform: "uppercase",
@@ -510,7 +509,7 @@ export function EditModal({
           <div>
             <label style={labelStyle}>Room</label>
             <SearchableSelect
-              value={row.room || ""} options={ROOMS}
+              value={row.room || ""} options={roomNames}
               placeholder="Select room…"
               isDarkMode={isDarkMode} surf={surf} bdr={bdr} txt={txt} muted={muted}
               onChange={v => onChangeRow({ ...row, room: v || null })}

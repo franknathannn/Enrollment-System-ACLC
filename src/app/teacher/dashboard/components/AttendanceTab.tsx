@@ -58,6 +58,7 @@ interface Props {
   dm: boolean
   session: TeacherSession
   schoolYear: string
+  advisorySections?: string[]
 }
 
 const LS_KEY = "att_pending_v3"
@@ -310,7 +311,7 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
 
 const ATT_TAB_KEY = "att_active_tab"
 
-export function AttendanceTab({ schedules, students, dm, session, schoolYear }: Props) {
+export function AttendanceTab({ schedules, students, dm, session, schoolYear, advisorySections = [] }: Props) {
   const realDayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
   const [tab, setTab] = useState<"scanner" | "calendar">(() => {
@@ -787,6 +788,14 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
     setTimeout(() => calActionLockRef.current.delete(key), 400)
     setCalOverrideId(key)
     try {
+      const isAdviserOnly = advisorySections.includes(student.section) && !schedules.some(s => s.section === student.section && s.subject === subject)
+      if (isAdviserOnly) {
+        toast.error("Access Denied: You can only edit attendance for subjects you teach.")
+        setCalOverrideId(null)
+        calActionLockRef.current.delete(key)
+        return
+      }
+
       const sched = schedules.find(s => s.subject === subject && s.section === student.section)
       const rec: AttRecord = existingRec
         ? { ...existingRec, status: newStatus }
@@ -984,7 +993,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
 
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
   const firstDayOfWeek = new Date(calYear, calMonth, 1).getDay()
-  const calSections = [...new Set(schedules.map(s => s.section))].filter(Boolean)
+  const calSections = [...new Set([...schedules.map(s => s.section), ...advisorySections])].filter(Boolean)
   const calDayStudents = selectedDay ? students.filter(s => s.section === calSection) : []
 
   const scheduleByDay = useMemo(() => {
@@ -1584,7 +1593,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear }: 
                   <button key={sec} onClick={() => { setCalSection(sec); setSelectedDay(null) }}
                     className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wide transition-all
                       ${calSection === sec ? "bg-blue-600 text-white" : dm ? "bg-slate-700/50 text-slate-400 hover:text-white" : "bg-slate-100 text-slate-500 hover:text-slate-800"}`}>
-                    {sec}
+                    {sec}{advisorySections.includes(sec) ? " (Advisory)" : ""}
                   </button>
                 ))}
               </div>

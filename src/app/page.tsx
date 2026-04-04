@@ -112,16 +112,15 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
   }
 
   return (
-    <div className={cn("lg:col-span-5 relative group/stats", !isMobile && "float")} ref={statsRef} style={{ translate: "0 0", willChange: "transform" }}>
+    <div className={cn("lg:col-span-5 relative stats-group", !isMobile && "float")} ref={statsRef} style={{ translate: "0 0", willChange: "transform" }}>
       {/* Decorative Glows */}
       <div className={cn("absolute -inset-10 rounded-[80px] blur-[100px] transition-opacity duration-1000 pointer-events-none", d ? "bg-blue-600/10 opacity-60" : "bg-blue-600/5 opacity-40")} />
 
       <div className={cn(
-        "relative rounded-[40px] md:rounded-[56px] border overflow-hidden backdrop-blur-3xl transition-all duration-700 ease-out transform cursor-default",
-        statsVisible ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0",
-        d ? "bg-[#030712]/85 border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.8)] lg:group-hover/stats:border-blue-500/40"
-          : "bg-white/90 border-slate-200 shadow-[0_30px_80px_rgba(0,0,0,0.06)] lg:group-hover/stats:border-blue-300 lg:group-hover/stats:shadow-[0_40px_100px_rgba(0,0,0,0.08)]",
-        "lg:group-hover/stats:-translate-y-2"
+        "relative rounded-[40px] md:rounded-[56px] border overflow-hidden backdrop-blur-3xl cursor-default stats-card",
+        statsVisible ? "opacity-100" : "opacity-0",
+        d ? "bg-[#030712]/85 border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
+          : "bg-white/90 border-slate-200 shadow-[0_30px_80px_rgba(0,0,0,0.06)]",
       )}>
         {/* Top Accent Bar — Solid ACLC Blue */}
         <div className="h-1.5 w-full bg-blue-600" />
@@ -163,8 +162,8 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
           {/* Centerpiece Counter */}
           <div className="relative">
             <div className={cn(
-              "relative rounded-[32px] p-8 md:p-10 overflow-hidden border transition-all duration-500",
-              d ? "bg-[#020617]/50 border-white/5 lg:hover:border-blue-500/20" : "bg-white/50 border-slate-100 lg:hover:border-blue-400/20"
+              "relative rounded-[32px] p-8 md:p-10 overflow-hidden border spring-hover-blue",
+              d ? "bg-[#020617]/50 border-white/5" : "bg-white/50 border-slate-100"
             )}>
               <div className="absolute top-0 right-0 p-6 pointer-events-none">
                 <Orbit size={48} className={cn("opacity-10 lg:animate-spin", d ? "text-white" : "text-blue-600")} style={{ animationDuration: '15s' }} />
@@ -220,10 +219,14 @@ function VisualMetric({ label, current, max, color, isDark }: { label: string, c
   const pct = Math.min((current / max) * 100, 100) || 0
   const isRed = color === 'red'
   return (
-    <div className={cn(
-      "p-5 rounded-3xl border transition-all duration-300 hover:scale-[1.02]",
-      isDark ? "bg-white/[0.03] border-white/5" : "bg-slate-50 border-slate-200"
-    )}>
+    <div
+      className={cn(
+        "p-5 rounded-3xl border",
+        color === 'red' ? 'spring-hover-red' : 'spring-hover-blue',
+        isDark ? "bg-white/[0.03] border-white/5" : "bg-slate-50 border-slate-200"
+      )}
+      style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+    >
       <div className="flex justify-between items-end mb-3">
         <span className={cn("text-[10px] font-black uppercase tracking-widest", isDark ? "text-white/40" : "text-slate-500")}>{label}</span>
         <span className={cn("text-lg font-black leading-none", isDark ? "text-white" : "text-slate-900")}>{current}</span>
@@ -431,7 +434,43 @@ export default function HomePage() {
       d ? "bg-[#030712] text-white" : "bg-[#eef2ff] text-slate-900"
     )}>
 
-      {/* Removed Auroras for strict SaaS look */}
+      {/* Spring hover — all transforms + glows live here so there's no conflict with Tailwind v4's individual transform properties */}
+      <style>{`
+        .spring-hover-blue,
+        .spring-hover-red,
+        .spring-btn-blue,
+        .spring-btn-red {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      box-shadow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      border-color 0.35s ease !important;
+        }
+        @media (min-width: 1024px) {
+          .spring-hover-blue:hover {
+            transform: translateY(-8px) scale(1.03) !important;
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.3) !important;
+            border-color: rgba(59, 130, 246, 0.5) !important;
+          }
+          .spring-hover-red:hover {
+            transform: translateY(-8px) scale(1.03) !important;
+            box-shadow: 0 12px 30px rgba(220, 38, 38, 0.3) !important;
+            border-color: rgba(220, 38, 38, 0.5) !important;
+          }
+          .spring-btn-blue:hover {
+            transform: translateY(-3px) scale(1.04) !important;
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.35) !important;
+            border-color: rgba(59, 130, 246, 0.5) !important;
+          }
+          .spring-btn-red:hover {
+            transform: translateY(-3px) scale(1.04) !important;
+            box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4) !important;
+          }
+          .stats-group:hover .stats-card {
+            transform: translateY(-8px) scale(1.01) !important;
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.2) !important;
+            border-color: rgba(59, 130, 246, 0.4) !important;
+          }
+        }
+      `}</style>
 
       {/* Canvas — desktop only */}
       {!isMobile && (
@@ -451,19 +490,29 @@ export default function HomePage() {
       )}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-[86px] flex items-center justify-between">
           {/* Logo + Brand */}
-          <div className="flex items-center gap-3 md:gap-5 group cursor-pointer">
+          <div className="flex items-center gap-3 md:gap-5 group cursor-pointer" style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
             <div className="relative flex items-center justify-center">
-              <div className={cn("absolute inset-0 rounded-full blur-2xl transition-[opacity] duration-700 group-hover:scale-125",
-                d ? "bg-blue-500/35" : "bg-blue-400/45")} />
+              {/* Ambient glow — expands on hover */}
+              <div className={cn("absolute inset-0 rounded-full blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-100",
+                d ? "bg-blue-500/25 opacity-70" : "bg-blue-400/30 opacity-60")} />
+              {/* Spinning ring — appears on hover */}
+              <div className={cn(
+                "absolute inset-[-6px] rounded-full border-2 border-dashed opacity-0 group-hover:opacity-60 transition-all duration-500 group-hover:rotate-[30deg]",
+                d ? "border-blue-400/60" : "border-blue-500/50"
+              )} style={{ transition: 'opacity 0.4s ease, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
               <img src="/logo-aclc.png" alt="ACLC" loading="eager"
-                className="relative w-11 h-11 md:w-14 md:h-14 object-contain drop-shadow-[0_0_22px_rgba(99,160,255,0.95)] group-hover:scale-110 transition-transform duration-500" />
+                className="relative w-11 h-11 md:w-14 md:h-14 object-contain drop-shadow-[0_0_22px_rgba(99,160,255,0.95)] group-hover:scale-[1.15] group-hover:-rotate-6 transition-all duration-500"
+                style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
             </div>
             <div>
               <div className="flex items-baseline gap-2">
-                <span className={cn("font-black text-[18px] md:text-[22px] tracking-[-0.04em] uppercase italic", d ? "text-white" : "text-slate-900")}>ACLC</span>
-                <span className={cn("text-[9px] md:text-[10px] font-black tracking-[0.2em] md:tracking-[0.25em] uppercase", d ? "text-blue-400" : "text-blue-600")}>Northbay</span>
+                <span className={cn("font-black text-[18px] md:text-[22px] tracking-[-0.04em] uppercase italic transition-colors duration-300",
+                  d ? "text-white group-hover:text-blue-300" : "text-slate-900 group-hover:text-blue-700")}>ACLC</span>
+                <span className={cn("text-[9px] md:text-[10px] font-black tracking-[0.2em] md:tracking-[0.25em] uppercase transition-colors duration-300",
+                  d ? "text-blue-400 group-hover:text-blue-300" : "text-blue-600 group-hover:text-blue-500")}>Northbay</span>
               </div>
-              <p className={cn("text-[7px] md:text-[7.5px] font-bold tracking-[0.35em] md:tracking-[0.45em] uppercase mt-0.5", d ? "text-slate-500" : "text-slate-400")}>AMA Education System</p>
+              <p className={cn("text-[7px] md:text-[7.5px] font-bold tracking-[0.35em] md:tracking-[0.45em] uppercase mt-0.5 transition-colors duration-300",
+                d ? "text-slate-500 group-hover:text-slate-300" : "text-slate-400 group-hover:text-slate-600")}>AMA Education System</p>
             </div>
           </div>
 
@@ -531,9 +580,15 @@ export default function HomePage() {
               </div>
 
               {/* Headline */}
-              <div className="space-y-1">
-                <h1 className={cn("font-black leading-[0.85] tracking-[-0.045em] uppercase", d ? "text-white" : "text-slate-900")}>
-                  <span className="block text-[clamp(3.2rem,10vw,8.8rem)]">Shape</span>
+              <div className="space-y-1 group cursor-default">
+                <h1
+                  className={cn("font-black leading-[0.85] tracking-[-0.045em] uppercase transition-transform duration-500 lg:group-hover:scale-[1.02] origin-left", d ? "text-white" : "text-slate-900")}
+                  style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                >
+                  <span className={cn(
+                    "block text-[clamp(3.2rem,10vw,8.8rem)] transition-all duration-300 lg:group-hover:-translate-y-1",
+                    d ? "lg:group-hover:text-blue-300" : "lg:group-hover:text-blue-600"
+                  )} style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}>Shape</span>
                   <span
                     className="block text-[clamp(3.2rem,10vw,8.8rem)] text-transparent bg-clip-text shimmer-text"
                     style={{
@@ -543,10 +598,13 @@ export default function HomePage() {
                     }}>
                     Your
                   </span>
-                  <span className="block text-[clamp(3.2rem,10vw,8.8rem)]">Future.</span>
+                  <span className={cn(
+                    "block text-[clamp(3.2rem,10vw,8.8rem)] transition-all duration-300 lg:group-hover:translate-y-1",
+                    d ? "lg:group-hover:text-red-400" : "lg:group-hover:text-red-600"
+                  )} style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}>Future.</span>
                 </h1>
                 <div className={cn(
-                  "w-20 md:w-28 h-[3px] rounded-full mt-4 md:mt-5",
+                  "h-[3px] rounded-full mt-4 md:mt-5 transition-all duration-500 w-20 md:w-28 lg:group-hover:w-48",
                   d ? "bg-gradient-to-r from-red-400 via-blue-400 to-white/80"
                     : "bg-gradient-to-r from-red-600 via-blue-600 to-white"
                 )} />
@@ -566,10 +624,10 @@ export default function HomePage() {
                 {isPortalActive ? (
                   <Link href="/enroll" className="relative group/cta">
                     <button
-                      style={{ touchAction: "manipulation" }}
+                      style={{ touchAction: "manipulation", transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                       className={cn(
-                        "relative h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] text-white overflow-hidden transition-all duration-300 active:scale-95 shadow-2xl shadow-red-600/20",
-                        "lg:hover:-translate-y-2 lg:hover:shadow-red-600/40"
+                        "relative h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] text-white overflow-hidden active:scale-95 shadow-2xl shadow-red-600/20 spring-btn-red",
+                        ""
                       )}>
                       <span className="absolute inset-0 bg-red-600 transition-colors duration-300 group-hover/cta:bg-red-700" />
 
@@ -595,12 +653,12 @@ export default function HomePage() {
                 )}
                 <Link href="/status" className="group/status">
                   <button
-                    style={{ touchAction: "manipulation" }}
+                    style={{ touchAction: "manipulation", transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                     className={cn(
-                      "h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] border",
-                      "transition-all duration-300 active:scale-95",
-                      d ? "bg-white/5 border-white/10 text-white lg:hover:bg-white/10 lg:hover:border-blue-400 lg:hover:-translate-y-2 backdrop-blur-3xl"
-                        : "bg-white border-slate-200 text-slate-800 lg:hover:bg-slate-50 lg:hover:border-blue-300 lg:hover:-translate-y-2 lg:hover:shadow-2xl shadow-sm"
+                      "h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] border spring-btn-blue",
+                      "active:scale-95",
+                      d ? "bg-white/5 border-white/10 text-white lg:hover:bg-white/10 backdrop-blur-3xl"
+                        : "bg-white border-slate-200 text-slate-800 lg:hover:bg-slate-50 lg:hover:shadow-2xl shadow-sm"
                     )}>
                     Track My Status
                   </button>
@@ -679,9 +737,10 @@ export default function HomePage() {
                 <Reveal key={strand} delay={idx * 150}>
                   <div className={cn(
                     "group relative rounded-[40px] md:rounded-[56px] p-8 md:p-12 border overflow-hidden h-full transition-all duration-500",
-                    d ? "bg-[#030712] border-white/[0.12] lg:hover:border-blue-500/50" : "bg-white border-slate-200 lg:hover:border-blue-400 shadow-sm lg:hover:shadow-2xl",
-                    "lg:hover:-translate-y-2 cursor-pointer"
-                  )} style={{ transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' }}>
+                    color === 'red' ? 'spring-hover-red' : 'spring-hover-blue',
+                    d ? "bg-[#030712] border-white/[0.12]" : "bg-white border-slate-200 shadow-sm lg:hover:shadow-2xl",
+                    "cursor-pointer"
+                  )}>
                     {/* Background Decorative Blob */}
                     <div className={cn(
                       "absolute -right-16 -top-16 w-64 h-64 blur-[100px] opacity-0 group-hover:opacity-10 transition-opacity duration-700 pointer-events-none",
@@ -775,11 +834,11 @@ export default function HomePage() {
                       <div
                         key={i}
                         className={cn(
-                          "group/card p-8 rounded-[32px] border transition-all duration-300 transform",
-                          d ? "bg-white/[0.02] border-white/[0.12] lg:hover:border-blue-500/50 lg:hover:bg-blue-600/5"
-                            : "bg-slate-50 border-slate-100 lg:hover:bg-white lg:hover:border-blue-200 lg:hover:shadow-xl",
-                          "lg:hover:-translate-y-2 cursor-pointer"
-                        )} style={{ transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' }}>
+                          "group/card p-8 rounded-[32px] border spring-hover-blue",
+                          d ? "bg-white/[0.02] border-white/[0.12] lg:hover:bg-blue-600/5"
+                            : "bg-slate-50 border-slate-100 lg:hover:bg-white lg:hover:shadow-xl",
+                          "cursor-pointer"
+                        )}>
                         <div className={cn(
                           "w-10 h-10 rounded-xl mb-6 flex items-center justify-center transition-all duration-300 shadow-sm",
                           d ? "bg-white/5 text-blue-500 group-hover/card:bg-blue-600 group-hover/card:text-white"

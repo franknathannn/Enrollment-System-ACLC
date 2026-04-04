@@ -8,16 +8,17 @@ import { createPortal } from "react-dom"
 import {
   CalendarDays, Plus, Trash2, ChevronRight, ChevronLeft,
   AlertTriangle, CheckCircle2, X, Info, Clock,
-  ChevronDown, Search, User,
+  ChevronDown, Search, User, RefreshCw,
 } from "lucide-react"
 import type { TeacherOption } from "./ScheduleEntryForm"
 import { Button } from "@/components/ui/button"
 import {
-  ROOMS, DURATION_OPTIONS, REPETITION_OPTIONS,
+  DURATION_OPTIONS, REPETITION_OPTIONS,
   generateSchedule, getMajorityShift, formatAMPM,
   type SubjectInput, type AutoScheduleConfig,
   type AutoScheduleResult, type ConflictItem, type RepetitionMode,
 } from "./autoScheduler"
+import { useRooms } from "../../hooks/useRooms"
 import type { ScheduleRow } from "./types"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -489,13 +490,14 @@ function WizardTeacherSelect({ value, teachers, onChange, isDarkMode, isICT, err
 
 // ── Subject Card (replaces table row — mobile-friendly) ───────────────────────
 function SubjectCard({
-  subj, idx, count, isDarkMode, isICT, teachers, onChange, onRemove,
+  subj, idx, count, isDarkMode, isICT, teachers, onChange, onRemove, roomNames
 }: {
   subj: SubjectInput & { teacher_id?: string }
   idx: number; count: number; isDarkMode: boolean; isICT: boolean
   teachers: TeacherOption[]
   onChange: (id: string, key: string, val: any) => void
   onRemove: (id: string) => void
+  roomNames: string[]
 }) {
   const accentColor = isICT ? (isDarkMode ? "text-blue-400" : "text-blue-600") : (isDarkMode ? "text-amber-400" : "text-amber-600")
   const borderColor = isICT
@@ -564,7 +566,7 @@ function SubjectCard({
           <FieldLabel isDarkMode={isDarkMode}>Room *</FieldLabel>
           <SearchableSelect
             value={subj.room}
-            options={[...ROOMS]}
+            options={roomNames}
             placeholder="Pick room…"
             isDarkMode={isDarkMode}
             isICT={isICT}
@@ -695,6 +697,9 @@ export const AutoScheduleWizard = memo(function AutoScheduleWizard({
   const [saving,     setSaving]  = useState(false)
   const [stepError,  setStepErr] = useState("")
 
+  const roomsList = useRooms()
+  const roomNames = roomsList.map(r => r.name)
+
   const subjectListEndRef = useRef<HTMLDivElement>(null)
 
   const addSubject = () => {
@@ -703,7 +708,7 @@ export const AutoScheduleWizard = memo(function AutoScheduleWizard({
     setTimeout(() => subjectListEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 60)
   }
   const removeSubject = (id: string) => setSubjects(p => p.filter(s => s.id !== id))
-  const updateSubject = (id: string, key: keyof SubjectInput, val: any) =>
+  const updateSubject = (id: string, key: string, val: any) =>
     setSubjects(p => p.map(s => s.id === id ? { ...s, [key]: val } : s))
 
   const validateStep1 = (): string => {
@@ -897,7 +902,7 @@ export const AutoScheduleWizard = memo(function AutoScheduleWizard({
                     key={s.id}
                     subj={s as any} idx={i} count={subjects.length}
                     isDarkMode={isDarkMode} isICT={isICT}
-                    teachers={teachers}
+                    teachers={teachers} roomNames={roomNames}
                     onChange={updateSubject} onRemove={removeSubject}
                   />
                 ))}

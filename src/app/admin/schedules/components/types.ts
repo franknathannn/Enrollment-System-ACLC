@@ -21,6 +21,7 @@ export interface SectionRow {
     school_year: string
     teacher: string | null
     room: string | null
+    room_id: string | null
     notes: string | null
     teacher_id: string | null
   }

@@ -57,6 +57,41 @@ export const ScheduleGrid = memo(function ScheduleGrid({
   }, [schedules])
 
   const totalSubjects = new Set(schedules.map(s => s.subject)).size
+  
+  const { minMins, maxMins, timeLabels, gridH } = useMemo(() => {
+    if (schedules.length === 0) return { minMins: 420, maxMins: 1020, timeLabels: [], gridH: 0 }
+    
+    const toM = (t: string) => {
+      const [h, m] = t.split(':').map(Number)
+      return h * 60 + m
+    }
+    
+    let min = 24 * 60
+    let max = 0
+    schedules.forEach(s => {
+      const start = toM(s.start_time)
+      const end = toM(s.end_time)
+      if (start < min) min = start
+      if (end > max) max = end
+    })
+    
+    // Snap exactly to 30-minute bounds instead of whole hours
+    const minMins = Math.floor(min / 30) * 30
+    const maxMins = Math.ceil(max / 30) * 30
+    
+    const labels = []
+    for (let m = minMins; m <= maxMins; m += 30) labels.push(m)
+    
+    return { minMins, maxMins, timeLabels: labels, gridH: (labels.length - 1) * 44 + 20 }
+  }, [schedules])
+  
+  const toDisp = (m: number) => {
+    const h = Math.floor(m / 60)
+    const min = m % 60
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const hr = h % 12 || 12
+    return `${hr}:${min.toString().padStart(2, '0')} ${ampm}`
+  }
 
   if (schedules.length === 0) {
     return (
@@ -128,114 +163,169 @@ export const ScheduleGrid = memo(function ScheduleGrid({
           </div>
         ))}
       </div>
-
-      {/* ── DESKTOP: timetable grid ── */}
+      
+      {/* ── DESKTOP: timetable canvas ── */}
       <div className="hidden md:block overflow-x-auto">
-        <div className={`rounded-3xl border overflow-hidden
-          ${isDarkMode ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
-
-          {/* Day headers */}
-          <div className={`grid border-b ${isDarkMode ? "bg-slate-800/80 border-slate-700" : "bg-slate-50 border-slate-200"}`}
-            style={{ gridTemplateColumns: `130px repeat(${DAYS.length}, 1fr)` }}>
-            <div className="px-4 py-3" />
-            {DAYS.map(day => (
-              <div key={day} className="px-3 py-3 text-center">
-                <p className={`text-[10px] font-black uppercase tracking-[0.15em]
-                  ${byDay[day].length > 0 ? accent : (isDarkMode ? "text-slate-600" : "text-slate-400")}`}>
-                  {day.slice(0, 3)}
-                </p>
-                <p className={`text-[9px] font-bold mt-0.5 ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>
-                  {byDay[day].length} period{byDay[day].length !== 1 ? "s" : ""}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* Time slot rows */}
-          {[...new Set(schedules.map(s => s.start_time))].sort().map((time, tIdx) => (
-            <div key={time}
-              className={`grid border-b last:border-b-0
-                ${isDarkMode
-                  ? tIdx % 2 === 0 ? "bg-transparent" : "bg-slate-800/20"
-                  : tIdx % 2 === 0 ? "bg-white" : "bg-slate-50/60"
-                } ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}
-              style={{ gridTemplateColumns: `130px repeat(${DAYS.length}, 1fr)` }}>
-
-              {/* Time label */}
-              <div className={`flex flex-col justify-center px-4 py-3 border-r
-                ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
-                <p className={`text-[10px] font-black tabular-nums ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
-                  {formatTime(time)}
-                </p>
-              </div>
-
-              {/* Day cells */}
-              {DAYS.map(day => {
-                const entry = byDay[day].find(s => s.start_time === time)
-                const color = entry ? subjectColorMap[entry.subject] : null
-                return (
-                  <div key={day} className={`px-2 py-2 border-r last:border-r-0
-                    ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
-                    {entry && color ? (
-                      <div className={`rounded-xl border px-3 py-2 h-full relative ${color.bg} ${color.border}`}
-                        onMouseEnter={e => {
-                          const btns = e.currentTarget.querySelector<HTMLElement>("[data-actions]")
-                          if (btns) btns.style.opacity = "1"
-                        }}
-                        onMouseLeave={e => {
-                          const btns = e.currentTarget.querySelector<HTMLElement>("[data-actions]")
-                          if (btns) btns.style.opacity = "0"
-                        }}>
-                        <p className={`text-[11px] font-black uppercase leading-tight ${color.text}`}>
-                          {entry.subject}
-                        </p>
-                        <p className={`text-[9px] mt-0.5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                          {formatTime(entry.start_time)} – {formatTime(entry.end_time)}
-                        </p>
-                        {entry.teacher && (
-                          <p className={`text-[8px] mt-0.5 opacity-60 truncate ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
-                            {entry.teacher}
-                          </p>
-                        )}
-                        {entry.room && (
-                          <p className={`text-[8px] opacity-50 truncate ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                            {entry.room}
-                          </p>
-                        )}
-                        {/* Edit / Delete actions */}
-                        <div data-actions
-                          style={{ opacity: 0, transition: "opacity 0.15s" }}
-                          className="absolute top-1.5 right-1.5 flex gap-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button onClick={() => onEdit(entry)}
-                                className={`p-1 rounded-lg transition-colors ${isDarkMode ? "bg-slate-700 hover:bg-slate-600 text-slate-300" : "bg-white hover:bg-slate-100 text-slate-600"} shadow-sm`}>
-                                <Pencil size={10} />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Edit</p></TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button onClick={() => onDelete(entry.id, entry.subject)}
-                                className="p-1 rounded-lg bg-red-500 hover:bg-red-600 text-white shadow-sm transition-colors">
-                                <Trash2 size={10} />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Delete</p></TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="h-full flex items-center justify-center">
-                        <span className={`text-[10px] ${isDarkMode ? "text-slate-800" : "text-slate-200"}`}>—</span>
-                      </div>
-                    )}
+        <div className={`rounded-[24px] border overflow-hidden
+          ${isDarkMode ? "bg-slate-900/40 border-slate-800/80 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.35)]" : "bg-white border-slate-200 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06)]"}`}
+          style={{ width: "fit-content", minWidth: "100%" }}>
+          
+          <div id="schedule-grid-capture" style={{ display: 'flex', flexDirection: 'column', width: '100%', minWidth: 800 }}>
+             
+             {/* Sticky Header */}
+             <div style={{ 
+               display: 'flex', 
+               borderBottom: `1px solid ${isDarkMode ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.15)'}`,
+               background: isDarkMode ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.95)',
+               backdropFilter: 'blur(12px)',
+               position: 'sticky', top: 0, zIndex: 30
+             }}>
+                {/* Time Gutter Header */}
+                <div style={{ width: 70, minWidth: 70, borderRight: `1px solid ${isDarkMode ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.15)'}` }} />
+                
+                {DAYS.map(day => (
+                  <div key={day} style={{ 
+                    flex: 1, padding: '12px 8px', textAlign: 'center', 
+                    borderRight: day !== 'Saturday' ? `1px solid ${isDarkMode ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.15)'}` : 'none' 
+                  }}>
+                     <p className={`text-[11px] font-black uppercase tracking-[0.05em]
+                       ${byDay[day].length > 0 ? accent : (isDarkMode ? "text-slate-600" : "text-slate-400")}`}>
+                       {day}
+                     </p>
+                     <p className={`text-[7.5px] font-bold mt-1 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                       {byDay[day].length} period{byDay[day].length !== 1 ? "s" : ""}
+                     </p>
                   </div>
-                )
-              })}
-            </div>
-          ))}
+                ))}
+             </div>
+
+             {/* Absolute Timetable Body */}
+             <div style={{ display: 'flex', position: 'relative', height: gridH }}>
+                
+                {/* Time Axis */}
+                <div style={{ 
+                  width: 70, minWidth: 70, position: 'relative', zIndex: 15,
+                  borderRight: `1px solid ${isDarkMode ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.15)'}`,
+                  background: isDarkMode ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.95)',
+                }}>
+                   {timeLabels.map((m, i) => {
+                     const isHour = m % 60 === 0
+                     return (
+                       <div key={m} style={{
+                         position: "absolute", top: i * 44, left: 0, right: 0, height: 20,
+                         display: "flex", alignItems: "center", justifyContent: "flex-end", 
+                         paddingRight: 10, pointerEvents: "none"
+                       }}>
+                         <span className={`tabular-nums tracking-wide ${isHour ? "font-black text-[9.5px]" : "font-semibold text-[7.5px]"} 
+                           ${isDarkMode ? (isHour ? "text-slate-300" : "text-slate-600") : (isHour ? "text-slate-600" : "text-slate-400")}`}>
+                           {toDisp(m)}
+                         </span>
+                       </div>
+                     )
+                   })}
+                </div>
+
+                {/* Day Columns */}
+                {DAYS.map((day, dIdx) => (
+                   <div key={day} style={{ 
+                     flex: 1, position: 'relative', overflow: 'hidden',
+                     borderRight: dIdx < DAYS.length-1 ? `1px solid ${isDarkMode ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.15)'}` : 'none' 
+                   }}>
+                      
+                      {/* Grid Horizontal Lines */}
+                      {timeLabels.slice(0, -1).map((m, i) => {
+                        const isHour = m % 60 === 0
+                        return (
+                          <div key={m} style={{
+                            position: "absolute", top: (i * 44) + 10, left: 0, right: 0, height: 44, pointerEvents: "none",
+                            borderBottom: `1px solid ${isDarkMode ? (isHour ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)') : (isHour ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.04)')}`,
+                            background: isDarkMode ? (isHour ? 'rgba(255,255,255,0.015)' : 'transparent') : (isHour ? 'rgba(0,0,0,0.01)' : 'transparent')
+                          }}/>
+                        )
+                      })}
+
+                      {/* Absolute Cards */}
+                      {byDay[day].map(s => {
+                         const color = subjectColorMap[s.subject]
+                         if (!color) return null
+
+                         const [hStart, mStart] = s.start_time.split(':').map(Number)
+                         const [hEnd, mEnd] = s.end_time.split(':').map(Number)
+                         const startMins = hStart * 60 + mStart
+                         const endMins = hEnd * 60 + mEnd
+                         
+                         const top = ((startMins - minMins) / 30) * 44
+                         const height = ((endMins - startMins) / 30) * 44
+                         
+                         const isExtremelyCompact = height <= 50
+                         
+                         return (
+                           <div key={s.id} 
+                                className={`absolute left-1.5 right-1.5 rounded-[14px] border ${isExtremelyCompact ? 'p-1.5' : 'p-2.5'} flex flex-col hover:z-20 transition-all ${color.bg} ${color.border} hover:shadow-xl overflow-hidden`}
+                                style={{ top: top + 11.5, height: height - 3, zIndex: 10, backdropFilter: 'blur(4px)' }}
+                                onMouseEnter={e => {
+                                  const btns = e.currentTarget.querySelector<HTMLElement>("[data-actions]")
+                                  if (btns) btns.style.opacity = "1"
+                                }}
+                                onMouseLeave={e => {
+                                  const btns = e.currentTarget.querySelector<HTMLElement>("[data-actions]")
+                                  if (btns) btns.style.opacity = "0"
+                                }}>
+                              
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex justify-between items-start gap-1">
+                                    <p className={`${isExtremelyCompact ? 'text-[8.5px]' : 'text-[10px]'} font-black uppercase leading-[1.2] tracking-[0.05em] ${color.text} truncate`}>
+                                      {s.subject}
+                                    </p>
+                                    {isExtremelyCompact && (
+                                      <p className={`text-[7px] font-bold opacity-70 ${isDarkMode ? "text-white" : "text-slate-900"} flex-shrink-0 leading-none`}>
+                                        {formatTime(s.start_time)}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {!isExtremelyCompact && (
+                                    <p className={`text-[8.5px] mt-1 font-bold opacity-80 ${isDarkMode ? "text-white" : "text-slate-900"} truncate`}>
+                                       {formatTime(s.start_time)} <span className="opacity-50 mx-0.5">–</span> {formatTime(s.end_time)}
+                                    </p>
+                                  )}
+                                </div>
+                                
+                                <div className={`${isExtremelyCompact ? 'mt-0 flex justify-between items-baseline gap-2' : 'mt-auto flex-col space-y-0.5'}`} style={{ opacity: 0.6 }}>
+                                   {s.teacher && <p className={`text-[7.5px] font-bold truncate ${isDarkMode ? "text-slate-200" : "text-slate-600"}`}>{s.teacher}</p>}
+                                   {s.room && <p className={`text-[7.5px] truncate ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>{s.room}</p>}
+                                </div>
+
+                                <div data-actions
+                                  style={{ opacity: 0, transition: "opacity 0.15s" }}
+                                  className="absolute top-1.5 right-1.5 flex gap-1">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button onClick={() => onEdit(s)}
+                                        className={`p-1.5 rounded-[10px] transition-colors border shadow-sm
+                                          ${isDarkMode ? "bg-slate-900/60 hover:bg-slate-800 border-slate-700/50 text-slate-300" 
+                                                       : "bg-white/80 hover:bg-white border-slate-200/50 text-slate-600"}`}>
+                                        <Pencil size={11} />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Edit</p></TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button onClick={() => onDelete(s.id, s.subject)}
+                                        className="p-1.5 rounded-[10px] bg-red-500 hover:bg-red-600 text-white shadow-sm border border-black/5 transition-colors">
+                                        <Trash2 size={11} />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Delete</p></TooltipContent>
+                                  </Tooltip>
+                                </div>
+                           </div>
+                         )
+                      })}
+                   </div>
+                ))}
+             </div>
+          </div>
         </div>
       </div>
 
