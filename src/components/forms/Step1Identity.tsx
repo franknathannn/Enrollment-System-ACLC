@@ -409,7 +409,7 @@ const AgeInput = memo(function AgeInput({
           if (watchBirthDate) trigger("birth_date")
         },
       })}
-      type="number" placeholder="18" min={5} max={99} maxLength={2}
+      type="text" inputMode="numeric" pattern="[0-9]*" placeholder="18" min={5} max={99} maxLength={2}
       disabled={!editable}
       onInput={(e: React.FormEvent<HTMLInputElement>) => {
         const el = e.currentTarget
@@ -945,12 +945,13 @@ export default function Step1Identity() {
 
       </div>
 
-      {/* STICKY SUBMIT */}
-      <div className="sticky bottom-0 z-20 left-0 right-0 pt-8 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12 px-4 sm:px-6 md:px-8 lg:px-12 mt-6 flex flex-col gap-3 bg-transparent">
-        <div style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }} className="flex flex-col gap-3">
-          <Button
-            type="submit"
-            disabled={checking}
+      {/* STICKY/FIXED SUBMIT */}
+      <div className={cn(
+        "fixed md:sticky bottom-0 z-50 left-0 right-0 pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-6 md:px-8 lg:px-12 mt-6 flex flex-col gap-3 md:-mx-8 lg:-mx-12",
+        "backdrop-blur-xl md:backdrop-blur-none border-t md:border-t-0",
+        isDark ? "bg-[#0d1433]/80 md:bg-transparent border-white/10" : "bg-white/80 md:bg-transparent border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none"
+      )}>
+        <Button
             className={cn(
               "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
               "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
@@ -970,7 +971,6 @@ export default function Step1Identity() {
               <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
             </div>
           </Button>
-        </div>
       </div>
     </form>
   )

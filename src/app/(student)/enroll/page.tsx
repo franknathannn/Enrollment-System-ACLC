@@ -9,11 +9,13 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-import Step1Identity  from "@/components/forms/Step1Identity"
-import Step2Academic  from "@/components/forms/Step2Academic"
-import Step3Family    from "@/components/forms/Step3Family"
-import Step4Documents from "@/components/forms/Step4Documents"
-import Step5Review    from "@/components/forms/Step5Review"
+import dynamic from "next/dynamic"
+
+const Step1Identity  = dynamic(() => import("@/components/forms/Step1Identity"))
+const Step2Academic  = dynamic(() => import("@/components/forms/Step2Academic"))
+const Step3Family    = dynamic(() => import("@/components/forms/Step3Family"))
+const Step4Documents = dynamic(() => import("@/components/forms/Step4Documents"))
+const Step5Review    = dynamic(() => import("@/components/forms/Step5Review"))
 
 interface Particle { x: number; y: number; vx: number; vy: number; size: number }
 
@@ -22,8 +24,180 @@ const IS_MOBILE =
   typeof window !== "undefined" &&
   (window.innerWidth < 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent))
 
+// ── AESTHETIC VFD & RADAR COMPONENTS ─────────────────────────────────────────
+function IdentityBarcode({ seed, isDark }: { seed: string; isDark: boolean }) {
+  const [bars, setBars] = useState<{h: number, opacity: number}[]>([])
+  const [hashStr, setHashStr] = useState("AUTH_PENDING")
+
+  useEffect(() => {
+    let hash = 0;
+    const str = seed || "PENDING"
+    for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash = Math.abs(hash) || 12345;
+    
+    const seededRandom = (s: number) => {
+      const x = Math.sin(s) * 10000;
+      return x - Math.floor(x);
+    }
+    
+    setBars(Array.from({ length: 22 }).map((_, i) => {
+      const r = seededRandom(hash + i);
+      return {
+        h: 8 + (r * 32), // 8px to 40px
+        opacity: 0.4 + (r * 0.6)
+      }
+    }))
+    setHashStr(seed ? `ID: ${hash.toString(16).toUpperCase()}` : "AUTH_PENDING")
+  }, [seed])
+
+  return (
+    <div className="flex flex-col gap-3 group">
+      <div className="flex items-end gap-[3px] h-10 w-full overflow-hidden">
+        {bars.map((b, i) => (
+          <div key={i} className={cn("w-1.5 rounded-sm transition-all duration-700", isDark ? "bg-blue-400 group-hover:bg-blue-300 shadow-[0_0_8px_rgba(96,165,250,0.4)]" : "bg-blue-500 group-hover:bg-blue-400")} style={{ height: `${b.h}px`, opacity: b.opacity }} />
+        ))}
+      </div>
+      <p className="font-mono text-[10px] uppercase tracking-widest text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap">{hashStr}</p>
+    </div>
+  )
+}
+
+function RadarGlobe({ isDark }: { isDark: boolean }) {
+  return (
+    <div className="relative w-24 h-24 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity cursor-crosshair">
+      {/* Outer spinning dashed ring */}
+      <div className={cn("absolute inset-0 rounded-full border border-dashed animate-[spin_10s_linear_infinite]", isDark ? "border-blue-400/30" : "border-blue-600/40")} />
+      {/* Inner spinning dotted ring reverse */}
+      <div className={cn("absolute inset-3 rounded-full border border-dotted animate-[spin_15s_linear_infinite_reverse]", isDark ? "border-blue-500/40" : "border-indigo-600/50")} />
+      {/* Radar sweep line */}
+      <div className={cn("absolute w-full h-[1px] animate-[spin_4s_linear_infinite]", isDark ? "bg-gradient-to-r from-transparent via-blue-500 to-transparent" : "bg-gradient-to-r from-transparent via-blue-600 to-transparent")} />
+      {/* Core Node */}
+      <div className={cn("w-2 h-2 rounded-full", isDark ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,1)]" : "bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,1)]")} />
+      {/* Pulse */}
+      <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-blue-500" style={{ animationDuration: '3s' }} />
+    </div>
+  )
+}
+
+// ── SIDEBAR COMPONENTS ───────────────────────────────────────────────────────
+function LiveNodeSidebar({ currentStep, isDark, formData }: any) {
+  const steps = [
+    { id: 1, label: "Identity & Core", desc: formData.first_name ? `${formData.first_name} ${formData.last_name}` : "Pending" },
+    { id: 2, label: "Academic Profile", desc: formData.strand ? `Strand: ${formData.strand}` : "Pending" },
+    { id: 3, label: "Family / Guardian", desc: formData.guardian_first_name ? `Contact: ${formData.guardian_first_name}` : "Pending" },
+    { id: 4, label: "Digital Docs", desc: "Uploads" },
+    { id: 5, label: "Final Review", desc: "Verification" },
+  ]
+
+  return (
+    <div className="hidden xl:flex flex-col sticky top-12 left-0 h-[calc(100vh-6rem)] pt-20 pr-4 w-[240px]">
+      <p className={cn("text-[10px] font-black uppercase tracking-[0.3em] mb-12", isDark ? "text-slate-500" : "text-slate-400")}>
+        Live Node
+      </p>
+      <div className={cn("relative space-y-10 border-l ml-3", isDark ? "border-white/10" : "border-slate-200")}>
+        {steps.map(step => {
+          const isActive = step.id === currentStep;
+          const isDone = step.id < currentStep;
+          return (
+            <div key={step.id} className="relative pl-8 group">
+              <div className={cn(
+                "absolute top-1/2 -translate-y-1/2 -left-[5px] w-2.5 h-2.5 rounded-full transition-all duration-300",
+                isActive ? "bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,1)] scale-[1.3]" 
+                         : isDone ? (isDark ? "bg-blue-900" : "bg-blue-300") 
+                                  : (isDark ? "bg-slate-800" : "bg-slate-200")
+              )} />
+              <p className={cn("text-[11px] font-black uppercase tracking-widest transition-colors", isActive ? (isDark ? "text-white" : "text-slate-900") : (isDark ? "text-slate-500" : "text-slate-400"))}>{step.label}</p>
+              <p className={cn("text-[10px] font-bold mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis", isDark ? "text-blue-400" : "text-blue-600")}>{step.desc}</p>
+            </div>
+          )
+        })}
+      </div>
+      <div className="mt-auto pb-10 pl-4">
+        <RadarGlobe isDark={isDark} />
+      </div>
+    </div>
+  )
+}
+
+function ContextSidebar({ currentStep, isDark, formData }: any) {
+  let content = null;
+
+  if (currentStep === 1) {
+    content = (
+      <div className="space-y-4">
+        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Identity Module</h4>
+        <p className={cn("text-[11px] leading-relaxed", isDark ? "text-slate-400" : "text-slate-500")}>Enter your legal name exactly as it appears on your PSA birth certificate to avoid records issues.</p>
+      </div>
+    )
+  } else if (currentStep === 2) {
+    content = (
+      <div className="space-y-4">
+        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Academic Branch</h4>
+        <p className={cn("text-[11px] leading-relaxed mb-4", isDark ? "text-slate-400" : "text-slate-500")}>Selecting your Strand maps out your core subjects for the next 2 years.</p>
+        <div className={cn("p-4 rounded-xl border transition-all duration-500", formData.strand ? (isDark ? "bg-white/5 border-white/20" : "bg-slate-50 border-slate-300") : (isDark ? "border-white/5 opacity-50" : "border-slate-100 opacity-50"))}>
+          <p className={cn("text-[9px] font-black uppercase tracking-widest text-blue-500 mb-1")}>Selected</p>
+          <p className={cn("text-sm font-black uppercase", isDark ? "text-white" : "text-slate-900")}>{formData.strand || "AWAITING"}</p>
+        </div>
+      </div>
+    )
+  } else if (currentStep === 3) {
+    content = (
+      <div className="space-y-4">
+        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Guardian Intel</h4>
+        <p className={cn("text-[11px] leading-relaxed", isDark ? "text-slate-400" : "text-slate-500")}>Emergency contacts are vital. We SMS updates on enrollment status directly to this unit.</p>
+      </div>
+    )
+  } else if (currentStep === 4) {
+    const isJHS = formData.student_category === "JHS Graduate";
+    const docs = [
+      { name: "2x2 Identification", val: formData.profile_2x2_url },
+      { name: "Birth Certificate", val: formData.birth_certificate_url },
+    ]
+    if (isJHS) {
+      docs.push({ name: "F-138 (Report Card)", val: formData.form_138_url })
+      docs.push({ name: "Cert of Moral", val: formData.good_moral_url })
+    } else {
+      docs.push({ name: "ALS COR", val: formData.cor_url })
+      docs.push({ name: "ALS Diploma", val: formData.diploma_url })
+      docs.push({ name: "AF5 Form", val: formData.af5_url })
+    }
+    content = (
+      <div className="space-y-4 w-full">
+        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Document Scan</h4>
+        <div className="space-y-2 mt-4 w-full">
+          {docs.map((d, i) => (
+            <div key={i} className={cn("flex justify-between items-center p-3 rounded-xl border w-full", isDark ? "border-white/5 bg-white/[0.02]" : "border-slate-200 bg-white")}>
+              <span className={cn("text-[9px] font-bold uppercase", isDark ? "text-slate-400" : "text-slate-500")}>{d.name}</span>
+              <div className={cn("w-2 h-2 rounded-full", d.val ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-slate-300")} />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  } else if (currentStep === 5) {
+     content = (
+      <div className="space-y-4">
+        <h4 className={cn("text-xs font-black uppercase tracking-widest text-emerald-500")}>Final Validation</h4>
+        <p className={cn("text-[11px] leading-relaxed", isDark ? "text-slate-400" : "text-slate-500")}>System is preparing block sequence. Verify all forms before secure commit.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="hidden xl:flex flex-col sticky top-12 right-0 h-[calc(100vh-6rem)] pt-20 pl-6 w-[240px]">
+      <p className={cn("text-[10px] font-black uppercase tracking-[0.3em] mb-12 text-right", isDark ? "text-slate-500" : "text-slate-400")}>
+        Context AI
+      </p>
+      {content}
+      <div className="mt-auto flex justify-end pb-10">
+        <RadarGlobe isDark={isDark} />
+      </div>
+    </div>
+  )
+}
+
 export default function EnrollmentPage() {
-  const { currentStep }         = useEnrollmentStore()
+  const { currentStep, formData } = useEnrollmentStore()
   const { isDark, toggleTheme } = useThemeStore()
   // Keep a ref so the canvas loop reads the latest value without re-subscribing
   const isDarkRef = useRef(isDark)
@@ -281,6 +455,15 @@ export default function EnrollmentPage() {
          * The root bg swaps instantly (no duration-500) to avoid the full-page
          * repaint cascade that caused the lag.
          */
+         
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-slide {
+          animation: fadeSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          will-change: opacity, top;
+        }
       `}</style>
 
       {/* Canvas — desktop only, never remounts on theme change */}
@@ -369,7 +552,11 @@ export default function EnrollmentPage() {
         </div>
       ) : (
         /* ── OPEN STATE ── */
-        <div className="max-w-2xl mx-auto space-y-8 relative z-10">
+        <div className="relative z-10 w-full xl:max-w-[1400px] xl:mx-auto xl:grid xl:grid-cols-[1fr_2.5fr_1fr] xl:gap-8 xl:items-start pt-2 md:pt-4">
+          
+          <LiveNodeSidebar currentStep={currentStep} isDark={isDark} formData={formData} />
+
+          <div className="max-w-2xl mx-auto space-y-8 relative z-10 w-full">
 
           {/* Top nav */}
           <div className="flex items-center justify-between">
@@ -482,7 +669,9 @@ export default function EnrollmentPage() {
               "absolute -bottom-20 -right-20 -rotate-12 pointer-events-none",
               isDark ? "text-white/[0.02]" : "text-blue-500/[0.04]"
             )} />
-            <div className="relative z-10">{currentStepContent}</div>
+            <div key={currentStep} className="relative z-10 animate-fade-slide">
+              {currentStepContent}
+            </div>
           </div>
 
           {/* Step dots */}
@@ -498,6 +687,10 @@ export default function EnrollmentPage() {
               )} />
             ))}
           </div>
+
+          </div>
+
+          <ContextSidebar currentStep={currentStep} isDark={isDark} formData={formData} />
 
         </div>
       )}

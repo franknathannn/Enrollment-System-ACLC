@@ -14,7 +14,14 @@ import { ThemedText } from "@/components/ThemedText"
 import { useTheme } from "@/hooks/useTheme"
 import { useRouter } from "next/navigation"
 import { AnimatedNumber, MetricCard } from "./components/primitives"
-import { OverviewGrid, CensusGrid, VelocitySection, SpikeAnalyticsSection, RevenueSection, CapacitySection, AlmaMaterSection } from "./components/sections"
+import { OverviewGrid, CensusGrid } from "./components/sections"
+import dynamic from "next/dynamic"
+
+const VelocitySection = dynamic(() => import("./components/sections").then(mod => mod.VelocitySection))
+const SpikeAnalyticsSection = dynamic(() => import("./components/sections").then(mod => mod.SpikeAnalyticsSection))
+const RevenueSection = dynamic(() => import("./components/sections").then(mod => mod.RevenueSection))
+const CapacitySection = dynamic(() => import("./components/sections").then(mod => mod.CapacitySection))
+const AlmaMaterSection = dynamic(() => import("./components/sections").then(mod => mod.AlmaMaterSection))
 import { ArchivesManager } from "./components/ArchivesManager"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 

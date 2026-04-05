@@ -396,6 +396,7 @@ const LrnInput = memo(function LrnInput({
         },
       })}
       id="lrn"
+      type="text" inputMode="numeric" pattern="[0-9]*"
       placeholder="000000000000"
       maxLength={12}
       disabled={!editable}
@@ -1072,10 +1073,13 @@ export default function Step2Academic() {
 
       </div>
 
-      {/* STICKY BOTTOM BAR */}
-      <div className="sticky bottom-0 z-20 left-0 right-0 pt-8 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12 px-4 sm:px-6 md:px-8 lg:px-12 mt-6 flex flex-col gap-3 bg-transparent">
-        <div style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }} className="flex flex-col gap-3">
-          <Button
+      {/* STICKY/FIXED BOTTOM BAR */}
+      <div className={cn(
+        "fixed md:sticky bottom-0 z-50 left-0 right-0 pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-6 md:px-8 lg:px-12 mt-6 flex flex-col gap-3 md:-mx-8 lg:-mx-12",
+        "backdrop-blur-xl md:backdrop-blur-none border-t md:border-t-0",
+        isDark ? "bg-[#0d1433]/80 md:bg-transparent border-white/10" : "bg-white/80 md:bg-transparent border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none"
+      )}>
+        <Button
             type="submit"
             disabled={fetchingYear || checking}
             className={cn(
@@ -1104,7 +1108,6 @@ export default function Step2Academic() {
             className="spring-back-btn min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 py-3 touch-manipulation active:scale-[0.98]">
             <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
           </button>
-        </div>
       </div>
     </form>
   )

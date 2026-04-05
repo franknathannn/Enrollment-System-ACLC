@@ -106,7 +106,9 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
     if (isManual) return isPortalActive ? "Enrollment Form Open" : "System Lockdown"
     if (isExpired) return "Portal Expired"
     if (isPortalActive && config?.enrollment_start && config?.enrollment_end) {
-      return "Open for Admissions"
+      const startFmt = new Date(config.enrollment_start).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      const endFmt = new Date(config.enrollment_end).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      return `OPEN FROM ${startFmt.toUpperCase()} UNTIL ${endFmt.toUpperCase()}`
     }
     return "Admissions Offline"
   }
@@ -116,7 +118,7 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
       {/* Decorative Glows */}
       <div className={cn("absolute -inset-10 rounded-[80px] blur-[100px] transition-opacity duration-1000 pointer-events-none", d ? "bg-blue-600/10 opacity-60" : "bg-blue-600/5 opacity-40")} />
 
-      <div className={cn(
+      <TiltCard className={cn(
         "relative rounded-[40px] md:rounded-[56px] border overflow-hidden backdrop-blur-3xl cursor-default stats-card",
         statsVisible ? "opacity-100" : "opacity-0",
         d ? "bg-[#030712]/85 border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
@@ -138,7 +140,7 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
           />
         </div>
 
-        <div className="relative z-10 p-7 md:p-10 space-y-8 md:space-y-10 group">
+        <div className="relative z-10 p-7 md:p-10 space-y-8 md:space-y-10 group tech-reticle">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
@@ -209,7 +211,7 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
             </div>
           </div>
         </div>
-      </div>
+      </TiltCard>
     </div>
   )
 }
@@ -242,6 +244,152 @@ function VisualMetric({ label, current, max, color, isDark }: { label: string, c
   )
 }
 
+
+// ── INTERACTIVE LAG-FREE WRAPPERS ───────────────────────────────────────────
+function MagneticButton({ children, className, disabled }: any) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+
+  const handleMouse = (e: React.MouseEvent) => {
+    if (disabled || !ref.current) return
+    const { clientX, clientY } = e
+    const { height, width, left, top } = ref.current.getBoundingClientRect()
+    const middleX = clientX - (left + width / 2)
+    const middleY = clientY - (top + height / 2)
+    setPosition({ x: middleX * 0.12, y: middleY * 0.12 })
+  }
+
+  const reset = () => setPosition({ x: 0, y: 0 })
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={handleMouse}
+      onMouseLeave={reset}
+      className={className}
+      style={{
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        transition: position.x === 0 ? "transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)" : "none"
+      }}>
+      {children}
+    </div>
+  )
+}
+
+function TiltCard({ children, className, disabled }: any) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [rotation, setRotation] = useState({ x: 0, y: 0 })
+
+  const handleMouse = (e: React.MouseEvent) => {
+    if (disabled || !ref.current) return
+    const { clientX, clientY } = e
+    const { height, width, left, top } = ref.current.getBoundingClientRect()
+    const x = (clientX - left) / width - 0.5
+    const y = (clientY - top) / height - 0.5
+    setRotation({ x: -y * 8, y: x * 8 }) // max 8 degrees tilt
+  }
+
+  const reset = () => setRotation({ x: 0, y: 0 })
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={handleMouse}
+      onMouseLeave={reset}
+      className={className}
+      style={{
+        transform: `perspective(1000px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
+        transition: rotation.x === 0 ? "transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)" : "none",
+        transformStyle: "preserve-3d"
+      }}>
+      {children}
+    </div>
+  )
+}
+
+function DecryptText({ text, disabled }: { text: string, disabled?: boolean }) {
+  const [display, setDisplay] = useState(text)
+  const intervalRef = useRef<any>(null)
+
+  // Need to extract the original string if text changes
+  useEffect(() => { setDisplay(text) }, [text])
+
+  const startDecrypt = () => {
+    if (disabled) return
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+"
+    let iter = 0
+    clearInterval(intervalRef.current)
+    intervalRef.current = setInterval(() => {
+      setDisplay(text.split("").map((l, i) => {
+        if (i < iter || l === " ") return l
+        return chars[Math.floor(Math.random() * chars.length)]
+      }).join(""))
+      if (iter >= text.length) clearInterval(intervalRef.current)
+      iter += 1 / 2
+    }, 20)
+  }
+
+  const reset = () => {
+    clearInterval(intervalRef.current)
+    setDisplay(text)
+  }
+
+  return (
+    <span className="inline-block cursor-default" onMouseEnter={startDecrypt} onMouseLeave={reset}>
+      {display}
+    </span>
+  )
+}
+
+// ── TERMINAL TYPING WIDGET ─────────────────────────────────────────────────────
+function TerminalWidget({ isDark }: { isDark: boolean }) {
+  const [text, setText] = useState("")
+  const [phase, setPhase] = useState(0)
+  const fullText = "Enrollment System For "
+  const fullText2 = "AMA ACLC NORTHBAY."
+
+  useEffect(() => {
+    let index = 0;
+    const typeInterval = setInterval(() => {
+      setText(fullText.slice(0, index))
+      index++
+      if (index > fullText.length) {
+        clearInterval(typeInterval)
+        setTimeout(() => setPhase(1), 500)
+      }
+    }, 40)
+    return () => clearInterval(typeInterval)
+  }, [])
+
+  useEffect(() => {
+    if (phase !== 1) return;
+    let index = 0;
+    const typeInterval = setInterval(() => {
+      setText(fullText + " " + fullText2.slice(0, index))
+      index++
+      if (index > fullText2.length) clearInterval(typeInterval)
+    }, 30)
+    return () => clearInterval(typeInterval)
+  }, [phase])
+
+  return (
+    <div className={cn(
+      "hidden xl:flex absolute top-6 left-1/2 -translate-x-1/2 items-center gap-3 px-4 py-2 rounded-xl backdrop-blur-md border",
+      isDark ? "bg-black/40 border-white/10" : "bg-white/40 border-slate-200"
+    )}>
+      <div className="flex gap-1.5 opacity-50">
+        <div className="w-2 h-2 rounded-full bg-red-500" />
+        <div className="w-2 h-2 rounded-full bg-amber-500" />
+        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+      </div>
+      <span className={cn("font-mono text-[9px] whitespace-pre uppercase tracking-widest", isDark ? "text-blue-400" : "text-blue-700")}>
+        <span className="opacity-50 mr-2">&gt;</span>
+        {text}
+        <span className="animate-pulse inline-block w-1.5 h-3 ml-1 bg-current align-middle" />
+      </span>
+    </div>
+  )
+}
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function HomePage() {
@@ -411,10 +559,24 @@ export default function HomePage() {
     }
 
     const onMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY }
+    const onClick = (e: MouseEvent) => {
+      const { clientX, clientY } = e;
+      particles.forEach(p => {
+        const dx = clientX - p.x; const dy = clientY - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 400) {
+          const force = (400 - dist) / 30; // Powerful burst
+          p.vx -= (dx / dist) * force;
+          p.vy -= (dy / dist) * force;
+        }
+      });
+    }
+
     window.addEventListener("mousemove", onMove, { passive: true })
+    window.addEventListener("click", onClick, { passive: true })
     window.addEventListener("resize", init, { passive: true })
     init(); animate()
-    return () => { cancelAnimationFrame(raf); clearInterval(starSpawner); window.removeEventListener("mousemove", onMove); window.removeEventListener("resize", init) }
+    return () => { cancelAnimationFrame(raf); clearInterval(starSpawner); window.removeEventListener("mousemove", onMove); window.removeEventListener("click", onClick); window.removeEventListener("resize", init) }
   }, [isMobile])
 
   const isManual = config?.control_mode === 'manual'
@@ -433,6 +595,9 @@ export default function HomePage() {
       "transition-[background-color] duration-500 ease-in-out",
       d ? "bg-[#030712] text-white" : "bg-[#eef2ff] text-slate-900"
     )}>
+
+      {/* Binary stream effect */}
+      <div className={cn("fixed inset-0 pointer-events-none z-0 binary-stream delay-1000", d ? "opacity-20" : "opacity-10")} aria-hidden="true" />
 
       {/* Spring hover — all transforms + glows live here so there's no conflict with Tailwind v4's individual transform properties */}
       <style>{`
@@ -470,6 +635,39 @@ export default function HomePage() {
             border-color: rgba(59, 130, 246, 0.4) !important;
           }
         }
+        .tech-reticle { position: relative; }
+        .tech-reticle::before, .tech-reticle::after {
+          content: ''; position: absolute; width: 14px; height: 14px; pointer-events: none; opacity: 0.6; z-index: 20; transition: all 0.3s ease;
+        }
+        .tech-reticle::before {
+          top: -1px; left: -1px; border-top: 2px solid rgba(59,130,246,0.8); border-left: 2px solid rgba(59,130,246,0.8); border-top-left-radius: 6px;
+        }
+        .tech-reticle::after {
+          bottom: -1px; right: -1px; border-bottom: 2px solid rgba(59,130,246,0.8); border-right: 2px solid rgba(59,130,246,0.8); border-bottom-right-radius: 6px;
+        }
+        .stats-group:hover .tech-reticle::before { top: 4px; left: 4px; opacity: 1; }
+        .stats-group:hover .tech-reticle::after { bottom: 4px; right: 4px; opacity: 1; }
+        
+        .binary-stream {
+          background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(59, 130, 246, 0.03) 2px, rgba(59, 130, 246, 0.03) 4px);
+          background-size: 100% 4px;
+        }
+        @keyframes cyber-glitch {
+          0% { clip-path: inset(10% 0 80% 0); transform: translate(2px, 2px); }
+          20% { clip-path: inset(80% 0 0% 0); transform: translate(-2px, -2px); }
+          40% { clip-path: inset(40% 0 40% 0); transform: translate(1px, -1px); }
+          60% { clip-path: inset(0% 0 100% 0); transform: translate(-1px, 2px); }
+          80% { clip-path: inset(50% 0 20% 0); transform: translate(2px, -2px); }
+          100% { clip-path: inset(20% 0 60% 0); transform: translate(0); }
+        }
+        .text-glitch:hover {
+          position: relative;
+        }
+        .text-glitch:hover::before {
+          content: attr(data-text); position: absolute; left: -2px; text-shadow: 2px 0 blue; top: 0; 
+          animation: cyber-glitch 0.5s calc(var(--i, 0) * 0.2s) infinite alternate-reverse;
+          background: inherit; background-clip: text; -webkit-background-clip: text;
+        }
       `}</style>
 
       {/* Canvas — desktop only */}
@@ -488,6 +686,7 @@ export default function HomePage() {
         "transition-[background-color,border-color] duration-500",
         d ? "bg-[#030712]/65 border-white/5" : "bg-white/75 border-blue-200/60"
       )}>
+        <TerminalWidget isDark={d} />
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-[86px] flex items-center justify-between">
           {/* Logo + Brand */}
           <div className="flex items-center gap-3 md:gap-5 group cursor-pointer" style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
@@ -575,7 +774,7 @@ export default function HomePage() {
                 </div>
                 <div className={cn("h-px w-10 md:w-16", d ? "bg-white/10" : "bg-slate-300/60")} />
                 <span className={cn("text-[10px] font-bold uppercase tracking-widest", d ? "text-slate-500" : "text-slate-400")}>
-                  {config?.school_year || "2025–2026"}
+                  <DecryptText text={config?.school_year || "2025–2026"} />
                 </span>
               </div>
 
@@ -585,23 +784,24 @@ export default function HomePage() {
                   className={cn("font-black leading-[0.85] tracking-[-0.045em] uppercase transition-transform duration-500 lg:group-hover:scale-[1.02] origin-left", d ? "text-white" : "text-slate-900")}
                   style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                 >
-                  <span className={cn(
-                    "block text-[clamp(3.2rem,10vw,8.8rem)] transition-all duration-300 lg:group-hover:-translate-y-1",
+                  <span data-text="Shape" className={cn(
+                    "block text-[clamp(3.2rem,10vw,8.8rem)] transition-all duration-300 lg:group-hover:-translate-y-1 text-glitch",
                     d ? "lg:group-hover:text-blue-300" : "lg:group-hover:text-blue-600"
                   )} style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}>Shape</span>
-                  <span
-                    className="block text-[clamp(3.2rem,10vw,8.8rem)] text-transparent bg-clip-text shimmer-text"
+                  <span data-text="Your"
+                    className="block text-[clamp(3.2rem,10vw,8.8rem)] text-transparent bg-clip-text shimmer-text text-glitch"
                     style={{
                       backgroundImage: d
                         ? "linear-gradient(90deg,#ffffff,#c2d7fb,#ffffff,#c2d7fb,#ffffff)"
-                        : "linear-gradient(90deg,#0a0f1d,#1e3a8a,#0a0f1d,#1e3a8a,#0a0f1d)"
-                    }}>
+                        : "linear-gradient(90deg,#0a0f1d,#1e3a8a,#0a0f1d,#1e3a8a,#0a0f1d)",
+                      "--i": "1"
+                    } as any}>
                     Your
                   </span>
-                  <span className={cn(
-                    "block text-[clamp(3.2rem,10vw,8.8rem)] transition-all duration-300 lg:group-hover:translate-y-1",
+                  <span data-text="Future." className={cn(
+                    "block text-[clamp(3.2rem,10vw,8.8rem)] transition-all duration-300 lg:group-hover:translate-y-1 text-glitch",
                     d ? "lg:group-hover:text-red-400" : "lg:group-hover:text-red-600"
-                  )} style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}>Future.</span>
+                  )} style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)', "--i": "2" } as any}>Future.</span>
                 </h1>
                 <div className={cn(
                   "h-[3px] rounded-full mt-4 md:mt-5 transition-all duration-500 w-20 md:w-28 lg:group-hover:w-48",
@@ -623,22 +823,21 @@ export default function HomePage() {
               <div className="flex flex-wrap gap-4 md:gap-6 pt-2">
                 {isPortalActive ? (
                   <Link href="/enroll" className="relative group/cta">
-                    <button
-                      style={{ touchAction: "manipulation", transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
-                      className={cn(
-                        "relative h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] text-white overflow-hidden active:scale-95 shadow-2xl shadow-red-600/20 spring-btn-red",
-                        ""
-                      )}>
-                      <span className="absolute inset-0 bg-red-600 transition-colors duration-300 group-hover/cta:bg-red-700" />
-
-                      {/* Shimmer Effect */}
-                      <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/cta:animate-[shimmer_2s_infinite] pointer-events-none" style={{ backgroundSize: '200% 100%' }} />
-
-                      <span className="relative flex items-center gap-4">
-                        Begin Enrollment
-                        <ArrowRight size={18} className="group-hover/cta:translate-x-2 transition-transform duration-300" />
-                      </span>
-                    </button>
+                    <MagneticButton>
+                      <button
+                        style={{ touchAction: "manipulation", transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                        className={cn(
+                          "relative h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] text-white overflow-hidden active:scale-95 shadow-2xl shadow-red-600/20 spring-btn-red",
+                          ""
+                        )}>
+                        <span className="absolute inset-0 bg-red-600 transition-colors duration-300 group-hover/cta:bg-red-700" />
+                        <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/cta:animate-[shimmer_2s_infinite] pointer-events-none" style={{ backgroundSize: '200% 100%' }} />
+                        <span className="relative flex items-center gap-4">
+                          Begin Enrollment
+                          <ArrowRight size={18} className="group-hover/cta:translate-x-2 transition-transform duration-300" />
+                        </span>
+                      </button>
+                    </MagneticButton>
                   </Link>
                 ) : (
                   <button
@@ -652,16 +851,18 @@ export default function HomePage() {
                   </button>
                 )}
                 <Link href="/status" className="group/status">
-                  <button
-                    style={{ touchAction: "manipulation", transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
-                    className={cn(
-                      "h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] border spring-btn-blue",
-                      "active:scale-95",
-                      d ? "bg-white/5 border-white/10 text-white lg:hover:bg-white/10 backdrop-blur-3xl"
-                        : "bg-white border-slate-200 text-slate-800 lg:hover:bg-slate-50 lg:hover:shadow-2xl shadow-sm"
-                    )}>
-                    Track My Status
-                  </button>
+                  <MagneticButton>
+                    <button
+                      style={{ touchAction: "manipulation", transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                      className={cn(
+                        "h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] border spring-btn-blue",
+                        "active:scale-95",
+                        d ? "bg-white/5 border-white/10 text-white lg:hover:bg-white/10 backdrop-blur-3xl"
+                          : "bg-white border-slate-200 text-slate-800 lg:hover:bg-slate-50 lg:hover:shadow-2xl shadow-sm"
+                      )}>
+                      Track My Status
+                    </button>
+                  </MagneticButton>
                 </Link>
               </div>
 
@@ -735,8 +936,8 @@ export default function HomePage() {
                 },
               ].map(({ strand, Icon, color, title, sub, desc, feats, gradient, shadow }, idx) => (
                 <Reveal key={strand} delay={idx * 150}>
-                  <div className={cn(
-                    "group relative rounded-[40px] md:rounded-[56px] p-8 md:p-12 border overflow-hidden h-full transition-all duration-500",
+                  <TiltCard className={cn(
+                    "group tech-reticle relative rounded-[40px] md:rounded-[56px] p-8 md:p-12 border overflow-hidden h-full transition-all duration-500",
                     color === 'red' ? 'spring-hover-red' : 'spring-hover-blue',
                     d ? "bg-[#030712] border-white/[0.12]" : "bg-white border-slate-200 shadow-sm lg:hover:shadow-2xl",
                     "cursor-pointer"
@@ -759,7 +960,7 @@ export default function HomePage() {
                           "px-4 py-2 rounded-2xl border text-[11px] font-black tracking-[0.2em] transform transition-all duration-300",
                           d ? "border-white/10 text-white/40 group-hover:text-white group-hover:border-white/20" : "border-slate-200 text-slate-400 group-hover:text-slate-900 group-hover:border-slate-300"
                         )}>
-                          STRAND / {strand}
+                          <DecryptText text={`STRAND / ${strand}`} />
                         </div>
                       </div>
 
@@ -787,7 +988,7 @@ export default function HomePage() {
                         ))}
                       </div>
                     </div>
-                  </div>
+                  </TiltCard>
                 </Reveal>
               ))}
             </div>
