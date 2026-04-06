@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { CalendarDays, Bell, QrCode, BarChart2, AlertTriangle, Calendar } from "lucide-react"
+import { CalendarDays, Bell, QrCode, BarChart2, AlertTriangle, Calendar, MessageSquare } from "lucide-react"
 import { supabase } from "@/lib/supabase/teacher-client"
 import { toast } from "sonner"
 
@@ -16,13 +16,14 @@ import { AttendanceTab }           from "./components/AttendanceTab"
 import { CuttingClassDetector }    from "./components/CuttingClassDetector"
 import { ReportsTab }              from "./components/ReportsTab"
 import { AcademicCalendarTab }     from "./components/AcademicCalendarTab"
+import { ChatTab }                 from "./components/ChatTab"
 
 import {
   TeacherSession, ScheduleRow, Student, Announcement,
   COLORS, todayName,
 } from "./types"
 
-type TabName = "schedule" | "announcements" | "attendance" | "cutting" | "reports" | "calendar"
+type TabName = "schedule" | "announcements" | "attendance" | "cutting" | "reports" | "calendar" | "chat"
 
 export default function TeacherDashboard() {
   const router = useRouter()
@@ -312,6 +313,9 @@ export default function TeacherDashboard() {
           <button className={tabBtn(tab === "calendar")} onClick={() => setTab("calendar")}>
             <Calendar size={11} /> Calendar
           </button>
+          <button className={tabBtn(tab === "chat")} onClick={() => setTab("chat")}>
+            <MessageSquare size={11} /> Chat
+          </button>
         </div>
         </div>
 
@@ -366,6 +370,10 @@ export default function TeacherDashboard() {
 
         {tab === "calendar" && (
           <AcademicCalendarTab dm={dm} schoolYear={schoolYear} />
+        )}
+
+        {tab === "chat" && session && (
+          <ChatTab session={session} dm={dm} />
         )}
       </div>
 

@@ -120,6 +120,16 @@ MetricCard.displayName = "MetricCard"
 export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode, highlightColor, tooltip, href }: any) => {
   const isHighlighted = !isDarkMode && highlightColor;
 
+  // Spring hover class — matched to the card's accent color
+  const springClass = (() => {
+    if (!color) return ''
+    if (color.includes('emerald')) return 'stat-spring-emerald'
+    if (color.includes('indigo'))  return 'stat-spring-indigo'
+    if (color.includes('orange'))  return 'stat-spring-orange'
+    if (color.includes('amber'))   return 'stat-spring-amber'
+    return ''
+  })()
+
   // Derive a top-accent color from the `color` prop (e.g. "text-emerald-600 dark:text-emerald-400" → emerald)
   const accentColor = (() => {
     if (!color) return null
@@ -135,7 +145,7 @@ export const StatCard = memo(({ title, value, icon, color, bg, trend, isDarkMode
 
   const content = (
     <Card
-      className={`rounded-[2.5rem] md:rounded-[3.5rem] flex flex-col justify-between hover:shadow-2xl hover:-translate-y-1.5 active:scale-[0.98] transition-all duration-500 h-full group min-h-[220px] touch-manipulation overflow-hidden border-2`}
+      className={`rounded-[2.5rem] md:rounded-[3.5rem] flex flex-col justify-between active:scale-[0.98] h-full group min-h-[220px] touch-manipulation overflow-hidden border-2 ${springClass}`}
       style={{
         backgroundColor: isDarkMode ? themeColors.dark.surface : (isHighlighted ? highlightColor : themeColors.light.surface),
         borderColor: isDarkMode ? themeColors.dark.border : (isHighlighted ? 'transparent' : 'rgba(226, 232, 240, 0.5)')

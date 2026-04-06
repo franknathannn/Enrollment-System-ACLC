@@ -161,7 +161,7 @@ export const AlmaMaterSection = memo(function AlmaMaterSection({ almaMaterData, 
               {/* Crown Card — #1 Alma Mater */}
               {topSchool ? (
                 <div
-                  className="relative rounded-[2.5rem] p-8 md:p-12 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 group transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
+                  className="relative rounded-[2.5rem] p-8 md:p-12 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 group alma-spring-blue"
                   style={{
                     background: isDarkMode
                       ? 'linear-gradient(135deg, rgba(37,99,235,0.4), rgba(29,78,216,0.25))'
@@ -656,7 +656,7 @@ export const CapacitySection = memo(function CapacitySection({ capacityPercentag
             <Table className="border-separate border-spacing-y-3">
               <TableBody>
                 {topJHSLeaders.map((s: any, idx: number) => (
-                  <TableRow key={s.id} className={`transition-all group border-none cursor-default ${isDarkMode ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}>
+                  <TableRow key={s.id} className={`leader-row group border-none cursor-default ${isDarkMode ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}>
                     <TableCell className={`px-6 md:px-8 py-5 md:py-7 rounded-l-[2rem] border-y border-l relative ${isDarkMode ? 'border-slate-800/80' : 'border-slate-50'}`}>
                       <div className={`absolute left-0 top-6 bottom-6 w-1 rounded-full transition-all duration-500 group-hover:h-12 ${s.gender === 'Male' ? 'bg-blue-500' : 'bg-pink-500'}`} />
                       <div className="flex items-center gap-4 md:gap-6 pl-2">
@@ -735,13 +735,13 @@ export const CapacitySection = memo(function CapacitySection({ capacityPercentag
             >
               <div className="flex items-center gap-5">
                 <div className="h-4 w-4 rounded-full shadow-lg border-2 border-white dark:border-slate-800" style={{ backgroundColor: item.color }} />
-                <span className={`text-[11px] font-black uppercase tracking-[0.2em] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <span className="text-[11px] font-black uppercase tracking-[0.2em] transition-colors group-hover:text-blue-500" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>
                   {item.name}
                 </span>
               </div>
-              <ThemedText variant="h3" className={`text-xl md:text-2xl font-black tabular-nums group-hover:scale-110 transition-transform ${isDarkMode ? 'text-white' : 'text-slate-900'}`} isDarkMode={isDarkMode}>
+              <p className="text-xl md:text-2xl font-black tabular-nums group-hover:scale-110 transition-transform" style={{ color: isDarkMode ? '#ffffff' : '#0f172a' }}>
                 <AnimatedNumber value={item.value} />
-              </ThemedText>
+              </p>
             </div>
           ))}
         </div>

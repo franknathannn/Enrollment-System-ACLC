@@ -420,6 +420,22 @@ export default function AdminDashboard() {
       .dark ::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.7); }
       .dark ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.9); }
       .dark * { scrollbar-color: rgba(100,116,139,0.7) rgba(51,65,85,0.3); }
+      /* Stat card spring hover — cubic-bezier pop + color-matched glow */
+      .stat-spring-emerald,.stat-spring-indigo,.stat-spring-orange,.stat-spring-amber{transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)!important;}
+      .stat-spring-emerald:hover{transform:translateY(-3px);box-shadow:0 20px 40px rgba(16,185,129,0.2),inset 0 0 0 2px rgba(16,185,129,0.3);}
+      .stat-spring-indigo:hover {transform:translateY(-3px);box-shadow:0 20px 40px rgba(99,102,241,0.2),inset 0 0 0 2px rgba(99,102,241,0.3);}
+      .stat-spring-orange:hover {transform:translateY(-3px);box-shadow:0 20px 40px rgba(249,115,22,0.2),inset 0 0 0 2px rgba(249,115,22,0.3);}
+      .stat-spring-amber:hover  {transform:translateY(-3px);box-shadow:0 20px 40px rgba(245,158,11,0.2),inset 0 0 0 2px rgba(245,158,11,0.3);}
+      /* Header button spring hover — slate (neutral) and violet (active G12 toggle) */
+      .btn-spring-slate,.btn-spring-violet{transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)!important;}
+      .btn-spring-slate:hover {transform:translateY(-2px);box-shadow:0 12px 24px rgba(100,116,139,0.2);}
+      .btn-spring-violet:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(139,92,246,0.3);}
+      /* Primary feeder card spring — blue gradient glow */
+      .alma-spring-blue{transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)!important;}
+      .alma-spring-blue:hover{transform:translateY(-3px);box-shadow:0 20px 40px rgba(37,99,235,0.3),inset 0 0 0 1px rgba(255,255,255,0.2);}
+      /* Academic leaders row spring */
+      .leader-row{transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1)!important;}
+      .leader-row:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(245,158,11,0.12);}
     `}</style>
     <div className="space-y-8 md:space-y-12 animate-in fade-in duration-700 pb-20 p-4 md:p-8 transition-colors duration-500">
       
@@ -446,7 +462,7 @@ export default function AdminDashboard() {
               <TooltipTrigger asChild>
                 <button
                   onClick={toggleIncludeG12}
-                  className={`flex items-center gap-2 h-14 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest border transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1
+                  className={`flex items-center gap-2 h-14 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest border shadow-xl ${includeG12 ? 'btn-spring-violet' : 'btn-spring-slate'}
                     ${includeG12
                       ? "bg-violet-600 hover:bg-violet-500 text-white border-violet-700 shadow-violet-500/20"
                       : isDarkMode
@@ -468,7 +484,7 @@ export default function AdminDashboard() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button onClick={() => router.push('/admin/predictive-analytics')} variant="outline" className={`inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 ${isDarkMode ? 'bg-slate-950 text-white border-slate-800 hover:bg-slate-900' : 'bg-white text-black border-slate-200 hover:bg-slate-50'}`}>
+                <Button onClick={() => router.push('/admin/predictive-analytics')} variant="outline" className={`inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase shadow-xl btn-spring-slate ${isDarkMode ? 'bg-slate-950 text-white border-slate-800 hover:bg-slate-900' : 'bg-white text-black border-slate-200 hover:bg-slate-50'}`}>
                   <LineChart /> Predictive Analysis
                 </Button>
               </TooltipTrigger>
@@ -479,7 +495,7 @@ export default function AdminDashboard() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button onClick={() => window.print()} variant="outline" className={`inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 ${isDarkMode ? 'bg-slate-950 text-white border-slate-800 hover:bg-slate-900' : 'bg-white text-black border-slate-200 hover:bg-slate-50'}`}>
+                <Button onClick={() => window.print()} variant="outline" className={`inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border py-2 flex-1 md:flex-none h-14 px-6 md:px-8 rounded-2xl font-black text-[10px] uppercase shadow-xl btn-spring-slate ${isDarkMode ? 'bg-slate-950 text-white border-slate-800 hover:bg-slate-900' : 'bg-white text-black border-slate-200 hover:bg-slate-50'}`}>
                   <FileDown /> Print Report
                 </Button>
               </TooltipTrigger>

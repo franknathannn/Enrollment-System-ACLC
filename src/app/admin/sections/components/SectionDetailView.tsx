@@ -44,14 +44,14 @@ export const SectionDetailView = memo(function SectionDetailView({
   teachers = [],
   onChangeAdviser,
 }: any) {
-  
+
   const isICT = currentSection?.strand === 'ICT'
-  
+
   const adviserMatch = teachers?.find((t: any) => t.id === currentSection?.adviser_id)
   const adviserName = adviserMatch ? adviserMatch.full_name : undefined
-  
-  const strandGradient = isICT 
-    ? 'from-[#020617] via-[#0f172a] to-[#020617]' 
+
+  const strandGradient = isICT
+    ? 'from-[#020617] via-[#0f172a] to-[#020617]'
     : 'from-[#1a0b0b] via-[#381102] to-[#1a0b0b]'
 
   const accentColor = isICT ? 'bg-blue-600' : 'bg-orange-600'
@@ -71,19 +71,19 @@ export const SectionDetailView = memo(function SectionDetailView({
 
   return (
     <div className="space-y-6 md:space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-1000 ease-out pb-20">
-      
+
       {/* 🧭 NAVIGATION & TOOLS BAR */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2 md:px-4">
-        
+
         <div className="flex w-full md:w-auto justify-between items-center">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                onClick={onBack} 
+              <Button
+                variant="ghost"
+                onClick={onBack}
                 className={`rounded-full font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-500/10 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
               >
-                <ArrowLeft className="mr-3" size={14} strokeWidth={3}/> Return to Sections
+                <ArrowLeft className="mr-3" size={14} strokeWidth={3} /> Return to Sections
               </Button>
             </TooltipTrigger>
             <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Go Back</p></TooltipContent>
@@ -92,26 +92,25 @@ export const SectionDetailView = memo(function SectionDetailView({
           <div className="flex items-center gap-2 md:hidden">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  onClick={onRefresh} 
+                <Button
+                  onClick={onRefresh}
                   className={`h-10 w-10 p-0 rounded-full border bg-transparent backdrop-blur-xl shadow-sm ${isDarkMode ? 'text-slate-400 border-slate-800' : 'text-slate-400 border-slate-200'}`}
                 >
-                  <RefreshCw className={loading ? "animate-spin" : ""} size={16}/>
+                  <RefreshCw className={loading ? "animate-spin" : ""} size={16} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Refresh Data</p></TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  onClick={() => onExport(sectionName, sortedStudents)} 
-                  className={`rounded-full h-10 w-10 p-0 md:w-auto md:px-8 shadow-2xl flex items-center justify-center ${
-                    isDarkMode 
-                      ? 'bg-white text-black hover:bg-slate-200' 
-                      : 'bg-slate-950 text-white hover:bg-slate-800'
-                  }`}
+                <Button
+                  onClick={() => onExport(sectionName, sortedStudents)}
+                  className={`rounded-full h-10 w-10 p-0 md:w-auto md:px-8 shadow-2xl flex items-center justify-center ${isDarkMode
+                    ? 'bg-white text-black hover:bg-slate-200'
+                    : 'bg-slate-950 text-white hover:bg-slate-800'
+                    }`}
                 >
-                  <FileDown size={16} className="md:mr-3" /> 
+                  <FileDown size={16} className="md:mr-3" />
                   <span className="hidden md:inline font-black uppercase text-[9px] tracking-[0.2em]">Masterlist</span>
                 </Button>
               </TooltipTrigger>
@@ -119,51 +118,49 @@ export const SectionDetailView = memo(function SectionDetailView({
             </Tooltip>
           </div>
         </div>
-        
+
         <div className="flex flex-col-reverse md:flex-row items-center gap-4 w-full md:w-auto">
           <div className="hidden md:flex items-center gap-4">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  onClick={onRefresh} 
+                <Button
+                  onClick={onRefresh}
                   className={`h-11 w-11 p-0 rounded-full border bg-transparent backdrop-blur-xl shadow-sm transition-all hover:rotate-180 active:scale-90 ${isDarkMode ? 'text-slate-400 border-slate-800' : 'text-slate-400 border-slate-200'}`}
                 >
-                  <RefreshCw className={loading ? "animate-spin" : ""} size={18}/>
+                  <RefreshCw className={loading ? "animate-spin" : ""} size={18} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Refresh Data</p></TooltipContent>
             </Tooltip>
           </div>
-          
+
           <div className="relative w-full md:w-80 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Input
-                  placeholder="Search Student ID or Name..." 
-                  className={`pl-12 rounded-full h-12 md:h-11 text-xs font-bold border-none shadow-inner transition-all focus-visible:ring-2 focus-visible:ring-slate-400/20 w-full ${
-                    isDarkMode ? 'bg-slate-900/50 text-white' : 'bg-white/80 text-slate-900'
-                  }`} 
-                  value={searchTerm} 
-                  onChange={(e) => setSearchTerm(e.target.value)} 
-                />                
+                  placeholder="Search Student ID or Name..."
+                  className={`pl-12 rounded-full h-12 md:h-11 text-xs font-bold border-none shadow-inner transition-all focus-visible:ring-2 focus-visible:ring-slate-400/20 w-full ${isDarkMode ? 'bg-slate-900/50 text-white' : 'bg-white/80 text-slate-900'
+                    }`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </TooltipTrigger>
               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Search Students</p></TooltipContent>
             </Tooltip>
           </div>
-          
+
           <div className="hidden md:block">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  onClick={() => onExport(sectionName, sortedStudents, adviserName)} 
-                  className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 px-8 transition-all active:scale-95 shadow-2xl flex items-center justify-center ${
-                    isDarkMode 
-                      ? 'bg-white text-black hover:bg-slate-200' 
-                      : 'bg-slate-950 text-white hover:bg-slate-800'
-                  }`}
+                <Button
+                  onClick={() => onExport(sectionName, sortedStudents, adviserName)}
+                  className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 px-8 transition-all active:scale-95 shadow-2xl flex items-center justify-center ${isDarkMode
+                    ? 'bg-white text-black hover:bg-slate-200'
+                    : 'bg-slate-950 text-white hover:bg-slate-800'
+                    }`}
                 >
-                  <FileDown size={14} className="mr-3" /> Get Masterlist
+                  <FileDown size={14} className="mr-3" /> EXPORT SF 9
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Export Student Grading</p></TooltipContent>
@@ -173,10 +170,9 @@ export const SectionDetailView = memo(function SectionDetailView({
       </div>
 
       {/* 🏙️ SECTION IDENTITY HEADER */}
-      <div className={`p-6 md:p-16 rounded-[40px] md:rounded-[60px] text-white relative overflow-hidden transition-all duration-1000 isolate z-10 bg-clip-padding shadow-xl outline outline-1 outline-transparent ${
-          isDarkMode ? 'bg-black border border-white/5' : `bg-gradient-to-br ${strandGradient}`
+      <div className={`p-6 md:p-16 rounded-[40px] md:rounded-[60px] text-white relative overflow-hidden transition-all duration-1000 isolate z-10 bg-clip-padding shadow-xl outline outline-1 outline-transparent ${isDarkMode ? 'bg-black border border-white/5' : `bg-gradient-to-br ${strandGradient}`
         }`}>
-        
+
         <div className={`absolute -top-24 -left-24 w-[300px] md:w-[500px] h-[300px] md:h-[500px] blur-[100px] md:blur-[140px] opacity-30 rounded-full mix-blend-screen pointer-events-none ${isICT ? 'bg-blue-900' : 'bg-orange-900'}`} />
         <div className={`absolute bottom-0 right-0 w-[200px] md:w-[400px] h-[200px] md:h-[400px] blur-[100px] md:blur-[160px] opacity-10 rounded-full pointer-events-none ${isICT ? 'bg-cyan-500' : 'bg-amber-600'}`} />
 
@@ -187,11 +183,11 @@ export const SectionDetailView = memo(function SectionDetailView({
                 {currentSection.strand} FACULTY CORE
               </Badge>
             </div>
-            
+
             <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-[-0.07em] uppercase leading-none italic drop-shadow-2xl whitespace-nowrap break-keep transform-gpu">
               {sectionName}
             </h1>
-            
+
             <div className="flex items-center gap-4 md:gap-6 opacity-30">
               <div className="flex items-center gap-2">
                 <GraduationCap size={14} className="md:w-4 md:h-4" />
@@ -204,7 +200,7 @@ export const SectionDetailView = memo(function SectionDetailView({
 
           <div className="relative group isolate mt-4 lg:mt-0">
             <div className={`absolute inset-0 blur-3xl opacity-10 transition-opacity group-hover:opacity-20 ${accentColor}`} />
-            
+
             <div className="relative backdrop-blur-[80px] bg-slate-950/50 p-6 md:p-12 rounded-[30px] md:rounded-[50px] border border-white/5 shadow-xl overflow-hidden transform-gpu bg-clip-padding outline outline-1 outline-transparent">
               <div className="flex justify-between items-start mb-6 md:mb-10">
                 <div>
@@ -234,7 +230,7 @@ export const SectionDetailView = memo(function SectionDetailView({
                   <span className="opacity-30">Gender Bar</span>
                   <span className={isICT ? 'text-blue-400' : 'text-orange-400'}>{Math.round(fillPercent)}% Complete</span>
                 </div>
-                
+
                 <div className="relative h-2 md:h-2.5 w-full bg-black/40 rounded-full overflow-hidden shadow-inner isolate">
                   <div className="absolute left-0 top-0 bottom-0 h-full bg-blue-500 transition-all duration-1000 ease-out" style={{ width: `${(mCount / capacity) * 100}%` }} />
                   <div className="absolute right-0 top-0 bottom-0 h-full bg-pink-500 transition-all duration-1000 ease-out" style={{ width: `${(fCount / capacity) * 100}%` }} />
@@ -258,20 +254,19 @@ export const SectionDetailView = memo(function SectionDetailView({
           />
 
           {/* Tabs */}
-          <TabsList 
-            className={`w-full md:w-auto flex p-1 h-auto rounded-[20px] md:rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-xl bg-clip-padding outline outline-1 outline-transparent ${
-              isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-white/60 border-slate-200'
-            }`}
-          >                
+          <TabsList
+            className={`w-full md:w-auto flex p-1 h-auto rounded-[20px] md:rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-xl bg-clip-padding outline outline-1 outline-transparent ${isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-white/60 border-slate-200'
+              }`}
+          >
             {/* Masterlist */}
             <TabsTrigger value="all" className={triggerClass}>
               <span className="md:hidden">Master</span>
-              <span className="hidden md:inline">MasterList</span> 
+              <span className="hidden md:inline">MasterList</span>
               <span className="text-[9px] md:text-[11px] font-mono opacity-40">[{activeStudents.length}]</span>
             </TabsTrigger>
-            
+
             <div className={dividerClass} />
-            
+
             {/* Males */}
             <TabsTrigger value="males" className={triggerClass}>
               Male <span className="text-[9px] md:text-[11px] font-mono opacity-40">[{mCount}]</span>
@@ -296,21 +291,21 @@ export const SectionDetailView = memo(function SectionDetailView({
 
         {/* Student tabs content */}
         {['all', 'males', 'females'].map((tab) => (
-          <TabsContent 
-            key={tab} 
-            value={tab} 
+          <TabsContent
+            key={tab}
+            value={tab}
             className="outline-none focus:ring-0 focus-visible:ring-0 mt-0 animate-in fade-in zoom-in-95 slide-in-from-bottom-10 duration-700 ease-out flex justify-center w-full"
           >
             <div className="w-full max-w-[100vw] overflow-hidden">
-              <StudentTable 
+              <StudentTable
                 students={sortedStudents.filter((s: any) => {
                   const match = `${s.first_name} ${s.last_name}`.toLowerCase().includes(debouncedSearch.toLowerCase()) || s.student_id?.toLowerCase().includes(debouncedSearch.toLowerCase())
                   if (tab === 'all') return match
                   return match && s.gender === (tab === 'males' ? 'Male' : 'Female')
-                })} 
-                onReturn={handleReturnToPending} 
+                })}
+                onReturn={handleReturnToPending}
                 onUnenroll={handleUnenroll}
-                onSwitch={handleSwitch} 
+                onSwitch={handleSwitch}
                 allSections={sections.filter((s: any) => s.strand === currentSection.strand)}
                 onOpenFile={handleOpenFile}
                 onViewProfile={handleViewProfile}
