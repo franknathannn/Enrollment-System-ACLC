@@ -12,6 +12,7 @@ import {
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { useThemeStore } from "@/store/useThemeStore"
+import { ProcessSection } from "@/components/landing/ProcessSection"
 
 // ── TYPES ────────────────────────────────────────────────────────────────────
 interface Particle { x: number; y: number; vx: number; vy: number; size: number; pulse: number; twinkle: number }
@@ -993,6 +994,9 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+
+          {/* ── ENROLLMENT PROCESS ────────────────────────────────────────── */}
+          <ProcessSection isDark={d} />
 
           {/* ── BENEFITS — Refined with pure colors and performance hovers ── */}
           <div className="mt-24 md:mt-32 lg:mt-48 text-left">
