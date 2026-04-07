@@ -1082,24 +1082,25 @@ export default function HomePage() {
                       { t: "Flexible Tracks", d: "Career-ready or college-ready paths." },
                       { t: "Global Network", d: "Part of the AMA Education System." },
                     ].map((b, i) => (
-                      <div
-                        key={i}
-                        className={cn(
-                          "group/card p-8 rounded-[32px] border spring-hover-blue",
-                          d ? "bg-white/[0.02] border-white/[0.12] lg:hover:bg-blue-600/5"
-                            : "bg-slate-50 border-slate-100 lg:hover:bg-white lg:hover:shadow-xl",
-                          "cursor-pointer"
-                        )}>
-                        <div className={cn(
-                          "w-10 h-10 rounded-xl mb-6 flex items-center justify-center transition-all duration-300 shadow-sm",
-                          d ? "bg-white/5 text-blue-500 group-hover/card:bg-blue-600 group-hover/card:text-white"
-                            : "bg-blue-600 text-white shadow-blue-600/20 shadow-lg"
-                        )}>
-                          <CheckCircle2 size={18} />
+                      <Reveal key={i} delay={i * 100} y={40} scale={0.8}>
+                        <div
+                          className={cn(
+                            "group/card h-full p-8 rounded-[32px] border spring-hover-blue",
+                            d ? "bg-white/[0.02] border-white/[0.12] lg:hover:bg-blue-600/5"
+                              : "bg-slate-50 border-slate-100 lg:hover:bg-white lg:hover:shadow-xl",
+                            "cursor-pointer"
+                          )}>
+                          <div className={cn(
+                            "w-10 h-10 rounded-xl mb-6 flex items-center justify-center transition-all duration-300 shadow-sm",
+                            d ? "bg-white/5 text-blue-500 group-hover/card:bg-blue-600 group-hover/card:text-white"
+                              : "bg-blue-600 text-white shadow-blue-600/20 shadow-lg"
+                          )}>
+                            <CheckCircle2 size={18} />
+                          </div>
+                          <h4 className={cn("text-sm font-black uppercase tracking-tight mb-2 transition-colors duration-300", d ? "text-white group-hover/card:text-blue-400" : "text-slate-900 group-hover/card:text-blue-600")}>{b.t}</h4>
+                          <p className={cn("text-xs font-medium leading-relaxed transition-colors duration-300", d ? "text-slate-500 group-hover/card:text-slate-300" : "text-slate-400 group-hover/card:text-slate-600")}>{b.d}</p>
                         </div>
-                        <h4 className={cn("text-sm font-black uppercase tracking-tight mb-2 transition-colors duration-300", d ? "text-white group-hover/card:text-blue-400" : "text-slate-900 group-hover/card:text-blue-600")}>{b.t}</h4>
-                        <p className={cn("text-xs font-medium leading-relaxed transition-colors duration-300", d ? "text-slate-500 group-hover/card:text-slate-300" : "text-slate-400 group-hover/card:text-slate-600")}>{b.d}</p>
-                      </div>
+                      </Reveal>
                     ))}
                   </div>
                 </div>
