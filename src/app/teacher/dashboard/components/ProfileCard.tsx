@@ -6,6 +6,7 @@ import { BookOpen, Users, CalendarDays, Camera, Loader2 } from "lucide-react"
 import { Avatar } from "./Avatar"
 import { supabase } from "@/lib/supabase/teacher-client"
 import { toast } from "sonner"
+import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
 import { TeacherSession, ScheduleRow, ALL_DAYS, fmt } from "../types"
 
@@ -94,7 +95,7 @@ export function ProfileCard({ session, schedules, colorMap, dm, onAvatarUpdate }
           >
             <div className={`p-0.5 rounded-full bg-gradient-to-br from-blue-500 to-violet-500`}>
               <div className={`rounded-full p-0.5 ${dm ? "bg-slate-900" : "bg-white"}`}>
-                <Avatar name={session.full_name} size={50} img={avatarUrl} />
+                <Avatar name={session.full_name} gender={session.gender} size={50} img={avatarUrl} />
               </div>
             </div>
             <div className={`absolute inset-0 rounded-full flex items-center justify-center transition-opacity
@@ -106,7 +107,7 @@ export function ProfileCard({ session, schedules, colorMap, dm, onAvatarUpdate }
 
           <div className="flex-1 min-w-0">
             <p className="text-[9px] font-black uppercase tracking-[0.25em] bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent mb-0.5">Welcome back</p>
-            <h1 className={`text-xl md:text-2xl font-black tracking-tight leading-tight ${head}`}>{session.full_name}</h1>
+            <h1 className={`text-xl md:text-2xl font-black tracking-tight leading-tight ${head}`}>{formatTeacherName(session.full_name, session.gender)}</h1>
             <p className={`text-xs mt-0.5 ${sub}`}>{session.email}</p>
           </div>
 

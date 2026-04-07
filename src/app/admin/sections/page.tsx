@@ -25,7 +25,7 @@ export default function SectionsPage() {
     activeProfile, realtimeStatus, lastUpdate, ictSections, gasSections, ictLoad, gasLoad, currentSection, activeStudents,
     currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
-    handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections, handleToggleLock, updateStudentProfile,
+    handleConfirmUnenroll, handleSwitch, exportSectionCSV, exportSectionList, exportGlobalMasterlist, fetchSections, handleToggleLock, updateStudentProfile,
     allSchedules, handleAdviserChange
   } = useSections()
 
@@ -72,6 +72,7 @@ export default function SectionsPage() {
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             onExport={exportSectionCSV}
+            onExportList={exportSectionList}
             sortedStudents={currentSectionData.sortedStudents}
             mCount={currentSectionData.mCount}
             fCount={currentSectionData.fCount}
@@ -107,6 +108,7 @@ export default function SectionsPage() {
             handleClearAllStudents={handleClearAllStudents}
             initiateAdd={initiateAdd}
             onBalance={handleBalance}
+            onExportGlobal={exportGlobalMasterlist}
             isProcessing={isProcessing}
             config={config}
             allSchedules={allSchedules}

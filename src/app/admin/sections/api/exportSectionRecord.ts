@@ -28,9 +28,8 @@ export async function downloadSectionRecord(sectionName: string, students: any[]
     sheet.cell("K7").value(sectionName ? sectionName.toUpperCase() : "UNKNOWN");
     sheet.cell("AG5").value(schoolYear || "");
     if (adviserName) {
-      // Common cells for Teacher/Adviser in DepEd Class Records
-      sheet.cell("W7").value(adviserName.toUpperCase());
-      sheet.cell("Y7").value(adviserName.toUpperCase());
+      // Merged cell S7:AB7 — must write to the first cell of the merge
+      sheet.cell("S7").value(adviserName.toUpperCase());
     }
 
     // 2. Sort Students

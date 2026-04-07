@@ -11,6 +11,7 @@ import { AnnouncementPanel }   from "./components/AnnouncementPanel"
 import type { Teacher }        from "./types"
 import { supabase } from "@/lib/supabase/admin-client"
 import { AcademicCalendarTab } from "@/app/teacher/dashboard/components/AcademicCalendarTab"
+import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
 import { useTheme } from "@/hooks/useTheme"
 
@@ -171,7 +172,13 @@ export default function TeachersPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing,  setEditing]  = useState<Teacher | null>(null)
   const [viewing,  setViewing]  = useState<Teacher | null>(null)
-  const [tab,      setTab]      = useState<"list" | "announcements" | "reports" | "calendar">("list")
+  const [tab,      setTab]      = useState<"list" | "announcements" | "reports" | "calendar">(() => {
+    if (typeof window !== "undefined") {
+      const s = sessionStorage.getItem("teachers_tab")
+      if (s === "list" || s === "announcements" || s === "reports" || s === "calendar") return s
+    }
+    return "list"
+  })
   const [toggling, setToggling] = useState<Set<string>>(new Set())
   const [schoolYear, setSchoolYear] = useState("2025-2026")
   const [deleteConfirm, setDeleteConfirm] = useState<{id: string, name: string} | null>(null)
@@ -184,9 +191,18 @@ export default function TeachersPage() {
 
   // Pagination
   const TEACHERS_PER_PAGE = 5
-  const [teachersPage, setTeachersPage] = useState(1)
+  const [teachersPage, setTeachersPage] = useState(() => {
+    if (typeof window !== "undefined") {
+      const n = parseInt(sessionStorage.getItem("teachers_page") ?? "1")
+      return isNaN(n) || n < 1 ? 1 : n
+    }
+    return 1
+  })
   // Reset to page 1 when search changes
   const handleSearchChange = (v: string) => { setSearch(v); setTeachersPage(1) }
+  useEffect(() => { sessionStorage.setItem("teachers_tab", tab) }, [tab])
+  useEffect(() => { sessionStorage.setItem("teachers_page", String(teachersPage)) }, [teachersPage])
+
   const totalTeacherPages = Math.max(1, Math.ceil(filtered.length / TEACHERS_PER_PAGE))
   const pagedTeachers = filtered.slice((teachersPage - 1) * TEACHERS_PER_PAGE, teachersPage * TEACHERS_PER_PAGE)
 
@@ -390,7 +406,7 @@ export default function TeachersPage() {
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar name={t.full_name} url={t.avatar_url} size={36} />
                         <div className="min-w-0">
-                          <p className={`text-sm font-bold truncate ${txt}`}>{t.full_name}</p>
+                          <p className={`text-sm font-bold truncate ${txt}`}>{formatTeacherName(t.full_name, t.gender)}</p>
                           {t.phone && <p className={`text-[10px] truncate ${sub}`}>{t.phone}</p>}
                         </div>
                       </div>
@@ -441,7 +457,7 @@ export default function TeachersPage() {
                         <Avatar name={t.full_name} url={t.avatar_url} size={44} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className={`text-sm font-black truncate ${txt}`}>{t.full_name}</p>
+                            <p className={`text-sm font-black truncate ${txt}`}>{formatTeacherName(t.full_name, t.gender)}</p>
                             <span className={`inline-flex items-center gap-1 text-[8px] font-black uppercase px-2 py-0.5 rounded-full
                               ${t.is_active
                                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"

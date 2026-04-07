@@ -4,6 +4,7 @@
 import { X, Mail, Phone, BookOpen, Edit2, Trash2 } from "lucide-react"
 import { TeacherSchedulePanel } from "./TeacherSchedulePanel"
 import type { Teacher } from "../types"
+import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
 interface TeacherDetailDrawerProps {
   teacher:      Teacher | null
@@ -86,7 +87,7 @@ export function TeacherDetailDrawer({
           <div className={`rounded-2xl border p-5 flex items-start gap-4 ${border} ${dm ? "bg-slate-800/40" : "bg-slate-50"}`}>
             <Avatar name={teacher.full_name} url={teacher.avatar_url} size={56} />
             <div className="flex-1 min-w-0">
-              <h2 className={`text-lg font-black leading-tight ${dm ? "text-white" : "text-slate-900"}`}>{teacher.full_name}</h2>
+              <h2 className={`text-lg font-black leading-tight ${dm ? "text-white" : "text-slate-900"}`}>{formatTeacherName(teacher.full_name, teacher.gender)}</h2>
               {teacher.subject_specialization && (
                 <p className={`text-xs font-bold mt-0.5 ${sub}`}>{teacher.subject_specialization}</p>
               )}

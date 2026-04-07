@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import type { TeacherSession } from "../types"
 import { GlobalChatPanel } from "./GlobalChatPanel"
+import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
 const MAX_FILE_SIZE = 30 * 1024 * 1024
 
@@ -163,7 +164,7 @@ const DmBubble = memo(({
                 dm ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500")}><X size={13} /></button>
             </div>
           ) : (
-            <div className={cn("flex flex-col", isMe ? "items-end" : "items-start")}>
+            <div className={cn("flex flex-col w-fit max-w-full", isMe ? "items-end" : "items-start")}>
               {msg.content && (
                 <div className={cn("p-3 rounded-[20px] text-[13px] font-medium leading-relaxed shadow-sm border break-words whitespace-pre-wrap",
                   isMe ? "rounded-tr-sm border-transparent text-white"
@@ -176,7 +177,7 @@ const DmBubble = memo(({
               {msg.attachment_url && <MsgAttachment msg={msg} isMe={isMe} dm={dm} />}
 
               {hasReactions && (
-                <div className={cn("flex flex-wrap gap-1 mt-1", isMe ? "justify-end" : "justify-start")}>
+                <div className={cn("flex flex-wrap gap-1 mt-1 max-w-full", isMe ? "justify-end" : "justify-start")}>
                   {Object.entries(grouped).map(([emoji, data]) => (
                     <TooltipProvider key={emoji}>
                       <Tooltip delayDuration={0}>
@@ -285,7 +286,7 @@ const SidebarItem = ({ person, selected, pinned, dm, isAdmin, unread, lastPrevie
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-1">
-          <p className={cn("text-xs font-black truncate", selected ? "text-white" : "")}>{person.full_name}</p>
+          <p className={cn("text-xs font-black truncate", selected ? "text-white" : "")}>{formatTeacherName(person.full_name, person.gender)}</p>
           {(unread ?? 0) > 0 && !selected && (
             <span className="shrink-0 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-sm">
               {(unread ?? 0) > 99 ? "99+" : unread}
@@ -334,6 +335,7 @@ export function ChatTab({ session, dm }: ChatTabProps) {
 
   // Shared search
   const [search, setSearch] = useState("")
+  const [genderFilter, setGenderFilter] = useState<"ALL" | "Male" | "Female">("ALL")
 
   // Teacher DM state
   const [dmMessages,  setDmMessages]  = useState<any[]>([])
@@ -413,7 +415,7 @@ export function ChatTab({ session, dm }: ChatTabProps) {
 
   // ── Fetch teachers ────────────────────────────────────────────────────────
   useEffect(() => {
-    supabase.from("teachers").select("id, full_name, email, avatar_url")
+    supabase.from("teachers").select("id, full_name, email, avatar_url, gender")
       .eq("is_active", true).neq("id", session.id).order("full_name")
       .then(({ data }) => { setTeachers(data ?? []); setLoadingTeachers(false) })
   }, [session.id])
@@ -675,10 +677,15 @@ export function ChatTab({ session, dm }: ChatTabProps) {
   }, [authUserId, mode, dmMessages, adminDmMessages, session.full_name])
 
   // ── Filtered lists ─────────────────────────────────────────────────────────
-  const filteredTeachers = teachers.filter(t =>
+  const searchMatchedTeachers = teachers.filter(t =>
     t.full_name.toLowerCase().includes(search.toLowerCase()) ||
     t.email.toLowerCase().includes(search.toLowerCase())
   )
+  const mrCount = searchMatchedTeachers.filter(t => t.gender === "Male").length
+  const msCount = searchMatchedTeachers.filter(t => t.gender === "Female").length
+  const filteredTeachers = genderFilter === "ALL"
+    ? searchMatchedTeachers
+    : searchMatchedTeachers.filter(t => t.gender === genderFilter)
   const filteredAdmins = admins.filter(a =>
     a.full_name?.toLowerCase().includes(search.toLowerCase())
   )
@@ -715,12 +722,46 @@ export function ChatTab({ session, dm }: ChatTabProps) {
         {/* Search */}
         <div className={cn("p-3 border-b shrink-0", dm ? "border-white/5" : "border-slate-100")}>
           <p className={cn("text-[9px] font-black uppercase tracking-[0.3em] mb-2.5", dm ? "text-blue-400" : "text-blue-600")}>Messenger</p>
-          <div className="relative">
+          <div className="relative mb-2">
             <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…"
               className={cn("w-full pl-7 pr-3 py-1.5 rounded-xl text-xs font-medium border outline-none transition-colors",
                 dm ? "bg-slate-800/60 border-slate-700/50 text-white placeholder:text-slate-500 focus:border-blue-500/50"
                   : "bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-blue-400")} />
+          </div>
+          {/* Gender filter */}
+          <div className="flex items-center gap-1">
+            {([
+              { key: "ALL",    label: "All",  count: searchMatchedTeachers.length },
+              { key: "Male",   label: "Mr.",  count: mrCount },
+              { key: "Female", label: "Ms.",  count: msCount },
+            ] as const).map(({ key, label, count }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setGenderFilter(key)}
+                className={cn(
+                  "flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-150 border",
+                  genderFilter === key
+                    ? dm
+                      ? "bg-blue-500/20 border-blue-500/40 text-blue-400"
+                      : "bg-blue-50 border-blue-300 text-blue-600"
+                    : dm
+                      ? "border-slate-700/50 text-slate-500 hover:text-slate-300 hover:border-slate-600"
+                      : "border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300"
+                )}
+              >
+                {label}
+                <span className={cn(
+                  "text-[8px] font-black rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5",
+                  genderFilter === key
+                    ? dm ? "bg-blue-500/30 text-blue-300" : "bg-blue-100 text-blue-600"
+                    : dm ? "bg-slate-700 text-slate-400" : "bg-slate-100 text-slate-500"
+                )}>
+                  {count}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -853,7 +894,9 @@ export function ChatTab({ session, dm }: ChatTabProps) {
                 }
               </div>
               <div className="min-w-0">
-                <p className={cn("text-sm font-black truncate", dm ? "text-white" : "text-slate-900")}>{currentPartner.full_name}</p>
+                <p className={cn("text-sm font-black truncate", dm ? "text-white" : "text-slate-900")}>
+                  {mode === "teacher_dm" ? formatTeacherName(currentPartner.full_name, currentPartner.gender) : currentPartner.full_name}
+                </p>
                 <p className={cn("text-[10px] truncate", dm ? "text-slate-500" : "text-slate-400")}>
                   {mode === "admin_dm" ? "Admin · Private message" : "Private message"}
                 </p>
@@ -861,14 +904,14 @@ export function ChatTab({ session, dm }: ChatTabProps) {
             </div>
 
             {/* Messages */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4" style={{ scrollbarWidth: "none" }}>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 overscroll-contain" style={{ scrollbarWidth: "none" }}>
               {currentLoading ? (
                 <div className="flex items-center justify-center py-16"><Loader2 size={22} className="animate-spin text-blue-500" /></div>
               ) : currentMessages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
                   <MessageSquare size={36} className={dm ? "text-slate-600" : "text-slate-300"} />
                   <p className={cn("text-xs font-black", dm ? "text-white" : "text-slate-900")}>
-                    Start a conversation with {currentPartner.full_name}
+                    Start a conversation with {mode === "teacher_dm" ? formatTeacherName(currentPartner.full_name, currentPartner.gender) : currentPartner.full_name}
                   </p>
                 </div>
               ) : (
@@ -909,7 +952,7 @@ export function ChatTab({ session, dm }: ChatTabProps) {
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
                 <input
                   value={newMessage} onChange={e => setNewMessage(e.target.value)}
-                  placeholder={isUploading ? "Uploading…" : `Message ${currentPartner.full_name}…`}
+                  placeholder={isUploading ? "Uploading…" : `Message ${mode === "teacher_dm" ? formatTeacherName(currentPartner.full_name, currentPartner.gender) : currentPartner.full_name}…`}
                   disabled={isUploading}
                   className={cn("flex-1 h-10 rounded-xl border px-3 text-sm font-medium outline-none transition-colors focus:ring-2 focus:ring-blue-500",
                     dm ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"

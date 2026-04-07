@@ -21,7 +21,14 @@ type RegistryMainTab = "enrolled" | "reEnrollment"
 
 export default function EnrolledPage() {
   const { isDarkMode } = useTheme()
-  const [mainTab, setMainTab] = useState<RegistryMainTab>("enrolled")
+  const [mainTab, setMainTab] = useState<RegistryMainTab>(() => {
+    if (typeof window !== "undefined") {
+      const s = sessionStorage.getItem("enrolled_main_tab")
+      if (s === "enrolled" || s === "reEnrollment") return s
+    }
+    return "enrolled"
+  })
+  useEffect(() => { sessionStorage.setItem("enrolled_main_tab", mainTab) }, [mainTab])
 
   // 1. Data Layer
   const { students, setStudents, sections, loading, fetchStudents } = useEnrolledData()

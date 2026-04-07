@@ -5,7 +5,8 @@ import { ThemedCard } from "@/components/ThemedCard"
 import { ThemedText } from "@/components/ThemedText"
 import { FilterButton } from "./FilterButton"
 import { Button } from "@/components/ui/button"
-import { Trash, Plus, Layers, Cpu, BookOpen, Scale, BarChart3, X, GraduationCap, Info } from "lucide-react"
+import { Trash, Plus, Layers, Cpu, BookOpen, Scale, BarChart3, X, GraduationCap, Info, FileDown, ChevronDown } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { DeleteManagementDialog } from "./DeleteManagementDialog"
@@ -28,6 +29,7 @@ interface SectionsHeaderProps {
   isProcessing: boolean
   config: any
   allSchedules: any[]
+  onExportGlobal: (strand: "GAS" | "ICT" | "BOTH") => void
 }
 
 
@@ -210,8 +212,8 @@ function SectionStatsPopover({ sections, isDarkMode }: { sections: any[]; isDark
 export const SectionsHeader = memo(({
   isDarkMode, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter,
   sectionSelection, setConfirmDeleteSelect,
-  sections, handleDeleteSection, handleClearAllStudents, initiateAdd, onBalance, isProcessing,
-  config, allSchedules
+    sections, handleDeleteSection, handleClearAllStudents, initiateAdd, onBalance, isProcessing,
+  config, allSchedules, onExportGlobal
 }: SectionsHeaderProps) => {
 
   const [scheduleManagerOpen, setScheduleManagerOpen] = useState(false)
@@ -374,6 +376,26 @@ export const SectionsHeader = memo(({
           </TooltipTrigger>
           <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Open Bulk Schedule Editor</p></TooltipContent>
         </Tooltip>
+
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  className="rounded-[18px] bg-emerald-600 hover:bg-emerald-700 h-11 px-4 sm:px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all transform-gpu active:scale-90 col-span-2 sm:col-span-1 sm:flex-none text-white"
+                >
+                  <FileDown className="mr-1.5" size={14} /> Export Masterlist <ChevronDown className="ml-1" size={12} />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Export Full List</p></TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="end" className={`w-52 font-black uppercase tracking-widest text-[9px] ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}>
+            <DropdownMenuItem onClick={() => onExportGlobal("GAS")} className="cursor-pointer py-3 focus:bg-emerald-600 focus:text-white">GAS MASTERLIST</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onExportGlobal("ICT")} className="cursor-pointer py-3 focus:bg-emerald-600 focus:text-white">ICT MASTERLIST</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onExportGlobal("BOTH")} className="cursor-pointer py-3 focus:bg-emerald-600 focus:text-white">BOTH ICT & GAS MASTERLIST</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <BulkScheduleManagerDialog 

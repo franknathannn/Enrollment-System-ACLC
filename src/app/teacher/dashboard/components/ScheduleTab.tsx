@@ -5,7 +5,7 @@ import { useState } from "react"
 import { CalendarDays } from "lucide-react"
 import { PeriodCard } from "./PeriodCard"
 
-import { ScheduleRow, Student, COLORS, ALL_DAYS, DayName, fmt, todayName } from "../types"
+import { ScheduleRow, Student, TeacherSession, COLORS, ALL_DAYS, DayName, fmt, todayName } from "../types"
 
 interface ScheduleTabProps {
   schedules: ScheduleRow[]
@@ -14,9 +14,11 @@ interface ScheduleTabProps {
   colorMap: Record<string, typeof COLORS[number]>
   dm: boolean
   onStudentClick: (student: Student) => void
+  session: TeacherSession
+  schoolYear: string
 }
 
-export function ScheduleTab({ schedules, students, studLoad, colorMap, dm, onStudentClick }: ScheduleTabProps) {
+export function ScheduleTab({ schedules, students, studLoad, colorMap, dm, onStudentClick, session, schoolYear }: ScheduleTabProps) {
   // Smart initial day: find the next day that has scheduled classes, starting from today
   const getSmartDay = (): DayName => {
     const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
@@ -29,7 +31,17 @@ export function ScheduleTab({ schedules, students, studLoad, colorMap, dm, onStu
     }
     return todayName()
   }
-  const [activeDay, setActiveDay] = useState<DayName>(() => getSmartDay())
+  const [activeDay, setActiveDay] = useState<DayName>(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("teacher_schedule_day")
+      if (saved && ALL_DAYS.includes(saved as DayName)) return saved as DayName
+    }
+    return getSmartDay()
+  })
+
+  useEffect(() => {
+    sessionStorage.setItem("teacher_schedule_day", activeDay)
+  }, [activeDay])
 
   const card = dm ? "bg-slate-900/60 border-slate-700/50" : "bg-white border-slate-200"
   const sub  = dm ? "text-slate-400" : "text-slate-500"
@@ -143,6 +155,8 @@ export function ScheduleTab({ schedules, students, studLoad, colorMap, dm, onStu
                 loading={studLoad}
                 dm={dm}
                 onStudentClick={onStudentClick}
+                session={session}
+                schoolYear={schoolYear}
               />
             ))}
           </div>

@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AdviserPicker } from "./AsyncTeacherSelect"
 import { Shield } from "lucide-react"
+import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
 export const SectionDetailView = memo(function SectionDetailView({
   sectionName,
@@ -25,6 +26,7 @@ export const SectionDetailView = memo(function SectionDetailView({
   searchTerm,
   setSearchTerm,
   onExport,
+  onExportList,
   sortedStudents,
   mCount,
   fCount,
@@ -48,7 +50,8 @@ export const SectionDetailView = memo(function SectionDetailView({
   const isICT = currentSection?.strand === 'ICT'
 
   const adviserMatch = teachers?.find((t: any) => t.id === currentSection?.adviser_id)
-  const adviserName = adviserMatch ? adviserMatch.full_name : undefined
+  const rawAdviserName = adviserMatch ? adviserMatch.full_name : undefined
+  const prefixedAdviserName = adviserMatch ? formatTeacherName(adviserMatch.full_name, adviserMatch.gender) : undefined
 
   const strandGradient = isICT
     ? 'from-[#020617] via-[#0f172a] to-[#020617]'
@@ -104,7 +107,7 @@ export const SectionDetailView = memo(function SectionDetailView({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  onClick={() => onExport(sectionName, sortedStudents)}
+                  onClick={() => onExport(sectionName, sortedStudents, prefixedAdviserName)}
                   className={`rounded-full h-10 w-10 p-0 md:w-auto md:px-8 shadow-2xl flex items-center justify-center ${isDarkMode
                     ? 'bg-white text-black hover:bg-slate-200'
                     : 'bg-slate-950 text-white hover:bg-slate-800'
@@ -150,17 +153,29 @@ export const SectionDetailView = memo(function SectionDetailView({
             </Tooltip>
           </div>
 
-          <div className="hidden md:block">
+          <div className="hidden md:flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  onClick={() => onExport(sectionName, sortedStudents, adviserName)}
-                  className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 px-8 transition-all active:scale-95 shadow-2xl flex items-center justify-center ${isDarkMode
+                  onClick={() => onExportList && onExportList(sectionName, sortedStudents, prefixedAdviserName)}
+                  className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 px-6 transition-all active:scale-95 shadow-2xl flex items-center justify-center bg-emerald-600 text-white hover:bg-emerald-700`}
+                >
+                  <FileDown size={14} className="mr-2" /> EXPORT MASTERLIST
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Export Simple Masterlist</p></TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => onExport(sectionName, sortedStudents, prefixedAdviserName)}
+                  className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 px-6 transition-all active:scale-95 shadow-2xl flex items-center justify-center ${isDarkMode
                     ? 'bg-white text-black hover:bg-slate-200'
                     : 'bg-slate-950 text-white hover:bg-slate-800'
                     }`}
                 >
-                  <FileDown size={14} className="mr-3" /> EXPORT SF 9
+                  <FileDown size={14} className="mr-2" /> EXPORT GRADING SHEET
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Export Student Grading</p></TooltipContent>
@@ -221,7 +236,7 @@ export const SectionDetailView = memo(function SectionDetailView({
                 <div className="flex items-center gap-2">
                   <Shield size={14} className={isICT ? 'text-blue-400' : 'text-orange-400'} />
                   <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Section Adviser</span>
-                  <span className="text-[9px] md:text-[10px] font-bold opacity-50 ml-1">{adviserName || '—'}</span>
+                  <span className="text-[9px] md:text-[10px] font-bold opacity-50 ml-1">{prefixedAdviserName || '—'}</span>
                 </div>
               </div>
 
@@ -332,7 +347,7 @@ export const SectionDetailView = memo(function SectionDetailView({
             schoolYear={config?.school_year ?? "2025-2026"}
             students={activeStudents}
             allSchedules={allSchedules ?? []}
-            adviserName={adviserName}
+            adviserName={prefixedAdviserName}
           />
         </TabsContent>
 

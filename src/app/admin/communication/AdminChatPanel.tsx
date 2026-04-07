@@ -23,11 +23,11 @@ import { toast } from "sonner"
 const MAX_FILE_SIZE = 30 * 1024 * 1024
 
 const EMOJI_MAP: Record<string, { icon: string; label: string }> = {
-  heart:     { icon: "❤️", label: "Heart" },
+  heart: { icon: "❤️", label: "Heart" },
   thumbs_up: { icon: "👍", label: "Thumbs Up" },
-  haha:      { icon: "😂", label: "Haha" },
-  wow:       { icon: "😮", label: "Wow" },
-  angry:     { icon: "😡", label: "Angry" },
+  haha: { icon: "😂", label: "Haha" },
+  wow: { icon: "😮", label: "Wow" },
+  angry: { icon: "😡", label: "Angry" },
 }
 
 const forceDownload = async (url: string, filename: string) => {
@@ -72,11 +72,11 @@ const MsgAttachment = ({ msg, isMe, isDarkMode }: { msg: any; isMe: boolean; isD
     </Dialog>
   )
   const gradient = ext === "pdf" ? "from-red-500 to-red-600"
-    : ["doc","docx"].includes(ext) ? "from-blue-500 to-blue-600"
-    : ["xls","xlsx","csv"].includes(ext) ? "from-emerald-500 to-emerald-600"
-    : ["ppt","pptx"].includes(ext) ? "from-orange-500 to-orange-600"
-    : ["zip","rar","7z"].includes(ext) ? "from-amber-500 to-amber-600"
-    : "from-violet-500 to-violet-600"
+    : ["doc", "docx"].includes(ext) ? "from-blue-500 to-blue-600"
+      : ["xls", "xlsx", "csv"].includes(ext) ? "from-emerald-500 to-emerald-600"
+        : ["ppt", "pptx"].includes(ext) ? "from-orange-500 to-orange-600"
+          : ["zip", "rar", "7z"].includes(ext) ? "from-amber-500 to-amber-600"
+            : "from-violet-500 to-violet-600"
   return (
     <button type="button" onClick={() => forceDownload(url, name)}
       className={cn("flex items-center gap-3 mt-2 p-3 rounded-xl border shadow-sm transition-all active:scale-95 w-full max-w-xs text-left hover:scale-[1.02]",
@@ -108,19 +108,19 @@ const AdminBubble = memo(({
   onDelete: (id: any) => void; onToggleReaction: (msgId: any, emoji: string) => void
 }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  const isMe         = String(msg.sender_id) === String(currentUserId)
+  const isMe = String(msg.sender_id) === String(currentUserId)
   const isOptimistic = String(msg.id).startsWith("optimistic")
-  const name         = msg.sender_name || "Admin"
-  const date         = msg.created_at ? format(new Date(msg.created_at), "MMM d, h:mm a") : "Sending…"
-  const isEditing    = editingId === String(msg.id)
+  const name = msg.sender_name || "Admin"
+  const date = msg.created_at ? format(new Date(msg.created_at), "MMM d, h:mm a") : "Sending…"
+  const isEditing = editingId === String(msg.id)
 
   const grouped: Record<string, { count: number; users: string[]; mine: boolean }> = {}
-  ;(msg.reactions ?? []).forEach((r: any) => {
-    if (!grouped[r.emoji]) grouped[r.emoji] = { count: 0, users: [], mine: false }
-    grouped[r.emoji].count++
-    grouped[r.emoji].users.push(r.user_name || "Admin")
-    if (String(r.user_id) === String(currentUserId)) grouped[r.emoji].mine = true
-  })
+    ; (msg.reactions ?? []).forEach((r: any) => {
+      if (!grouped[r.emoji]) grouped[r.emoji] = { count: 0, users: [], mine: false }
+      grouped[r.emoji].count++
+      grouped[r.emoji].users.push(r.user_name || "Admin")
+      if (String(r.user_id) === String(currentUserId)) grouped[r.emoji].mine = true
+    })
   const hasReactions = Object.keys(grouped).length > 0
 
   return (
@@ -254,16 +254,16 @@ AdminBubble.displayName = "AdminBubble"
 export function AdminChatPanel({ currentUser }: { currentUser: any }) {
   const { isDarkMode } = useTheme()
 
-  const [messages,    setMessages]    = useState<any[]>([])
-  const [loading,     setLoading]     = useState(true)
-  const [newMessage,  setNewMessage]  = useState("")
+  const [messages, setMessages] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [newMessage, setNewMessage] = useState("")
   const [isUploading, setIsUploading] = useState(false)
-  const [editingId,   setEditingId]   = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState("")
   const [isAnonymous, setIsAnonymous] = useState(false)
   const [adminProfile, setAdminProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(null)
 
-  const scrollRef    = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const prevCountRef = useRef(0)
   const avatarMapRef = useRef<Record<string, string | null>>({})
@@ -325,7 +325,7 @@ export function AdminChatPanel({ currentUser }: { currentUser: any }) {
     if (!newMessage.trim() || !currentUser || isUploading) return
     const content = newMessage.trim()
     setNewMessage("")
-    const myName   = isAnonymous ? "Admin" : (adminProfile?.full_name || currentUser.user_metadata?.full_name || "Admin")
+    const myName = isAnonymous ? "Admin" : (adminProfile?.full_name || currentUser.user_metadata?.full_name || "Admin")
     const myAvatar = isAnonymous ? null : (adminProfile?.avatar_url ?? currentUser.user_metadata?.avatar_url ?? null)
     const optId = `optimistic-${Date.now()}`
     setMessages(prev => [...prev, {
@@ -368,9 +368,9 @@ export function AdminChatPanel({ currentUser }: { currentUser: any }) {
     } finally { setIsUploading(false); e.target.value = "" }
   }
 
-  const startEdit  = useCallback((msg: any) => { setEditingId(String(msg.id)); setEditContent(msg.content) }, [])
+  const startEdit = useCallback((msg: any) => { setEditingId(String(msg.id)); setEditContent(msg.content) }, [])
   const cancelEdit = useCallback(() => { setEditingId(null); setEditContent("") }, [])
-  const saveEdit   = useCallback(async () => {
+  const saveEdit = useCallback(async () => {
     if (!editingId || !editContent.trim()) return
     const { error } = await supabase.from("admin_messages").update({ content: editContent.trim() }).eq("id", editingId)
     if (error) { toast.error("Failed to edit."); return }
@@ -418,7 +418,7 @@ export function AdminChatPanel({ currentUser }: { currentUser: any }) {
         <div className="ml-auto">
           <span className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full",
             isDarkMode ? "bg-blue-900/40 text-blue-400" : "bg-blue-50 text-blue-600")}>
-            🔒 Restricted
+            For Admins Only
           </span>
         </div>
       </div>

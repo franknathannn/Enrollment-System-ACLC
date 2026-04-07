@@ -7,6 +7,7 @@ export interface Teacher {
     phone?:                  string | null
     subject_specialization?: string | null
     avatar_url?:             string | null
+    gender?:                 string | null
     is_active:               boolean
     school_year:             string
     created_at?:             string

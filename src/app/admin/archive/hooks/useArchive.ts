@@ -34,10 +34,17 @@ export function useArchive() {
   const [exporting, setExporting] = useState(false)
 
   const [search, setSearch] = useState("")
-  const [strand, setStrand] = useState("ALL")
-  const [gradeLevel, setGradeLevel] = useState("ALL")
-  const [page, setPage] = useState(1)
+  const [strand, setStrand] = useState(() => sessionStorage.getItem("archive_strand") ?? "ALL")
+  const [gradeLevel, setGradeLevel] = useState(() => sessionStorage.getItem("archive_grade") ?? "ALL")
+  const [page, setPage] = useState(() => {
+    const n = parseInt(sessionStorage.getItem("archive_page") ?? "1")
+    return isNaN(n) || n < 1 ? 1 : n
+  })
   const [selectedStudent, setSelectedStudent] = useState<ArchivedStudent | null>(null)
+
+  useEffect(() => { sessionStorage.setItem("archive_strand", strand) }, [strand])
+  useEffect(() => { sessionStorage.setItem("archive_grade", gradeLevel) }, [gradeLevel])
+  useEffect(() => { sessionStorage.setItem("archive_page", String(page)) }, [page])
 
   // Refs so the realtime callback always sees latest filter values
   // without needing to re-subscribe every time a filter changes

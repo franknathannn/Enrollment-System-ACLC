@@ -70,6 +70,7 @@ export function useTeachers() {
     password: string
     phone?: string
     subject_specialization?: string
+    gender: string
   }) => {
     try {
       await createTeacherWithAuth(form)

@@ -194,8 +194,15 @@ export default function SchedulesPage() {
   const [saving,       setSaving]       = useState(false)
   const [deleting,     setDeleting]     = useState(false)
   // ── New: page-level tab (timetable vs academic calendar) ──────────────────
-  const [pageTab,      setPageTab]      = useState<"timetable" | "calendar" | "rooms">("timetable")
+  const [pageTab,      setPageTab]      = useState<"timetable" | "calendar" | "rooms">(() => {
+    if (typeof window !== "undefined") {
+      const s = sessionStorage.getItem("schedules_tab")
+      if (s === "timetable" || s === "calendar" || s === "rooms") return s
+    }
+    return "timetable"
+  })
   const [schoolYear,   setSchoolYear]   = useState("2025-2026")
+  useEffect(() => { sessionStorage.setItem("schedules_tab", pageTab) }, [pageTab])
 
   const ghostRef       = useRef<HTMLDivElement | null>(null)
   const dragRef        = useRef<{

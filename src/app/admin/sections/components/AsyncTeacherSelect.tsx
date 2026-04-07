@@ -8,7 +8,10 @@ interface Teacher {
   full_name: string
   email: string
   is_active: boolean
+  gender?: string
 }
+
+import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
 interface AdviserPickerProps {
   value: string | null
@@ -60,7 +63,7 @@ export function AdviserPicker({ value, onValueChange, initialTeachers, isDarkMod
       try {
         const { data } = await supabase
           .from("teachers")
-          .select("id, full_name, email, is_active")
+          .select("id, full_name, email, is_active, gender")
           .ilike("full_name", `%${search}%`)
           .limit(10)
         if (data) setResults(data)
@@ -76,7 +79,7 @@ export function AdviserPicker({ value, onValueChange, initialTeachers, isDarkMod
   
   useEffect(() => {
     if (value && !knownTeacher && !fetchedAdviser) {
-      supabase.from("teachers").select("id, full_name, email, is_active").eq("id", value).single()
+      supabase.from("teachers").select("id, full_name, email, is_active, gender").eq("id", value).single()
         .then(({ data }) => { if (data) setFetchedAdviser(data) })
     }
   }, [value, knownTeacher, fetchedAdviser])
@@ -107,7 +110,7 @@ export function AdviserPicker({ value, onValueChange, initialTeachers, isDarkMod
           Adviser
         </span>
         <span className={`text-[10px] md:text-[11px] font-bold ${isDarkMode ? 'text-white/90' : 'text-slate-700'}`}>
-          {displayTeacher?.full_name || "—"}
+          {displayTeacher ? formatTeacherName(displayTeacher.full_name, displayTeacher.gender) : "—"}
         </span>
         <ChevronDown size={13} className={`opacity-40 transition-transform duration-300 ${open ? 'rotate-180' : ''} ${isDarkMode ? 'text-white' : 'text-slate-500'}`} />
       </button>
@@ -197,7 +200,7 @@ export function AdviserPicker({ value, onValueChange, initialTeachers, isDarkMod
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className={`text-[11px] font-bold truncate ${isDarkMode ? 'text-white/90' : 'text-slate-700'} ${isSelected ? (isDarkMode ? 'text-white' : 'text-blue-700') : ''}`}>
-                        {t.full_name}
+                        {formatTeacherName(t.full_name, t.gender)}
                       </div>
                       <div className={`text-[9px] truncate ${isDarkMode ? 'text-white/20' : 'text-slate-400'}`}>
                         {t.email}

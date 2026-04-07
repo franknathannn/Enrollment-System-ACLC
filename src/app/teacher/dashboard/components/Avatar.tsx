@@ -6,11 +6,15 @@ interface AvatarProps {
   name: string
   size?: number
   img?: string | null
+  gender?: string | null
 }
 
-export function Avatar({ name, size = 40, img }: AvatarProps) {
+export function Avatar({ name, size = 40, img, gender }: AvatarProps) {
   const initials = name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()
-  const hue = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 360
+  let hue = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 360
+  
+  if (gender === 'Male') hue = 210 // Blue
+  else if (gender === 'Female') hue = 330 // Pink
 
   if (img) {
     return (

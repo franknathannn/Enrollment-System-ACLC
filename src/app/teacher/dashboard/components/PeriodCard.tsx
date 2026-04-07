@@ -2,11 +2,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Users, MapPin, Clock, ChevronDown, ChevronUp, Loader2, CheckCircle2, AlertCircle, MinusCircle, User } from "lucide-react"
+import { Users, MapPin, Clock, ChevronDown, ChevronUp, Loader2, CheckCircle2, MinusCircle, User, FileDown } from "lucide-react"
 import { StudentRow } from "./StudentRow"
-import { ScheduleRow, Student, COLORS, fmt } from "../types"
+import { ScheduleRow, Student, TeacherSession, COLORS, fmt } from "../types"
 import { supabase } from "@/lib/supabase/teacher-client"
 import { toast } from "sonner"
+import { downloadSectionRecord } from "@/app/admin/sections/api/exportSectionRecord"
+import { exportSimpleMasterlist } from "@/app/admin/sections/api/exportMasterlist"
+import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
 interface PeriodCardProps {
   period: ScheduleRow
@@ -16,6 +19,8 @@ interface PeriodCardProps {
   loading: boolean
   dm: boolean
   onStudentClick: (student: Student) => void
+  session: TeacherSession
+  schoolYear: string
 }
 
 type AttendanceStatus = "Present" | "Late" | "Absent"
@@ -34,8 +39,16 @@ function fmtT(t: string) {
   return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`
 }
 
-export function PeriodCard({ period, idx, color, students, loading: studLoad, dm, onStudentClick }: PeriodCardProps) {
-  const [open, setOpen] = useState(false)
+export function PeriodCard({ period, idx, color, students, loading: studLoad, dm, onStudentClick, session, schoolYear }: PeriodCardProps) {
+  const [open, setOpen] = useState(() => {
+    if (typeof window !== "undefined")
+      return sessionStorage.getItem(`teacher_period_open_${period.id}`) === "true"
+    return false
+  })
+
+  useEffect(() => {
+    sessionStorage.setItem(`teacher_period_open_${period.id}`, String(open))
+  }, [open, period.id])
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({})
   const [attLoading, setAttLoading] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
@@ -63,7 +76,7 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
         .in("student_id", ids)
         .eq("date", todayStr())
         .eq("subject", period.subject)
-      
+
       if (data) {
         const map: Record<string, AttendanceRecord> = {}
         data.forEach((r: any) => { map[r.student_id] = r })
@@ -78,7 +91,7 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
   // the Schedules tab always shows current status even without opening the card.
   useEffect(() => {
     if (isToday && mine.length > 0) loadAttendance()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isToday, mine.length, period.subject])
 
   // Realtime attendance — always subscribed (not gated on `open`) so status
@@ -93,7 +106,7 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
       }, () => loadAttendance())
       .subscribe()
     return () => { supabase.removeChannel(sub) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isToday, period.id, period.subject, mine.length])
 
   const updateStatus = async (studentId: string, newStatus: AttendanceStatus) => {
@@ -139,9 +152,9 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
   const lateCount = Object.values(attendance).filter(r => r.status === "Late").length
   const scannedCount = Object.values(attendance).length
 
-  const rowBg   = dm ? "bg-slate-800/30 border-slate-700/50" : "bg-white border-slate-200"
+  const rowBg = dm ? "bg-slate-800/30 border-slate-700/50" : "bg-white border-slate-200"
   const divLine = dm ? "border-slate-700/40" : "border-slate-100"
-  const sub2    = dm ? "text-slate-400" : "text-slate-500"
+  const sub2 = dm ? "text-slate-400" : "text-slate-500"
   const headText = dm ? "text-white" : "text-slate-900"
 
   return (
@@ -177,16 +190,35 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
             </div>
           )}
         </div>
-        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+        <div className="flex flex-col items-end gap-2 flex-shrink-0">
           <span className={`text-[9px] font-black w-6 h-6 rounded-full border flex items-center justify-center ${dm ? "border-slate-700 text-slate-600" : "border-slate-200 text-slate-400"}`}>{idx + 1}</span>
-          <button onClick={() => setOpen(v => !v)} className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl border transition-all duration-200
-            ${open
-              ? (dm ? "bg-blue-500/15 border-blue-500/25 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600")
-              : (dm ? "border-slate-700/50 text-slate-400 hover:bg-slate-700/50" : "border-slate-200 text-slate-400 hover:bg-slate-100")
-            }`}>
-            <Users size={9} />{studLoad ? "…" : mine.length}
-            {open ? <ChevronUp size={9} /> : <ChevronDown size={9} />}
-          </button>
+          {/* Stacked on mobile, row on desktop */}
+          <div className="flex flex-col md:flex-row items-end md:items-center gap-1">
+            <button
+              onClick={() => exportSimpleMasterlist(period.section, mine, formatTeacherName(session.full_name, session.gender))}
+              title="Export Masterlist"
+              className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl border transition-all duration-200 active:scale-95
+                ${dm ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10" : "border-emerald-400/40 text-emerald-600 hover:bg-emerald-50"}`}
+            >
+              <FileDown size={9} /> List
+            </button>
+            <button
+              onClick={() => downloadSectionRecord(period.section, mine, schoolYear, formatTeacherName(session.full_name, session.gender))}
+              title="Export Grading Sheet "
+              className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl border transition-all duration-200 active:scale-95
+                ${dm ? "border-slate-600/50 text-slate-300 hover:bg-slate-700/50" : "border-slate-300 text-slate-600 hover:bg-slate-100"}`}
+            >
+              <FileDown size={9} /> Grading Sheet
+            </button>
+            <button onClick={() => setOpen(v => !v)} className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl border transition-all duration-200
+              ${open
+                ? (dm ? "bg-blue-500/15 border-blue-500/25 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600")
+                : (dm ? "border-slate-700/50 text-slate-400 hover:bg-slate-700/50" : "border-slate-200 text-slate-400 hover:bg-slate-100")
+              }`}>
+              <Users size={9} />{studLoad ? "…" : mine.length}
+              {open ? <ChevronUp size={9} /> : <ChevronDown size={9} />}
+            </button>
+          </div>
         </div>
       </div>
 

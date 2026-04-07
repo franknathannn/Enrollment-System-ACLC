@@ -5,6 +5,7 @@ import { updateApplicantStatus, deleteApplicant, updateStudentSection } from "@/
 import { toast } from "sonner"
 import { useTheme } from "@/hooks/useTheme"
 import { downloadSectionRecord } from "../api/exportSectionRecord"
+import { exportSimpleMasterlist } from "../api/exportMasterlist"
 import { toggleStudentLock } from "@/lib/actions/enrolled"
 
 export function useSections() {
@@ -146,7 +147,7 @@ export function useSections() {
       const { data: schedData } = await supabase.from('schedules').select('*')
       setAllSchedules(schedData || [])
 
-      const { data: tData } = await supabase.from('teachers').select('id, full_name, email, is_active, created_at').order('full_name', { ascending: true }).limit(5)
+      const { data: tData } = await supabase.from('teachers').select('id, full_name, email, is_active, created_at, gender').order('full_name', { ascending: true }).limit(5)
       setTeachers(tData || [])
     } catch (err: any) {
       console.error("Registrar Sync Error:", err?.message || err?.code || JSON.stringify(err) || err)
@@ -443,6 +444,31 @@ export function useSections() {
   const exportSectionCSV = useCallback((sectionName: string, students: any[], adviserName?: string) => {
     downloadSectionRecord(sectionName, students, config?.school_year, adviserName)
   }, [config])
+
+  const exportSectionList = useCallback((sectionName: string, students: any[], adviserName?: string) => {
+    exportSimpleMasterlist(`${sectionName} MASTERLIST`, students, adviserName)
+  }, [])
+
+  const exportGlobalMasterlist = useCallback((strand: "GAS" | "ICT" | "BOTH") => {
+    const allStudents: any[] = []
+    
+    if (strand === "ICT" || strand === "BOTH") {
+      ictSections.forEach(sec => {
+        const active = (sec.students || []).filter((s: any) => s.status === "Accepted" || s.status === "Approved")
+        allStudents.push(...active)
+      })
+    }
+    
+    if (strand === "GAS" || strand === "BOTH") {
+      gasSections.forEach(sec => {
+        const active = (sec.students || []).filter((s: any) => s.status === "Accepted" || s.status === "Approved")
+        allStudents.push(...active)
+      })
+    }
+    
+    const title = strand === "BOTH" ? "ICT & GAS MASTERLIST" : `${strand} MASTERLIST`
+    exportSimpleMasterlist(title, allStudents)
+  }, [ictSections, gasSections])
   
   const handleToggleLock = useCallback(async (id: string, isLocked: boolean) => {
     try {
@@ -591,7 +617,7 @@ export function useSections() {
     activeProfile, realtimeStatus, lastUpdate, ictSections, gasSections, ictLoad, gasLoad, currentSection, activeStudents,
     currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
-    handleConfirmUnenroll, handleSwitch, exportSectionCSV, fetchSections, handleToggleLock, updateStudentProfile,
+    handleConfirmUnenroll, handleSwitch, exportSectionCSV, exportSectionList, exportGlobalMasterlist, fetchSections, handleToggleLock, updateStudentProfile,
     navigateDocument, canNavigatePrev, canNavigateNext, handleAdviserChange
   }
 }

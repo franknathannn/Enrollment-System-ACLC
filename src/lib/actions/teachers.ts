@@ -23,6 +23,7 @@ export async function createTeacherWithAuth(form: {
   password: string
   phone?: string
   subject_specialization?: string
+  gender: string
 }) {
   const admin = createAdminClient()
   const email = form.email.trim().toLowerCase()
@@ -48,6 +49,7 @@ export async function createTeacherWithAuth(form: {
     password_hash:          "__supabase_auth__",
     phone:                  form.phone?.trim() || null,
     subject_specialization: form.subject_specialization?.trim() || null,
+    gender:                 form.gender,
     is_active:              true,
   }
 
@@ -73,6 +75,7 @@ export async function updateTeacherWithAuth(
     email?: string
     phone?: string | null
     subject_specialization?: string | null
+    gender?: string | null
     is_active?: boolean
     password?: string
   }
@@ -91,6 +94,7 @@ export async function updateTeacherWithAuth(
   if (updates.email !== undefined)                   payload.email = updates.email.trim().toLowerCase()
   if (updates.phone !== undefined)                   payload.phone = updates.phone?.trim() || null
   if (updates.subject_specialization !== undefined)  payload.subject_specialization = updates.subject_specialization?.trim() || null
+  if (updates.gender !== undefined)                  payload.gender = updates.gender || null
   if (updates.is_active !== undefined)               payload.is_active = updates.is_active
 
   const { error: updateErr } = await admin.from("teachers").update(payload).eq("id", id)

@@ -5,6 +5,7 @@ export interface TeacherSession {
   full_name: string
   email: string
   avatar_url?: string | null
+  gender?: string | null
 }
 
 export interface ScheduleRow {

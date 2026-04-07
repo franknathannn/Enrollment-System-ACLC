@@ -16,7 +16,7 @@ interface TeacherFormDialogProps {
 }
 
 const EMPTY = {
-  full_name: "", email: "", password: "", phone: "", subject_specialization: "", is_active: true as boolean,
+  full_name: "", email: "", password: "", phone: "", subject_specialization: "", gender: "", is_active: true as boolean,
 }
 
 export function TeacherFormDialog({ open, editing, isDarkMode, onSave, onClose }: TeacherFormDialogProps) {
@@ -36,6 +36,7 @@ export function TeacherFormDialog({ open, editing, isDarkMode, onSave, onClose }
         password:               "",
         phone:                  editing.phone ?? "",
         subject_specialization: editing.subject_specialization ?? "",
+        gender:                 editing.gender ?? "",
         is_active:              editing.is_active,
       })
       setAvatarUrl(editing.avatar_url ?? null)
@@ -82,6 +83,7 @@ export function TeacherFormDialog({ open, editing, isDarkMode, onSave, onClose }
     const e: Record<string, string> = {}
     if (!form.full_name.trim())  e.full_name = "Full name is required"
     if (!form.email.trim())      e.email     = "Email is required"
+    if (!form.gender)            e.gender    = "Gender is required"
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email format"
     if (!editing && !form.password.trim()) e.password = "Password is required for new accounts"
     if (form.password && form.password.length < 6) e.password = "Password must be at least 6 characters"
@@ -199,6 +201,21 @@ export function TeacherFormDialog({ open, editing, isDarkMode, onSave, onClose }
               </button>
             </div>
             {errors.password && <p className="text-[9px] text-red-400 mt-1 font-bold">{errors.password}</p>}
+          </div>
+
+          {/* Gender */}
+          <div className="sm:col-span-2">
+            <label className={label}>Biological Sex *</label>
+            <div className="relative">
+              <User size={13} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+              <select className={`${input} pl-9 appearance-none`}
+                value={form.gender} onChange={e => set("gender", e.target.value)}>
+                <option value="" disabled>Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+            {errors.gender && <p className="text-[9px] text-red-400 mt-1 font-bold">{errors.gender}</p>}
           </div>
 
           {/* Phone */}

@@ -34,7 +34,14 @@ export default function TeacherDashboard() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading,       setLoading]       = useState(true)
   const [studLoad,      setStudLoad]      = useState(false)
-  const [tab,           setTab]           = useState<TabName>("schedule")
+  const [tab,           setTab]           = useState<TabName>(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("teacher_active_tab")
+      if (saved && ["schedule","announcements","attendance","cutting","reports","calendar","chat"].includes(saved))
+        return saved as TabName
+    }
+    return "schedule"
+  })
   const [online,        setOnline]        = useState(true)
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [schoolYear,    setSchoolYear]    = useState("2025-2026")
@@ -77,7 +84,7 @@ export default function TeacherDashboard() {
       }
       const { data: teacher, error } = await supabase
         .from("teachers")
-        .select("id, full_name, email, avatar_url")
+        .select("id, full_name, email, avatar_url, gender")
         .eq("email", user.email!)
         .single()
       // PGRST116 = no rows — teacher record genuinely doesn't exist
@@ -96,6 +103,7 @@ export default function TeacherDashboard() {
         full_name:  teacher!.full_name,
         email:      teacher!.email,
         avatar_url: teacher!.avatar_url ?? null,
+        gender:     teacher!.gender ?? null,
       }
       setSession(sess)
       loadData(sess)
@@ -227,7 +235,26 @@ export default function TeacherDashboard() {
     return () => { supabase.removeChannel(chan) }
   }, [session, loadData])
 
+  useEffect(() => {
+    sessionStorage.setItem("teacher_active_tab", tab)
+  }, [tab])
+
+  // ── Scroll position — save on scroll, restore once loading finishes ────────
+  useEffect(() => {
+    const onScroll = () => sessionStorage.setItem("teacher_scroll_pos", window.scrollY.toString())
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
+  useEffect(() => {
+    if (loading || !session) return
+    const saved = sessionStorage.getItem("teacher_scroll_pos")
+    if (saved) setTimeout(() => window.scrollTo({ top: parseInt(saved), behavior: "instant" }), 60)
+  }, [loading, session])
+
   const handleLogout = async () => {
+    sessionStorage.removeItem("teacher_active_tab")
+    sessionStorage.removeItem("teacher_scroll_pos")
     await supabase.auth.signOut()
     router.push("/teacher/login")
   }
@@ -245,7 +272,7 @@ export default function TeacherDashboard() {
   const sub  = dm ? "text-slate-400" : "text-slate-500"
 
   const tabBtn = (active: boolean) =>
-    `flex items-center justify-center md:justify-start gap-1.5 w-full md:w-auto text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 md:px-5 py-2.5 rounded-2xl transition-all duration-200
+    `flex items-center justify-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-widest py-2.5 rounded-2xl transition-all duration-200 w-full relative
      ${active
        ? "text-white bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/25"
        : (dm ? "text-slate-500 hover:text-slate-200 hover:bg-slate-700/50" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/60")}`
@@ -287,36 +314,34 @@ export default function TeacherDashboard() {
           onAvatarUpdate={(url) => setSession(prev => prev ? { ...prev, avatar_url: url } : prev)}
         />
 
-        {/* Tab switcher — 2×3 grid on mobile, single row on desktop */}
-        <div className="md:overflow-x-auto md:pb-1">
-        <div className={`grid grid-cols-3 md:flex md:flex-nowrap md:items-center md:w-fit gap-1 p-1.5 rounded-2xl border backdrop-blur-sm ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`}>
+        {/* Tab switcher — 7 equal columns on all sizes, labels hidden on mobile */}
+        <div className={`grid gap-1 p-1.5 rounded-2xl border backdrop-blur-sm w-full ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`} style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1.5fr 1fr 0.5fr" }}>
           <button className={tabBtn(tab === "schedule")} onClick={() => setTab("schedule")}>
-            <CalendarDays size={11} /> Schedule
+            <CalendarDays size={13} /><span className="hidden md:inline">Schedule</span>
           </button>
           <button className={tabBtn(tab === "attendance")} onClick={() => setTab("attendance")}>
-            <QrCode size={11} /> Attendance
+            <QrCode size={13} /><span className="hidden md:inline">Attendance</span>
           </button>
           <button className={tabBtn(tab === "cutting")} onClick={() => setTab("cutting")}>
-            <AlertTriangle size={11} /> Cutting
+            <AlertTriangle size={13} /><span className="hidden md:inline">Cutting</span>
           </button>
           <button className={tabBtn(tab === "reports")} onClick={() => setTab("reports")}>
-            <BarChart2 size={11} /> Reports
+            <BarChart2 size={13} /><span className="hidden md:inline">Reports</span>
           </button>
           <button className={tabBtn(tab === "announcements")} onClick={() => setTab("announcements")}>
-            <Bell size={11} /> Announcements
+            <Bell size={13} /><span className="hidden md:inline">Announcements</span>
             {pinnedCount > 0 && (
-              <span className="bg-amber-500 text-white text-[7px] font-black rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-amber-500/30">
+              <span className="absolute top-1 right-1 bg-amber-500 text-white text-[7px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center">
                 {pinnedCount}
               </span>
             )}
           </button>
           <button className={tabBtn(tab === "calendar")} onClick={() => setTab("calendar")}>
-            <Calendar size={11} /> Calendar
+            <Calendar size={13} /><span className="hidden md:inline">Calendar</span>
           </button>
           <button className={tabBtn(tab === "chat")} onClick={() => setTab("chat")}>
-            <MessageSquare size={11} /> Chat
+            <MessageSquare size={13} />
           </button>
-        </div>
         </div>
 
         {/* Tab content */}
@@ -328,6 +353,8 @@ export default function TeacherDashboard() {
             colorMap={colorMap}
             dm={dm}
             onStudentClick={setSelectedStudent}
+            session={session}
+            schoolYear={schoolYear}
           />
         )}
 

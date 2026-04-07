@@ -10,15 +10,31 @@ interface FilteringDependencies {
 
 export function useStudentFiltering({ students, processingIds, processingIdsRef, setHiddenRows, setExitingRows }: FilteringDependencies) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [filter, setFilter] = useState<"Pending" | "Accepted" | "Rejected">("Pending")
+  const [filter, setFilter] = useState<"Pending" | "Accepted" | "Rejected">(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("applicants_filter")
+      if (saved === "Pending" || saved === "Accepted" || saved === "Rejected") return saved
+    }
+    return "Pending"
+  })
   const [gradeLevelFilter, setGradeLevelFilter] = useState<"ALL" | "11" | "12">("ALL")
   const [sortBy, setSortBy] = useState<string>("alpha")
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("applicants_page")
+      const n = parseInt(saved ?? "1")
+      return isNaN(n) || n < 1 ? 1 : n
+    }
+    return 1
+  })
   const itemsPerPage = 5
 
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set())
-  
+
+  useEffect(() => { sessionStorage.setItem("applicants_filter", filter) }, [filter])
+  useEffect(() => { sessionStorage.setItem("applicants_page", String(currentPage)) }, [currentPage])
+
   // Track which students have been seen (and potentially animated) in each tab
   const seenInTabRef = useRef<Map<string, Set<string>>>(new Map())
   

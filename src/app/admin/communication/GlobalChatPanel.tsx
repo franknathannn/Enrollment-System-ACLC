@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils"
 import { useTheme } from "@/hooks/useTheme"
 import { themeColors } from "@/lib/themeColors"
 import { toast } from "sonner"
+import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
 const MAX_FILE_SIZE = 30 * 1024 * 1024
 
@@ -96,7 +97,7 @@ const GlobalBubble = memo(({
   msg, currentUserId, isDarkMode,
   editingId, editContent, setEditContent,
   onSaveEdit, onStartEdit, onCancelEdit,
-  onDelete, onToggleReaction,
+  onDelete, onToggleReaction, teacherGenderMap,
 }: {
   msg: any; currentUserId: string; isDarkMode: boolean
   editingId: string | null; editContent: string
@@ -106,12 +107,17 @@ const GlobalBubble = memo(({
   onCancelEdit: () => void
   onDelete: (id: any) => void
   onToggleReaction: (msgId: any, emoji: string) => void
+  teacherGenderMap?: Record<string, string>
 }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const isMe         = String(msg.sender_id) === String(currentUserId)
   const isOptimistic = String(msg.id).startsWith("optimistic")
   const isAdmin      = msg.sender_type === "admin"
-  const name         = msg.sender_name || (isAdmin ? "Admin" : "Teacher")
+  
+  let name = msg.sender_name || (isAdmin ? "Admin" : "Teacher")
+  if (!isAdmin && teacherGenderMap && msg.sender_id) {
+    name = formatTeacherName(name, teacherGenderMap[msg.sender_id])
+  }
   const date         = msg.created_at ? format(new Date(msg.created_at), "MMM d, h:mm a") : "Sending…"
   const isEditing    = editingId === String(msg.id)
 
@@ -162,7 +168,7 @@ const GlobalBubble = memo(({
               <button onClick={onCancelEdit} className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-xl hover:scale-110 transition-transform"><X size={14} /></button>
             </div>
           ) : (
-            <div className={cn("flex flex-col", isMe ? "items-end" : "items-start")}>
+            <div className={cn("flex flex-col w-fit max-w-full", isMe ? "items-end" : "items-start")}>
               {msg.content && (
                 <div className={cn("p-3 md:p-4 rounded-[20px] text-[13px] font-medium leading-relaxed shadow-sm border break-words whitespace-pre-wrap",
                   isMe ? "rounded-tr-sm" : "rounded-tl-sm")}
@@ -176,7 +182,7 @@ const GlobalBubble = memo(({
               {msg.attachment_url && <Attachment msg={msg} isMe={isMe} />}
 
               {hasReactions && (
-                <div className={cn("flex flex-wrap gap-1 mt-1", isMe ? "justify-end" : "justify-start")}>
+                <div className={cn("flex flex-wrap gap-1 mt-1 max-w-full", isMe ? "justify-end" : "justify-start")}>
                   {Object.entries(grouped).map(([emoji, data]) => (
                     <TooltipProvider key={emoji}>
                       <Tooltip delayDuration={0}>
@@ -276,6 +282,7 @@ export function GlobalChatPanel({ currentUser }: GlobalChatPanelProps) {
   const scrollRef    = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const avatarMapRef = useRef<Record<string, string | null>>({})
+  const [teacherGenderMap, setTeacherGenderMap] = useState<Record<string, string>>({})
 
   // Load anonymous preference
   useEffect(() => {
@@ -297,11 +304,14 @@ export function GlobalChatPanel({ currentUser }: GlobalChatPanelProps) {
       .then(({ data }) => { if (data) setAdminProfile(data) })
 
     Promise.all([
-      supabase.from("teachers").select("full_name, avatar_url"),
+      supabase.from("teachers").select("id, full_name, avatar_url, gender"),
       supabase.from("admin_profiles").select("full_name, avatar_url"),
     ]).then(([{ data: teachers }, { data: admins }]) => {
       teachers?.forEach(t => { if (t.full_name) avatarMapRef.current[t.full_name] = t.avatar_url })
       admins?.forEach(a => { if (a.full_name) avatarMapRef.current[a.full_name] = a.avatar_url })
+      const gMap: Record<string, string> = {}
+      teachers?.forEach(t => { if (t.id && t.gender) gMap[t.id] = t.gender })
+      setTeacherGenderMap(gMap)
     })
   }, [currentUser])
 
@@ -432,7 +442,7 @@ export function GlobalChatPanel({ currentUser }: GlobalChatPanelProps) {
       </div>
 
       {/* messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 custom-scrollbar">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-5 custom-scrollbar">
         {loading ? (
           <div className="flex items-center justify-center py-16"><Loader2 size={22} className="animate-spin text-blue-500" /></div>
         ) : messages.length === 0 ? (
@@ -448,6 +458,7 @@ export function GlobalChatPanel({ currentUser }: GlobalChatPanelProps) {
               setEditContent={setEditContent}
               onSaveEdit={saveEdit} onStartEdit={startEdit} onCancelEdit={cancelEdit}
               onDelete={deleteMsg} onToggleReaction={toggleReaction}
+              teacherGenderMap={teacherGenderMap}
             />
           ))
         )}

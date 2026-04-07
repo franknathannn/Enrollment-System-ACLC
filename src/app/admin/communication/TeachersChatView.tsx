@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback, memo } from "react"
+import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react"
 import { supabase } from "@/lib/supabase/admin-client"
 import {
   Send, User as UserIcon, Loader2, MessageSquare,
@@ -21,6 +21,7 @@ import { themeColors } from "@/lib/themeColors"
 import { toast } from "sonner"
 import { GlobalChatPanel } from "./GlobalChatPanel"
 import { AdminChatPanel } from "./AdminChatPanel"
+import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
 const MAX_FILE_SIZE = 30 * 1024 * 1024
 
@@ -101,19 +102,24 @@ const MessageBubble = memo(({
   msg, currentUserId, isDarkMode,
   editingId, editContent, setEditContent,
   onSaveEdit, onStartEdit, onCancelEdit,
-  onDelete, onToggleReaction,
+  onDelete, onToggleReaction, teacherGenderMap,
 }: {
   msg: any; currentUserId: string; isDarkMode: boolean
   editingId: string | null; editContent: string
   setEditContent: (v: string) => void
   onSaveEdit: () => void; onStartEdit: (m: any) => void; onCancelEdit: () => void
   onDelete: (id: any) => void; onToggleReaction: (msgId: any, emoji: string) => void
+  teacherGenderMap?: Record<string, string>
 }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const isMe         = String(msg.sender_id) === String(currentUserId)
   const isOptimistic = String(msg.id).startsWith("optimistic")
   const isAdmin      = msg.sender_type === "admin"
-  const name         = msg.sender_name || (isAdmin ? "Admin" : "Teacher")
+  
+  let name = msg.sender_name || (isAdmin ? "Admin" : "Teacher")
+  if (!isAdmin && teacherGenderMap && msg.sender_id) {
+    name = formatTeacherName(name, teacherGenderMap[msg.sender_id])
+  }
   const date         = msg.created_at ? format(new Date(msg.created_at), "MMM d, h:mm a") : "Sending…"
   const isEditing    = editingId === String(msg.id)
 
@@ -281,7 +287,7 @@ const TeacherListItem = ({ teacher, selected, pinned, isDarkMode, unread, lastPr
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-1">
-          <p className={cn("text-xs font-black truncate", selected ? "text-white" : "")}>{teacher.full_name}</p>
+          <p className={cn("text-xs font-black truncate", selected ? "text-white" : "")}>{formatTeacherName(teacher.full_name, teacher.gender)}</p>
           {(unread ?? 0) > 0 && !selected && (
             <span className="shrink-0 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-sm">
               {(unread ?? 0) > 99 ? "99+" : unread}
@@ -314,7 +320,13 @@ const TeacherListItem = ({ teacher, selected, pinned, isDarkMode, unread, lastPr
 export function TeachersChatView() {
   const { isDarkMode } = useTheme()
 
-  const [selectedMode,      setSelectedMode]      = useState<"global" | "admin_global" | "dm" | "admin_dm">("global")
+  const [selectedMode,      setSelectedMode]      = useState<"global" | "admin_global" | "dm" | "admin_dm">(() => {
+    if (typeof window !== "undefined") {
+      const s = sessionStorage.getItem("messenger_mode")
+      if (s === "global" || s === "admin_global" || s === "dm" || s === "admin_dm") return s
+    }
+    return "global"
+  })
   const [selectedTeacher,   setSelectedTeacher]   = useState<any | null>(null)
   const [selectedOtherAdmin,setSelectedOtherAdmin] = useState<any | null>(null)
   const [teachers,          setTeachers]          = useState<any[]>([])
@@ -340,6 +352,32 @@ export function TeachersChatView() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const lastReadRef  = useRef<Record<string, string>>({})
   const [lastMessageMap, setLastMessageMap] = useState<Record<string, { lastAt: string; preview: string; unread: number }>>({})
+
+  // Persist mode + selected IDs
+  useEffect(() => { sessionStorage.setItem("messenger_mode", selectedMode) }, [selectedMode])
+  useEffect(() => {
+    if (selectedTeacher) sessionStorage.setItem("messenger_teacher_id", selectedTeacher.id)
+  }, [selectedTeacher])
+  useEffect(() => {
+    if (selectedOtherAdmin) sessionStorage.setItem("messenger_admin_id", selectedOtherAdmin.id)
+  }, [selectedOtherAdmin])
+
+  // Restore selected teacher/admin once lists are loaded
+  const messengerRestoredRef = useRef(false)
+  useEffect(() => {
+    if (messengerRestoredRef.current || loadingTeachers || loadingOtherAdmins) return
+    messengerRestoredRef.current = true
+    const savedMode = sessionStorage.getItem("messenger_mode")
+    if (savedMode === "dm") {
+      const tid = sessionStorage.getItem("messenger_teacher_id")
+      const t = teachers.find(t => t.id === tid)
+      if (t) setSelectedTeacher(t)
+    } else if (savedMode === "admin_dm") {
+      const aid = sessionStorage.getItem("messenger_admin_id")
+      const a = otherAdmins.find(a => a.id === aid)
+      if (a) setSelectedOtherAdmin(a)
+    }
+  }, [loadingTeachers, loadingOtherAdmins, teachers, otherAdmins])
 
   useEffect(() => {
     setIsAnonymous(localStorage.getItem("admin_chat_anonymous") === "true")
@@ -441,7 +479,7 @@ export function TeachersChatView() {
   }, [currentUser])
 
   useEffect(() => {
-    supabase.from("teachers").select("id, full_name, email, avatar_url").eq("is_active", true).order("full_name")
+    supabase.from("teachers").select("id, full_name, email, avatar_url, gender").eq("is_active", true).order("full_name")
       .then(({ data }) => { setTeachers(data ?? []); setLoadingTeachers(false) })
   }, [])
 
@@ -713,6 +751,14 @@ export function TeachersChatView() {
   const bg     = isDarkMode ? "rgba(15,23,42,0.9)" : "rgba(255,255,255,0.9)"
   const border = isDarkMode ? "rgba(255,255,255,0.05)" : "rgb(241,245,249)"
 
+  const teacherGenderMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const t of teachers) {
+      if (t.gender) map[t.id] = t.gender
+    }
+    return map
+  }, [teachers])
+
   return (
     <div className="flex-1 rounded-[32px] md:rounded-[48px] shadow-2xl backdrop-blur-xl overflow-hidden flex relative transition-colors duration-500"
       style={{ backgroundColor: bg, border: "1px solid", borderColor: border }}>
@@ -903,6 +949,7 @@ export function TeachersChatView() {
                     editingId={editingId} editContent={editContent} setEditContent={setEditContent}
                     onSaveEdit={saveEdit} onStartEdit={startEdit} onCancelEdit={cancelEdit}
                     onDelete={deleteMsg} onToggleReaction={toggleReaction}
+                    teacherGenderMap={teacherGenderMap}
                   />
                 ))
               )}
@@ -954,7 +1001,7 @@ export function TeachersChatView() {
                 }
               </div>
               <div className="min-w-0">
-                <p className={cn("text-sm font-black truncate", isDarkMode ? "text-white" : "text-slate-900")}>{selectedTeacher.full_name}</p>
+                <p className={cn("text-sm font-black truncate", isDarkMode ? "text-white" : "text-slate-900")}>{formatTeacherName(selectedTeacher.full_name, selectedTeacher.gender)}</p>
                 <p className={cn("text-[10px] truncate", isDarkMode ? "text-slate-500" : "text-slate-400")}>{selectedTeacher.email}</p>
               </div>
             </div>
@@ -980,6 +1027,7 @@ export function TeachersChatView() {
                       editingId={editingId} editContent={editContent} setEditContent={setEditContent}
                       onSaveEdit={saveEdit} onStartEdit={startEdit} onCancelEdit={cancelEdit}
                       onDelete={deleteMsg} onToggleReaction={toggleReaction}
+                      teacherGenderMap={teacherGenderMap}
                     />
                   )
                 })
@@ -1017,7 +1065,7 @@ export function TeachersChatView() {
                 </button>
 
                 <Input
-                  placeholder={isUploading ? "Uploading…" : `Message ${selectedTeacher.full_name}…`}
+                  placeholder={isUploading ? "Uploading…" : `Message ${formatTeacherName(selectedTeacher.full_name, selectedTeacher.gender)}…`}
                   value={newMessage} onChange={e => setNewMessage(e.target.value)} disabled={isUploading}
                   className={cn("h-12 rounded-[20px] border-slate-200 dark:border-white/10 font-bold px-4 focus:ring-2 focus:ring-blue-600 text-sm shadow-inner",
                     isDarkMode ? "text-white" : "text-slate-900")}
