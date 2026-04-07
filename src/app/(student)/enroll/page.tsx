@@ -24,6 +24,101 @@ const IS_MOBILE =
   typeof window !== "undefined" &&
   (window.innerWidth < 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent))
 
+// ── INTERACTIVE LAG-FREE WRAPPERS ───────────────────────────────────────────
+function MagneticButton({ children, className, disabled }: any) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+
+  const handleMouse = (e: React.MouseEvent) => {
+    if (disabled || !ref.current) return
+    const { clientX, clientY } = e
+    const { height, width, left, top } = ref.current.getBoundingClientRect()
+    const middleX = clientX - (left + width / 2)
+    const middleY = clientY - (top + height / 2)
+    setPosition({ x: middleX * 0.12, y: middleY * 0.12 })
+  }
+
+  const reset = () => setPosition({ x: 0, y: 0 })
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={handleMouse}
+      onMouseLeave={reset}
+      className={className}
+      style={{
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        transition: position.x === 0 ? "transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)" : "none"
+      }}>
+      {children}
+    </div>
+  )
+}
+
+function TiltCard({ children, className, disabled }: any) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [rotation, setRotation] = useState({ x: 0, y: 0 })
+
+  const handleMouse = (e: React.MouseEvent) => {
+    if (disabled || !ref.current) return
+    const { clientX, clientY } = e
+    const { height, width, left, top } = ref.current.getBoundingClientRect()
+    const x = (clientX - left) / width - 0.5
+    const y = (clientY - top) / height - 0.5
+    setRotation({ x: -y * 8, y: x * 8 }) // max 8 degrees tilt
+  }
+
+  const reset = () => setRotation({ x: 0, y: 0 })
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={handleMouse}
+      onMouseLeave={reset}
+      className={className}
+      style={{
+        transform: `perspective(1000px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
+        transition: rotation.x === 0 ? "transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)" : "none",
+        transformStyle: "preserve-3d"
+      }}>
+      {children}
+    </div>
+  )
+}
+
+function DecryptText({ text, disabled }: { text: string, disabled?: boolean }) {
+  const [display, setDisplay] = useState(text)
+  const intervalRef = useRef<any>(null)
+
+  useEffect(() => { setDisplay(text) }, [text])
+
+  const startDecrypt = () => {
+    if (disabled) return
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+"
+    let iter = 0
+    clearInterval(intervalRef.current)
+    intervalRef.current = setInterval(() => {
+      setDisplay(text.split("").map((l, i) => {
+        if (i < iter || l === " ") return l
+        return chars[Math.floor(Math.random() * chars.length)]
+      }).join(""))
+      if (iter >= text.length) clearInterval(intervalRef.current)
+      iter += 1 / 2
+    }, 20)
+  }
+
+  const reset = () => {
+    clearInterval(intervalRef.current)
+    setDisplay(text)
+  }
+
+  return (
+    <span className="inline-block cursor-default" onMouseEnter={startDecrypt} onMouseLeave={reset}>
+      {display}
+    </span>
+  )
+}
+
 // ── AESTHETIC VFD & RADAR COMPONENTS ─────────────────────────────────────────
 function IdentityBarcode({ seed, isDark }: { seed: string; isDark: boolean }) {
   const [bars, setBars] = useState<{ h: number, opacity: number }[]>([])
@@ -65,15 +160,10 @@ function IdentityBarcode({ seed, isDark }: { seed: string; isDark: boolean }) {
 function RadarGlobe({ isDark }: { isDark: boolean }) {
   return (
     <div className="relative w-24 h-24 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity cursor-crosshair">
-      {/* Outer spinning dashed ring */}
       <div className={cn("absolute inset-0 rounded-full border border-dashed animate-[spin_10s_linear_infinite]", isDark ? "border-blue-400/30" : "border-blue-600/40")} />
-      {/* Inner spinning dotted ring reverse */}
       <div className={cn("absolute inset-3 rounded-full border border-dotted animate-[spin_15s_linear_infinite_reverse]", isDark ? "border-blue-500/40" : "border-indigo-600/50")} />
-      {/* Radar sweep line */}
       <div className={cn("absolute w-full h-[1px] animate-[spin_4s_linear_infinite]", isDark ? "bg-gradient-to-r from-transparent via-blue-500 to-transparent" : "bg-gradient-to-r from-transparent via-blue-600 to-transparent")} />
-      {/* Core Node */}
       <div className={cn("w-2 h-2 rounded-full", isDark ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,1)]" : "bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,1)]")} />
-      {/* Pulse */}
       <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-blue-500" style={{ animationDuration: '3s' }} />
     </div>
   )
@@ -82,38 +172,86 @@ function RadarGlobe({ isDark }: { isDark: boolean }) {
 // ── SIDEBAR COMPONENTS ───────────────────────────────────────────────────────
 function LiveNodeSidebar({ currentStep, isDark, formData }: any) {
   const steps = [
-    { id: 1, label: "Identity & Core", desc: formData.first_name ? `${formData.first_name} ${formData.last_name}` : "Pending" },
-    { id: 2, label: "Academic Profile", desc: formData.strand ? `Strand: ${formData.strand}` : "Pending" },
-    { id: 3, label: "Family / Guardian", desc: formData.guardian_first_name ? `Contact: ${formData.guardian_first_name}` : "Pending" },
-    { id: 4, label: "Digital Docs", desc: "Uploads" },
-    { id: 5, label: "Final Review", desc: "Verification" },
+    { id: 1, label: "Identity Verification", desc: formData.first_name ? `${formData.first_name} ${formData.last_name}` : "Pending Data" },
+    { id: 2, label: "Academic Profiling", desc: formData.strand ? `Strand: ${formData.strand}` : "Awaiting Choice" },
+    { id: 3, label: "Family Information", desc: formData.guardian_first_name ? `Contact: ${formData.guardian_first_name}` : "Pending Info" },
+    { id: 4, label: "Document Upload", desc: "Verifying Uploads" },
+    { id: 5, label: "Review & Submit", desc: "Pre-Submission" },
   ]
 
   return (
-    <div className="hidden xl:flex flex-col sticky top-12 left-0 h-[calc(100vh-6rem)] pt-20 pr-4 w-[240px]">
-      <p className={cn("text-[10px] font-black uppercase tracking-[0.3em] mb-12", isDark ? "text-slate-500" : "text-slate-400")}>
-        Live Node
-      </p>
-      <div className={cn("relative space-y-10 border-l ml-3", isDark ? "border-white/10" : "border-slate-200")}>
-        {steps.map(step => {
-          const isActive = step.id === currentStep;
-          const isDone = step.id < currentStep;
-          return (
-            <div key={step.id} className="relative pl-8 group">
-              <div className={cn(
-                "absolute top-1/2 -translate-y-1/2 -left-[5px] w-2.5 h-2.5 rounded-full transition-all duration-300",
-                isActive ? "bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,1)] scale-[1.3]"
-                  : isDone ? (isDark ? "bg-blue-900" : "bg-blue-300")
-                    : (isDark ? "bg-slate-800" : "bg-slate-200")
-              )} />
-              <p className={cn("text-[11px] font-black uppercase tracking-widest transition-colors", isActive ? (isDark ? "text-white" : "text-slate-900") : (isDark ? "text-slate-500" : "text-slate-400"))}>{step.label}</p>
-              <p className={cn("text-[10px] font-bold mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis", isDark ? "text-blue-400" : "text-blue-600")}>{step.desc}</p>
+    <div className="hidden xl:flex flex-col w-[280px] pr-8 relative border-r border-blue-500/5">
+      <div className="sticky top-32 space-y-12">
+        <div className="flex items-center gap-3 pl-4">
+          <div className={cn("w-2 h-2 rounded-full animate-pulse", isDark ? "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" : "bg-blue-600")} />
+          <p className={cn("text-[10px] font-black uppercase tracking-[0.4em]", isDark ? "text-slate-500" : "text-slate-400")}>
+            <DecryptText text="LIVE SEQUENCE" />
+          </p>
+        </div>
+
+        <div className="relative space-y-1 ml-4">
+          {steps.map(step => {
+            const isActive = step.id === currentStep;
+            const isDone = step.id < currentStep;
+            return (
+              <div key={step.id} className="group relative">
+                <div className={cn(
+                  "relative pl-10 py-5 rounded-2xl border transition-all duration-500",
+                  isActive ? (isDark ? "bg-white/[0.03] border-blue-500/30 translate-x-2" : "bg-blue-50 border-blue-200 translate-x-2")
+                    : "bg-transparent border-transparent"
+                )}>
+                  {/* Node Line Connector */}
+                  {step.id < 5 && (
+                    <div className={cn(
+                      "absolute left-[13px] top-10 w-[1px] h-12",
+                      isDone ? "bg-blue-500" : (isDark ? "bg-white/5" : "bg-slate-200")
+                    )} />
+                  )}
+
+                  {/* Node Point */}
+                  <div className={cn(
+                    "absolute left-[9px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-all duration-500 z-10",
+                    isActive ? "bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,1)] scale-[1.3]"
+                      : isDone ? (isDark ? "bg-blue-400" : "bg-blue-600")
+                        : (isDark ? "bg-slate-800" : "bg-slate-300")
+                  )} />
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between pr-4">
+                      <p className={cn(
+                        "text-[10px] font-black uppercase tracking-widest transition-colors",
+                        isActive ? (isDark ? "text-white" : "text-slate-900") : (isDark ? "text-slate-500" : "text-slate-400")
+                      )}>
+                        {step.label}
+                      </p>
+                      {isActive && (
+                        <span className={cn("text-[8px] font-black tracking-widest px-2 py-0.5 rounded-md", isDark ? "bg-blue-500/20 text-blue-300" : "bg-blue-600 text-white")}>
+                          0{step.id}
+                        </span>
+                      )}
+                    </div>
+                    <p className={cn(
+                      "text-[9px] font-bold transition-all duration-500",
+                      isActive ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2",
+                      isDark ? "text-blue-400" : "text-blue-600"
+                    )}>
+                      {step.desc}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="pb-10 pl-4 space-y-6">
+          <IdentityBarcode seed={formData.last_name || "ACLC"} isDark={isDark} />
+          <div className="flex items-center gap-4">
+            <RadarGlobe isDark={isDark} />
+            <div className="space-y-1">
             </div>
-          )
-        })}
-      </div>
-      <div className="mt-auto pb-10 pl-4">
-        <RadarGlobe isDark={isDark} />
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -125,50 +263,56 @@ function ContextSidebar({ currentStep, isDark, formData }: any) {
   if (currentStep === 1) {
     content = (
       <div className="space-y-4">
-        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Personal Information</h4>
-        <p className={cn("text-[11px] leading-relaxed", isDark ? "text-slate-400" : "text-slate-500")}>Enter your legal name exactly as it appears on your PSA birth certificate to avoid records issues.</p>
+        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Personal Profile</h4>
+        <p className={cn("text-[11px] leading-relaxed", isDark ? "text-slate-400" : "text-slate-500")}>Legal identity verification. Use PSA-verified documentation for all name entries.</p>
+        <div className={cn("p-4 rounded-2xl border tech-reticle", isDark ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200 shadow-sm")}>
+          <p className={cn("text-[8px] font-black uppercase tracking-widest mb-2", isDark ? "text-blue-400" : "text-blue-600")}>System Hint</p>
+          <p className={cn("text-[10px] font-medium leading-relaxed", isDark ? "text-slate-300" : "text-slate-600")}>The red marks indicates that the field is required.</p>
+        </div>
       </div>
     )
   } else if (currentStep === 2) {
     content = (
       <div className="space-y-4">
-        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Academic Background</h4>
-        <p className={cn("text-[11px] leading-relaxed mb-4", isDark ? "text-slate-400" : "text-slate-500")}>Selecting your Strand maps out your core subjects for the next 2 years.</p>
-        <div className={cn("p-4 rounded-xl border transition-all duration-500", formData.strand ? (isDark ? "bg-white/5 border-white/20" : "bg-slate-50 border-slate-300") : (isDark ? "border-white/5 opacity-50" : "border-slate-100 opacity-50"))}>
-          <p className={cn("text-[9px] font-black uppercase tracking-widest text-blue-500 mb-1")}>Selected</p>
-          <p className={cn("text-sm font-black uppercase", isDark ? "text-white" : "text-slate-900")}>{formData.strand || "AWAITING"}</p>
-        </div>
+        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Strand Selection</h4>
+        <p className={cn("text-[11px] leading-relaxed mb-4", isDark ? "text-slate-400" : "text-slate-500")}>Your academic track determines your career path and college specialization.</p>
+        <TiltCard className={cn("p-5 rounded-2xl border transition-all duration-500", formData.strand ? (isDark ? "bg-[#020617] border-blue-500/40" : "bg-white border-blue-300 shadow-lg shadow-blue-500/10") : (isDark ? "border-white/5 opacity-50" : "border-slate-100 opacity-50"))}>
+          <div className="flex items-center justify-between mb-3">
+            <p className={cn("text-[9px] font-black uppercase tracking-widest text-blue-500")}>Target Track</p>
+            <div className={cn("w-2 h-2 rounded-full", formData.strand ? "bg-blue-500 animate-pulse" : "bg-slate-700")} />
+          </div>
+          <p className={cn("text-lg font-black uppercase italic tracking-tighter", isDark ? "text-white" : "text-slate-900")}>{formData.strand || "PENDING..."}</p>
+        </TiltCard>
       </div>
     )
   } else if (currentStep === 3) {
     content = (
       <div className="space-y-4">
-        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Guardian Contacts</h4>
-        <p className={cn("text-[11px] leading-relaxed", isDark ? "text-slate-400" : "text-slate-500")}>Emergency contacts are Crucial. For Emergency Purposes.</p>
+        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Guardian Contact</h4>
+        <p className={cn("text-[11px] leading-relaxed", isDark ? "text-slate-400" : "text-slate-500")}>The specified guardian will be the primary point of contact for emergency purposes and administrative updates.</p>
       </div>
     )
   } else if (currentStep === 4) {
     const isJHS = formData.student_category === "JHS Graduate";
     const docs = [
-      { name: "2x2 Identification", val: formData.profile_2x2_url },
-      { name: "Birth Certificate", val: formData.birth_certificate_url },
+      { name: "2x2 Portrait", val: formData.profile_2x2_url },
+      { name: "Birth Cert", val: formData.birth_certificate_url },
     ]
     if (isJHS) {
-      docs.push({ name: "F-138 (Report Card)", val: formData.form_138_url })
-      docs.push({ name: "Cert of Moral", val: formData.good_moral_url })
+      docs.push({ name: "F-138 Card", val: formData.form_138_url })
+      docs.push({ name: "Good Moral", val: formData.good_moral_url })
     } else {
       docs.push({ name: "ALS COR", val: formData.cor_url })
       docs.push({ name: "ALS Diploma", val: formData.diploma_url })
-      docs.push({ name: "AF5 Form", val: formData.af5_url })
     }
     content = (
       <div className="space-y-4 w-full">
-        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Document Scan</h4>
+        <h4 className={cn("text-xs font-black uppercase tracking-widest", isDark ? "text-white" : "text-slate-900")}>Asset Repository</h4>
         <div className="space-y-2 mt-4 w-full">
           {docs.map((d, i) => (
-            <div key={i} className={cn("flex justify-between items-center p-3 rounded-xl border w-full", isDark ? "border-white/5 bg-white/[0.02]" : "border-slate-200 bg-white")}>
-              <span className={cn("text-[9px] font-bold uppercase", isDark ? "text-slate-400" : "text-slate-500")}>{d.name}</span>
-              <div className={cn("w-2 h-2 rounded-full", d.val ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-slate-300")} />
+            <div key={i} className={cn("flex justify-between items-center p-3 rounded-xl border w-full group transition-all duration-300 hover:border-blue-500/50", isDark ? "border-white/5 bg-white/[0.02]" : "border-slate-200 bg-white")}>
+              <span className={cn("text-[9px] font-black uppercase tracking-widest", isDark ? "text-slate-500 group-hover:text-white" : "text-slate-500 group-hover:text-slate-900")}>{d.name}</span>
+              <div className={cn("w-2 h-2 rounded-full transition-all duration-300", d.val ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-slate-300")} />
             </div>
           ))}
         </div>
@@ -177,24 +321,42 @@ function ContextSidebar({ currentStep, isDark, formData }: any) {
   } else if (currentStep === 5) {
     content = (
       <div className="space-y-4">
-        <h4 className={cn("text-xs font-black uppercase tracking-widest text-emerald-500")}>Final Validation</h4>
-        <p className={cn("text-[11px] leading-relaxed", isDark ? "text-slate-400" : "text-slate-500")}>System is preparing block sequence. Verify all forms before secure commit.</p>
+        <h4 className={cn("text-xs font-black uppercase tracking-widest text-emerald-500")}>Review & Submit</h4>
+        <p className={cn("text-[11px] leading-relaxed", isDark ? "text-slate-400" : "text-slate-500")}>Review all data blocks. Once submitted, modification requires administrative approval.</p>
+        <div className={cn("p-5 rounded-2xl border-2 border-dashed", isDark ? "border-white/10" : "border-slate-200")}>
+          <div className="flex gap-2 mb-3">
+            {[1, 2, 3].map(i => <div key={i} className="w-4 h-1 rounded-full bg-blue-500/30" />)}
+          </div>
+          <p className={cn("text-[9px] font-bold uppercase italic", isDark ? "text-slate-600" : "text-slate-400")}>Ready for commit...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="hidden xl:flex flex-col sticky top-12 right-0 h-[calc(100vh-6rem)] pt-20 pl-6 w-[240px]">
-      <p className={cn("text-[10px] font-black uppercase tracking-[0.3em] mb-12 text-right", isDark ? "text-slate-500" : "text-slate-400")}>
-        Application Description
-      </p>
-      {content}
-      <div className="mt-auto flex justify-end pb-10">
-        <RadarGlobe isDark={isDark} />
+    <div className="hidden xl:flex flex-col w-[280px] pl-8 relative border-l border-blue-500/5">
+      <div className="sticky top-32 space-y-12">
+        <p className={cn("text-[10px] font-black uppercase tracking-[0.4em] text-right pr-4", isDark ? "text-slate-500" : "text-slate-400")}>
+          <DecryptText text="GUIDE UPON SUBMISSION" />
+        </p>
+        <div className="px-4">
+          {content}
+        </div>
+        <div className="pt-20 pr-4">
+          <div className="text-right">
+            <p className={cn("text-[9px] font-black uppercase tracking-[0.3em] mb-2", isDark ? "text-slate-600" : "text-slate-400")}>Auto-Save</p>
+            <div className="flex gap-1 justify-end">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="w-1 h-3 rounded-full bg-blue-600/40 animate-pulse" style={{ animationDelay: `${i * 0.1}s` }} />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
+
 
 export default function EnrollmentPage() {
   const { currentStep, formData } = useEnrollmentStore()
@@ -416,6 +578,38 @@ export default function EnrollmentPage() {
         html, body { scrollbar-width: none; -ms-overflow-style: none; }
         html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
 
+        .spring-hover-blue,
+        .spring-hover-red,
+        .spring-btn-blue,
+        .spring-btn-red {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      box-shadow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      border-color 0.35s ease !important;
+        }
+        @media (min-width: 1024px) {
+          .spring-hover-blue:hover {
+            transform: translateY(-8px) scale(1.03) !important;
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.3) !important;
+            border-color: rgba(59, 130, 246, 0.5) !important;
+          }
+          .spring-btn-blue:hover {
+            transform: translateY(-3px) scale(1.04) !important;
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.35) !important;
+            border-color: rgba(59, 130, 246, 0.5) !important;
+          }
+        }
+
+        .tech-reticle { position: relative; }
+        .tech-reticle::before, .tech-reticle::after {
+          content: ''; position: absolute; width: 14px; height: 14px; pointer-events: none; opacity: 0.6; z-index: 20; transition: all 0.3s ease;
+        }
+        .tech-reticle::before {
+          top: -1px; left: -1px; border-top: 2px solid rgba(59,130,246,0.8); border-left: 2px solid rgba(59,130,246,0.8); border-top-left-radius: 6px;
+        }
+        .tech-reticle::after {
+          bottom: -1px; right: -1px; border-bottom: 2px solid rgba(59,130,246,0.8); border-right: 2px solid rgba(59,130,246,0.8); border-bottom-right-radius: 6px;
+        }
+
         @keyframes aurora1 {
           0%, 100% { transform: translate(0,0) scale(1); }
           33%       { transform: translate(4%,3%) scale(1.06); }
@@ -429,7 +623,6 @@ export default function EnrollmentPage() {
         .animate-aurora-1 { animation: aurora1 18s ease-in-out infinite; }
         .animate-aurora-2 { animation: aurora2 22s ease-in-out infinite; }
 
-        /* GPU shimmer: transform:translateX is compositor-only — no layout/paint on mobile */
         .shimmer-bar { position: relative; overflow: hidden; }
         .shimmer-bar::after {
           content: "";
@@ -443,18 +636,9 @@ export default function EnrollmentPage() {
           from { transform: translateX(-100%); }
           to   { transform: translateX(300%); }
         }
-        /* Kill aurora animation on mobile — blur + animation is expensive on low-end devices */
         @media (max-width: 767px) {
           .animate-aurora-1, .animate-aurora-2 { animation: none !important; }
         }
-
-        /*
-         * Theme toggle: instead of transitioning every element via JS class swap,
-         * we transition ONLY the specific properties that visually matter.
-         * This is handled per-element via Tailwind's transition utilities.
-         * The root bg swaps instantly (no duration-500) to avoid the full-page
-         * repaint cascade that caused the lag.
-         */
          
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(12px); }
@@ -552,7 +736,7 @@ export default function EnrollmentPage() {
         </div>
       ) : (
         /* ── OPEN STATE ── */
-        <div className="relative z-10 w-full xl:max-w-[1400px] xl:mx-auto xl:grid xl:grid-cols-[1fr_2.5fr_1fr] xl:gap-8 xl:items-start pt-2 md:pt-4">
+        <div className="relative z-10 w-full xl:max-w-[1400px] xl:mx-auto xl:grid xl:grid-cols-[1fr_2.5fr_1fr] xl:gap-8 pt-2 md:pt-4">
 
           <LiveNodeSidebar currentStep={currentStep} isDark={isDark} formData={formData} />
 

@@ -21,28 +21,28 @@ import { useThemeStore } from "@/store/useThemeStore"
 // STATIC DATA — module-level, zero runtime cost
 // ─────────────────────────────────────────────────────────────────────────────
 const MONTHS = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ]
 
 const NATIONALITIES = [
-  "Afghan","Albanian","Algerian","American","Andorran","Angolan","Antiguans","Argentinean","Armenian","Australian","Austrian","Azerbaijani",
-  "Bahamian","Bahraini","Bangladeshi","Barbadian","Barbudans","Batswana","Belarusian","Belgian","Belizean","Beninese","Bhutanese","Bolivian",
-  "Bosnian","Brazilian","British","Bruneian","Bulgarian","Burkinabe","Burmese","Burundian","Cambodian","Cameroonian","Canadian","Cape Verdean",
-  "Central African","Chadian","Chilean","Chinese","Colombian","Comoran","Congolese","Costa Rican","Croatian","Cuban","Cypriot","Czech",
-  "Danish","Djiboutian","Dominican","Dutch","East Timorese","Ecuadorean","Egyptian","Emirian","Equatorial Guinean","Eritrean","Estonian",
-  "Ethiopian","Fijian","Filipino","Finnish","French","Gabonese","Gambian","Georgian","German","Ghanaian","Greek","Grenadian","Guatemalan",
-  "Guinea-Bissauan","Guinean","Guyanese","Haitian","Honduran","Hungarian","I-Kiribati","Icelander","Indian","Indonesian","Iranian","Iraqi",
-  "Irish","Israeli","Italian","Ivorian","Jamaican","Japanese","Jordanian","Kazakhstani","Kenyan","Kittian and Nevisian","Kuwaiti","Kyrgyz",
-  "Laotian","Latvian","Lebanese","Liberian","Libyan","Liechtensteiner","Lithuanian","Luxembourger","Macedonian","Malagasy","Malawian",
-  "Malaysian","Maldivian","Malian","Maltese","Marshallese","Mauritanian","Mauritian","Mexican","Micronesian","Moldovan","Monacan",
-  "Mongolian","Moroccan","Mosotho","Motswana","Mozambican","Namibian","Nauruan","Nepalese","New Zealander","Ni-Vanuatu","Nicaraguan",
-  "Nigerian","Nigerien","North Korean","Norwegian","Omani","Pakistani","Palauan","Panamanian","Papua New Guinean","Paraguayan","Peruvian",
-  "Polish","Portuguese","Qatari","Romanian","Russian","Rwandan","Saint Lucian","Salvadoran","Samoan","San Marinese","Sao Tomean","Saudi",
-  "Senegalese","Serbian","Seychellois","Sierra Leonean","Singaporean","Slovakian","Slovenian","Solomon Islander","Somali","South African",
-  "South Korean","Spanish","Sri Lankan","Sudanese","Surinamer","Swazi","Swedish","Swiss","Syrian","Taiwanese","Tajik","Tanzanian","Thai",
-  "Togolese","Tongan","Trinidadian","Tunisian","Turkish","Tuvaluan","Ugandan","Ukrainian","Uruguayan","Uzbekistani","Venezuelan",
-  "Vietnamese","Yemenite","Zambian","Zimbabwean",
+  "Afghan", "Albanian", "Algerian", "American", "Andorran", "Angolan", "Antiguans", "Argentinean", "Armenian", "Australian", "Austrian", "Azerbaijani",
+  "Bahamian", "Bahraini", "Bangladeshi", "Barbadian", "Barbudans", "Batswana", "Belarusian", "Belgian", "Belizean", "Beninese", "Bhutanese", "Bolivian",
+  "Bosnian", "Brazilian", "British", "Bruneian", "Bulgarian", "Burkinabe", "Burmese", "Burundian", "Cambodian", "Cameroonian", "Canadian", "Cape Verdean",
+  "Central African", "Chadian", "Chilean", "Chinese", "Colombian", "Comoran", "Congolese", "Costa Rican", "Croatian", "Cuban", "Cypriot", "Czech",
+  "Danish", "Djiboutian", "Dominican", "Dutch", "East Timorese", "Ecuadorean", "Egyptian", "Emirian", "Equatorial Guinean", "Eritrean", "Estonian",
+  "Ethiopian", "Fijian", "Filipino", "Finnish", "French", "Gabonese", "Gambian", "Georgian", "German", "Ghanaian", "Greek", "Grenadian", "Guatemalan",
+  "Guinea-Bissauan", "Guinean", "Guyanese", "Haitian", "Honduran", "Hungarian", "I-Kiribati", "Icelander", "Indian", "Indonesian", "Iranian", "Iraqi",
+  "Irish", "Israeli", "Italian", "Ivorian", "Jamaican", "Japanese", "Jordanian", "Kazakhstani", "Kenyan", "Kittian and Nevisian", "Kuwaiti", "Kyrgyz",
+  "Laotian", "Latvian", "Lebanese", "Liberian", "Libyan", "Liechtensteiner", "Lithuanian", "Luxembourger", "Macedonian", "Malagasy", "Malawian",
+  "Malaysian", "Maldivian", "Malian", "Maltese", "Marshallese", "Mauritanian", "Mauritian", "Mexican", "Micronesian", "Moldovan", "Monacan",
+  "Mongolian", "Moroccan", "Mosotho", "Motswana", "Mozambican", "Namibian", "Nauruan", "Nepalese", "New Zealander", "Ni-Vanuatu", "Nicaraguan",
+  "Nigerian", "Nigerien", "North Korean", "Norwegian", "Omani", "Pakistani", "Palauan", "Panamanian", "Papua New Guinean", "Paraguayan", "Peruvian",
+  "Polish", "Portuguese", "Qatari", "Romanian", "Russian", "Rwandan", "Saint Lucian", "Salvadoran", "Samoan", "San Marinese", "Sao Tomean", "Saudi",
+  "Senegalese", "Serbian", "Seychellois", "Sierra Leonean", "Singaporean", "Slovakian", "Slovenian", "Solomon Islander", "Somali", "South African",
+  "South Korean", "Spanish", "Sri Lankan", "Sudanese", "Surinamer", "Swazi", "Swedish", "Swiss", "Syrian", "Taiwanese", "Tajik", "Tanzanian", "Thai",
+  "Togolese", "Tongan", "Trinidadian", "Tunisian", "Turkish", "Tuvaluan", "Ugandan", "Ukrainian", "Uruguayan", "Uzbekistani", "Venezuelan",
+  "Vietnamese", "Yemenite", "Zambian", "Zimbabwean",
 ]
 
 const MAX_LENGTHS = {
@@ -79,16 +79,16 @@ function buildFieldClass(opts: {
     hasError
       ? "border-red-500/50 bg-red-950/30 focus:border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.15)]"
       : cn(
-          "focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)]",
-          isDark ? "focus:bg-slate-900/80" : "focus:bg-white",
-          filled
-            ? isDark
-              ? "border-blue-900/40 bg-slate-950/60 text-blue-100"
-              : "border-blue-500/40 bg-blue-50 text-blue-900 shadow-sm"
-            : isDark
-              ? "border-white/5 bg-white/5 lg:hover:border-white/20"
-              : "border-slate-200 bg-white lg:hover:border-slate-300",
-        )
+        "focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)]",
+        isDark ? "focus:bg-slate-900/80" : "focus:bg-white",
+        filled
+          ? isDark
+            ? "border-blue-900/40 bg-slate-950/60 text-blue-100"
+            : "border-blue-500/40 bg-blue-50 text-blue-900 shadow-sm"
+          : isDark
+            ? "border-white/5 bg-white/5 lg:hover:border-white/20"
+            : "border-slate-200 bg-white lg:hover:border-slate-300",
+      )
   )
 }
 
@@ -122,8 +122,8 @@ const BirthDatePicker = memo(function BirthDatePicker({
   value: string; onChange: (val: string) => void; error?: string; isDark: boolean
 }) {
   const [month, setMonth] = useState(() => parseDateParts(value).m)
-  const [day,   setDay]   = useState(() => parseDateParts(value).d)
-  const [year,  setYear]  = useState(() => parseDateParts(value).y)
+  const [day, setDay] = useState(() => parseDateParts(value).d)
+  const [year, setYear] = useState(() => parseDateParts(value).y)
 
   const prevValue = useRef(value)
   useEffect(() => {
@@ -147,13 +147,13 @@ const BirthDatePicker = memo(function BirthDatePicker({
   const handlePart = useCallback(
     (part: "month" | "day" | "year", val: number) => {
       const m = part === "month" ? val : month
-      const d = part === "day"   ? val : day
-      const y = part === "year"  ? val : year
+      const d = part === "day" ? val : day
+      const y = part === "year" ? val : year
       if (part === "month") setMonth(val)
-      if (part === "day")   setDay(val)
-      if (part === "year")  setYear(val)
+      if (part === "day") setDay(val)
+      if (part === "year") setYear(val)
       if (m !== -1 && d !== -1 && y !== -1) {
-        const maxD     = new Date(y, m + 1, 0).getDate()
+        const maxD = new Date(y, m + 1, 0).getDate()
         const clampedD = Math.min(d, maxD)
         if (clampedD !== d) setDay(clampedD)
         onChange(`${y}-${String(m + 1).padStart(2, "0")}-${String(clampedD).padStart(2, "0")}`)
@@ -216,8 +216,8 @@ const NationalityPicker = memo(function NationalityPicker({
   error?: string; disabled?: boolean; isDark: boolean
 }) {
   const [search, setSearch] = useState("")
-  const [open, setOpen]     = useState(false)
-  const containerRef        = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const filtered = useMemo(
     () => NATIONALITIES.filter(n => n.toLowerCase().includes(search.toLowerCase())),
@@ -251,12 +251,12 @@ const NationalityPicker = memo(function NationalityPicker({
             error
               ? "border-red-500/50 bg-red-950/30 text-red-300"
               : cn(
-                  "focus:border-blue-500",
-                  isDark ? "focus:bg-slate-900/80" : "focus:bg-white",
-                  value
-                    ? isDark ? "border-blue-900/40 bg-slate-950/60 text-blue-100" : "border-blue-500/40 bg-blue-50 text-blue-900"
-                    : isDark ? "border-white/5 bg-white/5 text-slate-500" : "border-slate-200 bg-white text-slate-500"
-                ),
+                "focus:border-blue-500",
+                isDark ? "focus:bg-slate-900/80" : "focus:bg-white",
+                value
+                  ? isDark ? "border-blue-900/40 bg-slate-950/60 text-blue-100" : "border-blue-500/40 bg-blue-50 text-blue-900"
+                  : isDark ? "border-white/5 bg-white/5 text-slate-500" : "border-slate-200 bg-white text-slate-500"
+              ),
             disabled && "opacity-50 cursor-not-allowed"
           )}
         >
@@ -435,7 +435,7 @@ const CivilStatusSelect = memo(function CivilStatusSelect({
         disabled={!editable}
         className={cn("pl-12 pr-10 appearance-none cursor-pointer w-full text-white", cls, !editable && "opacity-50 cursor-not-allowed")}
       >
-        <option value="Single"  className={isDark ? "bg-slate-950" : "bg-white text-slate-900"}>Single</option>
+        <option value="Single" className={isDark ? "bg-slate-950" : "bg-white text-slate-900"}>Single</option>
         <option value="Married" className={isDark ? "bg-slate-950" : "bg-white text-slate-900"}>Married</option>
       </select>
       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 pointer-events-none" />
@@ -508,9 +508,12 @@ const EmailInput = memo(function EmailInput({
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Step1Identity() {
-  const { isDark } = useThemeStore()
-  const { formData, updateFormData, setStep } = useEnrollmentStore()
-  const { isFieldRequired, isFieldEditable }  = useEnrollmentValidation()
+  const isDark = useThemeStore(state => state.isDark)
+  const formData = useEnrollmentStore(state => state.formData)
+  const updateFormData = useEnrollmentStore(state => state.updateFormData)
+  const setStep = useEnrollmentStore(state => state.setStep)
+  
+  const { isFieldRequired, isFieldEditable } = useEnrollmentValidation()
   const [checking, setChecking] = useState(false)
 
   const {
@@ -520,25 +523,25 @@ export default function Step1Identity() {
   } = useForm<EnrollmentFormData>({
     shouldFocusError: false, // We handle manual centering scroll
     defaultValues: {
-      first_name:   formData.first_name   || "",
-      middle_name:  formData.middle_name  || "",
-      last_name:    formData.last_name    || "",
-      nationality:  (formData as any).nationality || "",
-      email:        formData.email        || "",
-      age:          formData.age          || "",
-      gender:       (formData.gender as "Male" | "Female") || undefined,
+      first_name: formData.first_name || "",
+      middle_name: formData.middle_name || "",
+      last_name: formData.last_name || "",
+      nationality: (formData as any).nationality || "",
+      email: formData.email || "",
+      age: formData.age || "",
+      gender: (formData.gender as "Male" | "Female") || undefined,
       civil_status: formData.civil_status || "Single",
-      birth_date:   formData.birth_date   || "",
-      religion:     formData.religion     || "",
-      address:      formData.address      || "",
+      birth_date: formData.birth_date || "",
+      religion: formData.religion || "",
+      address: formData.address || "",
     },
   })
 
   // Only watch fields that drive conditional rendering.
   // Character counters use <CharCounter control={control}> independently.
   // "filled" state is managed locally inside each field component.
-  const selectedGender   = watch("gender")
-  const watchBirthDate   = watch("birth_date")
+  const selectedGender = watch("gender")
+  const watchBirthDate = watch("birth_date")
   const watchNationality = watch("nationality")
 
   useEffect(() => {
@@ -549,13 +552,13 @@ export default function Step1Identity() {
   const validateBirthDate = useCallback(
     (val: string | undefined) => {
       if (!val) return isFieldRequired("birth_date") ? "Birth date is required" : true
-      const dob   = new Date(val + "T00:00:00")
+      const dob = new Date(val + "T00:00:00")
       const today = new Date()
-      let age     = today.getFullYear() - dob.getFullYear()
-      const m     = today.getMonth() - dob.getMonth()
+      let age = today.getFullYear() - dob.getFullYear()
+      const m = today.getMonth() - dob.getMonth()
       if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--
       if (age > 50) return "Age must not exceed 50 years"
-      if (age < 5)  return "Invalid birth date"
+      if (age < 5) return "Invalid birth date"
       const enteredAge = parseInt(getValues("age") || "0")
       if (enteredAge && enteredAge !== age)
         return `Birth date doesn't match your entered age (${enteredAge}). Expected: ${age}`
@@ -571,15 +574,15 @@ export default function Step1Identity() {
         const { data: existingEmail } = await supabase
           .from("students").select("id")
           .ilike("email", data.email.trim())
-          .neq("id", formData.id || "00000000-0000-0000-0000-000000000000")
+          .neq(formData.id ? "id" : "lrn", formData.id || "000000") // simple safety
           .maybeSingle()
         if (existingEmail) { toast.error("Email address is already registered."); setChecking(false); return }
       }
       let nameQuery = supabase
         .from("students").select("id")
         .ilike("first_name", data.first_name.trim())
-        .ilike("last_name",  data.last_name.trim())
-        .neq("id", formData.id || "00000000-0000-0000-0000-000000000000")
+        .ilike("last_name", data.last_name.trim())
+        .neq(formData.id ? "id" : "lrn", formData.id || "000000")
       nameQuery = data.middle_name?.trim()
         ? nameQuery.ilike("middle_name", data.middle_name.trim())
         : nameQuery.or('middle_name.is.null,middle_name.eq.""')
@@ -608,8 +611,12 @@ export default function Step1Identity() {
         : raw
       e.target.value = val
       setValue(field, val, { shouldDirty: false })
+      // LIVE SYNC TO STORE for sidebars
+      if (field === "first_name" || field === "last_name") {
+        updateFormData({ [field]: val })
+      }
     },
-    [setValue]
+    [setValue, updateFormData]
   )
 
   // Enforces max length on mobile where the maxLength attribute is unreliable.
@@ -628,8 +635,8 @@ export default function Step1Identity() {
 
   const birthDateDisplay = watchBirthDate
     ? new Date(watchBirthDate + "T00:00:00").toLocaleDateString("en-US", {
-        month: "long", day: "numeric", year: "numeric",
-      })
+      month: "long", day: "numeric", year: "numeric",
+    })
     : null
 
   return (
@@ -763,7 +770,7 @@ export default function Step1Identity() {
           <input type="hidden" {...register("gender", { required: isFieldRequired("gender") ? "Required" : false })} />
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             {(["Male", "Female"] as const).map(g => {
-              const active   = selectedGender === g
+              const active = selectedGender === g
               const isFemale = g === "Female"
               return (
                 <button
@@ -796,7 +803,7 @@ export default function Step1Identity() {
                     <span className="font-black uppercase text-xs tracking-[0.25em]">{g}</span>
                   </div>
                   <User size={24} className={cn("transition-colors duration-300", active ? isFemale ? "text-red-400" : "text-blue-400" : "text-slate-800")} />
-                  
+
                   {/* Visual Impact Flare */}
                   {active && (
                     <div className={cn(
@@ -952,25 +959,25 @@ export default function Step1Identity() {
         isDark ? "bg-[#0d1433]/80 md:bg-transparent border-white/10" : "bg-white/80 md:bg-transparent border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none"
       )}>
         <Button
-            className={cn(
-              "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
-              "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-              "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
-              "active:scale-[0.98]",
-              "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
-            )}
-          >
-            {checking ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
-                Proceed To Step 02
-              </span>
-            )}
-            <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
-              <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Button>
+          className={cn(
+            "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
+            "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
+            "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
+            "active:scale-[0.98]",
+            "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
+          )}
+        >
+          {checking ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
+              Proceed
+            </span>
+          )}
+          <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
+            <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Button>
       </div>
     </form>
   )

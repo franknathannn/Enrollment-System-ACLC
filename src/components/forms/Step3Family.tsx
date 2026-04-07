@@ -39,9 +39,9 @@ function buildFieldClass(opts: { hasError: boolean; filled: boolean }) {
     hasError
       ? "error shadow-[0_0_20px_rgba(239,68,68,0.15)]"
       : cn(
-          "focus:shadow-[0_0_20px_rgba(59,130,246,0.2)]",
-          filled ? "filled shadow-sm" : "lg:hover:border-blue-500/30"
-        )
+        "focus:shadow-[0_0_20px_rgba(59,130,246,0.2)]",
+        filled ? "filled shadow-sm" : "lg:hover:border-blue-500/30"
+      )
   )
 }
 
@@ -125,9 +125,12 @@ const PhoneInput = memo(function PhoneInput({
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Step3Family() {
-  const { isDark } = useThemeStore()
-  const { formData, updateFormData, setStep } = useEnrollmentStore()
-  const { isFieldRequired, isFieldEditable }  = useEnrollmentValidation()
+  const isDark = useThemeStore(state => state.isDark)
+  const formData = useEnrollmentStore(state => state.formData)
+  const updateFormData = useEnrollmentStore(state => state.updateFormData)
+  const setStep = useEnrollmentStore(state => state.setStep)
+  
+  const { isFieldRequired, isFieldEditable } = useEnrollmentValidation()
 
   const {
     register, handleSubmit, setValue, control,
@@ -135,11 +138,11 @@ export default function Step3Family() {
   } = useForm({
     shouldFocusError: false,
     defaultValues: {
-      guardian_first_name:  formData.guardian_first_name  || "",
+      guardian_first_name: formData.guardian_first_name || "",
       guardian_middle_name: formData.guardian_middle_name || "",
-      guardian_last_name:   formData.guardian_last_name   || "",
-      guardian_phone:       formData.guardian_phone       || "",
-      phone:                formData.phone                || "",
+      guardian_last_name: formData.guardian_last_name || "",
+      guardian_phone: formData.guardian_phone || "",
+      phone: formData.phone || "",
     },
   })
 
@@ -171,7 +174,12 @@ export default function Step3Family() {
       : raw
     e.target.value = val
     setValue(field, val, { shouldDirty: false })
-  }, [setValue])
+    
+    // LIVE SYNC TO STORE
+    if (field === "guardian_first_name") {
+      updateFormData({ [field]: val })
+    }
+  }, [setValue, updateFormData])
 
   return (
     <form onSubmit={handleSubmit(onSubmit, onError)} className="animate-step-in">
@@ -290,7 +298,7 @@ export default function Step3Family() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
           {([
             { field: "guardian_phone" as const, label: "Guardian Contact No." },
-            { field: "phone" as const,          label: "Student No." },
+            { field: "phone" as const, label: "Student No." },
           ]).map(({ field, label }) => (
             <div key={field} className="space-y-2" id={`${field}_container`}>
               <Label className="t-text-muted font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2 ml-2">
@@ -334,26 +342,26 @@ export default function Step3Family() {
         isDark ? "bg-[#0d1433]/80 md:bg-transparent border-white/10" : "bg-white/80 md:bg-transparent border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none"
       )}>
         <Button
-            type="submit"
-            className={cn(
-              "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
-              "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-              "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
-              "active:scale-[0.98]",
-              "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
-            )}
-          >
-            <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
-              Proceed To Step 04
-            </span>
-            <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
-              <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Button>
-          <button type="button" onClick={() => setStep(2)}
-            className="spring-back-btn min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 py-3 touch-manipulation active:scale-[0.98]">
-            <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
-          </button>
+          type="submit"
+          className={cn(
+            "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
+            "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
+            "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
+            "active:scale-[0.98]",
+            "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
+          )}
+        >
+          <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
+            Proceed
+          </span>
+          <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
+            <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Button>
+        <button type="button" onClick={() => setStep(2)}
+          className="spring-back-btn min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 py-3 touch-manipulation active:scale-[0.98]">
+          <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
+        </button>
       </div>
     </form>
   )

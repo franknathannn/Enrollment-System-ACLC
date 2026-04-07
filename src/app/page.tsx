@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef, useCallback, startTransition } from "react"
+import { motion, useInView } from "framer-motion"
 import { supabase } from "@/lib/supabase/client"
 import {
   ArrowRight, Activity, Cpu,
@@ -13,6 +14,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { useThemeStore } from "@/store/useThemeStore"
 import { ProcessSection } from "@/components/landing/ProcessSection"
+import { AboutSection } from "@/components/landing/AboutSection"
 
 // ── TYPES ────────────────────────────────────────────────────────────────────
 interface Particle { x: number; y: number; vx: number; vy: number; size: number; pulse: number; twinkle: number }
@@ -54,30 +56,54 @@ function useCountUp(target: number, duration = 1200, trigger = true) {
 }
 
 // ── SCROLL REVEAL ────────────────────────────────────────────────────────────
-function useScrollReveal() {
-  const ref = useRef<HTMLDivElement>(null)
+export function Reveal({ children, delay = 0, className = "", x = 0, y = 30, scale = 0.95 }: { children: React.ReactNode; delay?: number; className?: string; x?: number; y?: number; scale?: number }) {
+  const ref = useRef(null)
+
+  // Hysteresis logic:
+  // 1. Entry triggers when in center 50% (clears 25% from bottom OR top)
+  // 2. Element stays visible as long as ANY part is on screen
+  const isAtTriggerPoint = useInView(ref, { margin: "-25% 0px -25% 0px" })
+  const isOnScreen = useInView(ref)
   const [visible, setVisible] = useState(false)
+
   useEffect(() => {
-    const el = ref.current; if (!el) return
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } }, { threshold: 0.1 })
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-  return { ref, visible }
-}
-function Reveal({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const { ref, visible } = useScrollReveal()
+    if (isAtTriggerPoint) setVisible(true)
+    else if (!isOnScreen) setVisible(false)
+  }, [isAtTriggerPoint, isOnScreen])
+
   return (
-    <div ref={ref} className={cn(className, "lg:transition-[opacity,transform] lg:duration-[700ms] lg:ease-out", visible ? "opacity-100 translate-y-0" : "opacity-100 translate-y-0 lg:opacity-0 lg:translate-y-8")} style={{ transitionDelay: `${delay}ms` }}>
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, x, y, scale }}
+      animate={visible ? { opacity: 1, x: 0, y: 0, scale: 1 } : { opacity: 0, x, y, scale }}
+      transition={{
+        type: "spring",
+        stiffness: 40,
+        damping: 15,
+        delay: delay / 1000
+      }}
+      className={className}
+    >
       {children}
-    </div>
+    </motion.div>
   )
 }
 
 // ── STATS CARD ────────────────────────────────────────────────────────────────
 function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: any, isMobile: boolean, isDark: boolean }) {
-  const [statsVisible, setStatsVisible] = useState(false)
   const statsRef = useRef<HTMLDivElement>(null)
+
+  // Hysteresis logic for Stats Card entry:
+  // 1. Entry triggers when in center 50% (clears 25% from bottom OR top)
+  // 2. Element stays visible as long as ANY part is on screen
+  const isAtTriggerPoint = useInView(statsRef, { margin: "-25% 0px -25% 0px" })
+  const isOnScreen = useInView(statsRef)
+  const [statsVisible, setStatsVisible] = useState(false)
+
+  useEffect(() => {
+    if (isAtTriggerPoint) setStatsVisible(true)
+    else if (!isOnScreen) setStatsVisible(false)
+  }, [isAtTriggerPoint, isOnScreen])
 
   const animIct = useCountUp(stats.ictCount, 1200, statsVisible)
   const animGas = useCountUp(stats.gasCount, 1200, statsVisible)
@@ -86,12 +112,6 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
   const displayIct = isMobile ? stats.ictCount : animIct
   const displayGas = isMobile ? stats.gasCount : animGas
   const displayVacancy = isMobile ? (stats.totalMax - stats.totalCount) : animVacancy
-
-  useEffect(() => {
-    const el = statsRef.current; if (!el) return
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setStatsVisible(true); obs.disconnect() } }, { threshold: 0.15 })
-    obs.observe(el); return () => obs.disconnect()
-  }, [])
 
   const d = isDark
   const isManual = config?.control_mode === 'manual'
@@ -115,7 +135,18 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
   }
 
   return (
-    <div className={cn("lg:col-span-5 relative stats-group", !isMobile && "float")} ref={statsRef} style={{ translate: "0 0", willChange: "transform" }}>
+    <motion.div
+      ref={statsRef}
+      initial={{ opacity: 0, y: 40, scale: 0.95 }}
+      animate={statsVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 40, scale: 0.95 }}
+      transition={{
+        type: "spring",
+        stiffness: 40,
+        damping: 15
+      }}
+      className={cn("lg:col-span-5 relative stats-group", !isMobile && "float")}
+      style={{ translate: "0 0", willChange: "transform" }}
+    >
       {/* Decorative Glows */}
       <div className={cn("absolute -inset-10 rounded-[80px] blur-[100px] transition-opacity duration-1000 pointer-events-none", d ? "bg-blue-600/10 opacity-60" : "bg-blue-600/5 opacity-40")} />
 
@@ -145,14 +176,21 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h3 className={cn("text-xs font-black uppercase tracking-[0.3em]", d ? "text-white/40" : "text-slate-400")}>Live Spot</h3>
+              <h3 className={cn("text-xs font-black uppercase tracking-[0.3em]", d ? "text-white/40" : "text-slate-400")}>Live View</h3>
               <p className={cn("text-lg font-black uppercase tracking-tight", d ? "text-white" : "text-slate-900")}>Strand Distribution</p>
             </div>
             <div className={cn(
               "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300",
               d ? "bg-white/5 border border-white/10 group-hover:border-blue-500/50" : "bg-slate-50 border border-slate-200 shadow-sm"
             )}>
-              <Activity size={20} className={cn(isPortalActive ? "text-blue-500 lg:animate-pulse" : d ? "text-slate-600" : "text-slate-300")} />
+              <img
+                src="/logo-aclc.png"
+                alt="ACLC"
+                className={cn(
+                  "w-6 h-6 object-contain transition-all duration-300",
+                  isPortalActive ? "lg:animate-pulse" : "grayscale opacity-50"
+                )}
+              />
             </div>
           </div>
 
@@ -213,7 +251,7 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
           </div>
         </div>
       </TiltCard>
-    </div>
+    </motion.div>
   )
 }
 
@@ -240,7 +278,7 @@ function VisualMetric({ label, current, max, color, isDark }: { label: string, c
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className={cn("text-[8px] font-bold uppercase tracking-widest mt-2", isDark ? "text-white/20" : "text-slate-400")}>Limit: {max}</p>
+      <p className={cn("text-[8px] font-bold uppercase tracking-widest mt-2", isDark ? "text-white" : "text-slate-400")}>Limit: {max}</p>
     </div>
   )
 }
@@ -381,7 +419,7 @@ function TerminalWidget({ isDark }: { isDark: boolean }) {
       <div className="flex gap-1.5 opacity-50">
         <div className="w-2 h-2 rounded-full bg-red-500" />
         <div className="w-2 h-2 rounded-full bg-amber-500" />
-        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+        <div className="w-2 h-2 rounded-full bg-blue-500" />
       </div>
       <span className={cn("font-mono text-[9px] whitespace-pre uppercase tracking-widest", isDark ? "text-blue-400" : "text-blue-700")}>
         <span className="opacity-50 mr-2">&gt;</span>
@@ -779,18 +817,19 @@ export default function HomePage() {
                 </span>
               </div>
 
-              {/* Headline */}
+              {/* Headline — Massive Staggered Poster Style */}
               <div className="space-y-1 group cursor-default">
                 <h1
-                  className={cn("font-black leading-[0.85] tracking-[-0.045em] uppercase transition-transform duration-500 lg:group-hover:scale-[1.02] origin-left", d ? "text-white" : "text-slate-900")}
+                  className={cn("font-black leading-[0.8] tracking-[-0.06em] uppercase transition-transform duration-500 lg:group-hover:scale-[1.02] origin-left", d ? "text-white" : "text-slate-900")}
                   style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                 >
                   <span data-text="Shape" className={cn(
-                    "block text-[clamp(3.2rem,10vw,8.8rem)] transition-all duration-300 lg:group-hover:-translate-y-1 text-glitch",
+                    "block text-[clamp(4.5rem,18vw,8.8rem)] transition-all duration-300 lg:group-hover:-translate-y-1 text-glitch",
                     d ? "lg:group-hover:text-blue-300" : "lg:group-hover:text-blue-600"
                   )} style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}>Shape</span>
+
                   <span data-text="Your"
-                    className="block text-[clamp(3.2rem,10vw,8.8rem)] text-transparent bg-clip-text shimmer-text text-glitch"
+                    className="block ml-8 lg:ml-0 text-[clamp(4.5rem,18vw,8.8rem)] text-transparent bg-clip-text shimmer-text text-glitch"
                     style={{
                       backgroundImage: d
                         ? "linear-gradient(90deg,#ffffff,#c2d7fb,#ffffff,#c2d7fb,#ffffff)"
@@ -799,43 +838,45 @@ export default function HomePage() {
                     } as any}>
                     Your
                   </span>
+
                   <span data-text="Future." className={cn(
-                    "block text-[clamp(3.2rem,10vw,8.8rem)] transition-all duration-300 lg:group-hover:translate-y-1 text-glitch",
-                    d ? "lg:group-hover:text-red-400" : "lg:group-hover:text-red-600"
+                    "block ml-16 lg:ml-0 text-[clamp(4.5rem,18vw,8.8rem)] transition-all duration-300 lg:group-hover:translate-y-1 text-glitch",
+                    d ? "text-red-500 lg:group-hover:text-red-400" : "text-red-600 lg:group-hover:text-red-700"
                   )} style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)', "--i": "2" } as any}>Future.</span>
                 </h1>
                 <div className={cn(
-                  "h-[3px] rounded-full mt-4 md:mt-5 transition-all duration-500 w-20 md:w-28 lg:group-hover:w-48",
-                  d ? "bg-gradient-to-r from-red-400 via-blue-400 to-white/80"
-                    : "bg-gradient-to-r from-red-600 via-blue-600 to-white"
+                  "h-[4px] rounded-full mt-6 md:mt-8 transition-all duration-500 w-24 md:w-32 lg:group-hover:w-48",
+                  d ? "bg-gradient-to-r from-red-500 via-blue-500 to-white/80"
+                    : "bg-gradient-to-r from-red-600 via-blue-600 to-black"
                 )} />
               </div>
 
               {/* Tagline */}
               <p className={cn(
-                "text-base md:text-lg font-medium max-w-lg leading-relaxed pl-4 md:pl-5 border-l-2",
-                d ? "text-slate-400 border-blue-500/60" : "text-slate-500 border-blue-400/70"
+                "text-base md:text-xl font-medium max-w-lg leading-relaxed pl-4 md:pl-6 border-l-[3px]",
+                d ? "text-slate-400 border-blue-500/60" : "text-slate-500 border-blue-600"
               )}>
                 ACLC Northbay — under the AMA Education System — delivers world-class,
                 technology-driven Senior High education in the heart of Tondo, Manila.
               </p>
 
-              {/* CTA Buttons — min 44px touch targets */}
-              <div className="flex flex-wrap gap-4 md:gap-6 pt-2">
+              {/* CTA Buttons — Equal width side-by-side on mobile for symmetry & refined scale */}
+              <div className="flex flex-row gap-3 md:gap-6 pt-2 w-full sm:w-auto">
                 {isPortalActive ? (
-                  <Link href="/enroll" className="relative group/cta">
-                    <MagneticButton>
+                  <Link href="/enroll" className="relative group/cta flex-1 sm:flex-initial">
+                    <MagneticButton className="w-full">
                       <button
                         style={{ touchAction: "manipulation", transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                         className={cn(
-                          "relative h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] text-white overflow-hidden active:scale-95 shadow-2xl shadow-red-600/20 spring-btn-red",
+                          "relative w-full sm:w-auto h-[58px] md:h-[72px] px-4 md:px-14 rounded-[22px] md:rounded-[28px] font-black uppercase text-[10px] md:text-[11px] tracking-[0.2em] md:tracking-[0.3em] text-white overflow-hidden active:scale-95 shadow-2xl shadow-red-600/20 spring-btn-red",
                           ""
                         )}>
                         <span className="absolute inset-0 bg-red-600 transition-colors duration-300 group-hover/cta:bg-red-700" />
                         <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/cta:animate-[shimmer_2s_infinite] pointer-events-none" style={{ backgroundSize: '200% 100%' }} />
-                        <span className="relative flex items-center gap-4">
-                          Begin Enrollment
-                          <ArrowRight size={18} className="group-hover/cta:translate-x-2 transition-transform duration-300" />
+                        <span className="relative flex items-center justify-center gap-2 md:gap-4">
+                          <span className="xs:hidden">ENROLL</span>
+                          <span className="hidden xs:inline">START ENROLLMENT</span>
+                          <ArrowRight size={15} className="group-hover/cta:translate-x-1 transition-transform duration-300" />
                         </span>
                       </button>
                     </MagneticButton>
@@ -844,24 +885,24 @@ export default function HomePage() {
                   <button
                     disabled
                     className={cn(
-                      "h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] flex items-center gap-3 cursor-not-allowed border",
+                      "flex-1 sm:flex-initial h-[58px] md:h-[72px] px-4 md:px-14 rounded-[22px] md:rounded-[28px] font-black uppercase text-[10px] md:text-[11px] tracking-[0.2em] md:tracking-[0.3em] flex items-center justify-center gap-2 cursor-not-allowed border",
                       d ? "bg-slate-900/50 text-slate-600 border-white/5"
                         : "bg-slate-100 text-slate-400 border-slate-200"
                     )}>
-                    <Lock size={16} /> Portal Locked
+                    <Lock size={15} /> Locked
                   </button>
                 )}
-                <Link href="/status" className="group/status">
-                  <MagneticButton>
+                <Link href="/status" className="group/status flex-1 sm:flex-initial">
+                  <MagneticButton className="w-full">
                     <button
                       style={{ touchAction: "manipulation", transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                       className={cn(
-                        "h-[60px] md:h-[72px] px-10 md:px-14 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] border spring-btn-blue",
+                        "w-full sm:w-auto h-[58px] md:h-[72px] px-4 md:px-14 rounded-[22px] md:rounded-[28px] font-black uppercase text-[10px] md:text-[11px] tracking-[0.2em] md:tracking-[0.3em] border spring-btn-blue",
                         "active:scale-95",
                         d ? "bg-white/5 border-white/10 text-white lg:hover:bg-white/10 backdrop-blur-3xl"
                           : "bg-white border-slate-200 text-slate-800 lg:hover:bg-slate-50 lg:hover:shadow-2xl shadow-sm"
                       )}>
-                      Track My Status
+                      Status
                     </button>
                   </MagneticButton>
                 </Link>
@@ -910,7 +951,7 @@ export default function HomePage() {
                   </h2>
                 </div>
                 <p className={cn("max-w-xs text-sm font-medium leading-relaxed transition-opacity duration-300", d ? "text-slate-500 group-hover:text-slate-300" : "text-slate-400 group-hover:text-slate-600")}>
-                  Industry-mapped curriculum designed to accelerate your career transition from day one.
+                  Two curriculum designed to prepare students for the upcoming College Education.
                 </p>
               </div>
             </Reveal>
@@ -922,7 +963,7 @@ export default function HomePage() {
                   title: ["Information &", "Communication", "Technology"],
                   sub: "The Digital Vanguard",
                   desc: "Master coding, systems design, and multimedia arts with ACLC's signature computer-integrated methodology.",
-                  feats: ["Full Computer Laboratory Access", "Expert IT Industry Faculty", "Digital Certification Paths"],
+                  feats: ["Full Computer Laboratory Access", "Expert IT Industry Faculty", "Teaches HTML, CSS, JAVASCRIPT, PYTHON AND ORACLE."],
                   gradient: "from-blue-600 to-blue-900",
                   shadow: "shadow-blue-500/20"
                 },
@@ -994,6 +1035,11 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+
+          {/* ── ABOUT SECTION ────────────────────────────────────────────── */}
+          <Reveal>
+            <AboutSection isDark={d} />
+          </Reveal>
 
           {/* ── ENROLLMENT PROCESS ────────────────────────────────────────── */}
           <ProcessSection isDark={d} />

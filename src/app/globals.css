@@ -19,6 +19,8 @@
   --color-ring: var(--ring);
 
   --radius-xl: 0.75rem;
+
+  --breakpoint-xs: 480px;
 }
 
 /* Prevent layout shift during image load */

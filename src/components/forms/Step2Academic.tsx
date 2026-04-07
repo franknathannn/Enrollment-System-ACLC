@@ -62,7 +62,7 @@ function validateGWA(val: string | undefined): true | string {
   if (!/^\d{1,3}(\.\d{0,2})?$/.test(str)) return "Format: NN.NN (max 2 decimal places)"
   const num = parseFloat(str)
   if (isNaN(num)) return "Invalid GWA"
-  if (num < 65)  return "GWA must be at least 65.00"
+  if (num < 65) return "GWA must be at least 65.00"
   if (num > 100) return "GWA cannot exceed 100.00"
   return true
 }
@@ -80,9 +80,9 @@ function buildFieldClass(opts: { hasError: boolean; filled: boolean; isLRN?: boo
     hasError
       ? "error shadow-[0_0_20px_rgba(239,68,68,0.15)]"
       : cn(
-          "focus:shadow-[0_0_20px_rgba(59,130,246,0.2)]",
-          filled ? "filled shadow-sm" : "lg:hover:border-blue-500/30"
-        )
+        "focus:shadow-[0_0_20px_rgba(59,130,246,0.2)]",
+        filled ? "filled shadow-sm" : "lg:hover:border-blue-500/30"
+      )
   )
 }
 
@@ -134,7 +134,7 @@ const CheckCard = memo(function CheckCard({
         {sublabel && <p className="text-[10px] text-slate-500 mt-1 font-medium tracking-wide leading-relaxed">{sublabel}</p>}
       </div>
       {icon && <div className={cn("shrink-0 transition-all duration-300", checked ? "text-blue-400 scale-110" : "text-slate-700")}>{icon}</div>}
-      
+
       {/* Visual Impact Flare */}
       {checked && (
         <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-600 blur-3xl opacity-20 animate-pulse" />
@@ -153,9 +153,9 @@ const SchoolItem = memo(function SchoolItem({
   school: any; isSelected: boolean; isDark: boolean; query: string; onSelect: (name: string) => void
 }) {
   const Icon = school.type === "University" ? Library : school.type === "Private" ? Building2 : School
-  const iconColor = school.type === "University" ? "text-purple-500 border-purple-500/20 bg-purple-500/10" : 
-                   school.type === "Private" ? "text-amber-500 border-amber-500/20 bg-amber-500/10" : 
-                   "text-blue-500 border-blue-500/20 bg-blue-500/10"
+  const iconColor = school.type === "University" ? "text-purple-500 border-purple-500/20 bg-purple-500/10" :
+    school.type === "Private" ? "text-amber-500 border-amber-500/20 bg-amber-500/10" :
+      "text-blue-500 border-blue-500/20 bg-blue-500/10"
 
   const highlightedName = useMemo(() => {
     if (!query || !school.name.toLowerCase().includes(query.toLowerCase())) return school.name
@@ -198,9 +198,9 @@ const SchoolItem = memo(function SchoolItem({
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
-            <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", 
-              school.type === "University" ? "bg-purple-500" : 
-              school.type === "Private" ? "bg-amber-500" : "bg-blue-500"
+            <div className={cn("w-1.5 h-1.5 rounded-full shrink-0",
+              school.type === "University" ? "bg-purple-500" :
+                school.type === "Private" ? "bg-amber-500" : "bg-blue-500"
             )} />
             <span className="text-[9px] font-bold uppercase tracking-widest t-text-muted">{school.type}</span>
           </div>
@@ -229,8 +229,8 @@ const SchoolSearchPicker = memo(function SchoolSearchPicker({
   value: string; onChange: (val: string) => void; error?: string; disabled?: boolean; isDark: boolean
 }) {
   const [query, setQuery] = useState(value && value !== NOT_LISTED ? value : "")
-  const [open, setOpen]   = useState(false)
-  const containerRef      = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const filtered = useMemo(() => {
     if (!query.trim()) return SCHOOLS_SORTED.slice(0, 40)
@@ -320,7 +320,7 @@ const SchoolSearchPicker = memo(function SchoolSearchPicker({
               <p className="text-[9px] mt-1 opacity-70 font-medium">Click if you can't find your school</p>
             </div>
             <PlusCircle size={14} className="opacity-40 group-hover/btn:opacity-100 group-hover/btn:translate-x-0.5 transition-all text-amber-500" />
-            
+
             {value === NOT_LISTED && (
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />
             )}
@@ -336,7 +336,7 @@ const SchoolSearchPicker = memo(function SchoolSearchPicker({
                 <p className="text-[9px] t-text-faint">Try a different name or use "Not Listed" above</p>
               </div>
             ) : filtered.map(school => (
-              <SchoolItem 
+              <SchoolItem
                 key={school.name}
                 school={school}
                 isSelected={value === school.name}
@@ -538,12 +538,12 @@ const YearJhsInput = memo(function YearJhsInput({
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Step2Academic() {
-  const { isDark }                          = useThemeStore()
+  const { isDark } = useThemeStore()
   const { formData, updateFormData, setStep } = useEnrollmentStore()
-  const { isFieldRequired, isFieldEditable }  = useEnrollmentValidation()
-  const [dbSchoolYear, setDbSchoolYear]     = useState<string>("")
-  const [fetchingYear, setFetchingYear]     = useState(true)
-  const [checking, setChecking]             = useState(false)
+  const { isFieldRequired, isFieldEditable } = useEnrollmentValidation()
+  const [dbSchoolYear, setDbSchoolYear] = useState<string>("")
+  const [fetchingYear, setFetchingYear] = useState(true)
+  const [checking, setChecking] = useState(false)
   const [grade12Enabled, setGrade12Enabled] = useState(true)
 
   const {
@@ -552,28 +552,28 @@ export default function Step2Academic() {
   } = useForm({
     shouldFocusError: false,
     defaultValues: {
-      lrn:                  formData.lrn                       || "",
-      school_year:          formData.school_year               || "",
-      grade_level:          (formData as any).grade_level      || "11",
-      student_category:     formData.student_category          || "",
-      strand:               formData.strand                    || "",
-      last_school_attended: formData.last_school_attended      || "",
-      last_school_address:  (formData as any).last_school_address  || "",
-      gwa_grade_10:         formData.gwa_grade_10              || "",
-      year_completed_jhs:   (formData as any).year_completed_jhs   || "",
-      facebook_user:        (formData as any).facebook_user    || "",
-      facebook_link:        (formData as any).facebook_link    || "",
-      school_type:          (formData as any).school_type      || "",
-      preferred_modality:   (formData as any).preferred_modality  || "",
-      preferred_shift:      (formData as any).preferred_shift  || "",
+      lrn: formData.lrn || "",
+      school_year: formData.school_year || "",
+      grade_level: (formData as any).grade_level || "11",
+      student_category: formData.student_category || "",
+      strand: formData.strand || "",
+      last_school_attended: formData.last_school_attended || "",
+      last_school_address: (formData as any).last_school_address || "",
+      gwa_grade_10: formData.gwa_grade_10 || "",
+      year_completed_jhs: (formData as any).year_completed_jhs || "",
+      facebook_user: (formData as any).facebook_user || "",
+      facebook_link: (formData as any).facebook_link || "",
+      school_type: (formData as any).school_type || "",
+      preferred_modality: (formData as any).preferred_modality || "",
+      preferred_shift: (formData as any).preferred_shift || "",
     },
   })
 
   // Only watch fields that drive conditional rendering — not char counters
-  const selectedCategory   = watch("student_category")
-  const selectedStrand     = watch("strand")
-  const selectedModality   = watch("preferred_modality")
-  const selectedShift      = watch("preferred_shift")
+  const selectedCategory = watch("student_category")
+  const selectedStrand = watch("strand")
+  const selectedModality = watch("preferred_modality")
+  const selectedShift = watch("preferred_shift")
   const selectedSchoolType = watch("school_type")
   const selectedGradeLevel = watch("grade_level")
 
@@ -1014,20 +1014,20 @@ export default function Step2Academic() {
           </Label>
           <input type="hidden" {...register("preferred_modality", { required: isFieldRequired("preferred_modality") ? "Required" : false })} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <CheckCard 
-              label="Face to Face" 
+            <CheckCard
+              label="Face to Face"
               checked={selectedModality === "Face to Face"}
               onClick={() => setValue("preferred_modality", "Face to Face", { shouldValidate: true })}
-              disabled={!isFieldEditable("preferred_modality")} 
-              icon={<Monitor size={20} />} 
+              disabled={!isFieldEditable("preferred_modality")}
+              icon={<Monitor size={20} />}
               sublabel="On-campus sessions"
             />
-            <CheckCard 
-              label="Online" 
+            <CheckCard
+              label="Online"
               checked={selectedModality === "Online"}
               onClick={() => { setValue("preferred_modality", "Online", { shouldValidate: true }) }}
-              disabled={!isFieldEditable("preferred_modality")} 
-              icon={<Globe size={20} />} 
+              disabled={!isFieldEditable("preferred_modality")}
+              icon={<Globe size={20} />}
               sublabel="Remote learning"
             />
           </div>
@@ -1046,21 +1046,21 @@ export default function Step2Academic() {
             </Label>
             <input type="hidden" {...register("preferred_shift", { required: selectedModality ? "Please select a shift" : false })} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <CheckCard 
-                label="AM Shift" 
-                sublabel="Morning sessions" 
+              <CheckCard
+                label="AM Shift"
+                sublabel="Morning sessions"
                 checked={selectedShift === "AM"}
                 onClick={() => setValue("preferred_shift", "AM", { shouldValidate: true })}
-                disabled={!isFieldEditable("preferred_shift")} 
-                icon={<Clock size={20} />} 
+                disabled={!isFieldEditable("preferred_shift")}
+                icon={<Clock size={20} />}
               />
-              <CheckCard 
-                label="PM Shift" 
-                sublabel="Afternoon sessions" 
+              <CheckCard
+                label="PM Shift"
+                sublabel="Afternoon sessions"
                 checked={selectedShift === "PM"}
                 onClick={() => setValue("preferred_shift", "PM", { shouldValidate: true })}
-                disabled={!isFieldEditable("preferred_shift")} 
-                icon={<Clock size={20} />} 
+                disabled={!isFieldEditable("preferred_shift")}
+                icon={<Clock size={20} />}
               />
             </div>
             {(errors as any).preferred_shift && (
@@ -1080,34 +1080,34 @@ export default function Step2Academic() {
         isDark ? "bg-[#0d1433]/80 md:bg-transparent border-white/10" : "bg-white/80 md:bg-transparent border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none"
       )}>
         <Button
-            type="submit"
-            disabled={fetchingYear || checking}
-            className={cn(
-              "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
-              "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-              "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
-              "active:scale-[0.98]",
-              "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
-            )}
-          >
-            {checking ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
-                Proceed To Step 03
-              </span>
-            )}
-            <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
-              <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Button>
-          <button type="button" onClick={() => {
-            updateFormData(getValues() as any)
-            setStep(1)
-          }}
-            className="spring-back-btn min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 py-3 touch-manipulation active:scale-[0.98]">
-            <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
-          </button>
+          type="submit"
+          disabled={fetchingYear || checking}
+          className={cn(
+            "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
+            "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
+            "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
+            "active:scale-[0.98]",
+            "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
+          )}
+        >
+          {checking ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
+              Proceed
+            </span>
+          )}
+          <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
+            <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Button>
+        <button type="button" onClick={() => {
+          updateFormData(getValues() as any)
+          setStep(1)
+        }}
+          className="spring-back-btn min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 py-3 touch-manipulation active:scale-[0.98]">
+          <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
+        </button>
       </div>
     </form>
   )
