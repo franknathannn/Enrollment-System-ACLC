@@ -89,6 +89,7 @@ export function AboutSection({ isDark }: AboutSectionProps) {
               delay: 0.1 
             }}
             className="relative group order-1 lg:order-1"
+            style={{ willChange: "transform, opacity", zIndex: 1 }}
           >
             {/* Ambient Glow behind image */}
             <div className={cn(
@@ -108,16 +109,10 @@ export function AboutSection({ isDark }: AboutSectionProps) {
               />
               
               <div className={cn(
-                "absolute bottom-6 left-6 right-6 p-4 rounded-2xl backdrop-blur-md border flex items-center justify-between",
+                "absolute bottom-6 left-6 right-6 p-4 rounded-2xl backdrop-blur-md border flex items-center justify-center",
                 d ? "bg-black/60 border-white/10" : "bg-white/80 border-slate-200"
               )}>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className={cn("text-[10px] font-black uppercase tracking-widest", d ? "text-white" : "text-slate-900")}>
-                    First to Integrate AI in SHS
-                  </span>
-                </div>
-                <span className={cn("text-[9px] font-bold uppercase tracking-tighter opacity-60", d ? "text-white" : "text-slate-900")}>
+                <span className={cn("text-[10px] font-black uppercase tracking-[0.2em] opacity-80", d ? "text-white" : "text-slate-900")}>
                   EST. 1980
                 </span>
               </div>

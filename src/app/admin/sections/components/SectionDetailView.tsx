@@ -158,9 +158,10 @@ export const SectionDetailView = memo(function SectionDetailView({
               <TooltipTrigger asChild>
                 <Button
                   onClick={() => onExportList && onExportList(sectionName, sortedStudents, prefixedAdviserName)}
-                  className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 px-6 transition-all active:scale-95 shadow-2xl flex items-center justify-center bg-emerald-600 text-white hover:bg-emerald-700`}
+                  className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 w-11 lg:w-auto p-0 lg:px-6 transition-all active:scale-95 shadow-2xl flex items-center justify-center bg-emerald-600 text-white hover:bg-emerald-700`}
                 >
-                  <FileDown size={14} className="mr-2" /> EXPORT MASTERLIST
+                  <FileDown size={14} className="lg:mr-2" />
+                  <span className="hidden lg:inline">EXPORT MASTERLIST</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Export Simple Masterlist</p></TooltipContent>
@@ -170,12 +171,13 @@ export const SectionDetailView = memo(function SectionDetailView({
               <TooltipTrigger asChild>
                 <Button
                   onClick={() => onExport(sectionName, sortedStudents, prefixedAdviserName)}
-                  className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 px-6 transition-all active:scale-95 shadow-2xl flex items-center justify-center ${isDarkMode
+                  className={`rounded-full font-black uppercase text-[9px] tracking-[0.2em] h-11 w-11 lg:w-auto p-0 lg:px-6 transition-all active:scale-95 shadow-2xl flex items-center justify-center ${isDarkMode
                     ? 'bg-white text-black hover:bg-slate-200'
                     : 'bg-slate-950 text-white hover:bg-slate-800'
                     }`}
                 >
-                  <FileDown size={14} className="mr-2" /> EXPORT GRADING SHEET
+                  <FileDown size={14} className="lg:mr-2" />
+                  <span className="hidden lg:inline">EXPORT GRADING SHEET</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Export Student Grading</p></TooltipContent>
@@ -270,7 +272,7 @@ export const SectionDetailView = memo(function SectionDetailView({
 
           {/* Tabs */}
           <TabsList
-            className={`w-full md:w-auto flex p-1 h-auto rounded-[20px] md:rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-xl bg-clip-padding outline outline-1 outline-transparent ${isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-white/60 border-slate-200'
+            className={`w-[calc(100vw-2rem)] md:w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] flex justify-start lg:justify-center p-1 h-auto rounded-[20px] md:rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-xl bg-clip-padding outline outline-1 outline-transparent ${isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-white/60 border-slate-200'
               }`}
           >
             {/* Masterlist */}

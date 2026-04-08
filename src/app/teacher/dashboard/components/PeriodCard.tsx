@@ -255,7 +255,7 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
                     {/* Avatar */}
                     <div className={`w-8 h-8 rounded-xl overflow-hidden shrink-0 ${dm ? "bg-slate-700" : "bg-slate-100"}`}>
                       {(s.two_by_two_url || s.profile_picture)
-                        ? <img src={s.two_by_two_url || s.profile_picture} alt="" className="w-full h-full object-cover" />
+                        ? <img src={(s.two_by_two_url || s.profile_picture) as string} alt="" className="w-full h-full object-cover" />
                         : <div className="w-full h-full flex items-center justify-center"><User size={14} className={dm ? "text-slate-500" : "text-slate-400"} /></div>
                       }
                     </div>

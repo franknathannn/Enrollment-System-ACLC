@@ -4,7 +4,7 @@ import { memo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { StudentDossier } from "./StudentDossier"
 
-export const ProfileDialog = memo(function ProfileDialog({ open, onOpenChange, student, onOpenFile, isDarkMode, onUpdate, sections }: any) {
+export const ProfileDialog = memo(function ProfileDialog({ open, onOpenChange, student, onOpenFile, isDarkMode, onUpdate, sections, onStatusChange }: any) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
@@ -24,6 +24,7 @@ export const ProfileDialog = memo(function ProfileDialog({ open, onOpenChange, s
             onClose={() => onOpenChange(false)}
             onUpdate={onUpdate}
             sections={sections}
+            onStatusChange={onStatusChange}
           />
         )}
       </DialogContent>

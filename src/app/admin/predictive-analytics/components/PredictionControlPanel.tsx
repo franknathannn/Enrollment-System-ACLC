@@ -33,7 +33,7 @@ export function PredictionControlPanel({ mode, setMode, isDarkMode }: Props) {
           <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <SelectTrigger className={`w-full md:w-[260px] h-12 font-black rounded-2xl transition-all duration-300 ${
+              <SelectTrigger className={`w-full md:w-[320px] h-12 font-black rounded-2xl transition-all duration-300 ${
                 isDarkMode 
                   ? 'bg-slate-950/50 border-slate-800 text-white focus:ring-indigo-500/40 hover:border-indigo-500/30' 
                   : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-indigo-500/20 shadow-sm hover:border-indigo-300'

@@ -105,7 +105,7 @@ export default function EnrolledPage() {
           />
 
           <div
-            className={`flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 p-1.5 rounded-2xl border w-full max-w-lg mx-auto ${
+            className={`flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 p-1.5 rounded-2xl border w-fit mx-auto ${
               isDarkMode ? "bg-slate-900/50 border-slate-700/60" : "bg-slate-100/80 border-slate-200/80"
             }`}
             role="tablist"
@@ -195,6 +195,12 @@ export default function EnrolledPage() {
           isDarkMode={isDarkMode}
           onOpenFile={openDocumentViewer}
           sections={sections}
+          onStatusChange={(_, status) => {
+            if (status === 'Pending' && selectedStudent) {
+              resetStudentToPending(selectedStudent)
+              setSelectedStudent(null)
+            }
+          }}
         />
 
         <DocumentViewerModal

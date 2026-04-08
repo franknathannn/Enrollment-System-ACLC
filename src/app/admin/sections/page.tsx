@@ -162,6 +162,12 @@ export default function SectionsPage() {
         isDarkMode={isDarkMode} 
         onUpdate={updateStudentProfile}
         sections={sections}
+        onStatusChange={(_, status) => {
+          if (status === 'Pending' && activeProfile) {
+            handleReturnToPending(activeProfile.id, `${activeProfile.first_name} ${activeProfile.last_name}`)
+            setProfileOpen(false)
+          }
+        }}
       />
       <AddSectionDialog 
         open={confirmAdd.isOpen} 

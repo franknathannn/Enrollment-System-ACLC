@@ -25,6 +25,8 @@ interface DossierHeaderProps {
   onSave: () => void
   onImageClick: () => void
   onDownloadForm: () => void
+  onStatusChange?: (id: string, status: string) => void
+  onDecline?: (student: any) => void
 }
 
 const STATUS_CFG: Record<string, { dark: string; light: string; dot: string; bar: string; glow: string }> = {
@@ -47,6 +49,7 @@ const StatusBadge = memo(function StatusBadge({ status, isDarkMode }: { status: 
 export const DossierHeader = memo(function DossierHeader({
   student, formData, isDarkMode, isEditing, isSaving, hasChanges, isValid,
   showEditButton, onClose, onEditToggle, onCancelEdit, onSave, onImageClick, onDownloadForm,
+  onStatusChange, onDecline
 }: DossierHeaderProps) {
   const [copied, setCopied] = useState(false)
   const isALS      = student.student_category?.toLowerCase().includes("als")
@@ -81,7 +84,48 @@ Address: ${student.address}
   }
 
   return (
-    <div className={`relative overflow-hidden shrink-0 transition-all duration-500 ${
+    <>
+      <style>{`
+        .dossier-btn-accept {
+          background: ${isDarkMode ? 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.2) 100%)' : 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)'};
+          border: 1px solid ${isDarkMode ? 'rgba(16,185,129,0.3)' : 'rgba(16,185,129,0.2)'};
+          color: ${isDarkMode ? '#34d399' : '#059669'};
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .dossier-btn-accept:hover { 
+          border-color: rgba(16,185,129,0.6);
+          background: ${isDarkMode ? 'linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(5,150,105,0.3) 100%)' : 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)'};
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(16,185,129,0.3);
+        }
+
+        .dossier-btn-reject {
+          background: ${isDarkMode ? 'linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(220,38,38,0.2) 100%)' : 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)'};
+          border: 1px solid ${isDarkMode ? 'rgba(239,68,68,0.3)' : 'rgba(239,68,68,0.2)'};
+          color: ${isDarkMode ? '#f87171' : '#dc2626'};
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .dossier-btn-reject:hover { 
+          border-color: rgba(239,68,68,0.6);
+          background: ${isDarkMode ? 'linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(220,38,38,0.3) 100%)' : 'linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%)'};
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(239,68,68,0.3);
+        }
+
+        .dossier-btn-pending {
+          background: ${isDarkMode ? 'linear-gradient(135deg, rgba(249,115,22,0.1) 0%, rgba(234,88,12,0.2) 100%)' : 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)'};
+          border: 1px solid ${isDarkMode ? 'rgba(249,115,22,0.3)' : 'rgba(249,115,22,0.2)'};
+          color: ${isDarkMode ? '#fdba74' : '#ea580c'};
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .dossier-btn-pending:hover { 
+          border-color: rgba(249,115,22,0.6);
+          background: ${isDarkMode ? 'linear-gradient(135deg, rgba(249,115,22,0.2) 0%, rgba(234,88,12,0.3) 100%)' : 'linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)'};
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(249,115,22,0.3);
+        }
+      `}</style>
+      <div className={`relative overflow-hidden shrink-0 transition-all duration-500 ${
       isDarkMode
         ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800/80"
         : "bg-gradient-to-br from-white via-slate-50 to-slate-100/70 border-b border-slate-200"
@@ -282,6 +326,34 @@ Address: ${student.address}
           )}
         </div>
 
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-4 mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+          {student.status === 'Pending' && onStatusChange && onDecline && (
+            <>
+              <button 
+                onClick={() => onStatusChange(student.id, 'Approved')} 
+                className="dossier-btn-accept inline-flex items-center justify-center h-11 rounded-full font-black uppercase text-[10px] md:text-xs tracking-widest px-8 shadow-xl"
+              >
+                <Check size={14} strokeWidth={3} className="mr-2" /> Accept
+              </button>
+              <button 
+                onClick={() => onDecline(student)} 
+                className="dossier-btn-reject inline-flex items-center justify-center h-11 rounded-full font-black uppercase text-[10px] md:text-xs tracking-widest px-8 shadow-xl"
+              >
+                <X size={14} strokeWidth={3} className="mr-2" /> Reject
+              </button>
+            </>
+          )}
+          {(student.status === 'Approved' || student.status === 'Accepted' || student.status === 'Rejected') && onStatusChange && (
+            <button 
+              onClick={() => onStatusChange(student.id, 'Pending')} 
+              className="dossier-btn-pending inline-flex items-center justify-center h-11 rounded-full font-black uppercase text-[10px] md:text-xs tracking-widest px-8 shadow-xl"
+            >
+              <Undo2 size={14} strokeWidth={3} className="mr-2" /> Return to Pending
+            </button>
+          )}
+        </div>
+
         {/* Rejection notice */}
         {student.status === "Rejected" && (
           <div className="mt-5 w-full max-w-md animate-in fade-in slide-in-from-top-2 duration-500">
@@ -293,5 +365,6 @@ Address: ${student.address}
         )}
       </div>
     </div>
+    </>
   )
 })

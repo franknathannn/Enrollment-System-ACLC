@@ -496,7 +496,7 @@ export default function HomePage() {
     const init = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
-      particles = Array.from({ length: 55 }, (): Particle => ({
+      particles = Array.from({ length: 25 }, (): Particle => ({
         x: Math.random() * canvas.width, y: Math.random() * canvas.height,
         vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
         size: Math.random() * 1.5 + 0.3, pulse: Math.random() * Math.PI * 2,
@@ -1113,69 +1113,67 @@ export default function HomePage() {
       {/* ── FOOTER ──────────────────────────────────────────────────────────── */}
       {/* safe-bottom pads for home-indicator bar on iOS / Meta Messenger */}
       <footer className={cn(
-        "mt-24 md:mt-32 lg:mt-44 border-t backdrop-blur-3xl py-12 md:py-20 px-4 md:px-6 safe-bottom",
+        "relative z-10 mt-24 md:mt-32 lg:mt-44 border-t backdrop-blur-3xl py-12 md:py-20 px-4 md:px-6 safe-bottom",
         "transition-[background-color,border-color] duration-500",
         d ? "bg-[#020510]/90 border-white/5" : "bg-white/80 border-slate-200"
       )}>
         <div className="max-w-7xl mx-auto">
-          <Reveal>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16">
-              {/* Brand */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <div className={cn("absolute inset-0 rounded-full blur-xl", d ? "bg-blue-500/30" : "bg-blue-400/30")} />
-                    <img src="/logo-aclc.png" alt="ACLC" loading="lazy" className="relative w-12 h-12 object-contain" />
-                  </div>
-                  <div>
-                    <p className={cn("font-black text-lg uppercase italic tracking-tight", d ? "text-white" : "text-slate-900")}>ACLC Northbay</p>
-                    <p className={cn("text-[8px] font-bold uppercase tracking-[0.35em]", d ? "text-slate-500" : "text-slate-400")}>AMA Computer Learning Center</p>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16">
+            {/* Brand */}
+            <div className="space-y-5">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className={cn("absolute inset-0 rounded-full blur-xl", d ? "bg-blue-500/30" : "bg-blue-400/30")} />
+                  <img src="/logo-aclc.png" alt="ACLC" loading="lazy" className="relative w-12 h-12 object-contain" />
                 </div>
-                <p className="text-xs leading-relaxed text-slate-500">Delivering quality, technology-driven Senior High education under the AMA Education System in the heart of Tondo, Manila.</p>
-              </div>
-
-              {/* Contact */}
-              <div className="space-y-5">
-                <p className={cn("text-[10px] font-black uppercase tracking-[0.4em]", d ? "text-indigo-400" : "text-blue-600")}>Contact</p>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <MapPin size={15} className={cn("shrink-0 mt-0.5", d ? "text-slate-500" : "text-slate-400")} />
-                    <p className={cn("text-[11px] font-semibold leading-relaxed", d ? "text-slate-400" : "text-slate-600")}>
-                      2nd/3rd Floor MTSC Bldg, Juan Luna cor. Capulong St., Tondo, Manila
-                    </p>
-                  </div>
-                  <a
-                    href="https://www.facebook.com/Northbaycampus"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 group"
-                    style={{ touchAction: "manipulation" }}>
-                    <Facebook size={15} className={cn("transition-colors", d ? "text-slate-500 lg:group-hover:text-blue-400" : "text-slate-400 lg:group-hover:text-blue-600")} />
-                    <span className={cn("text-[11px] font-semibold transition-colors", d ? "text-slate-400 lg:group-hover:text-white" : "text-slate-600 lg:group-hover:text-slate-900")}>/Northbaycampus</span>
-                  </a>
+                <div>
+                  <p className={cn("font-black text-lg uppercase italic tracking-tight", d ? "text-white" : "text-slate-900")}>ACLC Northbay</p>
+                  <p className={cn("text-[8px] font-bold uppercase tracking-[0.35em]", d ? "text-slate-500" : "text-slate-400")}>AMA Computer Learning Center</p>
                 </div>
               </div>
+              <p className="text-xs leading-relaxed text-slate-500">Delivering quality, technology-driven Senior High education under the AMA Education System in the heart of Tondo, Manila.</p>
+            </div>
 
-              {/* System */}
-              <div className="space-y-5">
-                <p className={cn("text-[10px] font-black uppercase tracking-[0.4em]", d ? "text-indigo-400" : "text-blue-600")}>System</p>
-                <div className={cn(
-                  "p-5 rounded-3xl border flex items-center gap-4",
-                  "transition-[background-color,border-color] duration-300",
-                  d ? "bg-white/3 border-white/6" : "bg-blue-50 border-blue-100"
-                )}>
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20">
-                    <ShieldCheck size={18} className="text-white" />
-                  </div>
-                  <div>
-                    <p className={cn("text-[10px] font-black uppercase tracking-widest", d ? "text-white" : "text-slate-800")}>Secure Registry</p>
-                    <p className={cn("text-[9px] font-bold uppercase tracking-wider mt-0.5 italic", d ? "text-slate-500" : "text-slate-400")}>AES-256 Encrypted</p>
-                  </div>
+            {/* Contact */}
+            <div className="space-y-5">
+              <p className={cn("text-[10px] font-black uppercase tracking-[0.4em]", d ? "text-indigo-400" : "text-blue-600")}>Contact</p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <MapPin size={15} className={cn("shrink-0 mt-0.5", d ? "text-slate-500" : "text-slate-400")} />
+                  <p className={cn("text-[11px] font-semibold leading-relaxed", d ? "text-slate-400" : "text-slate-600")}>
+                    2nd/3rd Floor MTSC Bldg, Juan Luna cor. Capulong St., Tondo, Manila
+                  </p>
+                </div>
+                <a
+                  href="https://www.facebook.com/Northbaycampus"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 group"
+                  style={{ touchAction: "manipulation" }}>
+                  <Facebook size={15} className={cn("transition-colors", d ? "text-slate-500 lg:group-hover:text-blue-400" : "text-slate-400 lg:group-hover:text-blue-600")} />
+                  <span className={cn("text-[11px] font-semibold transition-colors", d ? "text-slate-400 lg:group-hover:text-white" : "text-slate-600 lg:group-hover:text-slate-900")}>/Northbaycampus</span>
+                </a>
+              </div>
+            </div>
+
+            {/* System */}
+            <div className="space-y-5">
+              <p className={cn("text-[10px] font-black uppercase tracking-[0.4em]", d ? "text-indigo-400" : "text-blue-600")}>System</p>
+              <div className={cn(
+                "p-5 rounded-3xl border flex items-center gap-4",
+                "transition-[background-color,border-color] duration-300",
+                d ? "bg-white/3 border-white/6" : "bg-blue-50 border-blue-100"
+              )}>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20">
+                  <ShieldCheck size={18} className="text-white" />
+                </div>
+                <div>
+                  <p className={cn("text-[10px] font-black uppercase tracking-widest", d ? "text-white" : "text-slate-800")}>Secure Registry</p>
+                  <p className={cn("text-[9px] font-bold uppercase tracking-wider mt-0.5 italic", d ? "text-slate-500" : "text-slate-400")}>AES-256 Encrypted</p>
                 </div>
               </div>
             </div>
-          </Reveal>
+          </div>
 
           <div className={cn(
             "mt-12 md:mt-16 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4",

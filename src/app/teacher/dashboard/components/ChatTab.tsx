@@ -139,7 +139,7 @@ const DmBubble = memo(({
         }
       </div>
 
-      <div className={cn("flex flex-col max-w-[78%]", isMe ? "items-end" : "items-start")}>
+      <div className={cn("flex flex-col max-w-[78%] min-w-0", isMe ? "items-end" : "items-start")}>
         <span className={cn("text-[9px] font-bold mb-1 px-1 opacity-70 flex items-center gap-1", dm ? "text-slate-400" : "text-slate-500")}>
           {isAdmin
             ? <ShieldCheck size={9} className="text-blue-500 shrink-0" />
@@ -148,7 +148,7 @@ const DmBubble = memo(({
           {name} · {date}
         </span>
 
-        <div className={cn("flex items-center gap-1.5 relative", isMe ? "flex-row-reverse" : "flex-row")}>
+        <div className={cn("flex items-center gap-1.5 relative min-w-0", isMe ? "flex-row-reverse" : "flex-row")}>
           {isEditing ? (
             <div className={cn("flex items-center gap-2 p-2 rounded-[24px] border border-blue-500/50 shadow-xl animate-in zoom-in-95 w-full",
               dm ? "bg-slate-900" : "bg-white")}>
@@ -164,9 +164,9 @@ const DmBubble = memo(({
                 dm ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500")}><X size={13} /></button>
             </div>
           ) : (
-            <div className={cn("flex flex-col w-fit max-w-full", isMe ? "items-end" : "items-start")}>
+            <div className={cn("flex flex-col flex-1 min-w-0", isMe ? "items-end" : "items-start")}>
               {msg.content && (
-                <div className={cn("p-3 rounded-[20px] text-[13px] font-medium leading-relaxed shadow-sm border break-words whitespace-pre-wrap",
+                <div className={cn("p-3 rounded-[20px] text-[13px] font-medium leading-relaxed shadow-sm border whitespace-pre-wrap break-all",
                   isMe ? "rounded-tr-sm border-transparent text-white"
                     : cn("rounded-tl-sm", dm ? "bg-slate-800 border-slate-700 text-slate-200" : "bg-white border-slate-200 text-slate-800")
                 )}
@@ -177,7 +177,7 @@ const DmBubble = memo(({
               {msg.attachment_url && <MsgAttachment msg={msg} isMe={isMe} dm={dm} />}
 
               {hasReactions && (
-                <div className={cn("flex flex-wrap gap-1 mt-1 max-w-full", isMe ? "justify-end" : "justify-start")}>
+                <div className={cn("flex flex-wrap gap-1 mt-1 max-w-full overflow-hidden", isMe ? "justify-end" : "justify-start")}>
                   {Object.entries(grouped).map(([emoji, data]) => (
                     <TooltipProvider key={emoji}>
                       <Tooltip delayDuration={0}>
@@ -218,7 +218,7 @@ const DmBubble = memo(({
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
                     <div className={cn("absolute z-50 flex items-center p-1.5 border shadow-2xl animate-in zoom-in-75 fade-in duration-200 rounded-full gap-0.5",
-                      isMe ? "left-0" : "right-0", "bottom-full mb-2",
+                      isMe ? "left-0 origin-bottom-left" : "right-0 origin-bottom-right", "bottom-full mb-2",
                       dm ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200")}>
                       {Object.entries(EMOJI_MAP).map(([key, { icon }]) => (
                         <button key={key} onClick={() => { onToggleReaction(msg.id, key); setShowEmojiPicker(false) }}

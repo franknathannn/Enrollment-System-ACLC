@@ -55,54 +55,58 @@ export default function AdminDashboard() {
   }
 
 
-  // OPTIMIZED: Separated background updates from initial load
-  const fetchStudents = useCallback(async (isBackground = false) => {
-    // Prevent concurrent background fetches — realtime + polling can fire simultaneously
-    if (isBackground && fetchingRef.current) return
-    fetchingRef.current = true
-    try {
-      const [studentsRes, configRes, sectionsRes, historyRes] = await Promise.all([
-        supabase.from('students').select('id,first_name,last_name,gender,strand,section,status,student_category,gwa_grade_10,two_by_two_url,created_at,preferred_shift,last_school_attended,grade_level,is_archived').order('created_at', { ascending: false }),
-        supabase.from('system_config').select('*').maybeSingle(),
-        supabase.from('sections').select('capacity'),
-        supabase.from('enrollment_history').select('*').order('school_year', { ascending: false })
-      ])
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-      if (studentsRes.error) {
-        console.error("Students fetch error:", studentsRes.error)
-        throw studentsRes.error
-      }
-      if (configRes.error) {
-         console.error("Config fetch error:", configRes.error)
-      }
-      
-      const allStudents = studentsRes.data || []
-      
-      // Update students state — stats computed reactively in useMemo below
-      setStudents(allStudents)
+  // OPTIMIZED: Separated background updates from initial load with a debounce mechanism
+  const fetchStudents = useCallback((isBackground = false) => {
+    return new Promise<void>((resolve) => {
+      if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
 
-      if (configRes.data) setConfig(configRes.data)
-      if (historyRes.data) setHistory(historyRes.data)
-      
-      if (sectionsRes.data) {
-        const totalCapacity = sectionsRes.data.reduce((acc: number, s: any) => acc + (s.capacity || 40), 0) || 1000
-        setSystem(prev => ({ ...prev, capacity: totalCapacity }))
-      }
+      fetchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const [studentsRes, configRes, sectionsRes, historyRes] = await Promise.all([
+            supabase.from('students').select('id,first_name,last_name,gender,strand,section,status,student_category,gwa_grade_10,two_by_two_url,created_at,preferred_shift,last_school_attended,grade_level,is_archived').order('created_at', { ascending: false }),
+            supabase.from('system_config').select('*').maybeSingle(),
+            supabase.from('sections').select('capacity'),
+            supabase.from('enrollment_history').select('*').order('school_year', { ascending: false })
+          ])
 
-      if (!isBackground) {
-        console.log("✅ Dashboard data loaded:", allStudents.length, "students")
-      } else {
-        console.log("🔄 Live update: Dashboard refreshed with", allStudents.length, "students")
-      }
-      
-    } catch (error) {
-      console.error("Dashboard sync error:", error)
-      if (!isBackground) {
-        toast.error("Failed to sync dashboard data")
-      }
-    } finally {
-      fetchingRef.current = false
-    }
+          if (studentsRes.error) {
+            console.error("Students fetch error:", studentsRes.error)
+            throw studentsRes.error
+          }
+          if (configRes.error) {
+             console.error("Config fetch error:", configRes.error)
+          }
+          
+          const allStudents = studentsRes.data || []
+          
+          // Update students state — stats computed reactively in useMemo below
+          setStudents(allStudents)
+
+          if (configRes.data) setConfig(configRes.data)
+          if (historyRes.data) setHistory(historyRes.data)
+          
+          if (sectionsRes.data) {
+            const totalCapacity = sectionsRes.data.reduce((acc: number, s: any) => acc + (s.capacity || 40), 0) || 1000
+            setSystem({ currentCount: 0, capacity: totalCapacity })
+          }
+
+          if (!isBackground) {
+            console.log("✅ Dashboard data loaded:", allStudents.length, "students")
+          } else {
+            console.log("🔄 Live update: Dashboard refreshed with", allStudents.length, "students")
+          }
+        } catch (error) {
+          console.error("Dashboard sync error:", error)
+          if (!isBackground) {
+            toast.error("Failed to sync dashboard data")
+          }
+        } finally {
+          resolve()
+        }
+      }, isBackground ? 300 : 0) // Debounce background realtime updates by 300ms to batch rapid events
+    })
   }, [])
 
   // Initial load
@@ -116,24 +120,18 @@ export default function AdminDashboard() {
     initDashboard()
   }, [fetchStudents])
 
-  // HYBRID APPROACH: Realtime + Polling Fallback
+  // HYBRID APPROACH: Realtime + Ultra-Fast Polling
   useEffect(() => {
     console.log("🎯 Setting up live update system...")
-    
-    // POLLING FALLBACK - Checks every 15 seconds (realtime handles live events)
-    const pollingInterval = setInterval(() => {
-      console.log("🔄 Polling for updates...")
-      fetchStudents(true)
-    }, 15000)
 
-    // REALTIME SUBSCRIPTION - Primary method
+    // POLLING FALLBACK - 3 seconds (Matches Landing Page ultra-fast sync)
+    const pollingInterval = setInterval(() => {
+      fetchStudents(true)
+    }, 3000)
+
+    // REALTIME SUBSCRIPTION - Pure Push Updates
     const channel = supabase
-      .channel('dashboard_live_updates', {
-        config: {
-          broadcast: { self: true },
-          presence: { key: 'dashboard' }
-        }
-      })
+      .channel('dashboard_system_live')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 

@@ -134,6 +134,13 @@ export default function ApplicantsPage() {
      isDarkMode={isDarkMode}
      onUpdate={updateStudentProfile}
      sections={sections}
+     onStatusChange={(id, status) => { 
+       if (selectedStudentForDialog) {
+         handleStatusChange(id, `${selectedStudentForDialog.first_name} ${selectedStudentForDialog.last_name}`, status); 
+       }
+       setOpenStudentDialog(null); 
+     }}
+     onDecline={(student) => { setActiveDeclineStudent(student); setDeclineModalOpen(true); setOpenStudentDialog(null); }}
    />
 
    <DocumentViewerModal 

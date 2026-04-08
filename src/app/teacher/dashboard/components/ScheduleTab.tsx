@@ -1,7 +1,7 @@
 // app/teacher/dashboard/components/ScheduleTab.tsx
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CalendarDays } from "lucide-react"
 import { PeriodCard } from "./PeriodCard"
 

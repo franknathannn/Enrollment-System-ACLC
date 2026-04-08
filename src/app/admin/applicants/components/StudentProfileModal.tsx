@@ -9,9 +9,11 @@ interface StudentProfileModalProps {
   isDarkMode: boolean
   onUpdate?: (id: string, data: any) => Promise<void | boolean>
   sections?: any[]
+  onStatusChange?: (id: string, status: string) => void
+  onDecline?: (student: any) => void
 }
 
-export function StudentProfileModal({ isOpen, onClose, student, onOpenFile, isDarkMode, onUpdate, sections }: StudentProfileModalProps) {
+export function StudentProfileModal({ isOpen, onClose, student, onOpenFile, isDarkMode, onUpdate, sections, onStatusChange, onDecline }: StudentProfileModalProps) {
   if (!student) return null
 
   return (
@@ -28,6 +30,8 @@ export function StudentProfileModal({ isOpen, onClose, student, onOpenFile, isDa
           onClose={onClose}
           onUpdate={onUpdate}
           sections={sections}
+          onStatusChange={onStatusChange}
+          onDecline={onDecline}
         />
       </DialogContent>
     </Dialog>

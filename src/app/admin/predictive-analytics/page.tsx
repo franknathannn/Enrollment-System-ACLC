@@ -222,18 +222,18 @@ function ThisYearSpotlight({
           </div>
 
           {/* Desktop: inline labels at their bar position */}
-          <div className="relative h-5 mt-2 hidden md:block">
+          <div className="relative h-5 mt-2 hidden lg:block">
             <span className="absolute text-[10px] text-rose-400 font-semibold -translate-x-1/2" style={{ left: `${declPct}%` }}>▲ {lowestPossible.toLocaleString()}</span>
             <span className="absolute text-[10px] text-blue-500 font-semibold -translate-x-1/2" style={{ left: `${realPct}%` }}>▲ {expectedOutcome.toLocaleString()}</span>
             <span className="absolute right-0 text-[10px] font-semibold text-emerald-500">{highestPossible.toLocaleString()} ▲</span>
           </div>
-          <div className="relative h-4 mt-1 hidden md:flex justify-between text-[9px] uppercase tracking-widest">
+          <div className="relative h-4 mt-1 hidden lg:flex justify-between text-[9px] uppercase tracking-widest">
             <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Declining</span>
             <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Realistic</span>
             <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Optimistic</span>
           </div>
           {/* Mobile: fixed 3-column grid */}
-          <div className="grid grid-cols-3 gap-1 mt-3 md:hidden">
+          <div className="grid grid-cols-3 gap-1 mt-3 lg:hidden">
             <div className="text-left">
               <p className="text-[9px] uppercase font-semibold text-rose-400 tracking-wider">Declining</p>
               <p className="text-[10px] font-semibold text-rose-400 tabular-nums">{lowestPossible.toLocaleString()}</p>
@@ -380,18 +380,18 @@ function LovCvPythonEnginePanel({
                     <div className={`absolute top-0 left-0 bottom-0 rounded-full transition-all duration-1000 ease-out ${passed ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'}`} style={{ width: `${Math.min(fillPct, 100)}%` }} />
                   </div>
                   {/* Desktop: inline labels at their bar position */}
-                  <div className="relative h-5 mt-2 hidden md:block">
+                  <div className="relative h-5 mt-2 hidden lg:block">
                     <span className="absolute text-[10px] text-rose-500 font-black -translate-x-1/2" style={{ left: `${declPct}%` }}>▲ {result.declining.toLocaleString()}</span>
                     <span className="absolute text-[10px] font-black -translate-x-1/2" style={{ left: `${realPct}%`, color: isDarkMode ? '#60a5fa' : '#2563eb' }}>▲ {result.realistic.toLocaleString()}</span>
                     <span className="absolute right-0 text-[10px] text-emerald-500 font-black">{result.optimistic.toLocaleString()} ▲</span>
                   </div>
-                  <div className="relative h-4 mt-1 hidden md:flex justify-between text-[9px] uppercase tracking-widest">
+                  <div className="relative h-4 mt-1 hidden lg:flex justify-between text-[9px] uppercase tracking-widest">
                     <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Declining</span>
                     <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Realistic</span>
                     <span className={isDarkMode ? 'text-slate-600' : 'text-slate-400'}>Optimistic</span>
                   </div>
                   {/* Mobile: fixed 3-column grid */}
-                  <div className="grid grid-cols-3 gap-1 mt-3 md:hidden">
+                  <div className="grid grid-cols-3 gap-1 mt-3 lg:hidden">
                     <div className="text-left">
                       <p className="text-[9px] uppercase font-black text-rose-500 tracking-wider">Declining</p>
                       <p className="text-[10px] font-black text-rose-500 tabular-nums">{result.declining.toLocaleString()}</p>

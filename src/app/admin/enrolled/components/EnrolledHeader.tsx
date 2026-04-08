@@ -63,10 +63,10 @@ export const EnrolledHeader = memo(({ isDarkMode, loading, fetchStudents, search
             <TooltipTrigger asChild>
               <Input 
                 placeholder="Search LRN, Name or Tracking ID..." 
-                className="h-10 md:h-12 pl-10 w-full rounded-2xl bg-white dark:bg-slate-900/90 backdrop-blur-sm shadow-lg border font-bold text-sm text-black dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all duration-500" 
+                className="h-10 md:h-12 pl-10 w-full rounded-2xl backdrop-blur-sm shadow-lg border font-bold text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all duration-500" 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ backgroundColor: isDarkMode ? undefined : '#ffffff', color: isDarkMode ? undefined : '#000000', borderColor: isDarkMode ? 'rgba(51, 65, 85, 0.5)' : '#f1f5f9' }}
+                style={{ backgroundColor: isDarkMode ? 'rgb(15,23,42)' : '#ffffff', color: isDarkMode ? '#e2e8f0' : '#000000', borderColor: isDarkMode ? 'rgba(51, 65, 85, 0.5)' : '#f1f5f9' }}
               />
             </TooltipTrigger>
             <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Search by Student LRN, NAME or Tracking ID.</p></TooltipContent>
@@ -79,7 +79,7 @@ export const EnrolledHeader = memo(({ isDarkMode, loading, fetchStudents, search
             onClick={onExport}
             className={`h-10 md:h-12 px-3 md:px-6 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shrink-0 transform hover:scale-105 flex items-center justify-center gap-2 border ${
               isDarkMode 
-                ? 'bg-white text-black hover:bg-slate-200 border-white/50' 
+                ? 'bg-slate-800 text-emerald-400 hover:bg-slate-700 border-slate-600/50' 
                 : 'bg-slate-900 text-white hover:bg-slate-800 border-slate-700/50'
             }`}
           >

@@ -28,6 +28,8 @@ export const StudentDossier = memo(function StudentDossier({
   onClose,
   onUpdate,
   sections = [],
+  onStatusChange,
+  onDecline
 }: {
   student: any
   onOpenFile: (url: string, label: string, allDocs?: { url: string; label: string }[]) => void
@@ -35,6 +37,8 @@ export const StudentDossier = memo(function StudentDossier({
   onClose?: () => void
   onUpdate?: (id: string, data: any) => Promise<void | boolean>
   sections?: any[]
+  onStatusChange?: (id: string, status: string) => void
+  onDecline?: (student: any) => void
 }) {
   const [formData, setFormData]       = useState(student)
   const [isEditing, setIsEditing]     = useState(false)
@@ -372,6 +376,8 @@ const handleDownloadForm = async () => {
         onSave={handleSave}
         onImageClick={handleImageClick}
         onDownloadForm={handleDownloadForm}
+        onStatusChange={onStatusChange}
+        onDecline={onDecline}
       />
 
       <div className={`p-6 md:p-12 space-y-12 md:space-y-20 text-sm flex-1 overflow-y-auto no-scrollbar transition-colors duration-500 ${isDarkMode ? "bg-slate-950" : "bg-white"}`}>
