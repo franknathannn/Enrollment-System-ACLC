@@ -13,13 +13,24 @@ interface AboutSectionProps {
 const ScrollRevealedText = ({ text, progress, range, isDark }: { text: string; progress: any; range: [number, number]; isDark: boolean }) => {
   const words = text.split(" ")
   const spanRefs = useRef<(HTMLSpanElement | null)[]>([])
+  const lastLit = useRef(-1)
 
   // One transform maps [rangeStart, rangeEnd] → [0, wordCount]
   const litProgress = useTransform(progress, range, [0, words.length])
 
+  // Precomputed outside the callback — stable between frames, only changes when isDark changes
+  const dimRGB = isDark ? [60,  60,  60 ] : [200, 200, 200]
+  const brtRGB = isDark ? [255, 255, 255] : [15,  23,  42 ]
+
   useMotionValueEvent(litProgress, "change", (lit) => {
-    const [dimR, dimG, dimB] = isDark ? [60, 60, 60] : [200, 200, 200]
-    const [brtR, brtG, brtB] = isDark ? [255, 255, 255] : [15, 23, 42]
+    // Skip frames where scroll progress hasn't moved enough to visually change any word.
+    // 0.05 is sub-perceptible — saves ~3–6 redundant style writes per gesture.
+    if (Math.abs(lit - lastLit.current) < 0.05) return
+    lastLit.current = lit
+
+    const [dimR, dimG, dimB] = dimRGB
+    const [brtR, brtG, brtB] = brtRGB
+
     spanRefs.current.forEach((span, i) => {
       if (!span) return
       const t = Math.max(0, Math.min(1, lit - i))
