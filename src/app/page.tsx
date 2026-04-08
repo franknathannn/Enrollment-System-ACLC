@@ -13,8 +13,16 @@ import {
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { useThemeStore } from "@/store/useThemeStore"
-import { ProcessSection } from "@/components/landing/ProcessSection"
-import { AboutSection } from "@/components/landing/AboutSection"
+import dynamic from "next/dynamic"
+
+const AboutSection = dynamic(
+  () => import("@/components/landing/AboutSection").then(m => ({ default: m.AboutSection })),
+  { ssr: false }
+)
+const ProcessSection = dynamic(
+  () => import("@/components/landing/ProcessSection").then(m => ({ default: m.ProcessSection })),
+  { ssr: false }
+)
 
 // ── TYPES ────────────────────────────────────────────────────────────────────
 interface Particle { x: number; y: number; vx: number; vy: number; size: number; pulse: number; twinkle: number }
@@ -437,6 +445,7 @@ export default function HomePage() {
   const [config, setConfig] = useState<any>(null)
   const [stats, setStats] = useState({ totalCount: 0, totalMax: 0, ictCount: 0, ictMax: 0, gasCount: 0, gasMax: 0 })
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const heroRef = useRef<HTMLDivElement>(null)
   const isDarkRef = useRef(isDark)
   useEffect(() => { isDarkRef.current = isDark }, [isDark])
 
@@ -484,6 +493,7 @@ export default function HomePage() {
     let shootingStars: ShootingStar[] = []
     let raf: number
     let frameCount = 0
+    let paused = false
     const mouse = { x: -9999, y: -9999 }
 
     const spawnStar = (): ShootingStar => ({
@@ -594,8 +604,22 @@ export default function HomePage() {
         ctx.beginPath(); ctx.arc(s.x, s.y, s.width * 5, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill()
       })
 
-      raf = requestAnimationFrame(animate)
+      if (!paused) raf = requestAnimationFrame(animate)
     }
+
+    const pause = () => { paused = true; cancelAnimationFrame(raf) }
+    const resume = () => { if (paused) { paused = false; animate() } }
+
+    // Pause when the browser tab is hidden
+    const handleVisibility = () => { document.hidden ? pause() : resume() }
+    document.addEventListener("visibilitychange", handleVisibility)
+
+    // Pause when the hero section scrolls fully off-screen
+    const observer = new IntersectionObserver(
+      ([entry]) => { entry.isIntersecting ? resume() : pause() },
+      { threshold: 0 }
+    )
+    if (heroRef.current) observer.observe(heroRef.current)
 
     const onMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY }
     const onClick = (e: MouseEvent) => {
@@ -615,7 +639,15 @@ export default function HomePage() {
     window.addEventListener("click", onClick, { passive: true })
     window.addEventListener("resize", init, { passive: true })
     init(); animate()
-    return () => { cancelAnimationFrame(raf); clearInterval(starSpawner); window.removeEventListener("mousemove", onMove); window.removeEventListener("click", onClick); window.removeEventListener("resize", init) }
+    return () => {
+      cancelAnimationFrame(raf)
+      clearInterval(starSpawner)
+      document.removeEventListener("visibilitychange", handleVisibility)
+      observer.disconnect()
+      window.removeEventListener("mousemove", onMove)
+      window.removeEventListener("click", onClick)
+      window.removeEventListener("resize", init)
+    }
   }, [isMobile])
 
   const isManual = config?.control_mode === 'manual'
@@ -791,7 +823,7 @@ export default function HomePage() {
       {/* pt accounts for fixed navbar height (64px mobile / 86px desktop) */}
       <main className="relative z-10 pt-24 md:pt-32 lg:pt-44 pb-16 md:pb-24 px-4 md:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+          <div ref={heroRef} className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
 
             {/* ── HERO LEFT ─────────────────────────────────────────────────── */}
             <div className="lg:col-span-7 space-y-8 md:space-y-10">

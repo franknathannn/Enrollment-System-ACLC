@@ -1,39 +1,45 @@
 "use client"
 
 import React, { useRef, useState, useEffect } from "react"
-import { motion, useScroll, useTransform, useInView } from "framer-motion"
+import { motion, useScroll, useTransform, useInView, useMotionValueEvent } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 interface AboutSectionProps {
   isDark: boolean
 }
 
-// Helper components for the word-by-word light-up effect
-const Word = ({ word, progress, range, isDark }: { word: string; progress: any; range: [number, number]; isDark: boolean }) => {
-  const color = useTransform(
-    progress,
-    range,
-    [
-      isDark ? "rgb(60, 60, 60)" : "rgb(200, 200, 200)", // Distinct Grey
-      isDark ? "rgb(255, 255, 255)" : "rgb(15, 23, 42)"  // Target White / Dark Slate
-    ]
-  )
-  return <motion.span style={{ color }} className="inline-block mr-[0.25em] whitespace-nowrap">{word}</motion.span>
-}
-
+// Single-transform scroll reveal — 1 motion value per block instead of 1 per word.
+// useMotionValueEvent writes directly to DOM refs so there are zero React re-renders on scroll.
 const ScrollRevealedText = ({ text, progress, range, isDark }: { text: string; progress: any; range: [number, number]; isDark: boolean }) => {
   const words = text.split(" ")
-  const step = (range[1] - range[0]) / words.length
+  const spanRefs = useRef<(HTMLSpanElement | null)[]>([])
+
+  // One transform maps [rangeStart, rangeEnd] → [0, wordCount]
+  const litProgress = useTransform(progress, range, [0, words.length])
+
+  useMotionValueEvent(litProgress, "change", (lit) => {
+    const [dimR, dimG, dimB] = isDark ? [60, 60, 60] : [200, 200, 200]
+    const [brtR, brtG, brtB] = isDark ? [255, 255, 255] : [15, 23, 42]
+    spanRefs.current.forEach((span, i) => {
+      if (!span) return
+      const t = Math.max(0, Math.min(1, lit - i))
+      span.style.color = `rgb(${Math.round(dimR + (brtR - dimR) * t)},${Math.round(dimG + (brtG - dimG) * t)},${Math.round(dimB + (brtB - dimB) * t)})`
+    })
+  })
+
+  const dimColor = isDark ? "rgb(60,60,60)" : "rgb(200,200,200)"
+
   return (
     <>
       {words.map((word, i) => (
-        <Word 
-          key={i} 
-          word={word} 
-          progress={progress} 
-          range={[range[0] + i * step, range[0] + (i + 1) * step]} 
-          isDark={isDark} 
-        />
+        <span
+          key={i}
+          ref={el => { spanRefs.current[i] = el }}
+          className="inline-block mr-[0.25em] whitespace-nowrap"
+          style={{ color: dimColor }}
+        >
+          {word}
+        </span>
       ))}
     </>
   )
@@ -108,14 +114,6 @@ export function AboutSection({ isDark }: AboutSectionProps) {
                 className="w-full h-auto object-cover"
               />
               
-              <div className={cn(
-                "absolute bottom-6 left-6 right-6 p-4 rounded-2xl backdrop-blur-md border flex items-center justify-center",
-                d ? "bg-black/60 border-white/10" : "bg-white/80 border-slate-200"
-              )}>
-                <span className={cn("text-[10px] font-black uppercase tracking-[0.2em] opacity-80", d ? "text-white" : "text-slate-900")}>
-                  EST. 1980
-                </span>
-              </div>
             </div>
           </motion.div>
 
