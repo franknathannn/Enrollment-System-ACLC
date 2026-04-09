@@ -151,7 +151,20 @@ export default function TeacherLoginPage() {
 
   return (
     <div className="h-screen w-full bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-500">
+      {/* --- GLASSMORPHISM LOGO BACKGROUND --- */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+        <img
+          src="/logo-aclc.png"
+          alt=""
+          aria-hidden="true"
+          className="w-[70vmin] h-[70vmin] max-w-[600px] max-h-[600px] object-contain opacity-[0.12] dark:opacity-[0.08] select-none"
+          draggable={false}
+        />
+      </div>
+      <div className="absolute inset-0 bg-slate-50/60 dark:bg-slate-950/70 backdrop-blur-[60px] pointer-events-none z-[1]" />
+      
       <LoginConstellation />
+      
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-100/50 dark:bg-blue-900/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[30%] bg-indigo-100/30 dark:bg-indigo-900/10 rounded-full blur-[100px] pointer-events-none" />
 

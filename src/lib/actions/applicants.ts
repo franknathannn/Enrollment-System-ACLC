@@ -429,15 +429,52 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
 export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string, feedback?: string) {
   const supabase = await createClient()
   const dbStatus = newStatus === "Accepted" ? "Approved" : newStatus
+  const CHUNK = 200 // Supabase .in() safe batch size
   
   try {
-    // Get all students being updated
-    const { data: studentsToUpdate, error: fetchError } = await supabase
-      .from('students')
-      .select('id, strand, gender, grade_level')
-      .in('id', ids)
+    // Helper: fetch in parallel chunks to avoid PostgREST URL length limits
+    async function fetchInChunks<T>(idList: string[]): Promise<T[]> {
+      const chunks: string[][] = []
+      for (let i = 0; i < idList.length; i += CHUNK) chunks.push(idList.slice(i, i + CHUNK))
+      const results = await Promise.all(
+        chunks.map(chunk =>
+          supabase.from('students').select('id, strand, gender, grade_level').in('id', chunk)
+        )
+      )
+      const all: T[] = []
+      for (const { data, error } of results) {
+        if (error) throw error
+        if (data) all.push(...(data as T[]))
+      }
+      return all
+    }
+
+    // Helper: paginate a query that may return >1000 rows
+    async function fetchAllRows(query: { strand: string, gradeLevel: string }) {
+      const all: { section_id: string, gender: string }[] = []
+      const PAGE = 1000
+      let from = 0
+      while (true) {
+        const { data, error } = await supabase
+          .from('students')
+          .select('section_id, gender')
+          .eq('strand', query.strand)
+          .eq('grade_level', query.gradeLevel)
+          .eq('status', 'Approved')
+          .not('section_id', 'is', null)
+          .range(from, from + PAGE - 1)
+        if (error) throw error
+        if (!data || data.length === 0) break
+        all.push(...data)
+        if (data.length < PAGE) break
+        from += PAGE
+      }
+      return all
+    }
+
+    // Get all students being updated (parallel chunked fetch)
+    const studentsToUpdate = await fetchInChunks<{ id: string, strand: string, gender: string, grade_level: string }>(ids)
     
-    if (fetchError) throw fetchError
     if (!studentsToUpdate || studentsToUpdate.length === 0) return { success: false, results: [] }
 
     // Group by strand + grade_level for efficient section lookup
@@ -457,24 +494,17 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
     for (const [groupKey, students] of Object.entries(strandGroups)) {
       const [strand, gradeLevel] = groupKey.split(":")
       // Fetch sections and existing students for this strand+grade_level in parallel
-      const [sectionsRes, existingStudentsRes] = await Promise.all([
+      const [sectionsRes, existingStudents] = await Promise.all([
         supabase
           .from('sections')
           .select('id, section_name, capacity')
           .eq('strand', strand)
           .eq('grade_level', gradeLevel)
           .order('section_name', { ascending: true }),
-        supabase
-          .from('students')
-          .select('section_id, gender')
-          .eq('strand', strand)
-          .eq('grade_level', gradeLevel)
-          .eq('status', 'Approved')
-          .not('section_id', 'is', null)
+        fetchAllRows({ strand, gradeLevel })
       ])
 
       const sections = sectionsRes.data || []
-      const existingStudents = existingStudentsRes.data || []
 
       // Build occupancy map
       const occupancy: Record<string, { male: number, female: number, total: number }> = {}
@@ -564,8 +594,9 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
       }
     }
 
-    // Execute batched updates (One query per section group)
-    const updatePromises = Object.entries(updatesBySection).map(([secId, studentIds]) => {
+    // Execute all batched updates in parallel — fire all section×chunk writes concurrently
+    const allUpdatePromises: Promise<any>[] = []
+    for (const [secId, studentIds] of Object.entries(updatesBySection)) {
       const payload: any = {
         status: dbStatus,
         registrar_feedback: dbStatus === "Approved" ? null : (feedback || null)
@@ -579,13 +610,14 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
         payload.section = sectionNames[secId]
       }
 
-      return supabase
-        .from('students')
-        .update(payload)
-        .in('id', studentIds)
-    })
-
-    await Promise.all(updatePromises)
+      for (let i = 0; i < studentIds.length; i += CHUNK) {
+        const chunk = studentIds.slice(i, i + CHUNK)
+        allUpdatePromises.push(
+          supabase.from('students').update(payload).in('id', chunk).then(({ error }) => { if (error) throw error })
+        )
+      }
+    }
+    await Promise.all(allUpdatePromises)
 
     revalidatePath("/admin/applicants")
     revalidatePath("/admin/dashboard")
@@ -603,18 +635,24 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
  */
 export async function bulkDeleteApplicants(ids: string[]) {
   const supabase = await createClient()
+  const CHUNK = 200
   
   try {
-    // Delete logs first
-    await supabase.from('activity_logs').delete().in('student_id', ids)
+    // Delete logs first (parallel chunks)
+    const logChunks: Promise<any>[] = []
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      logChunks.push(supabase.from('activity_logs').delete().in('student_id', ids.slice(i, i + CHUNK)))
+    }
+    await Promise.all(logChunks)
     
-    // Delete students
-    const { error } = await supabase
-      .from('students')
-      .delete()
-      .in('id', ids)
-
-    if (error) throw error
+    // Delete students (parallel chunks)
+    const delChunks: Promise<any>[] = []
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      delChunks.push(
+        supabase.from('students').delete().in('id', ids.slice(i, i + CHUNK)).then(({ error }) => { if (error) throw error })
+      )
+    }
+    await Promise.all(delChunks)
 
     revalidatePath("/admin/applicants")
     revalidatePath("/admin/dashboard")

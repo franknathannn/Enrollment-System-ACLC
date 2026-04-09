@@ -1,11 +1,12 @@
 "use client"
 
 import React, { useState, useEffect, useMemo } from "react"
-import { Search, MapPin, Users, MonitorPlay, Clock, CheckCircle2, AlertCircle, Settings2 } from "lucide-react"
+import { Search, MapPin, Users, MonitorPlay, Clock, CheckCircle2, AlertCircle, Settings2, User } from "lucide-react"
 import { ScheduleRow } from "./types"
 import { useRooms } from "../../sections/hooks/useRooms"
 import { formatAMPM } from "../../sections/components/schedule/autoScheduler"
 import { RoomManagerModal } from "./RoomManagerModal"
+import { supabase } from "@/lib/supabase/admin-client"
 
 interface RoomMonitoringTabProps {
   schedules: ScheduleRow[]
@@ -31,6 +32,82 @@ function parseTime(timeStr: string) {
 function getCurrentTimeMins() {
   const now = new Date()
   return now.getHours() * 60 + now.getMinutes()
+}
+
+function getLocalDateStr() {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
+}
+
+function LiveClassAttendance({ schedule, date, isDarkMode, text, muted }: { schedule: ScheduleRow; date: string; isDarkMode: boolean; text: string; muted: string }) {
+  const [present, setPresent] = useState<number | null>(null)
+  const [late, setLate] = useState<number | null>(null)
+  const [total, setTotal] = useState<number | null>(null)
+
+  useEffect(() => {
+    let active = true
+    const fetchStats = async () => {
+      const { count: pCount } = await supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("section", schedule.section)
+        .eq("subject", schedule.subject)
+        .eq("date", date)
+        .eq("status", "Present")
+        
+      const { count: lCount } = await supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("section", schedule.section)
+        .eq("subject", schedule.subject)
+        .eq("date", date)
+        .eq("status", "Late")
+      
+      const { count: tCount } = await supabase
+        .from("students")
+        .select("id", { count: "exact", head: true })
+        .eq("section", schedule.section)
+        .not("status", "eq", "Pending")
+
+      if (active) {
+        setPresent(pCount || 0)
+        setLate(lCount || 0)
+        setTotal(tCount || 0)
+      }
+    }
+    fetchStats()
+    
+    const handleFocus = () => fetchStats()
+    window.addEventListener("focus", handleFocus)
+    
+    const timer = setInterval(() => {
+      if (document.hasFocus()) fetchStats()
+    }, 3000)
+    
+    return () => { 
+      active = false
+      clearInterval(timer)
+      window.removeEventListener("focus", handleFocus)
+    }
+  }, [schedule, date])
+
+  if (present === null) return (
+    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-black/5 dark:border-white/5 opacity-50">
+       <div className="w-3 h-3 rounded-full border-2 border-t-transparent animate-spin border-emerald-500"></div>
+       <span className="text-[10px] font-bold">Loading...</span>
+    </div>
+  )
+  
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-black/5 dark:border-white/5">
+       <span className="text-[11px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded tracking-wide">{present} Present</span>
+       <span className="text-[11px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-500 px-2 py-0.5 rounded tracking-wide">{late} Late</span>
+       <span className="text-[11px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded tracking-wide shadow-sm shadow-emerald-500/20">{(present || 0) + (late || 0)} Total Present</span>
+    </div>
+  )
 }
 
 export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMonitoringTabProps) {
@@ -68,7 +145,7 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
         const start = parseTime(sched.start_time)
         const end = parseTime(sched.end_time)
         
-        if (currentMins >= start && currentMins < end) {
+        if (isToday && currentMins >= start && currentMins < end) {
           currentClass = sched
           isOccupied = true
         } else if (start >= currentMins && !nextClass) {
@@ -256,11 +333,24 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
                           <Users size={13} className={muted} />
                           <span className={muted}>{currentClass.section}</span>
                         </div>
+                        {currentClass.teacher && (
+                          <div className="flex items-center gap-2 text-xs font-semibold">
+                            <User size={13} className={muted} />
+                            <span className={muted}>{currentClass.teacher}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 text-xs font-semibold">
                           <Clock size={13} className={muted} />
                           <span className={muted}>{formatAMPM(currentClass.start_time)} – {formatAMPM(currentClass.end_time)}</span>
                         </div>
                       </div>
+                      <LiveClassAttendance 
+                        schedule={currentClass} 
+                        date={getLocalDateStr()} 
+                        isDarkMode={isDarkMode}
+                        text={text}
+                        muted={muted}
+                      />
                     </div>
                   </div>
                 ) : (
@@ -277,7 +367,15 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
                     <div className={`p-3 rounded-xl flex items-start justify-between gap-3 ${isDarkMode ? "bg-slate-800/80" : "bg-slate-100/80"}`}>
                       <div className="flex flex-col gap-0.5">
                         <span className={`text-xs font-bold leading-relaxed ${text} break-words`}>{nextClass.subject}</span>
-                        <span className={`text-[10px] font-bold opacity-70 ${muted}`}>{nextClass.section}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-bold opacity-70 ${muted}`}>{nextClass.section}</span>
+                          {nextClass.teacher && (
+                            <>
+                              <span className={`text-[10px] font-bold opacity-40 ${muted}`}>•</span>
+                              <span className={`text-[10px] font-bold opacity-70 ${muted}`}>{nextClass.teacher}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                       <span className={`text-xs font-black tracking-wider whitespace-nowrap px-2 py-1 rounded-md shrink-0 mt-0.5 ${isDarkMode ? "bg-slate-700 text-slate-300" : "bg-white text-slate-600 shadow-sm"}`}>
                         {formatAMPM(nextClass.start_time)}

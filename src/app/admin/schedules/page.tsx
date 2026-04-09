@@ -236,7 +236,8 @@ export default function SchedulesPage() {
       setAllSections((secData ?? []) as SectionRow[])
       const mappedSchedules = (schData ?? []).map((r: any) => ({
         ...r,
-        room: r.rooms?.name || r.room
+        room: r.rooms?.name || r.room,
+        teacher: (tchData ?? []).find((t: any) => t.id === r.teacher_id)?.full_name || r.teacher || null
       })) as ScheduleRow[]
       setScheduleRows(mappedSchedules)
       setTeachers((tchData ?? []) as { id: string; full_name: string }[])

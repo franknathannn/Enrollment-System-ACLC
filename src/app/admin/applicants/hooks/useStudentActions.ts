@@ -164,7 +164,14 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
             details: details
           };
         });
-        await supabase.from('activity_logs').insert(logEntries);
+        // Insert activity logs in parallel chunks of 200
+        const LOG_CHUNK = 200;
+        const logPromises: Promise<any>[] = [];
+        for (let i = 0; i < logEntries.length; i += LOG_CHUNK) {
+          logPromises.push(supabase.from('activity_logs').insert(logEntries.slice(i, i + LOG_CHUNK)));
+        }
+        await Promise.all(logPromises);
+
         setStudents(prev => prev.map(s => {
           const update = successfulUpdates.find(u => u.id === s.id);
           if (update) return { ...s, status: targetStatus, section_id: update.assignedSectionId || null, section: update.assignedSection || 'Unassigned' };
@@ -204,7 +211,14 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
         student_image: s.two_by_two_url || s.profile_2x2_url,
         details: `Bulk deleted ${s.first_name} ${s.last_name} from the enrollment system`
       }));
-      await Promise.all([bulkDeleteApplicants(selectedIds), supabase.from('activity_logs').insert(logEntries)])
+      // Insert activity logs in parallel chunks of 200
+      const LOG_CHUNK = 200;
+      const logPromises: Promise<any>[] = [];
+      for (let i = 0; i < logEntries.length; i += LOG_CHUNK) {
+        logPromises.push(supabase.from('activity_logs').insert(logEntries.slice(i, i + LOG_CHUNK)));
+      }
+      await Promise.all(logPromises);
+      await bulkDeleteApplicants(selectedIds)
       setStudents(prev => prev.filter(s => !selectedIds.includes(s.id)))
       toast.success(`${selectedStudents.length} student${selectedStudents.length !== 1 ? 's' : ''} permanently deleted`, { id: toastId })
       modals.setBulkDeleteModalOpen(false)

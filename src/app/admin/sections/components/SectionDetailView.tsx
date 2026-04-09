@@ -137,21 +137,7 @@ export const SectionDetailView = memo(function SectionDetailView({
             </Tooltip>
           </div>
 
-          <div className="relative w-full md:w-80 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Input
-                  placeholder="Search Student ID or Name..."
-                  className={`pl-12 rounded-full h-12 md:h-11 text-xs font-bold border-none shadow-inner transition-all focus-visible:ring-2 focus-visible:ring-slate-400/20 w-full ${isDarkMode ? 'bg-slate-900/50 text-white' : 'bg-white/80 text-slate-900'
-                    }`}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </TooltipTrigger>
-              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Search Students</p></TooltipContent>
-            </Tooltip>
-          </div>
+
 
           <div className="hidden md:flex items-center gap-2">
             <Tooltip>
@@ -260,7 +246,7 @@ export const SectionDetailView = memo(function SectionDetailView({
 
       {/* 📊 TABS */}
       <Tabs defaultValue="all" className="w-full">
-        <div className="flex flex-col md:flex-row items-center gap-4 mb-8 md:mb-16 px-2 md:px-4">
+        <div className="flex flex-col md:flex-row items-center gap-4 mb-4 px-2 md:px-4">
           {/* 🎓 Adviser Selector */}
           <AdviserPicker
             value={currentSection?.adviser_id || null}
@@ -304,6 +290,24 @@ export const SectionDetailView = memo(function SectionDetailView({
               <span className="hidden md:inline">Schedule</span>
             </TabsTrigger>
           </TabsList>
+        </div>
+
+        <div className="flex justify-end px-2 md:px-4 mb-4 md:mb-8">
+          <div className="relative w-full md:w-64 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Input
+                  placeholder="Search..."
+                  className={`pl-10 rounded-full h-10 text-xs font-bold border shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-blue-500/20 w-full ${isDarkMode ? 'bg-slate-900/50 text-white border-slate-800' : 'bg-white/80 text-slate-900 border-slate-200'
+                    }`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Search Students</p></TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Student tabs content */}

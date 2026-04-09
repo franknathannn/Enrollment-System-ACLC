@@ -7,6 +7,7 @@ import {
   Loader2, Trash2, Zap, CheckCircle2, XCircle,
   AlertTriangle, Database, Users, RefreshCw, Terminal,
 } from "lucide-react"
+import { clearMockData } from "./actions"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MOCK DATA POOLS — validated against enrollment schema + DB constraints
@@ -413,31 +414,10 @@ export default function MockPage() {
 
         const ids = batch.map(r => r.id)
 
-        // 2. Delete child rows that reference these students FIRST (FK constraints)
-        const { error: attErr } = await supabase
-          .from("attendance")
-          .delete()
-          .in("student_id", ids)
+        // 2. Use Server Action with Service Role Key to bypass RLS securely
+        const deletedCount = await clearMockData(ids)
 
-        if (attErr) { log("error", `attendance delete: ${attErr.message}`); break }
-
-        const { error: logErr } = await supabase
-          .from("activity_logs")
-          .delete()
-          .in("student_id", ids)
-
-        if (logErr) { log("error", `activity_logs delete: ${logErr.message}`); break }
-        log("info", `Cleared attendance + activity_logs for ${ids.length} mock students`)
-
-        // 3. Now safe to delete the students themselves
-        const { error: delErr } = await supabase
-          .from("students")
-          .delete()
-          .in("id", ids)
-
-        if (delErr) { log("error", `Delete: ${delErr.message}`); break }
-
-        total += ids.length
+        total += deletedCount
         round++
         log("info", `Round ${round} · removed ${ids.length} (total: ${total})`)
         await sleep(200)

@@ -261,7 +261,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
         section, subjects: subjectReports, totalStudents: sectionStudents.length,
         avgAbsents, avgPresents, attendancePct: overallPct,
       }
-    })
+    }).filter(report => report.totalStudents > 0)
   }, [mySections, students, schedules, attData, advisorySections])
 
   const triageList: TriageStudent[] = useMemo(() => {

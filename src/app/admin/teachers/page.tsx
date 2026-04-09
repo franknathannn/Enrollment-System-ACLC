@@ -68,12 +68,26 @@ function AdminAllSectionsReport({ isDarkMode, schoolYear }: { isDarkMode: boolea
     const load = async () => {
       setLoading(true)
       try {
-        const [{ data: attData }, { data: sectData }] = await Promise.all([
+        const [
+          { data: attData }, 
+          { data: sectData },
+          { data: studData }
+        ] = await Promise.all([
           supabase.from("attendance").select("student_id, section, subject, date, status").eq("school_year", schoolYear),
           supabase.from("sections").select("section_name, strand"),
+          supabase.from("students").select("section").not("status", "eq", "Pending")
         ])
         setData(attData || [])
         setSects(sectData || [])
+        
+        // Find which sections actually have enrolled students right now
+        const activeSecs = new Set((studData || []).map(s => s.section))
+        const validSecs = new Set((sectData || []).map(s => s.section_name))
+        
+        // Filter attendance data to only include valid and active sections
+        // We filter the raw data so that present/absent stats don't count ghosts from deleted sections
+        setData((attData || []).filter((r: any) => validSecs.has(r.section) && activeSecs.has(r.section)))
+
       } finally { setLoading(false) }
     }
     load()
@@ -87,7 +101,7 @@ function AdminAllSectionsReport({ isDarkMode, schoolYear }: { isDarkMode: boolea
     const s = new Set(prev); if (s.has(k)) s.delete(k); else s.add(k); return s
   })
 
-  // Group by section
+  // Group by section (only existing active sections are left in `data`)
   const sections = [...new Set(data.map((r: any) => r.section))].filter(Boolean).sort()
 
   const PctBar = ({ pct }: { pct: number }) => (

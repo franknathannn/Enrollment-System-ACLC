@@ -1,6 +1,6 @@
 // c:\Users\Nath\Documents\Enrollment System\enrollment-system\src\app\admin\sections\components\StudentTable.tsx
 
-import { memo } from "react"
+import { memo, useState, useMemo, useEffect } from "react"
 import { Table, TableBody, TableCell, TableRow, TableHeader, TableHead } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +26,24 @@ export const StudentTable = memo(function StudentTable({
   onToggleLock 
 }: any) {
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [students.length]);
+
+  const totalPages = Math.ceil(students.length / itemsPerPage);
+  
+  const paginatedStudents = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return students.slice(startIndex, startIndex + itemsPerPage);
+  }, [students, currentPage, itemsPerPage]);
+
+  const handleNext = () => setCurrentPage(p => Math.min(totalPages, p + 1));
+  const handlePrev = () => setCurrentPage(p => Math.max(1, p - 1));
+
+
   const handleCopyLRN = (e: React.MouseEvent, lrn: string) => {
     e.stopPropagation();
     navigator.clipboard.writeText(lrn);
@@ -45,6 +63,50 @@ export const StudentTable = memo(function StudentTable({
     shadow: isDarkMode ? 'shadow-[0_15px_30px_-10px_rgba(0,0,0,0.6)]' : 'shadow-lg shadow-slate-200/50'
   };
 
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+    return (
+      <div className={`flex flex-col md:flex-row items-center justify-between px-6 py-4 gap-4 ${theme.border} md:border-t`}>
+        <div className={`text-[10px] uppercase font-black tracking-widest ${theme.textSub}`}>
+          Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, students.length)} of {students.length} Entries
+        </div>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handlePrev} 
+            disabled={currentPage === 1}
+            className={`text-[9px] uppercase font-black tracking-widest h-8 rounded-full ${isDarkMode ? 'border-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
+          >
+            Prev
+          </Button>
+          <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] md:max-w-none no-scrollbar">
+             {Array.from({length: totalPages}, (_, i) => i + 1).map(page => (
+                <Button
+                   key={page}
+                   variant={currentPage === page ? "default" : "ghost"}
+                   size="sm"
+                   onClick={() => setCurrentPage(page)}
+                   className={`h-8 w-8 p-0 rounded-full text-[10px] font-black transition-all ${currentPage === page ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30' : (isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100')}`}
+                >
+                   {page}
+                </Button>
+             ))}
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleNext} 
+            disabled={currentPage === totalPages}
+            className={`text-[9px] uppercase font-black tracking-widest h-8 rounded-full ${isDarkMode ? 'border-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <TooltipProvider delayDuration={100}>
       {/* 📱 MOBILE MODULE VIEW (Aegis Command Stylized) */}
@@ -55,7 +117,7 @@ export const StudentTable = memo(function StudentTable({
             <p className="text-[10px] font-black uppercase tracking-[0.4em]">Node_Void: No_Records</p>
           </div>
         ) : (
-          students.map((s: any) => {
+          paginatedStudents.map((s: any) => {
             if (hiddenRows.has(s.id)) return null
             const isAnimatingIn = animatingIds?.has(s.id)
             const isMale = s.gender === 'Male'
@@ -210,6 +272,7 @@ export const StudentTable = memo(function StudentTable({
             )
           })
         )}
+        {renderPagination()}
       </div>
 
       {/* 🖥️ DESKTOP VIEW (RETAINED AS REQUESTED) */}
@@ -251,7 +314,7 @@ export const StudentTable = memo(function StudentTable({
               </TableCell>
             </TableRow>
           ) : (
-            students.map((s: any) => {
+            paginatedStudents.map((s: any) => {
               if (hiddenRows.has(s.id)) return null
               const isAnimatingIn = animatingIds?.has(s.id)
               const isMale = s.gender === 'Male'
@@ -455,6 +518,7 @@ export const StudentTable = memo(function StudentTable({
           )}
         </TableBody>
       </Table>
+      {renderPagination()}
       </div>
     </TooltipProvider>
   )
