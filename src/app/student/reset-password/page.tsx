@@ -2,9 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { studentSupabase } from "@/lib/supabase/student-client"
-import { createStudentAccount, validateToken, getStudentSetupData } from "@/lib/actions/student-auth"
-import { Loader2, Eye, EyeOff, ShieldCheck, GraduationCap, ShieldAlert } from "lucide-react"
+import { validateToken, resetStudentPassword, getStudentSetupData } from "@/lib/actions/student-auth"
+import { Loader2, Eye, EyeOff, ShieldCheck, ShieldAlert, KeyRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,60 +11,45 @@ import { Card } from "@/components/ui/card"
 import { toast } from "sonner"
 import Link from "next/link"
 
-function SetupContent() {
+function ResetContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get("token") || ""
 
-  const [student, setStudent] = useState<{
-    id: string; first_name: string; last_name: string; lrn: string
-  } | null>(null)
   const [loading, setLoading]       = useState(true)
   const [tokenError, setTokenError] = useState<string | null>(null)
+  const [studentName, setStudentName] = useState("")
   const [password, setPassword]     = useState("")
   const [confirm, setConfirm]       = useState("")
   const [showPw, setShowPw]         = useState(false)
-  const [submitting, setSubmitting]  = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError]   = useState<string | null>(null)
-  const [studentId, setStudentId]   = useState<string>("")
-
-  // First segment of the UUID is the tracking prefix shown as username
-  const trackingPrefix = studentId ? studentId.split("-")[0] : ""
 
   useEffect(() => {
     if (!token) {
-      setTokenError("No setup link provided. Please use the link from your Status page.")
+      setTokenError("No reset link provided. Please use the link from your email.")
       setLoading(false)
       return
     }
 
     const verify = async () => {
-      // Step 1: Validate the cryptographic token
       const result = await validateToken(token)
-      if (!result.valid || result.type !== "setup") {
-        setTokenError(result.error || "This setup link is invalid or has expired.")
+      if (!result.valid || result.type !== "reset") {
+        setTokenError(result.error || "This reset link is invalid or has expired.")
         setLoading(false)
         return
       }
 
-      // Step 2: Get student data for display
+      // Get student name for display
       const data = await getStudentSetupData(result.studentId!)
-      if (
-        !data ||
-        (data.status !== "Accepted" && data.status !== "Approved") ||
-        data.is_archived
-      ) {
-        setTokenError("This student is not eligible for account creation.")
-        setLoading(false)
-        return
+      if (data) {
+        setStudentName(`${data.first_name} ${data.last_name}`)
       }
 
-      setStudentId(result.studentId!)
-      setStudent(data)
       setLoading(false)
     }
     verify()
-  }, [token, router])
+  }, [token])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,45 +65,29 @@ function SetupContent() {
     }
 
     setSubmitting(true)
-    const result = await createStudentAccount(token, password)
+    const result = await resetStudentPassword(token, password)
 
-    if (result.error === "account_exists") {
-      toast.error("Account already exists. Redirecting to login…")
-      setTimeout(() => router.replace("/student/login"), 1500)
-      return
-    }
-
-    if (result.error) {
-      setFormError(result.error)
+    if (!result.success) {
+      setFormError(result.error || "Failed to reset password.")
       setSubmitting(false)
       return
     }
 
-    // Sign in immediately after creation
-    const { error: signInError } = await studentSupabase.auth.signInWithPassword({
-      email: `${studentId}@student.portal`,
-      password,
-    })
-
-    if (signInError) {
-      toast.error("Account created. Please sign in.")
-      router.replace("/student/login")
-      return
-    }
-
-    router.replace("/student/dashboard?welcome=true")
+    toast.success("Password reset successfully! Please sign in with your new password.")
+    router.replace("/student/login")
   }
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center gap-4 mt-32">
       <Loader2 className="animate-spin text-blue-500 w-10 h-10" />
-      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-400 animate-pulse">Verifying…</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-400 animate-pulse">Verifying link…</p>
     </div>
   )
 
   if (tokenError) return (
     <div className="max-w-md w-full space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 relative z-10">
       <div className="text-center space-y-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-aclc.png" alt="ACLC" className="w-14 h-14 mx-auto object-contain" />
         <h1 className="text-2xl font-black uppercase tracking-tight text-white">Invalid Link</h1>
       </div>
@@ -129,20 +97,19 @@ function SetupContent() {
             <ShieldAlert size={20} className="text-red-400 shrink-0" />
             <p className="text-[11px] font-bold text-red-300 leading-relaxed">{tokenError}</p>
           </div>
-          <div className="flex gap-3">
-            <Link href="/status" className="flex-1 flex items-center justify-center h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-[16px] text-[10px] font-black uppercase tracking-widest transition-all">
-              Go to Status Page
-            </Link>
-            <Link href="/student/login" className="flex-1 flex items-center justify-center h-12 rounded-[16px] text-[10px] font-black uppercase tracking-widest border border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition-all">
-              Sign In
-            </Link>
-          </div>
+          <p className="text-[10px] text-slate-500 text-center leading-relaxed">
+            Reset links expire after 1 hour and can only be used once. You can request a new one from the login page.
+          </p>
+          <Link
+            href="/student/login"
+            className="flex items-center justify-center h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-[16px] text-[10px] font-black uppercase tracking-widest transition-all w-full"
+          >
+            Back to Login
+          </Link>
         </div>
       </Card>
     </div>
   )
-
-  if (!student) return null
 
   return (
     <div className="max-w-md w-full space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 relative z-10">
@@ -152,56 +119,37 @@ function SetupContent() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-aclc.png" alt="ACLC" className="w-14 h-14 mx-auto object-contain" />
         <div>
-          <h1 className="text-2xl font-black uppercase tracking-tight text-white">Create Your Account</h1>
+          <h1 className="text-2xl font-black uppercase tracking-tight text-white">Reset Password</h1>
           <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.3em] mt-1">
             Student Portal · ACLC Northbay
           </p>
         </div>
       </div>
 
-      {/* Student identity chip */}
-      <div className="flex items-center gap-3 px-5 py-4 rounded-[24px] border border-white/8 bg-white/[0.02]">
-        <div className="w-10 h-10 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center shrink-0">
-          <GraduationCap size={18} className="text-blue-400" />
+      {/* Student identity */}
+      {studentName && (
+        <div className="flex items-center gap-3 px-5 py-4 rounded-[24px] border border-white/8 bg-white/[0.02]">
+          <div className="w-10 h-10 rounded-full bg-amber-600/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+            <KeyRound size={18} className="text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-black text-white uppercase truncate">{studentName}</p>
+            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+              Create a new password below
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-black text-white uppercase truncate">
-            {student.first_name} {student.last_name}
-          </p>
-          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-            LRN: {student.lrn}
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* Card */}
       <Card className="p-[1px] rounded-[40px] border-none"
-        style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(15,23,42,0.8))" }}>
+        style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.3), rgba(15,23,42,0.8))" }}>
         <div className="bg-slate-950/95 p-8 rounded-[39px] space-y-6">
 
-          {/* Username (read-only) */}
-          <div className="space-y-1.5">
-            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">
-              Your Username
-            </p>
-            <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/8">
-              <span className="text-xl font-black text-white font-mono tracking-[0.15em]">
-                {trackingPrefix}
-              </span>
-              <span className="text-[8px] font-black text-slate-700 uppercase tracking-widest">
-                Auto-assigned
-              </span>
-            </div>
-            <p className="text-[8px] text-slate-700 uppercase tracking-widest ml-1">
-              First 8 characters of your student ID
-            </p>
-          </div>
-
-          {/* Password form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2 group">
-              <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 group-focus-within:text-blue-400 transition-colors">
-                Password
+              <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 group-focus-within:text-amber-400 transition-colors">
+                New Password
               </Label>
               <div className="relative">
                 <Input
@@ -209,7 +157,7 @@ function SetupContent() {
                   placeholder="Min. 8 characters"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="h-14 rounded-2xl border-white/8 bg-white/[0.03] text-white font-bold pr-12 px-5 focus:border-blue-500 transition-all"
+                  className="h-14 rounded-2xl border-white/8 bg-white/[0.03] text-white font-bold pr-12 px-5 focus:border-amber-500 transition-all"
                   required
                   disabled={submitting}
                   autoComplete="new-password"
@@ -225,15 +173,15 @@ function SetupContent() {
             </div>
 
             <div className="space-y-2 group">
-              <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 group-focus-within:text-blue-400 transition-colors">
-                Confirm Password
+              <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 group-focus-within:text-amber-400 transition-colors">
+                Confirm New Password
               </Label>
               <Input
                 type="password"
-                placeholder="Repeat your password"
+                placeholder="Repeat your new password"
                 value={confirm}
                 onChange={e => setConfirm(e.target.value)}
-                className="h-14 rounded-2xl border-white/8 bg-white/[0.03] text-white font-bold px-5 focus:border-blue-500 transition-all"
+                className="h-14 rounded-2xl border-white/8 bg-white/[0.03] text-white font-bold px-5 focus:border-amber-500 transition-all"
                 required
                 disabled={submitting}
                 autoComplete="new-password"
@@ -249,11 +197,11 @@ function SetupContent() {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-[20px] text-xs font-black uppercase tracking-[0.2em] shadow-lg shadow-blue-500/20 transition-all active:scale-95 gap-2"
+              className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white rounded-[20px] text-xs font-black uppercase tracking-[0.2em] shadow-lg shadow-amber-500/20 transition-all active:scale-95 gap-2"
             >
               {submitting
                 ? <Loader2 className="animate-spin" size={18} />
-                : <><ShieldCheck size={16} /> Create Account</>
+                : <><ShieldCheck size={16} /> Reset Password</>
               }
             </Button>
           </form>
@@ -261,7 +209,7 @@ function SetupContent() {
       </Card>
 
       <p className="text-center text-[9px] font-bold text-slate-700 uppercase tracking-[0.3em]">
-        Already have an account?{" "}
+        Remember your password?{" "}
         <Link href="/student/login" className="text-blue-500 hover:text-blue-400 transition-colors">
           Sign In
         </Link>
@@ -270,17 +218,17 @@ function SetupContent() {
   )
 }
 
-export default function StudentSetupPage() {
+export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center p-6 pt-16 relative overflow-hidden">
-      <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-900/15 rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-amber-900/10 rounded-full blur-[160px] pointer-events-none" />
       <div className="absolute bottom-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-900/10 rounded-full blur-[160px] pointer-events-none" />
       <Suspense fallback={
         <div className="flex items-center justify-center gap-4 mt-32">
           <Loader2 className="animate-spin text-blue-500 w-10 h-10" />
         </div>
       }>
-        <SetupContent />
+        <ResetContent />
       </Suspense>
     </div>
   )

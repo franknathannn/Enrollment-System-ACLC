@@ -6,7 +6,7 @@ import {
   User, Phone, GraduationCap, BookOpen,
   MessageSquare, Send, Loader2, CheckCircle,
   ShieldAlert, Lightbulb, ChevronDown, ChevronUp,
-  AlertTriangle, Heart, Shield,
+  AlertTriangle, Heart, Shield, Laptop, Eye, EyeOff, Copy
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -51,6 +51,8 @@ export interface StudentFullInfo {
   gwa_grade_10?: number | null
   preferred_modality?: string | null
   preferred_shift?: string | null
+  oed_usn?: string | null
+  oed_password?: string | null
 }
 
 interface Props {
@@ -301,6 +303,19 @@ function ReEnrollmentForm({ studentId, dm }: { studentId: string; dm: boolean })
 
 // ── Main component ────────────────────────────────────────────────────────────
 export function StudentInfoTab({ student, dm }: Props) {
+  const [showOedBanner, setShowOedBanner] = useState(false)
+  const [showOedPwd, setShowOedPwd] = useState(false)
+
+  useEffect(() => {
+    // Check if the global OED module is enabled
+    const checkConfig = async () => {
+      const { data } = await studentSupabase.from("system_config").select("show_oed_credentials").limit(1).maybeSingle()
+      if (data?.show_oed_credentials) {
+        setShowOedBanner(true)
+      }
+    }
+    checkConfig()
+  }, [])
   // Theme tokens
   const textPri   = dm ? "text-white"          : "text-slate-900"
   const textSub   = dm ? "text-slate-500"       : "text-slate-400"
@@ -366,6 +381,61 @@ export function StudentInfoTab({ student, dm }: Props) {
         </div>
         <GraduationCap size={22} className={isEnrolled ? "text-green-500" : "text-amber-500"} />
       </div>
+
+      {/* ── OED Credentials module ── */}
+      {showOedBanner && (student.oed_usn || student.oed_password) && (
+        <div className={`rounded-[20px] border px-5 py-4 flex items-center justify-between gap-4 animate-in fade-in zoom-in-95 duration-500 ${
+           dm ? "border-blue-500/30 bg-blue-500/10" : "border-blue-300 bg-blue-50"
+        }`}>
+          <div className="flex-1 w-full">
+            <p className={`text-[8px] font-black uppercase tracking-[0.3em] ${textSub}`}>OED Exam Credentials</p>
+            
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+               <div className="space-y-1.5">
+                 <div className="flex items-center justify-between">
+                   <p className={`text-[7px] font-bold uppercase tracking-widest ${dm ? "text-blue-400" : "text-blue-700"}`}>USN / Username</p>
+                   {student.oed_usn && (
+                     <button
+                       onClick={() => { navigator.clipboard.writeText(student.oed_usn!); toast.success("USN copied to clipboard", { duration: 1500 }) }}
+                       className={`p-0.5 rounded-md transition-colors ${dm ? "text-blue-400 hover:bg-blue-500/20" : "text-blue-600 hover:bg-blue-200"}`}
+                     >
+                       <Copy size={11} />
+                     </button>
+                   )}
+                 </div>
+                 <div className={`px-4 py-2.5 rounded-xl font-mono text-sm font-bold tracking-widest shadow-inner ${dm ? "bg-slate-950 border border-blue-900/50 text-blue-100" : "bg-white border border-blue-200 text-slate-800"}`}>
+                   {student.oed_usn || "NOT YET ASSIGNED"}
+                 </div>
+               </div>
+
+               <div className="space-y-1.5 group">
+                 <div className="flex items-center justify-between">
+                   <p className={`text-[7px] font-bold uppercase tracking-widest ${dm ? "text-blue-400" : "text-blue-700"}`}>OED Password</p>
+                   <div className="flex items-center gap-1.5">
+                     {student.oed_password && (
+                       <button
+                         onClick={() => { navigator.clipboard.writeText(student.oed_password!); toast.success("Password copied to clipboard", { duration: 1500 }) }}
+                         className={`p-0.5 rounded-md transition-colors ${dm ? "text-blue-400 hover:bg-blue-500/20" : "text-blue-600 hover:bg-blue-200"}`}
+                       >
+                         <Copy size={11} />
+                       </button>
+                     )}
+                     <button onClick={() => setShowOedPwd(!showOedPwd)} className={`p-0.5 rounded-md transition-colors ${dm ? "text-blue-400 hover:bg-blue-500/20" : "text-blue-600 hover:bg-blue-200"}`}>
+                        {showOedPwd ? <EyeOff size={11} /> : <Eye size={11} />}
+                     </button>
+                   </div>
+                 </div>
+                 <div className={`px-4 py-2.5 rounded-xl font-mono text-sm font-bold tracking-widest shadow-inner relative flex items-center ${dm ? "bg-slate-950 border border-blue-900/50 text-blue-100" : "bg-white border border-blue-200 text-slate-800"}`}>
+                   {student.oed_password ? (showOedPwd ? student.oed_password : "••••••••••••") : "NOT YET ASSIGNED"}
+                 </div>
+               </div>
+            </div>
+          </div>
+          <div className={`w-12 h-12 rounded-full hidden sm:flex shrink-0 items-center justify-center ${dm ? "bg-blue-500/20" : "bg-blue-200"}`}>
+             <Laptop size={20} className={dm ? "text-blue-400" : "text-blue-700"} />
+          </div>
+        </div>
+      )}
 
       {/* ── Personal Information ── */}
       <Group icon={<User size={14} />} title="Personal Information">

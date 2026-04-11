@@ -176,6 +176,14 @@ function DashboardContent() {
         .single()
 
       if (!data) { router.replace("/student/login"); return }
+
+      if (data.account_status === "Deactivated") {
+        await studentSupabase.auth.signOut()
+        toast.error("Deactivated Account, Contact Admin.")
+        router.replace("/student/login")
+        return
+      }
+
       setStudent(data as StudentData)
       setLoading(false)
 
@@ -187,6 +195,19 @@ function DashboardContent() {
       }
     }
     load()
+
+    const channel = studentSupabase.channel("student_status")
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'students' }, async (payload) => {
+        if (payload.new.account_status === "Deactivated") {
+          toast.error("Deactivated Account, Contact Admin.")
+          await studentSupabase.auth.signOut()
+          router.replace("/student/login")
+        }
+      }).subscribe()
+
+    return () => {
+      studentSupabase.removeChannel(channel)
+    }
   }, [router, isWelcome])
 
   const handleSignOut = async () => {
@@ -223,47 +244,23 @@ function DashboardContent() {
   const gradeLabel     = student.grade_level ? `Grade ${student.grade_level}` : "Grade 11"
 
   // ── Theme tokens ─────────────────────────────────────────────────────────────
-  const pageBg      = dm ? "bg-[#060d1b]"              : "bg-slate-100"
-  const sidebarBg   = dm ? "bg-[#07111f]"              : "bg-white"
-  const rightBg     = dm ? "bg-[#07111f]"              : "bg-white"
-  const mainBg      = dm ? "bg-[#060d1b]"              : "bg-slate-100"
-  const divider     = dm ? "border-white/[0.06]"       : "border-slate-200"
-  const cardBg      = dm ? "bg-white/[0.03] border-white/[0.06]" : "bg-white border-slate-200"
+  const pageBg      = dm ? "bg-slate-950"              : "bg-slate-50"
   const textPri     = dm ? "text-white"                : "text-slate-900"
   const textSub     = dm ? "text-slate-500"            : "text-slate-500"
   const textMuted   = dm ? "text-slate-700"            : "text-slate-300"
-  const navInactive = dm
-    ? "text-slate-500 hover:text-white hover:bg-white/[0.06]"
-    : "text-slate-400 hover:text-slate-800 hover:bg-slate-100"
   const emptyCard   = dm
     ? "border border-white/[0.06] rounded-[28px] bg-white/[0.02]"
     : "border border-slate-200 rounded-[28px] bg-white"
-  const mobileTabActive   = "bg-blue-600 text-white shadow-md shadow-blue-500/25"
-  const mobileTabInactive = dm
-    ? "border border-white/[0.06] bg-white/[0.02] text-slate-500"
-    : "border border-slate-200 bg-white text-slate-400"
 
-  const tabs = [
-    { key: "info"          as const, label: "Information", icon: <User size={15} />           },
-    { key: "schedule"      as const, label: "Schedule",    icon: <CalendarDays size={15} />   },
-    { key: "qr"            as const, label: "My QR Code",  icon: <QrCode size={15} />         },
-    { key: "attendance"    as const, label: "Attendance",  icon: <ClipboardList size={15} />  },
-    { key: "announcements" as const, label: "News",        icon: <BookOpen size={15} />       },
-  ]
-
-  const mobileTabs = [
-    { key: "info"          as const, label: "Info",       icon: <User size={12} />          },
-    { key: "schedule"      as const, label: "Schedule",   icon: <CalendarDays size={12} />  },
-    { key: "qr"            as const, label: "QR",         icon: <QrCode size={12} />        },
-    { key: "attendance"    as const, label: "Attendance", icon: <ClipboardList size={12} /> },
-    { key: "announcements" as const, label: "News",       icon: <BookOpen size={12} />      },
-  ]
-
-  const currentTab = tabs.find(t => t.key === activeTab)!
+  const tabBtn = (active: boolean) =>
+    `flex items-center justify-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-widest py-2.5 rounded-2xl transition-all duration-200 w-full relative
+     ${active
+       ? "text-white bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/25"
+       : (dm ? "text-slate-500 hover:text-slate-200 hover:bg-slate-700/50" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/60")}`
 
   // ── Shared tab content ───────────────────────────────────────────────────────
   const TabContent = () => (
-    <div className="animate-in fade-in duration-200">
+    <div className="animate-in fade-in duration-200 pt-2">
       {activeTab === "info" && (
         <StudentInfoTab student={student} dm={dm} />
       )}
@@ -294,17 +291,15 @@ function DashboardContent() {
       )}
 
       {activeTab === "announcements" && (
-        <div className={`text-center py-20 ${emptyCard}`}>
-          <BookOpen className={`w-8 h-8 mx-auto mb-3 ${textMuted}`} />
-          <p className={`text-[11px] font-black uppercase tracking-widest ${textSub}`}>No announcements yet</p>
-          <p className={`text-[9px] mt-1 ${textMuted}`}>School announcements will appear here</p>
-        </div>
+        <StudentAnnouncements studentGrade={student.grade_level || "11"} dm={dm} />
       )}
     </div>
   )
 
   return (
     <>
+      <style jsx global>{`body{overflow-y:auto}::-webkit-scrollbar{display:none}*{-ms-overflow-style:none;scrollbar-width:none}`}</style>
+
       {showWelcome && (
         <WelcomeModal
           studentId={student.id}
@@ -314,304 +309,100 @@ function DashboardContent() {
         />
       )}
 
-      {/* ════════════════════════════════════════════════════════════════════
-          DESKTOP LAYOUT  (lg+)
-      ════════════════════════════════════════════════════════════════════ */}
+      <div className={`min-h-screen transition-colors duration-300 ${pageBg}`}>
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-5 md:py-8 space-y-5 pb-24">
 
-      {/* ── Left Sidebar ────────────────────────────────────────────────── */}
-      <aside className={`hidden lg:flex flex-col fixed inset-y-0 left-0 w-64 z-40 border-r transition-colors duration-300 ${sidebarBg} ${divider}`}>
-
-        {/* School header — always blue */}
-        <div className="relative overflow-hidden shrink-0"
-          style={{ background: "linear-gradient(160deg,#0d2257 0%,#1a3fa5 55%,#2563eb 100%)" }}>
-          {/* Dot matrix */}
-          <div className="absolute inset-0 opacity-[0.07]"
-            style={{ backgroundImage: "radial-gradient(circle,#fff 1px,transparent 1px)", backgroundSize: "14px 14px" }} />
-          {/* Bottom shimmer line */}
-          <div className="absolute bottom-0 left-0 right-0 h-px"
-            style={{ background: "linear-gradient(90deg,transparent,rgba(147,197,253,0.4),transparent)" }} />
-          <div className="relative px-5 py-5 flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-aclc.png" alt="ACLC" className="w-11 h-11 object-contain shrink-0 drop-shadow-lg" />
-            <div>
-              <p className="text-white text-[12px] font-black uppercase tracking-[0.2em] leading-none drop-shadow">
-                AMA ACLC
-              </p>
-              <p className="text-blue-200 text-[8px] font-bold uppercase tracking-[0.3em] mt-0.5 opacity-80 leading-none">
-                Northbay
-              </p>
-              <p className="text-blue-300/60 text-[7px] font-semibold uppercase tracking-[0.2em] mt-0.5 leading-none">
-                Student Portal
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Student identity */}
-        <div className={`px-5 py-5 border-b shrink-0 ${divider}`}>
-          <div className="flex items-center gap-3.5">
-            <StudentAvatar url={student.two_by_two_url} name={student.first_name} size="sm" dm={dm} />
-            <div className="min-w-0 flex-1">
-              <p className={`text-[13px] font-black uppercase leading-tight truncate ${textPri}`}>
-                {student.first_name} {student.last_name}
-              </p>
-              <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest truncate mt-0.5">
-                {student.strand} · {gradeLabel}
-              </p>
-              <span className={`inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-[3px] rounded-full text-[7px] font-black uppercase tracking-widest border ${
-                isEnrolled
-                  ? "bg-green-500/10 text-green-500 border-green-500/20"
-                  : "bg-amber-500/10 text-amber-500 border-amber-500/20"
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isEnrolled ? "bg-green-500" : "bg-amber-500"}`} />
-                {student.status === "Approved" ? "Enrolled" : student.status}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          <p className={`text-[7px] font-black uppercase tracking-[0.4em] px-3 pb-2 ${textMuted}`}>Menu</p>
-          {tabs.map(tab => {
-            const isActive = activeTab === tab.key
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`w-full flex items-center gap-3 px-4 py-[11px] rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 group ${
-                  isActive
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25"
-                    : navInactive
-                }`}
-              >
-                <span className={`shrink-0 transition-transform duration-150 ${isActive ? "" : "group-hover:scale-110"}`}>
-                  {tab.icon}
-                </span>
-                <span className="truncate">{tab.label}</span>
-                {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/50 shrink-0" />}
-              </button>
-            )
-          })}
-        </nav>
-
-        {/* Bottom controls */}
-        <div className={`px-3 py-4 border-t shrink-0 ${divider}`}>
-          <div className="flex gap-2">
-            <button
-              onClick={toggleTheme}
-              className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border ${
-                dm
-                  ? "text-slate-500 hover:text-amber-400 hover:bg-amber-500/5 border-white/[0.06] hover:border-amber-500/20"
-                  : "text-slate-400 hover:text-blue-600 hover:bg-blue-50 border-slate-200 hover:border-blue-200"
-              }`}
-            >
-              {dm ? <Sun size={13} /> : <Moon size={13} />}
-              {dm ? "Light" : "Dark"}
-            </button>
-            <button
-              onClick={handleSignOut}
-              className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border ${
-                dm
-                  ? "text-slate-500 hover:text-rose-400 hover:bg-rose-500/5 border-white/[0.06] hover:border-rose-500/20"
-                  : "text-slate-400 hover:text-rose-600 hover:bg-rose-50 border-slate-200 hover:border-rose-200"
-              }`}
-            >
-              <LogOut size={13} /> Sign Out
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* ── Right Panel (xl+) ────────────────────────────────────────────── */}
-      <aside className={`hidden xl:flex flex-col fixed inset-y-0 right-0 w-[220px] z-40 border-l transition-colors duration-300 ${rightBg} ${divider}`}>
-
-        {/* Header */}
-        <div className={`px-5 py-5 border-b shrink-0 ${divider}`}>
-          <p className={`text-[7px] font-black uppercase tracking-[0.4em] ${textMuted}`}>Quick Reference</p>
-          <p className={`text-[13px] font-black uppercase mt-0.5 ${textPri}`}>{student.school_year}</p>
-          <p className={`text-[9px] font-bold mt-0.5 ${textSub}`}>{gradeLabel} · {student.strand}</p>
-        </div>
-
-        {/* Student card */}
-        <div className={`mx-4 mt-4 rounded-[20px] border overflow-hidden shrink-0 ${cardBg}`}>
-          <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#1d4ed8,#7c3aed)" }} />
-          <div className="p-4 flex flex-col items-center gap-3 text-center">
-            <StudentAvatar url={student.two_by_two_url} name={student.first_name} size="lg" dm={dm} />
-            <div>
-              <p className={`text-[11px] font-black uppercase leading-tight ${textPri}`}>
-                {student.first_name}
-              </p>
-              <p className={`text-[11px] font-black uppercase leading-tight ${textPri}`}>
-                {student.last_name}
-              </p>
-              <p className={`text-[8px] font-bold text-blue-500 uppercase tracking-widest mt-1`}>
-                {student.section || "No Section"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick data */}
-        <div className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-          {[
-            { label: "Tracking ID", value: trackingPrefix, mono: true,  copy: true  },
-            { label: "LRN",         value: student.lrn,    mono: true,  copy: true  },
-            { label: "Section",     value: student.section || "TBA",   mono: false, copy: false },
-            { label: "Status",      value: student.status === "Approved" ? "Enrolled" : student.status, mono: false, copy: false },
-          ].map(({ label, value, mono, copy }) => (
-            <div key={label} className={`rounded-[14px] border px-3.5 py-2.5 transition-colors ${cardBg}`}>
-              <p className={`text-[7px] font-black uppercase tracking-[0.3em] mb-0.5 ${textSub}`}>{label}</p>
-              <div className="flex items-center justify-between gap-1.5">
-                <p className={`text-[11px] font-black truncate ${mono ? "font-mono tracking-widest" : ""} ${textPri}`}>
-                  {value || "—"}
-                </p>
-                {copy && value && (
-                  <button
-                    onClick={() => copyVal(value, label)}
-                    className="shrink-0 text-slate-500 hover:text-blue-500 transition-colors"
-                  >
-                    {copied === label
-                      ? <Check size={11} className="text-green-400" />
-                      : <Copy size={11} />}
-                  </button>
-                )}
+          {/* Nav */}
+          <nav className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl border overflow-hidden flex items-center justify-center shrink-0 shadow-sm ${dm ? "bg-slate-800 border-slate-700/80" : "bg-white border-slate-200"}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo-aclc.png" alt="AMA ACLC" className="w-full h-full object-contain" />
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Bottom branding */}
-        <div className={`px-5 py-4 border-t shrink-0 ${divider}`}>
-          <div className={`flex items-center gap-2 opacity-40`}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-aclc.png" alt="ACLC" className="w-6 h-6 object-contain" />
-            <div>
-              <p className={`text-[8px] font-black uppercase tracking-[0.2em] leading-none ${textPri}`}>AMA ACLC</p>
-              <p className={`text-[7px] uppercase tracking-[0.2em] leading-none mt-0.5 ${textSub}`}>Northbay</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* ════════════════════════════════════════════════════════════════════
-          MAIN CONTENT AREA
-      ════════════════════════════════════════════════════════════════════ */}
-      <div className={`lg:pl-64 xl:pr-[220px] min-h-screen transition-colors duration-300 ${mainBg}`}>
-
-        {/* Ambient glow — desktop only */}
-        <div className="hidden lg:block fixed top-0 left-64 right-0 xl:right-[220px] h-[1px] z-10 pointer-events-none"
-          style={{ background: "linear-gradient(90deg,transparent,rgba(59,130,246,0.15),transparent)" }} />
-
-        <div className="max-w-2xl mx-auto px-4 lg:px-10 py-5 lg:py-8 space-y-5">
-
-          {/* ── Mobile top bar ── */}
-          <div className={`lg:hidden flex items-center justify-between sticky top-0 z-30 -mx-4 px-4 py-3 ${
-            dm ? "bg-[#060d1b]/95" : "bg-slate-100/95"
-          } backdrop-blur-md border-b ${divider}`}>
-            <div className="flex items-center gap-2.5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-aclc.png" alt="ACLC" className="w-8 h-8 object-contain shrink-0" />
               <div>
-                <p className={`text-[10px] font-black uppercase tracking-[0.15em] leading-none ${textPri}`}>ACLC Northbay</p>
-                <p className={`text-[7px] font-bold uppercase tracking-[0.2em] mt-0.5 ${textSub}`}>Student Portal</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] bg-gradient-to-r from-blue-500 to-blue-400 bg-clip-text text-transparent">Student Portal</p>
+                <p className={`text-[8px] font-bold uppercase tracking-widest ${textSub}`}>AMA ACLC NORTHBAY</p>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+
+            <div className="flex items-center gap-2">
               <button
                 onClick={toggleTheme}
-                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-                  dm ? "text-slate-500 hover:text-amber-400" : "text-slate-400 hover:text-blue-600"
-                }`}
+                className={`flex items-center gap-1.5 h-9 w-9 md:w-auto md:px-3 justify-center rounded-2xl border transition-all duration-200
+                  ${dm ? "bg-slate-800 border-slate-700/80 text-amber-400 hover:bg-slate-700 hover:border-slate-600" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300"}`}
               >
-                {dm ? <Sun size={15} /> : <Moon size={15} />}
+                {dm ? <Sun size={13} /> : <Moon size={13} />}
+                <span className="hidden md:inline text-[9px] font-black uppercase tracking-widest">{dm ? "Light" : "Dark"}</span>
               </button>
+
               <button
                 onClick={handleSignOut}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                  dm ? "text-slate-600 hover:text-slate-300" : "text-slate-400 hover:text-slate-700"
-                }`}
+                className={`flex items-center gap-1.5 h-9 px-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border transition-all duration-200
+                  ${dm ? "text-slate-400 border-transparent hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20" : "text-slate-500 border-transparent hover:text-red-600 hover:bg-red-50 hover:border-red-200"}`}
               >
-                <LogOut size={12} /> Sign Out
+                <LogOut size={11} /><span className="hidden md:inline">Sign Out</span>
               </button>
             </div>
-          </div>
+          </nav>
 
-          {/* ── Mobile student card ── */}
-          <div className={`lg:hidden rounded-[28px] border p-5 space-y-4 ${
-            dm ? "border-white/[0.06]" : "border-blue-100 bg-blue-50/50"
-          }`}
-            style={dm ? { background: "linear-gradient(135deg,rgba(29,78,216,0.12),rgba(6,13,27,0.8))" } : undefined}
-          >
-            <div className="flex items-center gap-3.5">
-              <StudentAvatar url={student.two_by_two_url} name={student.first_name} size="sm" dm={dm} />
-              <div className="flex-1 min-w-0">
-                <p className={`text-base font-black uppercase leading-tight ${textPri}`}>
-                  {student.first_name} {student.last_name}
-                </p>
-                <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-0.5">
-                  {student.strand} · {isEnrolled ? "Enrolled" : "Accepted"}
-                </p>
+          {/* Profile Card */}
+          <div className={`rounded-2xl md:rounded-3xl border overflow-hidden ${dm ? "bg-slate-900/60 border-slate-700/50" : "bg-white border-slate-200"}`}>
+            <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-violet-500 to-blue-400" />
+            <div className="p-5 md:p-7">
+              <div className="flex items-start gap-4">
+                <StudentAvatar url={student.two_by_two_url} name={student.first_name} size="lg" dm={dm} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-[0.25em] bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent mb-0.5">Welcome back</p>
+                  <h1 className={`text-xl md:text-2xl font-black uppercase tracking-tight leading-tight ${textPri}`}>
+                    {student.first_name} {student.last_name}
+                  </h1>
+                  <p className={`text-xs mt-0.5 ${textSub}`}>{student.strand} · {gradeLabel}</p>
+                </div>
+              </div>
+
+              {/* Quick Info Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-5">
+                {[
+                  { label: "Tracking ID", value: trackingPrefix, copy: true },
+                  { label: "LRN",         value: student.lrn, copy: true },
+                  { label: "Section",     value: student.section || "TBA", copy: false },
+                  { label: "Status",      value: student.status === "Approved" ? "Enrolled" : student.status, copy: false },
+                ].map(({ label, value, copy }) => (
+                  <div key={label} className={`rounded-2xl border p-3 md:py-2.5 text-center flex flex-col justify-center relative group ${dm ? "bg-slate-800/50 border-slate-700/60" : "bg-slate-50 border-slate-200"}`}>
+                    {copy && (
+                       <button onClick={() => copyVal(value, label)} className={`absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity ${dm ? "hover:bg-slate-700" : "hover:bg-slate-200"}`}>
+                         {copied === label ? <Check size={11} className="text-green-500" /> : <Copy size={11} className={textSub} />}
+                       </button>
+                    )}
+                    <p className={`text-[12px] font-black mt-0.5 ${textPri}`}>{value}</p>
+                    <p className={`text-[7px] font-black uppercase tracking-widest mt-1 ${textSub}`}>{label}</p>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: "Username", value: trackingPrefix },
-                { label: "LRN",      value: student.lrn },
-                { label: "Section",  value: student.section || "TBA" },
-              ].map(({ label, value }) => (
-                <div key={label} className={`rounded-2xl border p-3 text-center ${
-                  dm ? "bg-white/[0.03] border-white/[0.06]" : "bg-white border-slate-200"
-                }`}>
-                  <p className={`text-[7px] font-black uppercase tracking-widest ${textSub}`}>{label}</p>
-                  <p className={`text-[11px] font-black mt-1 truncate ${textPri}`}>{value}</p>
-                </div>
-              ))}
-            </div>
           </div>
 
-          {/* ── Mobile tab bar ── */}
-          <div className="lg:hidden flex gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1">
-            {mobileTabs.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                  activeTab === tab.key ? mobileTabActive : mobileTabInactive
-                }`}
-              >
-                {tab.icon} {tab.label}
-              </button>
-            ))}
+          {/* Tabs array for mapping */}
+          <div className={`grid gap-1 p-1.5 rounded-[20px] md:rounded-2xl border backdrop-blur-sm w-full ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`} style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
+            <button className={tabBtn(activeTab === "info")} onClick={() => setActiveTab("info")}>
+              <User size={13} /><span className="hidden md:inline">Info</span>
+            </button>
+            <button className={tabBtn(activeTab === "schedule")} onClick={() => setActiveTab("schedule")}>
+              <CalendarDays size={13} /><span className="hidden md:inline">Schedule</span>
+            </button>
+            <button className={tabBtn(activeTab === "qr")} onClick={() => setActiveTab("qr")}>
+              <QrCode size={13} /><span className="hidden md:inline">My QR</span>
+            </button>
+            <button className={tabBtn(activeTab === "attendance")} onClick={() => setActiveTab("attendance")}>
+              <ClipboardList size={13} /><span className="hidden md:inline">Attendance</span>
+            </button>
+            <button className={tabBtn(activeTab === "announcements")} onClick={() => setActiveTab("announcements")}>
+              <BookOpen size={13} /><span className="hidden md:inline">News</span>
+            </button>
           </div>
 
-          {/* ── Desktop section header ── */}
-          <div className={`hidden lg:flex items-center gap-4 pb-2 border-b ${divider}`}>
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-              dm ? "bg-blue-600/15 border border-blue-500/20" : "bg-blue-100 border border-blue-200"
-            }`}>
-              <span className="text-blue-500">{currentTab.icon}</span>
-            </div>
-            <div>
-              <h1 className={`text-xl font-black uppercase tracking-tight leading-none ${textPri}`}>
-                {currentTab.label}
-              </h1>
-              <p className={`text-[9px] font-bold uppercase tracking-widest mt-1 ${textSub}`}>
-                {student.school_year} · {student.section || "No Section Assigned"}
-              </p>
-            </div>
-          </div>
-
-          {/* ── Tab content ── */}
+          {/* Tab Content */}
           <TabContent />
-
-          {/* ── Mobile footer ── */}
-          <div className="lg:hidden text-center pb-8">
-            <p className={`text-[8px] font-black uppercase tracking-[0.4em] ${textMuted}`}>
-              AMA ACLC Northbay · {student.school_year}
-            </p>
-          </div>
-
         </div>
       </div>
     </>
@@ -628,5 +419,85 @@ export default function StudentDashboardPage() {
     }>
       <DashboardContent />
     </Suspense>
+  )
+}
+
+function StudentAnnouncements({ studentGrade, dm }: { studentGrade: string, dm: boolean }) {
+  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      const { data, error } = await studentSupabase
+        .from('student_announcements')
+        .select('*')
+        .in('target_audience', ['ALL', `GRADE ${studentGrade}`])
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false })
+
+      if (!error && data) {
+        setAnnouncements(data)
+      }
+      setLoading(false)
+    }
+    fetchNews()
+
+    // Optionally set up realtime channel here later!
+  }, [studentGrade])
+
+  const emptyCard = dm
+    ? "border border-white/[0.06] rounded-[28px] bg-white/[0.02]"
+    : "border border-slate-200 rounded-[28px] bg-white"
+  const textPri   = dm ? "text-white" : "text-slate-900"
+  const textSub   = dm ? "text-slate-500" : "text-slate-500"
+
+  if (loading) {
+    return (
+      <div className={`h-64 flex flex-col items-center justify-center text-center fade-in ${emptyCard}`}>
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    )
+  }
+
+  if (announcements.length === 0) {
+    return (
+      <div className={`h-64 flex flex-col items-center justify-center text-center fade-in ${emptyCard}`}>
+        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${dm ? 'bg-slate-800' : 'bg-slate-100'}`}>
+          <BookOpen className="text-slate-400 w-8 h-8" />
+        </div>
+        <h3 className={`text-[13px] font-black uppercase tracking-widest ${textPri}`}>No News Available</h3>
+        <p className={`text-[11px] font-bold uppercase tracking-widest mt-2 ${textSub}`}>Check back later for school updates.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4 fade-in pb-12">
+      {announcements.map((ann) => (
+        <div key={ann.id} className={`p-6 md:p-8 rounded-[32px] border ${
+          ann.is_pinned 
+            ? (dm ? "bg-blue-900/10 border-blue-900/50" : "bg-blue-50 border-blue-200") 
+            : (dm ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200")
+        } shadow-sm relative overflow-hidden group`}>
+          {ann.is_pinned && <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full shrink-0 ${dm ? "bg-blue-500/20" : "bg-blue-500/10"}`} />}
+          
+          <div className="relative z-10 shrink-0">
+            <div className="flex items-center gap-2 mb-3">
+              {ann.is_pinned && (
+                <span className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md ${dm ? "text-blue-400 bg-blue-900/30" : "text-blue-600 bg-blue-100"}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg> 
+                  Pinned
+                </span>
+              )}
+              <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                {new Date(ann.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            </div>
+            <h3 className={`text-xl md:text-2xl font-black tracking-tight uppercase mb-3 ${textPri}`}>{ann.title}</h3>
+            <p className={`text-sm font-medium whitespace-pre-wrap leading-relaxed ${dm ? "text-slate-400" : "text-slate-600"}`}>{ann.content}</p>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

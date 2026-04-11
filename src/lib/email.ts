@@ -54,7 +54,10 @@ export async function sendEnrollmentEmail(record: any) {
       'content-type': 'application/json'
     },
     body: JSON.stringify({
-      sender: { name: "ACLC Registrar", email: "your-verified-email@gmail.com" },
+      sender: { 
+        name: "ACLC Registrar", 
+        email: process.env.SENDER_EMAIL || "your-verified-email@gmail.com" 
+      },
       to: [{ email: record.email, name: record.first_name }],
       subject: isApproved ? 'Application Approved - ACLC Northbay' : 'Action Required: Status Update',
       htmlContent: htmlContent

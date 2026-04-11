@@ -6,16 +6,17 @@ import { useState } from "react"
 import {
   AlertCircle, MapPin, Clock, FileEdit,
   CalendarDays, ChevronDown, ChevronUp,
-  ShieldAlert, GraduationCap, Hash, LayoutDashboard,
+  ShieldAlert, GraduationCap, Hash, LayoutDashboard, Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { StatusBadge } from "./StatusBadge"
 import { ScheduleView } from "./ScheduleView"
-// ── ADD THIS IMPORT ──────────────────────────────────────────────────────────
 import { StudentQRCard } from "./StudentQRCard"
-// ────────────────────────────────────────────────────────────────────────────
+import { generateSetupToken, checkStudentAccount } from "@/lib/actions/student-auth"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import Link from "next/link"
 import type { StudentRecord } from "../types"
 
@@ -25,10 +26,10 @@ interface Props {
 }
 
 export function ResultCard({ result, onFixApplication }: Props) {
+  const router = useRouter()
   const [showSchedule, setShowSchedule] = useState(false)
-  // ── ADD: QR section toggle ────────────────────────────────────────────────
   const [showQR, setShowQR] = useState(false)
-  // ─────────────────────────────────────────────────────────────────────────
+  const [generatingToken, setGeneratingToken] = useState(false)
 
   const sectionName = result.sections?.section_name || result.section || null
 
@@ -116,13 +117,35 @@ export function ResultCard({ result, onFixApplication }: Props) {
                 Access your QR code, schedule, and dashboard
               </p>
             </div>
-            <Link
-              href={`/student/setup?id=${result.id}`}
-              className="flex items-center gap-1.5 shrink-0 px-4 py-2.5 rounded-[14px] text-[9px] font-black uppercase tracking-widest text-white transition-all active:scale-95"
+            <button
+              disabled={generatingToken}
+              onClick={async () => {
+                setGeneratingToken(true)
+                const { exists } = await checkStudentAccount(result.id)
+                if (exists) {
+                  toast.info("Account already exists. Redirecting to login…")
+                  router.push("/student/login")
+                  return
+                }
+                const { token, error } = await generateSetupToken(result.id)
+                if (error === "account_exists") {
+                  toast.info("Account already exists. Redirecting to login…")
+                  router.push("/student/login")
+                  return
+                }
+                if (!token) {
+                  toast.error(error || "Failed to generate setup link.")
+                  setGeneratingToken(false)
+                  return
+                }
+                router.push(`/student/setup?token=${token}`)
+              }}
+              className="flex items-center gap-1.5 shrink-0 px-4 py-2.5 rounded-[14px] text-[9px] font-black uppercase tracking-widest text-white transition-all active:scale-95 disabled:opacity-50"
               style={{ background: "linear-gradient(135deg,#1d4ed8,#2563eb)", boxShadow: "0 4px 16px rgba(29,78,216,0.3)" }}
             >
-              <LayoutDashboard size={12} /> Open
-            </Link>
+              {generatingToken ? <Loader2 size={12} className="animate-spin" /> : <LayoutDashboard size={12} />}
+              {generatingToken ? "Loading…" : "Open"}
+            </button>
           </div>
         )}
 

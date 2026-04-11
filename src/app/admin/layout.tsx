@@ -147,6 +147,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { href: "/admin/applicants", icon: <Users size={18} />, label: "Applicants" },
         { href: "/admin/enrolled", icon: <UserCheck size={18} />, label: "Enrolled" },
+        { href: "/admin/student-accounts", icon: <UserIcon size={18} />, label: "Accounts" },
       ],
     },
     {
