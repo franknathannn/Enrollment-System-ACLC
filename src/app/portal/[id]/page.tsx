@@ -78,7 +78,7 @@ export default function DownloadPortalPage({ params }: { params: Promise<{ id: s
         <div className="text-center space-y-3 mb-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-aclc.png" alt="ACLC" className="w-16 h-16 mx-auto object-contain" />
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Download Hub</h1>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Download</h1>
           <p className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.3em]">
             AMA ACLC Northbay · Student Portal
           </p>

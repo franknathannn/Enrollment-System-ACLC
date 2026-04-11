@@ -9,9 +9,10 @@ import { ALL_DAYS, SUBJ_COLORS, fmt, todayDayName, type ScheduleRow } from "../t
 interface Props {
   section: string
   schoolYear: string
+  dm?: boolean
 }
 
-export function ScheduleView({ section, schoolYear }: Props) {
+export function ScheduleView({ section, schoolYear, dm = true }: Props) {
   const [schedules, setSchedules] = useState<ScheduleRow[]>([])
   const [loading,   setLoading]   = useState(true)
   const [activeDay, setActiveDay] = useState(todayDayName())
@@ -74,13 +75,17 @@ export function ScheduleView({ section, schoolYear }: Props) {
                 ${active
                   ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
                   : count > 0
-                    ? "border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10"
-                    : "border border-white/5 text-slate-700"
+                    ? dm
+                      ? "border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10"
+                      : "border border-slate-200 bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    : dm
+                      ? "border border-white/5 text-slate-700"
+                      : "border border-slate-100 text-slate-300"
                 }`}
             >
               {d.slice(0,3)}
               {today && !active && <span className="w-1 h-1 rounded-full bg-blue-400" />}
-              <span className={`text-[8px] font-bold ${active ? "text-white/60" : "text-slate-700"}`}>
+              <span className={`text-[8px] font-bold ${active ? "text-white/60" : dm ? "text-slate-700" : "text-slate-400"}`}>
                 {count || "—"}
               </span>
             </button>

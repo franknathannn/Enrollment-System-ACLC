@@ -6,7 +6,7 @@ import { useState } from "react"
 import {
   AlertCircle, MapPin, Clock, FileEdit,
   CalendarDays, ChevronDown, ChevronUp,
-  ShieldAlert, GraduationCap, Hash,
+  ShieldAlert, GraduationCap, Hash, LayoutDashboard,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -16,6 +16,7 @@ import { ScheduleView } from "./ScheduleView"
 // ── ADD THIS IMPORT ──────────────────────────────────────────────────────────
 import { StudentQRCard } from "./StudentQRCard"
 // ────────────────────────────────────────────────────────────────────────────
+import Link from "next/link"
 import type { StudentRecord } from "../types"
 
 interface Props {
@@ -105,6 +106,25 @@ export function ResultCard({ result, onFixApplication }: Props) {
           </Section>
         )}
         {/* ──────────────────────────────────────────────────────────── */}
+
+        {/* Student Portal CTA — visible for enrolled students */}
+        {isEnrolled && (
+          <div className="rounded-[28px] border border-blue-500/20 bg-blue-500/5 p-5 flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-400">Student Portal</p>
+              <p className="text-[10px] text-slate-500">
+                Access your QR code, schedule, and dashboard
+              </p>
+            </div>
+            <Link
+              href={`/student/setup?id=${result.id}`}
+              className="flex items-center gap-1.5 shrink-0 px-4 py-2.5 rounded-[14px] text-[9px] font-black uppercase tracking-widest text-white transition-all active:scale-95"
+              style={{ background: "linear-gradient(135deg,#1d4ed8,#2563eb)", boxShadow: "0 4px 16px rgba(29,78,216,0.3)" }}
+            >
+              <LayoutDashboard size={12} /> Open
+            </Link>
+          </div>
+        )}
 
         {/* Class Schedule — unchanged */}
         {isEnrolled && sectionName && (
