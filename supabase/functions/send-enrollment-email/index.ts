@@ -45,9 +45,9 @@ serve(async (req: Request) => {
     const shouldNotifyParents = config?.notify_parents_status ?? true;
 
     const isApproved = record.status === 'Approved';
-    const logoUrl = "https://ama-aclc-northbay-es.vercel.app/logo-aclc.png";
-    const statusLink = "https://ama-aclc-northbay-es.vercel.app/status";
-    const portalLink = record.id ? 'https://ama-aclc-northbay-es.vercel.app/portal/' + record.id : statusLink;
+    const logoUrl = "https://enrollment-system-aclc.vercel.app/logo-aclc.png";
+    const statusLink = "https://enrollment-system-aclc.vercel.app/status";
+    const portalLink = record.id ? 'https://enrollment-system-aclc.vercel.app/portal/' + record.id : statusLink;
     const studentUuid = record.id ? record.id.split('-')[0].toUpperCase() : '';
 
     // QR Code URLs — dark and light themed matching the status page StudentQRCard
@@ -272,7 +272,7 @@ serve(async (req: Request) => {
     // Wrapper
     const htmlContent = '<div style="font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#1f2937;max-width:600px;margin:0 auto;padding:20px;background-color:#f9fafb;">'
       + '<div style="text-align:center;margin-bottom:30px;">'
-      + '<a href="https://ama-aclc-northbay-es.vercel.app" target="_blank" style="text-decoration:none;">'
+      + '<a href="https://enrollment-system-aclc.vercel.app" target="_blank" style="text-decoration:none;">'
       + '<img src="' + logoUrl + '" alt="ACLC Logo" style="width:80px;height:80px;object-fit:contain;" />'
       + '</a>'
       + '<h2 style="color:#1d4ed8;margin-top:10px;text-transform:uppercase;letter-spacing:2px;font-weight:800;">AMA ACLC NORTHBAY</h2>'
