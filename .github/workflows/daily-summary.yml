@@ -1,0 +1,14 @@
+name: Daily Attendance Summary
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Every hour
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  send-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Daily Summary
+        run: |
+          curl -f -X GET "https://enrollment-system-aclc.vercel.app/api/cron/daily-summary"

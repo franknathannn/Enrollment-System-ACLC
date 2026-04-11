@@ -80,21 +80,16 @@ export async function GET(request: Request) {
       // If they don't have classes today, skip them
       if (mySchedules.length === 0) continue;
 
-      // Ensure their shift is fully over before evaluating!
-      // (Hourly Sweep Logic: only blast if the final class of the day ended at least 10 minutes ago)
+      // Hourly Sweep Logic: only send if the final class of the day ended at least 10 minutes ago
       const lastClass = mySchedules[mySchedules.length - 1];
       const [lcH, lcM] = lastClass.end_time.split(':').map(Number);
       const shiftEnd = new Date(today);
       shiftEnd.setHours(lcH, lcM + 10, 0, 0); // pad 10 mins
 
       if (today < shiftEnd) {
-        // Shift is not complete yet, skip them for this hour's sweep
+        // Shift is not complete yet, skip for this hour's sweep
         continue;
       }
-
-      // Ensure we haven't already sent their summary today (this would require a tracking table in prod, 
-      // but for this implementation we assume the hourly sweep is idempotent or handles it.
-      // E.g. we might check an `notification_logs` table. For MVP, we proceed with computation.)
 
       const myAttendances = (attendances || []).filter(a => a.student_id === student.id);
       let wasCutting = false;
