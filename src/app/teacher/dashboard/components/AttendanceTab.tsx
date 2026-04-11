@@ -229,7 +229,7 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
           </div>
           <div className="relative">
             <p className="text-white text-[12px] font-black uppercase tracking-[0.18em] leading-none">AMA ACLC</p>
-            <p className="text-blue-200 text-[8px] font-bold uppercase tracking-[0.2em] mt-0.5 opacity-80 leading-none">Northbay College</p>
+            <p className="text-blue-200 text-[8px] font-bold uppercase tracking-[0.2em] mt-0.5 opacity-80 leading-none">Northbay</p>
           </div>
         </div>
 
@@ -705,7 +705,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
     try {
       const { error } = await supabase.from("attendance").insert(rec)
       if (error) throw error
-      toast.success(`✅ ${student.first_name} ${student.last_name} — ${autoStatus}`, {
+      toast.success(`${student.first_name} ${student.last_name} — ${autoStatus}`, {
         description: `${fmtT(rec.time)} · ${period.subject}`, duration: 3000
       })
     } catch {

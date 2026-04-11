@@ -163,6 +163,7 @@ const STEP_GROUPS = [
       { key: "guardian_middle_name", label: "Guardian Middle Name" },
       { key: "guardian_last_name",   label: "Guardian Last Name" },
       { key: "guardian_phone",       label: "Guardian Phone" },
+      { key: "guardian_email",       label: "Guardian Email" },
       { key: "phone",                label: "Student Phone" },
     ]
   },

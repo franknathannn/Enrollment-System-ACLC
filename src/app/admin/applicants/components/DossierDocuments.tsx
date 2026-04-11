@@ -82,10 +82,10 @@ const CredentialCard = memo(function CredentialCard({
           </div>
 
           {/* File-type pill */}
-          <div className={`absolute top-2 left-2 px-1.5 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-sm ${
+          <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-sm ${
             isPdf
-              ? (isDarkMode ? "bg-red-500/30 text-red-300 border border-red-500/30" : "bg-red-100 text-red-600 border border-red-200")
-              : (isDarkMode ? "bg-blue-500/30 text-blue-300 border border-blue-500/30" : "bg-blue-100 text-blue-600 border border-blue-200")
+              ? (isDarkMode ? "bg-slate-900/90 text-red-400 border border-red-500/50 backdrop-blur-md" : "bg-red-100 text-red-600 border border-red-200")
+              : (isDarkMode ? "bg-slate-900/90 text-blue-400 border border-blue-500/50 backdrop-blur-md" : "bg-blue-100 text-blue-600 border border-blue-200")
           }`}>
             {isPdf ? "PDF" : "IMG"}
           </div>

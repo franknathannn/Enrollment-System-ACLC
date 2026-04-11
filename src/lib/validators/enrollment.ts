@@ -147,6 +147,10 @@ export function createEnrollmentSchema(requirements: FieldRequirements = DEFAULT
       ? z.string().regex(/^09\d{9}$/, "Must start with 09 and be 11 digits")
       : z.string().regex(/^09\d{9}$/, "Must start with 09 and be 11 digits").optional(),
 
+    guardian_email: req('guardian_email')
+      ? z.string().email("Invalid email").max(50, "Max 50 characters")
+      : z.string().email("Invalid email").max(50, "Max 50 characters").optional().or(z.literal("")),
+
     // ── Step 4: Documents ─────────────────────────────────────────────────
     profile_picture: z.string().optional(),
 

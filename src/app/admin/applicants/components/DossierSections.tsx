@@ -334,6 +334,29 @@ export const DossierSections = memo(function DossierSections({
                 <InfoBlock label="Guardian Contact Number" value={formData.guardian_phone || "—"} isDarkMode={isDarkMode} />
               )}
             </div>
+
+            {/* Guardian email — max 50, validated */}
+            <div className="col-span-1 sm:col-span-2 space-y-1.5 min-w-0">
+              {isEditing ? (
+                <>
+                  <div className="flex justify-between items-center">
+                    <p className={labelClass}>Guardian Email</p>
+                    <span className="text-[9px] text-slate-500">{(formData.guardian_email || "").length}/50</span>
+                  </div>
+                  <Input
+                    value={formData.guardian_email || ""}
+                    onChange={(e) => handleValidatedChange("guardian_email", e.target.value, validateEmail)}
+                    className={inputClass}
+                    maxLength={50}
+                    type="email"
+                    placeholder="parent@example.com"
+                  />
+                  <FieldError msg={fieldErrors.guardian_email} />
+                </>
+              ) : (
+                <InfoBlock label="Guardian Email" value={formData.guardian_email || "—"} isDarkMode={isDarkMode} />
+              )}
+            </div>
           </div>
         </div>
 

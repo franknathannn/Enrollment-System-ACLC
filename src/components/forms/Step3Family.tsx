@@ -22,7 +22,7 @@ import { useThemeStore } from "@/store/useThemeStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowRight, ChevronLeft, Users, Phone, Sparkles, ShieldCheck, Globe } from "lucide-react"
+import { ArrowRight, ChevronLeft, Users, Phone, Sparkles, ShieldCheck, Globe, Mail } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useEnrollmentValidation } from "@/hooks/useEnrollmentValidation"
@@ -122,6 +122,36 @@ const PhoneInput = memo(function PhoneInput({
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GuardianEmailInput — memo'd, manages own filled state
+// ─────────────────────────────────────────────────────────────────────────────
+const GuardianEmailInput = memo(function GuardianEmailInput({
+  register, hasError, editable, required, defaultFilled,
+}: {
+  register: any; hasError: boolean
+  editable: boolean; required: boolean; defaultFilled: boolean
+}) {
+  const [filled, setFilled] = useState(defaultFilled)
+  const cls = buildFieldClass({ hasError, filled })
+  return (
+    <Input
+      {...register("guardian_email", {
+        required: required ? "Required" : false,
+        pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email format" },
+        maxLength: { value: 50, message: "Max 50 characters" },
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+          setFilled(e.target.value.trim().length > 0)
+        },
+      })}
+      type="email"
+      placeholder="parent@example.com"
+      maxLength={50}
+      disabled={!editable}
+      className={cn(cls, !editable && "opacity-50 cursor-not-allowed")}
+    />
+  )
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Step3Family() {
@@ -142,6 +172,7 @@ export default function Step3Family() {
       guardian_middle_name: formData.guardian_middle_name || "",
       guardian_last_name: formData.guardian_last_name || "",
       guardian_phone: formData.guardian_phone || "",
+      guardian_email: formData.guardian_email || "",
       phone: formData.phone || "",
     },
   })
@@ -294,25 +325,38 @@ export default function Step3Family() {
           </div>
         </div>
 
-        {/* PHONE CONTACTS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        {/* PHONE & EMAIL CONTACTS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
           {([
-            { field: "guardian_phone" as const, label: "Guardian Contact No." },
-            { field: "phone" as const, label: "Student No." },
-          ]).map(({ field, label }) => (
+            { field: "guardian_phone" as const, label: "Guardian Contact No.", icon: Phone },
+            { field: "guardian_email" as const, label: "Guardian Email", icon: Mail },
+            { field: "phone" as const, label: "Student No.", icon: Phone },
+          ]).map(({ field, label, icon: Icon }) => (
             <div key={field} className="space-y-2" id={`${field}_container`}>
-              <Label className="t-text-muted font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2 ml-2">
-                <Phone size={12} className="text-blue-700" />
-                {label} {isFieldRequired(field as any) && <span className="text-red-500">*</span>}
+              <Label className="t-text-muted font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 ml-2">
+                <Icon size={12} className="text-blue-700 shrink-0" />
+                <span className="truncate">
+                  {label} {isFieldRequired(field as any) && <span className="text-red-500 ml-0.5">*</span>}
+                </span>
               </Label>
-              <PhoneInput
-                fieldName={field}
-                register={register} setValue={setValue}
-                hasError={!!(errors as any)[field]}
-                editable={isFieldEditable(field as any)}
-                required={isFieldRequired(field as any)}
-                defaultFilled={!!(formData[field]?.trim())}
-              />
+              {field === "guardian_email" ? (
+                <GuardianEmailInput
+                  register={register}
+                  hasError={!!(errors as any)[field]}
+                  editable={isFieldEditable(field as any)}
+                  required={isFieldRequired(field as any)}
+                  defaultFilled={!!(formData[field]?.trim())}
+                />
+              ) : (
+                <PhoneInput
+                  fieldName={field}
+                  register={register} setValue={setValue}
+                  hasError={!!(errors as any)[field]}
+                  editable={isFieldEditable(field as any)}
+                  required={isFieldRequired(field as any)}
+                  defaultFilled={!!(formData[field]?.trim())}
+                />
+              )}
               {(errors as any)[field] && (
                 <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest flex items-center gap-1 ml-1">
                   {(errors as any)[field]?.message}

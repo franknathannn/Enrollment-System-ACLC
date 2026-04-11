@@ -13,7 +13,7 @@ import { DossierDocuments } from "../../applicants/components/DossierDocuments"
 const WATCHED_FIELDS = [
   "first_name", "middle_name", "last_name", "gender", "religion", "nationality",
   "school_year", "civil_status", "age", "birth_date", "email", "phone", "address",
-  "guardian_first_name", "guardian_middle_name", "guardian_last_name", "guardian_phone",
+  "guardian_first_name", "guardian_middle_name", "guardian_last_name", "guardian_phone", "guardian_email",
   "last_school_attended", "gwa_grade_10", "strand", "section",
   "school_type", "year_completed_jhs", "last_school_address",
   "facebook_user", "facebook_link", "preferred_modality", "preferred_shift",

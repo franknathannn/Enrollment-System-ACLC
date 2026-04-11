@@ -32,6 +32,7 @@ interface EnrollmentData {
   guardian_middle_name?: string;
   guardian_last_name?: string;
   guardian_phone?: string;
+  guardian_email?: string;
   guardian_relationship?: string;
 
   // Step 4: Documents (The URLs from Supabase Storage)
@@ -74,6 +75,11 @@ export const useEnrollmentStore = create<EnrollmentState>()(
         religion: "",
         age: "",
         civil_status: "Single",
+        guardian_first_name: "",
+        guardian_middle_name: "",
+        guardian_last_name: "",
+        guardian_phone: "",
+        guardian_email: "",
       },
       setStep: (step) => set({ currentStep: step }),
       updateFormData: (newData) => 

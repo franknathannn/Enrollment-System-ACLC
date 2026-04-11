@@ -14,9 +14,9 @@ export async function recordYearlySnapshot(year: string, maleCount: number, fema
     const { data, error } = await supabase
       .from('enrollment_history')
       .upsert(
-        { 
-          school_year: year, 
-          male_total: maleCount, 
+        {
+          school_year: year,
+          male_total: maleCount,
           female_total: femaleCount,
           total_combined: maleCount + femaleCount,
           recorded_at: new Date().toISOString()
@@ -25,7 +25,7 @@ export async function recordYearlySnapshot(year: string, maleCount: number, fema
       )
 
     if (error) {
-      console.error("❌ Snapshot Upsert Error:", error.message)
+      console.error("Snapshot Upsert Error:", error.message)
       return { success: false, error: error.message }
     }
 
@@ -52,7 +52,7 @@ export async function getEnrollmentHistory() {
     if (error) throw error
     return data || []
   } catch (error: any) {
-    console.error("❌ Fetch History Error:", error.message)
+    console.error("Fetch History Error:", error.message)
     return []
   }
 }
@@ -70,11 +70,11 @@ export async function deleteSnapshot(id: string) {
       .eq('id', id)
 
     if (error) throw error
-    
+
     revalidatePath('/admin/dashboard')
     return { success: true }
   } catch (error: any) {
-    console.error("❌ Delete Snapshot Error:", error.message)
+    console.error("Delete Snapshot Error:", error.message)
     return { success: false, error: error.message }
   }
 }

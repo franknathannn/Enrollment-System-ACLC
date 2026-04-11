@@ -1,17 +1,17 @@
 export async function sendEnrollmentEmail(record: any) {
-    const isApproved = record.status === 'Approved';
-    const logoUrl = "https://ama-aclc-northbay-es.vercel.app/logo-aclc.png";
-    const statusLink = "https://ama-aclc-northbay-es.vercel.app/status";
-    
-    // Format the feedback for HTML
-    const formattedReason = (record.registrar_feedback || 'Incomplete or Invalid Requirements.')
-      .replace(/\n/g, '<br/>');
-  
-    const htmlContent = `
+  const isApproved = record.status === 'Approved';
+  const logoUrl = "https://enrollment-system-aclc.vercel.app/logo-aclc.png";
+  const statusLink = "https://enrollment-system-aclc.vercel.app/status";
+
+  // Format the feedback for HTML
+  const formattedReason = (record.registrar_feedback || 'Incomplete or Invalid Requirements.')
+    .replace(/\n/g, '<br/>');
+
+  const htmlContent = `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <img src="${logoUrl}" alt="ACLC Logo" style="width: 80px; height: 80px;" />
-          <h2 style="color: #1d4ed8; margin-top: 10px; text-transform: uppercase;">ACLC College Northbay</h2>
+          <h2 style="color: #1d4ed8; margin-top: 10px; text-transform: uppercase;">AMA ACLC NORTHBAY</h2>
         </div>
         
         <div style="background-color: #ffffff; border-radius: 16px; padding: 30px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb;">
@@ -20,9 +20,9 @@ export async function sendEnrollmentEmail(record: any) {
           </h1>
           
           <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">
-            ${isApproved 
-              ? 'We are thrilled to inform you that your application has been <strong>APPROVED</strong>. Welcome to the family!' 
-              : `Dear <strong>${record.first_name}</strong>, thank you for your interest. We noticed a few things that need your attention.`}
+            ${isApproved
+      ? 'We are thrilled to inform you that your application has been <strong>APPROVED</strong>. Welcome to the family!'
+      : `Dear <strong>${record.first_name}</strong>, thank you for your interest. We noticed a few things that need your attention.`}
           </p>
   
           ${isApproved ? `
@@ -45,21 +45,21 @@ export async function sendEnrollmentEmail(record: any) {
         </div>
       </div>
     `;
-  
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'api-key': process.env.NEXT_PUBLIC_BREVO_API_KEY || process.env.BREVO_API_KEY as string,
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        sender: { name: "ACLC Registrar", email: "your-verified-email@gmail.com" },
-        to: [{ email: record.email, name: record.first_name }],
-        subject: isApproved ? 'Application Approved - ACLC Northbay' : 'Action Required: Status Update',
-        htmlContent: htmlContent
-      })
-    });
-  
-    return response.ok;
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': process.env.NEXT_PUBLIC_BREVO_API_KEY || process.env.BREVO_API_KEY as string,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      sender: { name: "ACLC Registrar", email: "your-verified-email@gmail.com" },
+      to: [{ email: record.email, name: record.first_name }],
+      subject: isApproved ? 'Application Approved - ACLC Northbay' : 'Action Required: Status Update',
+      htmlContent: htmlContent
+    })
+  });
+
+  return response.ok;
 }

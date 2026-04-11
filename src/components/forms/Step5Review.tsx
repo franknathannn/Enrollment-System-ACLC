@@ -109,6 +109,7 @@ export default function Step5Review() {
         grade_level: (formData as any).grade_level || "11",
         guardian_first_name: formData.guardian_first_name, guardian_middle_name: formData.guardian_middle_name,
         guardian_last_name: formData.guardian_last_name, guardian_phone: formData.guardian_phone,
+        guardian_email: formData.guardian_email || null,
         form_138_url: isJHS ? formData.form_138_url : null, good_moral_url: isJHS ? formData.good_moral_url : null,
         two_by_two_url: formData.profile_2x2_url, cor_url: !isJHS ? formData.cor_url : null,
         af5_url: !isJHS ? formData.af5_url : null, diploma_url: !isJHS ? formData.diploma_url : null,
@@ -258,6 +259,7 @@ export default function Step5Review() {
             <ReviewSection icon={<Users size={16} />} title="Guardian Information" isDark={isDark} details={[
               { label: "Guardian First Name", value: formData.guardian_first_name }, { label: "Guardian Middle Name", value: formData.guardian_middle_name || "N/A" },
               { label: "Guardian Last Name", value: formData.guardian_last_name }, { label: "Guardian Contact No.", value: formData.guardian_phone },
+              { label: "Guardian Email", value: formData.guardian_email, fullWidth: true },
             ]} />
           </div>
           <div className="lg:col-span-1 space-y-6">

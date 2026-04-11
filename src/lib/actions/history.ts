@@ -31,29 +31,29 @@ export async function snapshotCurrentYearData(schoolYear: string): Promise<{
         .in("status", ["Accepted", "Approved"]).or("mock.is.null,mock.eq.false"),
     ])
 
-    const maleCount  = maleRes.count  || 0
+    const maleCount = maleRes.count || 0
     const femaleCount = femaleRes.count || 0
     const total = maleCount + femaleCount
 
     await Promise.all([
       // dashboard archives table
       supabase.from("enrollment_history").upsert({
-        school_year:     schoolYear,
-        male_total:      maleCount,
-        female_total:    femaleCount,
-        total_combined:  total,
-        recorded_at:     new Date().toISOString(),
+        school_year: schoolYear,
+        male_total: maleCount,
+        female_total: femaleCount,
+        total_combined: total,
+        recorded_at: new Date().toISOString(),
       }, { onConflict: "school_year" }),
 
       // predictive analytics table
       supabase.from("enrollment_predictions_data").upsert({
-        id:                   crypto.randomUUID(),
-        school_year:          schoolYear,
-        total_enrolled:       total,
-        jhs_graduates_count:  jhsRes.count  || 0,
-        als_passers_count:    alsRes.count  || 0,
-        others_count:         0,
-        created_at:           new Date().toISOString(),
+        id: crypto.randomUUID(),
+        school_year: schoolYear,
+        total_enrolled: total,
+        jhs_graduates_count: jhsRes.count || 0,
+        als_passers_count: alsRes.count || 0,
+        others_count: 0,
+        created_at: new Date().toISOString(),
       }, { onConflict: "school_year" }),
     ])
 
@@ -76,20 +76,20 @@ export async function recordYearlySnapshot(year: string, maleCount: number, fema
     const { data, error } = await supabase
       .from('enrollment_history')
       .upsert(
-        { 
-          school_year: year, 
-          male_total: maleCount, 
+        {
+          school_year: year,
+          male_total: maleCount,
           female_total: femaleCount,
           total_combined: maleCount + femaleCount,
           recorded_at: new Date().toISOString()
         },
         // CRITICAL: This tells Supabase to look for a conflict in 'school_year'
         // and perform an UPDATE instead of a fresh INSERT.
-        { onConflict: 'school_year' } 
+        { onConflict: 'school_year' }
       )
 
     if (error) {
-      console.error("❌ Snapshot Database Error:", error.message)
+      console.error("Snapshot Database Error:", error.message)
       return { success: false, error: error.message }
     }
 
@@ -132,7 +132,7 @@ export async function deleteSnapshot(id: string) {
       .eq('id', id)
 
     if (error) throw error
-    
+
     revalidatePath('/admin/dashboard')
     return { success: true }
   } catch (error: any) {

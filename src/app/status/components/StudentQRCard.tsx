@@ -34,20 +34,20 @@ function PreviewModal({
   onClose: () => void; onDownload: (theme: ThemeKey) => Promise<void>
 }) {
   const [theme, setTheme] = useState<ThemeKey>("dark")
-  const darkRef  = useRef<HTMLDivElement>(null)
+  const darkRef = useRef<HTMLDivElement>(null)
   const lightRef = useRef<HTMLDivElement>(null)
-  const [darkOk,  setDarkOk]  = useState(false)
+  const [darkOk, setDarkOk] = useState(false)
   const [lightOk, setLightOk] = useState(false)
   const [saving, setSaving] = useState(false)
   const SZ = 176
 
   useEffect(() => {
     if (!window.QRCode) return
-    if (darkRef.current)  generateStudentAttendanceQr(darkRef.current,  studentId, SZ, "dark",  () => setDarkOk(true))
+    if (darkRef.current) generateStudentAttendanceQr(darkRef.current, studentId, SZ, "dark", () => setDarkOk(true))
     if (lightRef.current) generateStudentAttendanceQr(lightRef.current, studentId, SZ, "light", () => setLightOk(true))
   }, [studentId])
 
-  const t    = THEMES[theme]
+  const t = THEMES[theme]
   const isOk = theme === "dark" ? darkOk : lightOk
 
   return (
@@ -81,13 +81,13 @@ function PreviewModal({
           </div>
           <div className="relative">
             <p className="text-white text-[12px] font-black uppercase tracking-[0.18em] leading-none">AMA ACLC</p>
-            <p className="text-blue-200 text-[8px] font-bold uppercase tracking-[0.2em] mt-0.5 opacity-80 leading-none">Northbay College</p>
+            <p className="text-blue-200 text-[8px] font-bold uppercase tracking-[0.2em] mt-0.5 opacity-80 leading-none">Northbay</p>
           </div>
         </div>
 
         {/* Theme switcher */}
         <div className="flex items-center justify-center gap-2 pt-4 pb-2 px-5">
-          {(["dark","light"] as ThemeKey[]).map(th => (
+          {(["dark", "light"] as ThemeKey[]).map(th => (
             <button key={th} onClick={() => setTheme(th)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-wide transition-all flex-1 justify-center"
               style={theme === th
@@ -115,7 +115,7 @@ function PreviewModal({
             {/* QR */}
             <div className="flex justify-center py-4">
               <div className="relative p-2.5 rounded-[16px]" style={{ background: THEMES[theme].qrLight }}>
-                <div ref={darkRef}  style={{ display: theme === "dark"  && darkOk  ? "block" : "none", width: SZ, height: SZ }} />
+                <div ref={darkRef} style={{ display: theme === "dark" && darkOk ? "block" : "none", width: SZ, height: SZ }} />
                 <div ref={lightRef} style={{ display: theme === "light" && lightOk ? "block" : "none", width: SZ, height: SZ }} />
                 {!isOk && (
                   <div style={{ width: SZ, height: SZ }} className="flex items-center justify-center">
@@ -152,9 +152,9 @@ function PreviewModal({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export function StudentQRCard({ studentId, studentName, lrn, section }: StudentQRCardProps) {
-  const qrRef        = useRef<HTMLDivElement>(null)
+  const qrRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [ready,  setReady]  = useState(false)
+  const [ready, setReady] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [qrSize, setQrSize] = useState(220)
   const [showPreview, setShowPreview] = useState(false)
@@ -241,7 +241,7 @@ export function StudentQRCard({ studentId, studentName, lrn, section }: StudentQ
               </div>
               <div className="relative flex-1">
                 <p className="text-white text-[12px] font-black uppercase tracking-[0.18em] leading-none">AMA ACLC</p>
-                <p className="text-blue-300 text-[8px] font-bold uppercase tracking-[0.22em] mt-0.5 opacity-80 leading-none">Northbay College</p>
+                <p className="text-blue-300 text-[8px] font-bold uppercase tracking-[0.22em] mt-0.5 opacity-80 leading-none">Northbay</p>
               </div>
               <div className="relative text-right">
                 <p className="text-white/25 text-[7px] font-bold uppercase tracking-[0.2em] leading-none">Student</p>
@@ -263,9 +263,9 @@ export function StudentQRCard({ studentId, studentName, lrn, section }: StudentQ
                 </div>
                 {/* Animated corner marks */}
                 {ready && (["top-0 left-0 border-t-2 border-l-2 rounded-tl-md",
-                             "top-0 right-0 border-t-2 border-r-2 rounded-tr-md",
-                             "bottom-0 left-0 border-b-2 border-l-2 rounded-bl-md",
-                             "bottom-0 right-0 border-b-2 border-r-2 rounded-br-md",
+                  "top-0 right-0 border-t-2 border-r-2 rounded-tr-md",
+                  "bottom-0 left-0 border-b-2 border-l-2 rounded-bl-md",
+                  "bottom-0 right-0 border-b-2 border-r-2 rounded-br-md",
                 ] as const).map((cls, i) => (
                   <div key={i} className={`absolute w-5 h-5 ${cls}`}
                     style={{ borderColor: "#38bdf8" }} />

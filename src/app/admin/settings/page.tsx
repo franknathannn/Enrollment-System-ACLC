@@ -14,6 +14,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { StarConstellation } from "./components/StarConstellation"
 import { SettingsHeader } from "./components/SettingsHeader"
 import { SystemLogicMode } from "./components/SystemLogicMode"
+import { ParentNotificationControl } from "./components/ParentNotificationControl"
 import { ManualPortalOverride } from "./components/ManualPortalOverride"
 import { EnrollmentMatrix } from "./components/EnrollmentMatrix"
 import { PreEnrollmentMode } from "./components/PreEnrollmentMode"
@@ -34,6 +35,9 @@ type ConfigState = {
   voucherValue: string | number
   isPreEnrollment: boolean
   grade12Enabled: boolean
+  notifyParentsStatus: boolean
+  notifyParentsAttendance: boolean
+  notifyParentsSummary: boolean
 }
 
 export default function SettingsPage() {
@@ -59,6 +63,9 @@ export default function SettingsPage() {
     voucherValue: 22500,
     isPreEnrollment: false,
     grade12Enabled: true,
+    notifyParentsStatus: true,
+    notifyParentsAttendance: false,
+    notifyParentsSummary: false,
   })
 
   const loadSettings = useCallback(async () => {
@@ -114,6 +121,9 @@ export default function SettingsPage() {
           voucherValue: configData.voucher_value ?? 22500,
           isPreEnrollment: configData.is_pre_enrollment ?? false,
           grade12Enabled: configData.grade12_enabled ?? true,
+          notifyParentsStatus: configData.notify_parents_status ?? true,
+          notifyParentsAttendance: configData.notify_parents_attendance ?? false,
+          notifyParentsSummary: configData.notify_parents_summary ?? false,
         })
         // Lock in the DB-loaded school year so we can detect changes at save time
         originalSchoolYearRef.current = configData.school_year || ""
@@ -322,13 +332,19 @@ export default function SettingsPage() {
         capacity: number
         voucher_value: number
         is_portal_active: boolean
+        notify_parents_status: boolean
+        notify_parents_attendance: boolean
+        notify_parents_summary: boolean
       } = {
         school_year: config.schoolYear,
         enrollment_start: config.startDate || null,
         enrollment_end: config.endDate || null,
         capacity: numericCapacity,
         voucher_value: numericVoucher,
-        is_portal_active: calculatedStatus
+        is_portal_active: calculatedStatus,
+        notify_parents_status: config.notifyParentsStatus,
+        notify_parents_attendance: config.notifyParentsAttendance,
+        notify_parents_summary: config.notifyParentsSummary
       }
 
       const { error } = await supabase.from('system_config')
@@ -484,6 +500,53 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+
+            <ParentNotificationControl
+              isDarkMode={isDarkMode}
+              updating={updating}
+              notifyStatus={config.notifyParentsStatus}
+              notifyAttendance={config.notifyParentsAttendance}
+              notifySummary={config.notifyParentsSummary}
+              onToggleStatus={async (v) => {
+                setUpdating(true)
+                const prev = config.notifyParentsStatus
+                setConfig(p => ({ ...p, notifyParentsStatus: v }))
+                try {
+                  const { error } = await supabase.from('system_config').update({ notify_parents_status: v }).eq('id', config.id)
+                  if (error) throw error
+                  toast.success(`Enrollment Status notifications ${v ? 'ENABLED' : 'DISABLED'}`)
+                } catch {
+                  setConfig(p => ({ ...p, notifyParentsStatus: prev }))
+                  toast.error("Failed to update notification setting")
+                } finally { setUpdating(false) }
+              }}
+              onToggleAttendance={async (v) => {
+                setUpdating(true)
+                const prev = config.notifyParentsAttendance
+                setConfig(p => ({ ...p, notifyParentsAttendance: v }))
+                try {
+                  const { error } = await supabase.from('system_config').update({ notify_parents_attendance: v }).eq('id', config.id)
+                  if (error) throw error
+                  toast.success(`Attendance Arrival notifications ${v ? 'ENABLED' : 'DISABLED'}`)
+                } catch {
+                  setConfig(p => ({ ...p, notifyParentsAttendance: prev }))
+                  toast.error("Failed to update notification setting")
+                } finally { setUpdating(false) }
+              }}
+              onToggleSummary={async (v) => {
+                setUpdating(true)
+                const prev = config.notifyParentsSummary
+                setConfig(p => ({ ...p, notifyParentsSummary: v }))
+                try {
+                  const { error } = await supabase.from('system_config').update({ notify_parents_summary: v }).eq('id', config.id)
+                  if (error) throw error
+                  toast.success(`Daily Summary notifications ${v ? 'ENABLED' : 'DISABLED'}`)
+                } catch {
+                  setConfig(p => ({ ...p, notifyParentsSummary: prev }))
+                  toast.error("Failed to update notification setting")
+                } finally { setUpdating(false) }
+              }}
+            />
 
             <EnrollmentMatrix
               schoolYear={config.schoolYear}

@@ -39,6 +39,7 @@ export type FieldRequirements = {
   guardian_middle_name: FieldRequirement
   guardian_last_name: FieldRequirement
   guardian_phone: FieldRequirement
+  guardian_email: FieldRequirement
   phone: FieldRequirement
   
   // Step 4: Documents
@@ -85,6 +86,7 @@ export const DEFAULT_FIELD_REQUIREMENTS: FieldRequirements = {
   guardian_middle_name: { required: false, editable: true },
   guardian_last_name:   { required: true,  editable: true },
   guardian_phone:       { required: true,  editable: true },
+  guardian_email:       { required: false, editable: true },
   phone:                { required: true,  editable: true },
   
   // Step 4

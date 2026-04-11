@@ -44,19 +44,19 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
       setHiddenRows(prev => { const next = new Set(prev); next.add(studentId); return next })
       const result = await updateApplicantStatus(studentId, status, feedback);
       if (result.success) {
-        const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;    
+        const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
         const student = students.find(s => s.id === studentId);
         const assignedSectionId = result.assignedSectionId;
         const assignedSectionName = result.assignedSection || 'Unassigned';
         const previousStatus = student?.status || 'Unknown';
         let description = "";
         if (status === 'Accepted' || status === 'Approved') {
-          description = assignedSectionName !== 'Unassigned' 
-            ? `Moved ${name} to ${status} status and assigned to ${assignedSectionName}` 
+          description = assignedSectionName !== 'Unassigned'
+            ? `Moved ${name} to ${status} status and assigned to ${assignedSectionName}`
             : `Moved ${name} to ${status} status`;
         } else if (status === 'Rejected') {
-          description = feedback 
-            ? `Moved ${name} to Rejected status: ${feedback}` 
+          description = feedback
+            ? `Moved ${name} to Rejected status: ${feedback}`
             : `Moved ${name} to Rejected status`;
         } else if (status === 'Pending') {
           description = `Moved ${name} back to Pending status from ${previousStatus}`;
@@ -72,15 +72,15 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
           student_image: student?.two_by_two_url || student?.profile_2x2_url || student?.profile_picture,
           details: description
         }]);
-        const successMsg = assignedSectionId 
-          ? `Moved ${name} to ${status}${assignedSectionName !== 'Unassigned' ? ` → ${assignedSectionName}` : ''}` 
+        const successMsg = assignedSectionId
+          ? `Moved ${name} to ${status}${assignedSectionName !== 'Unassigned' ? ` → ${assignedSectionName}` : ''}`
           : `Updated ${name} to ${status}`;
         toast.success(successMsg, { id: toastId })
         setStudents(prev => prev.map(s => s.id === studentId ? { ...s, status: status, section_id: assignedSectionId, section: assignedSectionName } : s))
         modals.setDeclineModalOpen(false); modals.setDeclineReason(""); modals.setActiveDeclineStudent(null)
       }
     } catch (err: any) {
-      toast.error(`❌ ${err.message}`, { id: toastId })
+      toast.error(`${err.message}`, { id: toastId })
       setExitingRows(prev => { const next = { ...prev }; delete next[studentId]; return next })
       setHiddenRows(prev => { const next = new Set(prev); next.delete(studentId); return next })
     } finally {
@@ -142,14 +142,14 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
           const assignedSection = update?.assignedSection || 'Unassigned';
           let details = "";
           if (newStatus === 'Accepted' || newStatus === 'Approved') {
-            details = assignedSection !== 'Unassigned' 
-              ? `Bulk moved ${studentName} to ${newStatus} and assigned to ${assignedSection}` 
+            details = assignedSection !== 'Unassigned'
+              ? `Bulk moved ${studentName} to ${newStatus} and assigned to ${assignedSection}`
               : `Bulk moved ${studentName} to ${newStatus} status`;
           } else if (newStatus === 'Pending') {
             details = `Bulk moved ${studentName} back to Pending status`;
           } else if (newStatus === 'Rejected') {
-            details = feedback 
-              ? `Bulk moved ${studentName} to Rejected: ${feedback}` 
+            details = feedback
+              ? `Bulk moved ${studentName} to Rejected: ${feedback}`
               : `Bulk moved ${studentName} to Rejected status`;
           } else {
             details = `Bulk updated ${studentName} to ${newStatus}`;
@@ -178,8 +178,8 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
           return s;
         }));
         const count = successfulUpdates.length;
-        const sectionInfo = successfulUpdates.some(u => u.assignedSection && u.assignedSection !== 'Unassigned') 
-          ? ` → ${successfulUpdates.filter(u => u.assignedSection && u.assignedSection !== 'Unassigned').length} assigned to sections` 
+        const sectionInfo = successfulUpdates.some(u => u.assignedSection && u.assignedSection !== 'Unassigned')
+          ? ` → ${successfulUpdates.filter(u => u.assignedSection && u.assignedSection !== 'Unassigned').length} assigned to sections`
           : '';
         toast.success(`${count} student${count !== 1 ? 's' : ''} moved to ${newStatus}${sectionInfo}`, { id: toastId })
         modals.setBulkDeclineModalOpen(false); modals.setDeclineReason("")
@@ -233,15 +233,15 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
 
   const updateStudentProfile = useCallback(async (id: string, updates: any) => {
     try {
-      const { 
-        id: _id, 
-        created_at, 
-        updated_at, 
-        profile_picture, 
+      const {
+        id: _id,
+        created_at,
+        updated_at,
+        profile_picture,
         two_by_two_url,
         profile_2x2_url,
-        _file, 
-        ...cleanUpdates 
+        _file,
+        ...cleanUpdates
       } = updates
 
       let finalProfileUrl = profile_picture || two_by_two_url || profile_2x2_url;
@@ -260,9 +260,9 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
         const { data: { publicUrl } } = supabase.storage
           .from('avatars')
           .getPublicUrl(filePath);
-          
+
         finalProfileUrl = publicUrl;
-        
+
         (cleanUpdates as any).profile_picture = finalProfileUrl;
         (cleanUpdates as any).two_by_two_url = finalProfileUrl;
       }

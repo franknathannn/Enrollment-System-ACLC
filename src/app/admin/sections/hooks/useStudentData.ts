@@ -43,7 +43,7 @@ export function useStudentData() {
             'cor_url', 'af5_url', 'diploma_url', 'birth_certificate_url',
             'age', 'civil_status', 'last_school_attended',
             'guardian_first_name', 'guardian_middle_name', 'guardian_last_name',
-            'student_category', 'two_by_two_url', 'guardian_phone',
+            'student_category', 'two_by_two_url', 'guardian_phone', 'guardian_email',
             'birth_date', 'religion', 'nationality', 'address', 'updated_at',
             'registrar_feedback', 'section',
             // new fields

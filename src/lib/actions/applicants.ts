@@ -46,7 +46,7 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '
 
     if (studentsError) throw studentsError
     if (!students || students.length === 0) {
-      console.log('✅ No students to redistribute')
+      console.log('No students to redistribute')
       return { success: true, message: 'No students to redistribute' }
     }
 
@@ -65,13 +65,13 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '
       .eq('is_locked', false) // Only unassign unlocked students
 
     if (unassignError) throw unassignError
-    console.log('✅ All students unassigned')
+    console.log('All students unassigned')
 
     const plan: Array<{ student: typeof students[0], section: typeof sections[0] }> = []
-    
+
     const males = unlockedStudents.filter(s => s.gender === 'Male')
     const females = unlockedStudents.filter(s => s.gender === 'Female')
-    
+
     console.log(`📋 Males: ${males.length}, Females: ${females.length}`)
 
     // Initialize tracker with locked students pre-filled
@@ -79,7 +79,7 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '
       const lockedInThisSection = lockedStudents.filter(ls => ls.section_id === s.id)
       const lockedMales = lockedInThisSection.filter(ls => ls.gender === 'Male').length
       const lockedFemales = lockedInThisSection.filter(ls => ls.gender === 'Female').length
-      
+
       return {
         section: s,
         males: lockedMales,
@@ -95,20 +95,20 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '
 
     while (maleIdx < males.length || femaleIdx < females.length) {
       let foundSection = false
-      
+
       for (let i = 0; i < sectionTracker.length; i++) {
         const currentSectionIdx = (sectionIdx + i) % sectionTracker.length
         const tracker = sectionTracker[currentSectionIdx]
-        
+
         if (tracker.total >= tracker.section.capacity) continue
-        
+
         const capacity = Number(tracker.section.capacity)
         const halfCap = Math.floor(capacity / 2)
         const isEven = capacity % 2 === 0
-        
+
         let maxM = halfCap
         let maxF = halfCap
-        
+
         if (!isEven) {
           if (tracker.males === 0 && tracker.females === 0) {
             if (maleIdx < males.length) {
@@ -134,9 +134,9 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '
             }
           }
         }
-        
+
         let added = false
-        
+
         if (maleIdx < males.length && tracker.males < maxM) {
           plan.push({ student: males[maleIdx], section: tracker.section })
           tracker.males++
@@ -153,14 +153,14 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '
           added = true
           console.log(`  ➕ ${tracker.section.section_name}: Added Female (${tracker.males}M/${tracker.females}F = ${tracker.total}/)`)
         }
-        
+
         if (added) {
           sectionIdx = currentSectionIdx
           foundSection = true
           break
         }
       }
-      
+
       if (!foundSection) {
         console.log('⚠️ No more space in any section!')
         break
@@ -169,11 +169,11 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '
 
     console.log(`📊 Assignment plan created: ${plan.length} assignments`)
     console.log(`💾 Writing ${plan.length} assignments to database...`)
-    
+
     const chunkSize = 50
     for (let i = 0; i < plan.length; i += chunkSize) {
       const chunk = plan.slice(i, i + chunkSize)
-      await Promise.all(chunk.map(({ student, section }) => 
+      await Promise.all(chunk.map(({ student, section }) =>
         supabase
           .from('students')
           .update({ section_id: section.id, section: section.section_name })
@@ -181,8 +181,8 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '
       ))
     }
 
-    console.log('✅ All assignments written')
-    console.log('\n📈 FINAL DISTRIBUTION:')
+    console.log('All assignments written')
+    console.log('\nFINAL DISTRIBUTION:')
     sectionTracker.forEach(t => {
       if (t.total > 0) {
         console.log(`  ${t.section.section_name}: ${t.males}M/${t.females}F = ${t.total}/${t.section.capacity}`)
@@ -199,8 +199,8 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '
       .map(t => `${t.section.section_name}: ${t.males}M/${t.females}F`)
       .join(' | ')
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: `Redistributed ${plan.length}/${students.length} students${unassigned > 0 ? ` ( unassigned - need more capacity)` : ''} | `
     }
 
@@ -229,7 +229,7 @@ export async function updateSectionCapacity(sectionId: string, newCapacity: numb
   if (error) throw error
 
   await redistributeStudents(section.strand)
-  
+
   return { success: true }
 }
 
@@ -244,7 +244,7 @@ export async function updateAllSectionCapacities(strand: 'ICT' | 'GAS', newCapac
   if (error) throw error
 
   await redistributeStudents(strand)
-  
+
   return { success: true }
 }
 
@@ -256,11 +256,11 @@ export async function updateStudentSection(id: string, sectionId: string) {
     .select('section_name')
     .eq('id', sectionId)
     .single()
-  
+
   const { error } = await supabase
     .from('students')
-    .update({ 
-      section_id: sectionId, 
+    .update({
+      section_id: sectionId,
       section: section?.section_name,
       updated_at: new Date().toISOString() // Critical: Marks student as recently modified for balancing priority
     })
@@ -276,7 +276,7 @@ export async function deleteApplicant(id: string) {
   const supabase = await createClient()
 
   await supabase.from('activity_logs').delete().eq('student_id', id)
-  
+
   const { error } = await supabase
     .from('students')
     .delete()
@@ -286,8 +286,8 @@ export async function deleteApplicant(id: string) {
 
   revalidatePath("/admin/applicants")
   revalidatePath("/admin/dashboard")
-  revalidatePath("/admin/sections") 
-  
+  revalidatePath("/admin/sections")
+
   return { success: true }
 }
 
@@ -295,7 +295,7 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
   const supabase = await createClient()
   let sectionIdToAssign: string | null = null
   let sectionNameToAssign: string = 'Unassigned'
-  
+
   const dbStatus = newStatus === "Accepted" ? "Approved" : newStatus
 
   if (dbStatus === "Approved") {
@@ -331,7 +331,7 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
         // 2. Build occupancy map in memory
         const occupancy: Record<string, { male: number, female: number }> = {}
         sections.forEach(s => occupancy[s.id] = { male: 0, female: 0 })
-        
+
         allStrandStudents.forEach(s => {
           if (occupancy[s.section_id]) {
             if (s.gender === 'Male') occupancy[s.section_id].male++
@@ -352,9 +352,9 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
 
           const isEvenCapacity = sec.capacity % 2 === 0
           const halfCapacity = Math.floor(sec.capacity / 2)
-          
+
           let maxMale: number, maxFemale: number
-          
+
           if (isEvenCapacity) {
             maxMale = halfCapacity
             maxFemale = halfCapacity
@@ -401,8 +401,8 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
 
   const { error } = await supabase
     .from('students')
-    .update({ 
-      status: dbStatus, 
+    .update({
+      status: dbStatus,
       section_id: sectionIdToAssign,
       section: sectionNameToAssign,
       registrar_feedback: dbStatus === "Approved" ? null : (feedback || null)
@@ -413,10 +413,10 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
 
   revalidatePath("/admin/applicants")
   revalidatePath("/admin/dashboard")
-  revalidatePath("/admin/sections") 
-  revalidatePath("/admin/status") 
-  
-  return { 
+  revalidatePath("/admin/sections")
+  revalidatePath("/admin/status")
+
+  return {
     success: true,
     assignedSectionId: sectionIdToAssign,
     assignedSection: sectionNameToAssign
@@ -430,7 +430,7 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
   const supabase = await createClient()
   const dbStatus = newStatus === "Accepted" ? "Approved" : newStatus
   const CHUNK = 200 // Supabase .in() safe batch size
-  
+
   try {
     // Helper: fetch in parallel chunks to avoid PostgREST URL length limits
     async function fetchInChunks<T>(idList: string[]): Promise<T[]> {
@@ -474,7 +474,7 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
 
     // Get all students being updated (parallel chunked fetch)
     const studentsToUpdate = await fetchInChunks<{ id: string, strand: string, gender: string, grade_level: string }>(ids)
-    
+
     if (!studentsToUpdate || studentsToUpdate.length === 0) return { success: false, results: [] }
 
     // Group by strand + grade_level for efficient section lookup
@@ -512,7 +512,7 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
         occupancy[s.id] = { male: 0, female: 0, total: 0 }
         sectionNames[s.id] = s.section_name
       })
-      
+
       existingStudents.forEach(s => {
         if (occupancy[s.section_id]) {
           if (s.gender === 'Male') occupancy[s.section_id].male++
@@ -570,12 +570,12 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
 
             if (currentGenderCount < maxForGender) {
               assignedId = sec.id
-              
+
               // Update local tracking immediately
               if (student.gender === 'Male') occ.male++
               else occ.female++
               occ.total++
-              
+
               break
             }
           }
@@ -601,7 +601,7 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
         status: dbStatus,
         registrar_feedback: dbStatus === "Approved" ? null : (feedback || null)
       }
-      
+
       if (secId === 'null' || secId === 'Unassigned') {
         payload.section_id = null
         payload.section = 'Unassigned'
@@ -622,7 +622,7 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
     revalidatePath("/admin/applicants")
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/sections")
-    
+
     return { success: true, results }
   } catch (error) {
     console.error("Bulk update error:", error)
@@ -636,7 +636,7 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
 export async function bulkDeleteApplicants(ids: string[]) {
   const supabase = await createClient()
   const CHUNK = 200
-  
+
   try {
     // Delete logs first (parallel chunks)
     const logChunks: Promise<any>[] = []
@@ -644,7 +644,7 @@ export async function bulkDeleteApplicants(ids: string[]) {
       logChunks.push(supabase.from('activity_logs').delete().in('student_id', ids.slice(i, i + CHUNK)))
     }
     await Promise.all(logChunks)
-    
+
     // Delete students (parallel chunks)
     const delChunks: Promise<any>[] = []
     for (let i = 0; i < ids.length; i += CHUNK) {
@@ -657,7 +657,7 @@ export async function bulkDeleteApplicants(ids: string[]) {
     revalidatePath("/admin/applicants")
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/sections")
-    
+
     return { success: true }
   } catch (error) {
     console.error("Bulk delete error:", error)

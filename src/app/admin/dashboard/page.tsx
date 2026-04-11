@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase/admin-client"
 import { deleteSnapshot } from "@/lib/actions/history"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { 
+import {
   TrendingUp, Loader2, TrendingDown, FileDown, Users, LineChart
 } from "lucide-react"
 import { toast } from "sonner"
@@ -29,8 +29,8 @@ export default function AdminDashboard() {
   const { isDarkMode, mounted } = useTheme()
   const router = useRouter()
   const [config, setConfig] = useState<any>(null)
-  const [history, setHistory] = useState<any[]>([]) 
-  const [students, setStudents] = useState<any[]>([]) 
+  const [history, setHistory] = useState<any[]>([])
+  const [students, setStudents] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const fetchingRef = useRef(false)
@@ -76,17 +76,17 @@ export default function AdminDashboard() {
             throw studentsRes.error
           }
           if (configRes.error) {
-             console.error("Config fetch error:", configRes.error)
+            console.error("Config fetch error:", configRes.error)
           }
-          
+
           const allStudents = studentsRes.data || []
-          
+
           // Update students state — stats computed reactively in useMemo below
           setStudents(allStudents)
 
           if (configRes.data) setConfig(configRes.data)
           if (historyRes.data) setHistory(historyRes.data)
-          
+
           if (sectionsRes.data) {
             const totalCapacity = sectionsRes.data.reduce((acc: number, s: any) => acc + (s.capacity || 40), 0) || 1000
             setSystem({ currentCount: 0, capacity: totalCapacity })
@@ -116,7 +116,7 @@ export default function AdminDashboard() {
       await fetchStudents(false)
       setLoading(false)
     }
-    
+
     initDashboard()
   }, [fetchStudents])
 
@@ -132,34 +132,34 @@ export default function AdminDashboard() {
     // REALTIME SUBSCRIPTION - Pure Push Updates
     const channel = supabase
       .channel('dashboard_system_live')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'students' 
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'students'
       }, (payload) => {
         console.log('⚡ REALTIME EVENT:', payload.eventType, payload)
         fetchStudents(true)
       })
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'sections' 
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'sections'
       }, (payload) => {
         console.log('⚡ Sections updated:', payload)
         fetchStudents(true)
       })
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'system_config' 
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'system_config'
       }, (payload) => {
         console.log('⚡ Config updated:', payload)
         fetchStudents(true)
       })
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'enrollment_history' 
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'enrollment_history'
       }, (payload) => {
         console.log('⚡ History updated:', payload)
         fetchStudents(true)
@@ -169,11 +169,11 @@ export default function AdminDashboard() {
         fetchStudents(true)
       })
       .subscribe((status) => {
-        console.log("📊 Subscription status:", status)
+        console.log("Subscription status:", status)
         if (status === 'SUBSCRIBED') {
-          console.log("✅ Realtime subscription ACTIVE")
+          console.log("Realtime subscription ACTIVE")
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Subscription error - polling will handle updates')
+          console.error('Subscription error - polling will handle updates')
         } else if (status === 'TIMED_OUT') {
           console.error('⏱️ Subscription timeout - polling will handle updates')
         }
@@ -200,23 +200,23 @@ export default function AdminDashboard() {
       // G11-only mode: exclude explicit G12 students
       return s.grade_level !== "12"
     })
-    const approved    = base.filter((s: any) => s.status === 'Approved' || s.status === 'Accepted')
+    const approved = base.filter((s: any) => s.status === 'Approved' || s.status === 'Accepted')
     const pendingList = base.filter((s: any) => s.status === 'Pending')
     const rejectedList = base.filter((s: any) => s.status === 'Rejected' || s.status === 'Declined')
     return {
-      totalAccepted:  approved.length,
-      ictAccepted:    approved.filter((s: any) => s.strand === 'ICT').length,
-      gasAccepted:    approved.filter((s: any) => s.strand === 'GAS').length,
-      pending:        pendingList.length,
-      ictDeclined:    rejectedList.filter((s: any) => s.strand === 'ICT').length,
-      gasDeclined:    rejectedList.filter((s: any) => s.strand === 'GAS').length,
-      declinedTotal:  rejectedList.length,
-      males:          approved.filter((s: any) => s.gender === 'Male').length,
-      females:        approved.filter((s: any) => s.gender === 'Female').length,
-      pendingMales:   pendingList.filter((s: any) => s.gender === 'Male').length,
+      totalAccepted: approved.length,
+      ictAccepted: approved.filter((s: any) => s.strand === 'ICT').length,
+      gasAccepted: approved.filter((s: any) => s.strand === 'GAS').length,
+      pending: pendingList.length,
+      ictDeclined: rejectedList.filter((s: any) => s.strand === 'ICT').length,
+      gasDeclined: rejectedList.filter((s: any) => s.strand === 'GAS').length,
+      declinedTotal: rejectedList.length,
+      males: approved.filter((s: any) => s.gender === 'Male').length,
+      females: approved.filter((s: any) => s.gender === 'Female').length,
+      pendingMales: pendingList.filter((s: any) => s.gender === 'Male').length,
       pendingFemales: pendingList.filter((s: any) => s.gender === 'Female').length,
-      amShift:        approved.filter((s: any) => s.preferred_shift === 'AM').length,
-      pmShift:        approved.filter((s: any) => s.preferred_shift === 'PM').length,
+      amShift: approved.filter((s: any) => s.preferred_shift === 'AM').length,
+      pmShift: approved.filter((s: any) => s.preferred_shift === 'PM').length,
       // Grade level breakdown (enrolled/accepted only)
       g11Count: approved.filter((s: any) => s.grade_level !== '12').length,
       g12Count: approved.filter((s: any) => s.grade_level === '12').length,
@@ -237,7 +237,7 @@ export default function AdminDashboard() {
 
   const comparison = useMemo(() => {
     if (history.length === 0) return { diff: 0, status: 'baseline', percent: '0', prevYear: '' };
-    
+
     let baselineSnapshot = history[0];
     // If the latest snapshot is the current year, compare against the previous year instead
     if (config?.school_year && baselineSnapshot.school_year === config.school_year) {
@@ -261,8 +261,8 @@ export default function AdminDashboard() {
 
   const revenueMatrix = useMemo(() => {
     const dynamicVoucher = config?.voucher_value ?? 0;
-    const qualifiedStudents = students.filter(s => 
-      (s.status === 'Accepted' || s.status === 'Approved') && 
+    const qualifiedStudents = students.filter(s =>
+      (s.status === 'Accepted' || s.status === 'Approved') &&
       (s.student_category?.toLowerCase().includes("jhs") || s.student_category === "Standard")
     );
     const qualifiedICT = qualifiedStudents.filter(s => s.strand === 'ICT').length;
@@ -278,29 +278,29 @@ export default function AdminDashboard() {
       const date = subDays(new Date(), i);
       return { date: format(date, 'MMM dd'), fullDate: date, count: 0 };
     }).reverse();
-    
+
     students.forEach(student => {
       const studentDate = parseISO(student.created_at);
       const match = last30Days.find(d => isSameDay(d.fullDate, studentDate));
       if (match) match.count += 1;
     });
-    
+
     return last30Days;
   }, [students]);
 
   const prediction = useMemo(() => {
     const totalNewStudents = trendData.reduce((acc, curr) => acc + curr.count, 0);
-    const dailyVelocity = totalNewStudents / 30; 
+    const dailyVelocity = totalNewStudents / 30;
     const remainingSlots = system.capacity - stats.totalAccepted;
-    
+
     if (dailyVelocity <= 0 || remainingSlots <= 0) {
       return { days: 0, speed: dailyVelocity.toFixed(2) };
     }
-    
+
     const daysRemaining = Math.ceil(remainingSlots / dailyVelocity);
-    return { 
-      days: daysRemaining, 
-      speed: dailyVelocity.toFixed(2) 
+    return {
+      days: daysRemaining,
+      speed: dailyVelocity.toFixed(2)
     };
   }, [trendData, system.capacity, stats.totalAccepted]);
 
@@ -308,21 +308,21 @@ export default function AdminDashboard() {
   const spikeAnalysis = useMemo(() => {
     const last7Days = trendData.slice(-7);
     const prev7Days = trendData.slice(-14, -7);
-    
+
     const last7Total = last7Days.reduce((acc, curr) => acc + curr.count, 0);
     const prev7Total = prev7Days.reduce((acc, curr) => acc + curr.count, 0);
-    
+
     const weeklyChange = prev7Total > 0 ? ((last7Total - prev7Total) / prev7Total) * 100 : 0;
     const peakDay = [...trendData].sort((a, b) => b.count - a.count)[0];
     const avgDaily = trendData.reduce((acc, curr) => acc + curr.count, 0) / 30;
-    
+
     const remainingCapacity = system.capacity - stats.totalAccepted;
     const capacityProgress = (stats.totalAccepted / system.capacity) * 100;
-    
+
     // Determine alert level
     let alertLevel: 'safe' | 'warning' | 'critical' = 'safe';
     let alertMessage = 'Capacity levels optimal';
-    
+
     if (capacityProgress >= 95) {
       alertLevel = 'critical';
       alertMessage = 'Critical: Near maximum capacity';
@@ -330,7 +330,7 @@ export default function AdminDashboard() {
       alertLevel = 'warning';
       alertMessage = 'Warning: Approaching capacity limit';
     }
-    
+
     return {
       weeklyChange: weeklyChange.toFixed(1),
       isGrowth: weeklyChange > 0,
@@ -407,8 +407,8 @@ export default function AdminDashboard() {
 
   return (
     <TooltipProvider delayDuration={100}>
-    {/* Thin themed scrollbar — adapts to dark/light mode */}
-    <style>{`
+      {/* Thin themed scrollbar — adapts to dark/light mode */}
+      <style>{`
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: rgba(226,232,240,0.6); border-radius: 99px; }
       ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.8); border-radius: 99px; }
@@ -435,26 +435,26 @@ export default function AdminDashboard() {
       .leader-row{transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1)!important;}
       .leader-row:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(245,158,11,0.12);}
     `}</style>
-    <div className="space-y-8 md:space-y-12 animate-in fade-in duration-700 pb-20 p-4 md:p-8 transition-colors duration-500">
-      
-      {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <ThemedText variant="h1" isDarkMode={isDarkMode}>Overview</ThemedText>
-               {comparison.status !== 'baseline' && (
-                 <Badge className={`px-4 py-1.5 rounded-xl font-black text-[10px] border-none ${comparison.status === 'growth' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400'}`}>
-                   {comparison.status === 'growth' ? <TrendingUp size={12} className="mr-1 inline"/> : <TrendingDown size={12} className="mr-1 inline"/>}
-                   {comparison.percent}% VS Year {comparison.prevYear}
-                 </Badge>
-               )}
+      <div className="space-y-8 md:space-y-12 animate-in fade-in duration-700 pb-20 p-4 md:p-8 transition-colors duration-500">
+
+        {/* HEADER SECTION */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <ThemedText variant="h1" isDarkMode={isDarkMode}>Overview</ThemedText>
+              {comparison.status !== 'baseline' && (
+                <Badge className={`px-4 py-1.5 rounded-xl font-black text-[10px] border-none ${comparison.status === 'growth' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400'}`}>
+                  {comparison.status === 'growth' ? <TrendingUp size={12} className="mr-1 inline" /> : <TrendingDown size={12} className="mr-1 inline" />}
+                  {comparison.percent}% VS Year {comparison.prevYear}
+                </Badge>
+              )}
+            </div>
+            <ThemedText variant="body" muted className="italic text-sm md:text-base" isDarkMode={isDarkMode}>
+              Command Center: S.Y. {config?.school_year || "UNSET"}.
+            </ThemedText>
           </div>
-          <ThemedText variant="body" muted className="italic text-sm md:text-base" isDarkMode={isDarkMode}>
-            Command Center: S.Y. {config?.school_year || "UNSET"}.
-          </ThemedText>
-        </div>
-        
-        <div className="flex flex-wrap gap-3 w-full md:w-auto">
+
+          <div className="flex flex-wrap gap-3 w-full md:w-auto">
             {/* G12 Include Toggle */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -499,60 +499,60 @@ export default function AdminDashboard() {
               </TooltipTrigger>
               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Generate hard copy of this report</p></TooltipContent>
             </Tooltip>
-        </div>
-      </div>
-      
-      <OverviewGrid stats={stats} isDarkMode={isDarkMode} />
-
-      {/* G11 / G12 Enrollment Breakdown */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-10">
-        {[
-          { label: "Grade 11 Enrolled", value: gradeBreakdown.g11, color: isDarkMode ? "text-blue-400" : "text-blue-600", bg: isDarkMode ? "bg-blue-500/5 border-blue-500/10" : "bg-blue-50/50 border-blue-100", dot: "bg-blue-500", glow: "shadow-blue-500/20" },
-          { label: "Grade 12 Enrolled", value: gradeBreakdown.g12, color: isDarkMode ? "text-violet-400" : "text-violet-600", bg: isDarkMode ? "bg-violet-500/5 border-violet-500/10" : "bg-violet-50/50 border-violet-100", dot: "bg-violet-500", glow: "shadow-violet-500/20" },
-        ].map(card => (
-          <div key={card.label} className={`rounded-[2.5rem] border p-8 md:p-10 flex items-center gap-6 ${card.bg} relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
-            <div className={`h-1.5 absolute top-0 left-0 right-0 ${card.dot} opacity-40 group-hover:opacity-100 transition-opacity duration-500`} />
-            <div className={`w-16 h-16 rounded-[2rem] flex items-center justify-center shrink-0 ${isDarkMode ? "bg-slate-800" : "bg-white"} shadow-xl border border-white/10 group-hover:scale-110 transition-transform duration-500`}>
-              <span className={`w-4 h-4 rounded-full ${card.dot} ${card.glow} shadow-lg animate-pulse`} />
-            </div>
-            <div>
-              <p className={`text-4xl md:text-6xl font-black tabular-nums tracking-tighter ${card.color}`}>
-                <AnimatedNumber value={card.value} />
-              </p>
-              <p className={`text-[10px] md:text-[12px] font-black uppercase tracking-[0.3em] mt-1 ${card.color} opacity-60`}>{card.label}</p>
-            </div>
-            {/* Subtle Decorative SaaS Glow */}
-            <div className={`absolute -right-8 -bottom-8 w-32 h-32 ${card.dot} opacity-[0.03] blur-3xl rounded-full`} />
           </div>
-        ))}
-      </div>
+        </div>
 
-      <CensusGrid stats={stats} totalMaleEnrollees={totalMaleEnrollees} totalFemaleEnrollees={totalFemaleEnrollees} isDarkMode={isDarkMode} />
+        <OverviewGrid stats={stats} isDarkMode={isDarkMode} />
 
-      <div className="w-full">
-        <MetricCard 
-            label="TOTAL ENROLLEE (MALE + FEMALE)" 
+        {/* G11 / G12 Enrollment Breakdown */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-10">
+          {[
+            { label: "Grade 11 Enrolled", value: gradeBreakdown.g11, color: isDarkMode ? "text-blue-400" : "text-blue-600", bg: isDarkMode ? "bg-blue-500/5 border-blue-500/10" : "bg-blue-50/50 border-blue-100", dot: "bg-blue-500", glow: "shadow-blue-500/20" },
+            { label: "Grade 12 Enrolled", value: gradeBreakdown.g12, color: isDarkMode ? "text-violet-400" : "text-violet-600", bg: isDarkMode ? "bg-violet-500/5 border-violet-500/10" : "bg-violet-50/50 border-violet-100", dot: "bg-violet-500", glow: "shadow-violet-500/20" },
+          ].map(card => (
+            <div key={card.label} className={`rounded-[2.5rem] border p-8 md:p-10 flex items-center gap-6 ${card.bg} relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
+              <div className={`h-1.5 absolute top-0 left-0 right-0 ${card.dot} opacity-40 group-hover:opacity-100 transition-opacity duration-500`} />
+              <div className={`w-16 h-16 rounded-[2rem] flex items-center justify-center shrink-0 ${isDarkMode ? "bg-slate-800" : "bg-white"} shadow-xl border border-white/10 group-hover:scale-110 transition-transform duration-500`}>
+                <span className={`w-4 h-4 rounded-full ${card.dot} ${card.glow} shadow-lg animate-pulse`} />
+              </div>
+              <div>
+                <p className={`text-4xl md:text-6xl font-black tabular-nums tracking-tighter ${card.color}`}>
+                  <AnimatedNumber value={card.value} />
+                </p>
+                <p className={`text-[10px] md:text-[12px] font-black uppercase tracking-[0.3em] mt-1 ${card.color} opacity-60`}>{card.label}</p>
+              </div>
+              {/* Subtle Decorative SaaS Glow */}
+              <div className={`absolute -right-8 -bottom-8 w-32 h-32 ${card.dot} opacity-[0.03] blur-3xl rounded-full`} />
+            </div>
+          ))}
+        </div>
+
+        <CensusGrid stats={stats} totalMaleEnrollees={totalMaleEnrollees} totalFemaleEnrollees={totalFemaleEnrollees} isDarkMode={isDarkMode} />
+
+        <div className="w-full">
+          <MetricCard
+            label="TOTAL ENROLLEE (MALE + FEMALE)"
             value={<AnimatedNumber value={totalEnrollees} />}
-            colorLight="#ffffff" 
+            colorLight="#ffffff"
             colorDark="#0f172a"
             textColor={isDarkMode ? "text-white" : "text-slate-900"}
             icon={<Users size={64} className={isDarkMode ? "text-white/5" : "text-slate-900/5"} />}
             isDarkMode={isDarkMode}
             tooltip="Total count of all students (Male + Female) currently in the system"
           />
+        </div>
+
+        {/* ALMA MATER SECTION — below Total Enrollee */}
+        <AlmaMaterSection almaMaterData={almaMaterData} isDarkMode={isDarkMode} />
+
+        <VelocitySection trendData={trendData} isDarkMode={isDarkMode} />
+
+        <SpikeAnalyticsSection spikeAnalysis={spikeAnalysis} stats={stats} system={system} isDarkMode={isDarkMode} />
+
+        <RevenueSection revenueMatrix={revenueMatrix} prediction={prediction} comparison={comparison} isDarkMode={isDarkMode} />
+
+        <CapacitySection capacityPercentage={capacityPercentage} stats={stats} system={system} topJHSLeaders={topJHSLeaders} pieData={pieData} isDarkMode={isDarkMode} />
       </div>
-
-      {/* ALMA MATER SECTION — below Total Enrollee */}
-      <AlmaMaterSection almaMaterData={almaMaterData} isDarkMode={isDarkMode} />
-
-      <VelocitySection trendData={trendData} isDarkMode={isDarkMode} />
-
-      <SpikeAnalyticsSection spikeAnalysis={spikeAnalysis} stats={stats} system={system} isDarkMode={isDarkMode} />
-
-      <RevenueSection revenueMatrix={revenueMatrix} prediction={prediction} comparison={comparison} isDarkMode={isDarkMode} />
-
-      <CapacitySection capacityPercentage={capacityPercentage} stats={stats} system={system} topJHSLeaders={topJHSLeaders} pieData={pieData} isDarkMode={isDarkMode} />
-    </div>
     </TooltipProvider>
   )
 }

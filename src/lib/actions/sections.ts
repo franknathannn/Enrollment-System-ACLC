@@ -45,13 +45,13 @@ export async function addSection(strand: "ICT" | "GAS", gradeLevel: "11" | "12" 
   // 2. Collision detection loop
   let newName = `${strand}${gradeLevel}-${nextChar}`
   let attempts = 0
-  
+
   while (attempts < 10) {
     const { count } = await supabase
       .from('sections')
       .select('*', { count: 'exact', head: true })
       .eq('section_name', newName)
-    
+
     if (count === 0) break
 
     nextChar = String.fromCharCode(nextChar.charCodeAt(0) + 1)
@@ -70,7 +70,7 @@ export async function addSection(strand: "ICT" | "GAS", gradeLevel: "11" | "12" 
       section_name: newName,
       strand: strand,
       grade_level: gradeLevel,
-      capacity: 0 
+      capacity: 0
     }])
     .select()
     .single()
@@ -79,7 +79,7 @@ export async function addSection(strand: "ICT" | "GAS", gradeLevel: "11" | "12" 
 
   // 4. Sync capacities
   await syncSectionCapacities()
-  
+
   revalidatePath("/admin/sections")
   return { success: true, data }
 }
@@ -125,7 +125,7 @@ export async function deleteAndCollapseSection(sectionId: string, strand: "ICT" 
     // Move students from the NEXT section into the CURRENT section ID
     const { error: moveError } = await supabase
       .from('students')
-      .update({ 
+      .update({
         section_id: currentSectionId,
         section: allSections[i].section_name
       })
@@ -145,7 +145,7 @@ export async function deleteAndCollapseSection(sectionId: string, strand: "ICT" 
 
   // 4. Final Sync: Recalculate capacities for the new total count
   await syncSectionCapacities()
-  
+
   revalidatePath("/admin/sections")
   revalidatePath("/admin/dashboard")
   return { success: true }
@@ -212,12 +212,12 @@ export async function balanceGenderAcrossSections(
 
     if (studentsError) throw studentsError
     if (!students || students.length === 0) {
-      console.log('✅ No students to balance.')
+      console.log('No students to balance.')
       return { success: true, message: 'No students to balance.' }
     }
 
     // Separate locked and unlocked students
-    const lockedStudents   = students.filter(s =>  s.is_locked && s.section_id)
+    const lockedStudents = students.filter(s => s.is_locked && s.section_id)
     const unlockedStudents = students.filter(s => !s.is_locked || !s.section_id)
 
     // Unassign only unlocked students of this strand + grade
@@ -229,9 +229,9 @@ export async function balanceGenderAcrossSections(
       .in('status', ['Accepted', 'Approved'])
       .eq('is_locked', false)
 
-    const males   = unlockedStudents.filter(s => s.gender === 'Male')
+    const males = unlockedStudents.filter(s => s.gender === 'Male')
     const females = unlockedStudents.filter(s => s.gender === 'Female')
-    let maleIndex   = 0
+    let maleIndex = 0
     let femaleIndex = 0
 
     const updates: { id: string; section_id: string; section: string }[] = []
@@ -240,11 +240,11 @@ export async function balanceGenderAcrossSections(
       const capacity = section.capacity
 
       const lockedInThisSection = lockedStudents.filter(s => s.section_id === section.id)
-      let sectionMales   = lockedInThisSection.filter(s => s.gender === 'Male').length
+      let sectionMales = lockedInThisSection.filter(s => s.gender === 'Male').length
       let sectionFemales = lockedInThisSection.filter(s => s.gender === 'Female').length
 
       while (sectionMales + sectionFemales < capacity) {
-        const maleTarget   = Math.ceil((sectionMales + sectionFemales + 1) / 2)
+        const maleTarget = Math.ceil((sectionMales + sectionFemales + 1) / 2)
         const femaleTarget = Math.floor((sectionMales + sectionFemales + 1) / 2)
 
         if (maleIndex < males.length && (sectionMales < maleTarget || femaleIndex >= females.length)) {
