@@ -4,7 +4,8 @@
       "Bash(node -e \":*)",
       "Bash(npx tsc:*)",
       "Bash(node -e ':*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(node -e \"const fs=require\\('fs'\\); const lines=fs.readFileSync\\('src/app/admin/teachers/components/QuarterlyUpdatesAdminTab.tsx','utf8'\\).split\\('\\\\n'\\); lines.forEach\\(\\(l,i\\)=>console.log\\(i+1,l\\)\\)\")"
     ]
   }
 }

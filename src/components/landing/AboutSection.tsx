@@ -97,13 +97,11 @@ export function AboutSection({ isDark }: AboutSectionProps) {
           {/* Left Side: Image with "Pop from Left" Entry */}
           <motion.div 
             ref={imageRef}
-            initial={{ opacity: 0, x: -100, scale: 0.9 }}
-            animate={imageVisible ? { opacity: 1, x: 0, scale: 1 } : { opacity: 0, x: -100, scale: 0.9 }}
+            initial={{ opacity: 0, x: -30, scale: 0.98 }}
+            animate={imageVisible ? { opacity: 1, x: 0, scale: 1 } : { opacity: 0, x: -30, scale: 0.98 }}
             transition={{ 
-              type: "spring", 
-              stiffness: 40, 
-              damping: 15,
-              delay: 0.1 
+              duration: 0.35,
+              ease: [0.25, 0.46, 0.45, 0.94],
             }}
             className="relative group order-1 lg:order-1"
             style={{ willChange: "transform, opacity", zIndex: 1 }}

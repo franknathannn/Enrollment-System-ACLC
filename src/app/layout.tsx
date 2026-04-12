@@ -7,6 +7,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/shared/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeApplier } from "@/components/shared/ThemeApplier"
+import { DemoTools } from "@/components/DemoTools"
 import Script from "next/script"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* ThemeApplier is a tiny client component that writes data-theme to <html> */}
           <ThemeApplier />
           {children}
+          <DemoTools />
           <Toaster />
         </ThemeProvider>
       </body>

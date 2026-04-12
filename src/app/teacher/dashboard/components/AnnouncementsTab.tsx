@@ -1,5 +1,6 @@
 // app/teacher/dashboard/components/AnnouncementsTab.tsx
 
+import { useState } from "react"
 import { Bell, Pin } from "lucide-react"
 import { Announcement, timeAgo } from "../types"
 
@@ -12,6 +13,11 @@ export function AnnouncementsTab({ announcements, dm }: AnnouncementsTabProps) {
   const card = dm ? "bg-slate-900/60 border-slate-700/50" : "bg-white border-slate-200"
   const sub  = dm ? "text-slate-400" : "text-slate-500"
   const head = dm ? "text-white"     : "text-slate-900"
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
+  const totalPages = Math.max(1, Math.ceil(announcements.length / itemsPerPage))
+  const currentAnnouncements = announcements.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   if (announcements.length === 0) {
     return (
@@ -27,8 +33,8 @@ export function AnnouncementsTab({ announcements, dm }: AnnouncementsTabProps) {
     )
   }
 
-  const pinned = announcements.filter(a => a.is_pinned)
-  const regular = announcements.filter(a => !a.is_pinned)
+  const pinned = currentAnnouncements.filter(a => a.is_pinned)
+  const regular = currentAnnouncements.filter(a => !a.is_pinned)
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
@@ -92,6 +98,31 @@ export function AnnouncementsTab({ announcements, dm }: AnnouncementsTabProps) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-4 mt-2">
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${sub}`}>
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={`px-3 py-1.5 rounded-xl font-black uppercase tracking-widest text-[9px] border transition-colors disabled:opacity-30 ${dm ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-100"}`}
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-1.5 rounded-xl font-black uppercase tracking-widest text-[9px] border transition-colors disabled:opacity-30 ${dm ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-100"}`}
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

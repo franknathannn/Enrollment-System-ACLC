@@ -12,22 +12,20 @@ import {
   ResponsiveContainer, ResponsiveContainer as RechartsContainer,
   LineChart, Line
 } from "recharts"
-import { supabase } from "@/lib/supabase/teacher-client"
-import { TeacherSession, ScheduleRow, Student, fmt } from "../types"
+import { supabase } from "@/lib/supabase/admin-client"
+import { Student, fmt } from "@/app/teacher/dashboard/types"
 import { toast } from "sonner"
 import { createPortal } from "react-dom"
 
 interface Props {
-  schedules: ScheduleRow[]
-  students: Student[]
   dm: boolean
-  session: TeacherSession
+  session: { full_name: string }
   schoolYear: string
-  advisorySections?: string[]
 }
 
 interface AttRow {
   student_id: string
+  section: string
   subject: string
   date: string
   status: string
@@ -142,7 +140,51 @@ const CircularProgress = ({ pct, size = 60, strokeWidth = 5, dm }: { pct: number
 
 
 
-export function ReportsTab({ schedules, students, dm, session, schoolYear, advisorySections = [] }: Props) {
+export function AdminReportsTab({ dm, session, schoolYear }: Props) {
+  const [studentsCache, setStudentsCache] = useState<Record<string, Student>>({})
+  const [loadingSectionStudents, setLoadingSectionStudents] = useState<Record<string, boolean>>({})
+  
+  // Triage cache
+  const [triagedStudentsList, setTriagedStudentsList] = useState<Student[]>([])
+
+  const getCachedStudent = useCallback((id: string) => {
+    return studentsCache[id] || { id, first_name: "Unknown", last_name: "Student", section: "Unknown" } as Student
+  }, [studentsCache])
+  
+  const ensureSectionStudents = useCallback(async (sectionName: string) => {
+    if (loadingSectionStudents[sectionName] || Object.values(studentsCache).some(s => s.section === sectionName)) return;
+    setLoadingSectionStudents(prev => ({ ...prev, [sectionName]: true }));
+    try {
+      const { data } = await supabase.from("students").select("id, first_name, last_name, middle_name, lrn, gender, section, strand, status, profile_picture, two_by_two_url").eq("section", sectionName).not("status", "eq", "Pending");
+      if (data) {
+        setStudentsCache(prev => {
+          const next = { ...prev };
+          data.forEach(s => { next[s.id] = s; });
+          return next;
+        });
+      }
+    } finally {
+      setLoadingSectionStudents(prev => ({ ...prev, [sectionName]: false }));
+    }
+  }, [studentsCache, loadingSectionStudents]);
+  
+  const ensureTriageStudents = useCallback(async (ids: string[]) => {
+    const missing = ids.filter(id => !studentsCache[id]);
+    if (missing.length === 0) return;
+    const { data } = await supabase.from("students").select("id, first_name, last_name, middle_name, lrn, gender, section, strand, status, profile_picture, two_by_two_url").in("id", missing).not("status", "eq", "Pending");
+    if (data) {
+      setStudentsCache(prev => {
+        const next = { ...prev };
+        data.forEach(s => { next[s.id] = s; });
+        return next;
+      });
+      setTriagedStudentsList(prev => {
+        const nextMap = new Map([...prev, ...data].map(s => [s.id, s]));
+        return Array.from(nextMap.values());
+      });
+    }
+  }, [studentsCache]);
+
   const [attData, setAttData] = useState<AttRow[]>([])
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -165,35 +207,27 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
   const divB = dm ? "border-slate-800/60" : "border-slate-100"
   const divideB = dm ? "divide-slate-800/60" : "divide-slate-100"
 
-  const mySections = useMemo(
-    () => [...new Set([...schedules.map(s => s.section), ...advisorySections])].filter(Boolean).sort(),
-    [schedules, advisorySections]
-  )
+  const mySections = useMemo(() => {
+    return [...new Set(attData.map(r => r.section))].filter(Boolean).sort()
+  }, [attData])
 
   /** Check if the teacher is an adviser of this section (regardless of whether they also teach there) */
-  const isAdvisory = useCallback((section: string) => {
-    return advisorySections.includes(section)
-  }, [advisorySections])
+  const isAdvisory = useCallback((section: string) => false, [])
 
   /** Check if a section is advisory-ONLY (adviser but does NOT teach any subject there) */
-  const isAdvisoryOnly = useCallback((section: string) => {
-    return advisorySections.includes(section) && !schedules.some(s => s.section === section)
-  }, [advisorySections, schedules])
+  const isAdvisoryOnly = useCallback((section: string) => false, [])
 
   const load = useCallback(async (silent = false) => {
-    const myStudentIds = students.map(s => s.id)
-    if (!myStudentIds.length) return
     if (!silent) setLoading(true)
     try {
       const { data } = await supabase
-        .from("attendance").select("student_id, subject, date, status, notes")
-        .in("student_id", myStudentIds)
+        .from("attendance").select("student_id, section, subject, date, status, notes")
         .eq("school_year", schoolYear)
       setAttData(data || [])
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [students, schoolYear])
+  }, [schoolYear])
 
   useEffect(() => { load() }, [load])
 
@@ -220,30 +254,18 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
 
   const sectionReports: SectionReport[] = useMemo(() => {
     return mySections.map(section => {
-      const sectionStudents = students.filter(s => s.section === section)
-      const sectionSchedules = schedules.filter(s => s.section === section)
-
-      // If adviser of this section, show ALL subjects (from attendance data)
-      // merged with scheduled subjects. This covers:
-      // - Advisory-only: shows all subjects from attendance
-      // - Both teacher + adviser: shows taught subjects + all other subjects from attendance
-      const isAdv = advisorySections.includes(section)
-      const scheduledSubjects = [...new Set(sectionSchedules.map(s => s.subject))]
-      const attendanceSubjects = isAdv
-        ? [...new Set(attData.filter(r => sectionStudents.some(s => s.id === r.student_id)).map(r => r.subject))]
-        : []
-      const uniqueSubjects = [...new Set([...scheduledSubjects, ...attendanceSubjects])].sort()
+      const sectionRecs = attData.filter(r => r.section === section)
+      const sectionStudentIds = [...new Set(sectionRecs.map(r => r.student_id))]
+      const uniqueSubjects = [...new Set(sectionRecs.map(r => r.subject))].sort()
 
       const subjectReports: SubjectReport[] = uniqueSubjects.map(subject => {
-        const recs = attData.filter(r =>
-          sectionStudents.some(s => s.id === r.student_id) && r.subject === subject
-        )
+        const recs = sectionRecs.filter(r => r.subject === subject)
         const distinctDates = [...new Set(recs.map(r => r.date))].length
         const presentCount = recs.filter(r => r.status === "Present" || r.status === "Late").length
         const absentCount = recs.filter(r => r.status === "Absent").length
         const lateCount = recs.filter(r => r.status === "Late").length
         const excusedCount = recs.filter(r => r.status === "Excused").length
-        const totalExpected = distinctDates * sectionStudents.length
+        const totalExpected = distinctDates * sectionStudentIds.length
         const pct = totalExpected > 0 ? Math.round((presentCount / totalExpected) * 100) : 0
         return {
           subject, scheduledDays: distinctDates,
@@ -254,19 +276,20 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
       const totalAbsents = subjectReports.reduce((a, s) => a + s.absentCount, 0)
       const totalPresents = subjectReports.reduce((a, s) => a + s.presentCount, 0)
       const totalExpected = subjectReports.reduce((a, s) => a + s.totalSessions, 0)
-      const avgAbsents = sectionStudents.length > 0 ? Math.round(totalAbsents / sectionStudents.length) : 0
-      const avgPresents = sectionStudents.length > 0 ? Math.round(totalPresents / sectionStudents.length) : 0
+      const avgAbsents = sectionStudentIds.length > 0 ? Math.round(totalAbsents / sectionStudentIds.length) : 0
+      const avgPresents = sectionStudentIds.length > 0 ? Math.round(totalPresents / sectionStudentIds.length) : 0
       const overallPct = totalExpected > 0 ? Math.round((totalPresents / totalExpected) * 100) : 0
       return {
-        section, subjects: subjectReports, totalStudents: sectionStudents.length,
+        section, subjects: subjectReports, totalStudents: sectionStudentIds.length,
         avgAbsents, avgPresents, attendancePct: overallPct,
       }
     }).filter(report => report.totalStudents > 0)
-  }, [mySections, students, schedules, attData, advisorySections])
+  }, [mySections, attData])
 
-  const triageList: TriageStudent[] = useMemo(() => {
-    return students.map(student => {
-      const recs = attData.filter(r => r.student_id === student.id)
+  const rawTriageList = useMemo(() => {
+    const studentIds = [...new Set(attData.map(r => r.student_id))]
+    return studentIds.map(sid => {
+      const recs = attData.filter(r => r.student_id === sid)
       const subjects = [...new Set(recs.map(r => r.subject))]
       const RISK_ORDER: Record<string, number> = { "Failed Threshold": 4, "At Risk": 3, "Warning": 2, "Safe": 1, "Monitoring": 0 }
 
@@ -293,12 +316,22 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
 
       if (Object.keys(flaggedSubjects).length > 0) {
         const totalAbsences = recs.filter(r => r.status === "Absent").length
-        return { student, worstClassification, flaggedSubjects, totalAbsences }
+        return { student_id: sid, worstClassification, flaggedSubjects, totalAbsences }
       }
       return null
-    }).filter((v): v is TriageStudent => v !== null)
+    }).filter((v) => v !== null)
       .sort((a, b) => b.totalAbsences - a.totalAbsences)
-  }, [students, attData])
+  }, [attData])
+  
+  const triageList: TriageStudent[] = useMemo(() => {
+    return rawTriageList.map(r => ({ ...r, student: getCachedStudent(r.student_id as string) }) as TriageStudent)
+  }, [rawTriageList, getCachedStudent])
+  
+  useEffect(() => {
+    if (rawTriageList.length > 0) {
+      ensureTriageStudents(rawTriageList.map(r => (r as any).student_id))
+    }
+  }, [rawTriageList, ensureTriageStudents])
 
   const filteredReports = activeSection === "ALL" ? sectionReports : sectionReports.filter(r => r.section === activeSection)
   const filteredTriage = activeSection === "ALL" ? triageList : triageList.filter(s => s.student.section === activeSection)
@@ -334,10 +367,17 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
         setSubjectFocus(f => ({ ...f, [key]: null }))
       } else {
         s.add(key)
+        ensureSectionStudents(key)
       }
       return s
     })
   }
+  
+  const toggleSubjectList = (section: string, subject: string) => {
+    toggleSubjectFocus(section, subject)
+    ensureSectionStudents(section)
+  }
+
 
   // --- ANALYTICS: Trend Data ---
   const trendData = useMemo(() => {
@@ -349,8 +389,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
       const dayRecs = attData.filter(r => r.date === date)
       const isFiltered = activeSection !== "ALL"
       const relevantRecs = isFiltered ? dayRecs.filter(r => {
-        const student = students.find(s => s.id === r.student_id)
-        return student?.section === activeSection
+        return r.section === activeSection
       }) : dayRecs
 
       const presents = relevantRecs.filter(r => r.status === "Present" || r.status === "Late").length
@@ -364,7 +403,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
         label: date.split("-").slice(1).join("/") // short date e.g. 03/29
       }
     })
-  }, [attData, activeSection, students])
+  }, [attData, activeSection])
 
   const overallVelocity = useMemo(() => {
     if (trendData.length < 2) return 0
@@ -514,7 +553,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
           const { section, subject } = printSubject
           const report = sectionReports.find(r => r.section === section)
           const subjectReport = report?.subjects.find(s => s.subject === subject)
-          const sectionStudents = students.filter(s => s.section === section)
+          const sectionStudents = Object.values(studentsCache).filter(s => s.section === section)
           const todayStr = new Date().toISOString().split("T")[0]
           const studentStats = sectionStudents.map(student => {
             const isGlobal = !subject
@@ -712,7 +751,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                 <p className="text-[10px] font-bold uppercase text-gray-400">Average Attendance</p>
               </div>
               <div className="print-card text-center">
-                <p className="text-3xl font-black">{students.length}</p>
+                <p className="text-3xl font-black">{([...new Set(attData.map(r => r.student_id))].length)}</p>
                 <p className="text-[10px] font-bold uppercase text-gray-400">Managed Students</p>
               </div>
               <div className="print-card text-center">
@@ -859,17 +898,11 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
           const isExpanded = expanded.has(report.section)
 
           // Calculate section-specific trend (last 5 sessions)
-          const secDates = [...new Set(attData.filter(d => {
-            const s = students.find(st => st.id === d.student_id)
-            return s?.section === report.section
-          }).map(d => d.date))].sort().slice(-5)
+          const secDates = [...new Set(attData.filter(d => d.section === report.section).map(d => d.date))].sort().slice(-5)
 
           const secTrend = secDates.map(date => {
             const dayRecs = attData.filter(d => d.date === date)
-            const relevant = dayRecs.filter(d => {
-              const s = students.find(st => st.id === d.student_id)
-              return s?.section === report.section
-            })
+            const relevant = dayRecs.filter(d => d.section === report.section)
             const presents = relevant.filter(d => d.status === "Present" || d.status === "Late").length
             return relevant.length > 0 ? Math.round((presents / relevant.length) * 100) : 0
           })
@@ -970,7 +1003,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                             <span className={`text-[7px] font-black uppercase tracking-wider ${sub} ml-auto`}>{subj.scheduledDays} Days</span>
                           </div>
                           <button
-                            onClick={(e) => { e.stopPropagation(); toggleSubjectFocus(report.section, subj.subject) }}
+                            onClick={(e) => { e.stopPropagation(); toggleSubjectList(report.section, subj.subject) }}
                             className={`mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border
                                  ${subjectFocus[report.section] === subj.subject
                                 ? "bg-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/20"
@@ -988,7 +1021,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                   {(subjectFocus[report.section] || !subjectFocus[report.section]) && (() => {
                     const focusedSubject = subjectFocus[report.section]
                     const isGlobal = !focusedSubject
-                    const sectionStudents = students.filter(s => s.section === report.section)
+                    const sectionStudents = Object.values(studentsCache).filter(s => s.section === report.section)
 
                     const todayStr = new Date().toISOString().split("T")[0]
                     const allStudentStats = sectionStudents.map(student => {

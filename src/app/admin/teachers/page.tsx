@@ -11,6 +11,8 @@ import { AnnouncementPanel }   from "./components/AnnouncementPanel"
 import type { Teacher }        from "./types"
 import { supabase } from "@/lib/supabase/admin-client"
 import { AcademicCalendarTab } from "@/app/teacher/dashboard/components/AcademicCalendarTab"
+import { QuarterlyUpdatesAdminTab } from "./components/QuarterlyUpdatesAdminTab"
+import { AdminReportsTab } from "./components/AdminReportsTab"
 import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
 import { useTheme } from "@/hooks/useTheme"
@@ -51,130 +53,6 @@ function Avatar({ name, url, size = 36 }: { name: string; url?: string | null; s
   )
 }
 
-// ── Admin-wide attendance report (all sections, all teachers) ─────────────────
-function AdminAllSectionsReport({ isDarkMode, schoolYear }: { isDarkMode: boolean; schoolYear: string }) {
-  const [data, setData]       = useState<any[]>([])
-  const [sects, setSects]     = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
-
-  const dm   = isDarkMode
-  const sub  = dm ? "text-slate-400" : "text-slate-500"
-  const head = dm ? "text-white" : "text-slate-900"
-  const card = dm ? "bg-slate-900/60 border-slate-700/50" : "bg-white border-slate-200"
-  const divB = dm ? "border-slate-700/40" : "border-slate-100"
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      try {
-        const [
-          { data: attData }, 
-          { data: sectData },
-          { data: studData }
-        ] = await Promise.all([
-          supabase.from("attendance").select("student_id, section, subject, date, status").eq("school_year", schoolYear),
-          supabase.from("sections").select("section_name, strand"),
-          supabase.from("students").select("section").not("status", "eq", "Pending")
-        ])
-        setData(attData || [])
-        setSects(sectData || [])
-        
-        // Find which sections actually have enrolled students right now
-        const activeSecs = new Set((studData || []).map(s => s.section))
-        const validSecs = new Set((sectData || []).map(s => s.section_name))
-        
-        // Filter attendance data to only include valid and active sections
-        // We filter the raw data so that present/absent stats don't count ghosts from deleted sections
-        setData((attData || []).filter((r: any) => validSecs.has(r.section) && activeSecs.has(r.section)))
-
-      } finally { setLoading(false) }
-    }
-    load()
-    const ch = supabase.channel("admin_report_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, load)
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [schoolYear])
-
-  const toggle = (k: string) => setExpanded(prev => {
-    const s = new Set(prev); if (s.has(k)) s.delete(k); else s.add(k); return s
-  })
-
-  // Group by section (only existing active sections are left in `data`)
-  const sections = [...new Set(data.map((r: any) => r.section))].filter(Boolean).sort()
-
-  const PctBar = ({ pct }: { pct: number }) => (
-    <div className={`h-1.5 rounded-full overflow-hidden w-full ${dm ? "bg-slate-700" : "bg-slate-200"}`}>
-      <div className={`h-full rounded-full transition-all duration-500 ${pct >= 80 ? "bg-green-500" : pct >= 60 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${pct}%` }} />
-    </div>
-  )
-
-  if (loading) return <div className="flex items-center gap-2 py-8"><Loader2 size={14} className="animate-spin text-blue-400" /><span className={`text-xs ${sub}`}>Loading…</span></div>
-  if (sections.length === 0) return <p className={`text-xs ${sub} py-8 text-center`}>No attendance data yet for {schoolYear}</p>
-
-  return (
-    <div className="space-y-3">
-      {sections.map(section => {
-        const sRecs = data.filter((r: any) => r.section === section)
-        const subjects = [...new Set(sRecs.map((r: any) => r.subject))].sort()
-        const presentCount = sRecs.filter((r: any) => r.status === "Present" || r.status === "Late").length
-        const absentCount  = sRecs.filter((r: any) => r.status === "Absent").length
-        const totalRecs    = sRecs.length
-        const pct          = totalRecs > 0 ? Math.round((presentCount / totalRecs) * 100) : 0
-        const sect         = sects.find((s: any) => s.section_name === section)
-        const isExpanded   = expanded.has(section)
-
-        return (
-          <div key={section} className={`rounded-2xl border overflow-hidden ${card}`}>
-            <button onClick={() => toggle(section)} className={`w-full px-5 py-4 flex items-center gap-3 transition-colors text-left ${dm ? "hover:bg-slate-800/40" : "hover:bg-slate-50"}`}>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className={`text-sm font-black uppercase ${head}`}>{section}</p>
-                  {sect && <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${sect.strand === "ICT" ? "bg-blue-500/15 text-blue-500" : "bg-amber-500/15 text-amber-500"}`}>{sect.strand}</span>}
-                  <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${pct >= 80 ? "bg-green-500/15 text-green-500" : pct >= 60 ? "bg-amber-500/15 text-amber-500" : "bg-red-500/15 text-red-500"}`}>{pct}%</span>
-                </div>
-                <div className="flex items-center gap-4 mt-1">
-                  <span className={`text-[9px] text-green-500`}>P: {presentCount}</span>
-                  <span className={`text-[9px] text-red-500`}>A: {absentCount}</span>
-                  <span className={`text-[9px] ${sub}`}>{subjects.length} subjects</span>
-                </div>
-                <div className="mt-2 max-w-xs"><PctBar pct={pct} /></div>
-              </div>
-              <svg className={`w-4 h-4 ${sub} transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-            </button>
-            {isExpanded && (
-              <div className={`border-t ${divB} divide-y ${dm ? "divide-slate-700/30" : "divide-slate-100"}`}>
-                {subjects.map(subject => {
-                  const subRecs = sRecs.filter((r: any) => r.subject === subject)
-                  const sp = subRecs.filter((r: any) => r.status === "Present" || r.status === "Late").length
-                  const sa = subRecs.filter((r: any) => r.status === "Absent").length
-                  const spct = subRecs.length > 0 ? Math.round((sp / subRecs.length) * 100) : 0
-                  return (
-                    <div key={subject} className="px-5 py-3 flex items-center gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className={`text-[10px] font-black uppercase truncate ${head}`}>{subject}</p>
-                          <span className={`text-[9px] font-black ml-2 shrink-0 ${spct >= 80 ? "text-green-500" : spct >= 60 ? "text-amber-500" : "text-red-500"}`}>{spct}%</span>
-                        </div>
-                        <PctBar pct={spct} />
-                        <div className="flex gap-3 mt-1">
-                          <span className={`text-[8px] font-bold text-green-500`}>P: {sp}</span>
-                          <span className={`text-[8px] font-bold text-red-500`}>A: {sa}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 export default function TeachersPage() {
   const { isDarkMode: dm, mounted } = useTheme()
   const {
@@ -186,10 +64,10 @@ export default function TeachersPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing,  setEditing]  = useState<Teacher | null>(null)
   const [viewing,  setViewing]  = useState<Teacher | null>(null)
-  const [tab,      setTab]      = useState<"list" | "announcements" | "reports" | "calendar">(() => {
+  const [tab,      setTab]      = useState<"list" | "announcements" | "quarterly" | "calendar" | "reports">(() => {
     if (typeof window !== "undefined") {
       const s = sessionStorage.getItem("teachers_tab")
-      if (s === "list" || s === "announcements" || s === "reports" || s === "calendar") return s
+      if (s === "list" || s === "announcements" || s === "quarterly" || s === "calendar" || s === "reports") return s
     }
     return "list"
   })
@@ -246,7 +124,7 @@ export default function TeachersPage() {
   const border  = dm ? "border-slate-700/60"        : "border-slate-200"
   const sub     = dm ? "text-slate-400"              : "text-slate-500"
   const txt     = dm ? "text-white"                  : "text-slate-900"
-  const divB    = dm ? "rgba(71,85,105,0.25)"        : "rgba(226,232,240,1)"
+  const divB    = dm ? "border-slate-700/40"        : "border-slate-200/80"
   const rowHov  = dm ? "hover:bg-slate-800/40"       : "hover:bg-slate-50"
   const input   = `w-full pl-11 pr-4 py-3 rounded-2xl border text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 ${dm ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500" : "bg-white border-slate-200 text-slate-900 placeholder-slate-400"}`
   const tabBase = `text-[9px] font-black uppercase tracking-widest px-3 sm:px-5 py-2.5 rounded-2xl transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap`
@@ -349,11 +227,14 @@ export default function TeachersPage() {
               <span className="bg-amber-500 text-white text-[8px] font-black rounded-full w-4 h-4 flex items-center justify-center shrink-0">{announcements.length}</span>
             )}
           </button>
-          <button className={`${tabBase} justify-center ${tab === "reports" ? tabAct : tabInact}`} onClick={() => setTab("reports")}>
-            <BarChart2 size={12} /> <span>Reports</span>
+          <button className={`${tabBase} justify-center ${tab === "quarterly" ? tabAct : tabInact}`} onClick={() => setTab("quarterly")}>
+            <BarChart2 size={12} /> <span>Quarterly Update</span>
           </button>
           <button className={`${tabBase} justify-center ${tab === "calendar" ? tabAct : tabInact}`} onClick={() => setTab("calendar")}>
             <CalendarDays size={12} /> <span>Calendar</span>
+          </button>
+          <button className={`${tabBase} justify-center ${tab === "reports" ? tabAct : tabInact}`} onClick={() => setTab("reports")}>
+            <BarChart2 size={12} /> <span>Reports</span>
           </button>
         </div>
 
@@ -370,7 +251,7 @@ export default function TeachersPage() {
               
               {/* Top Pagination Switcher */}
               {totalTeacherPages > 1 && (
-                <div className={`flex items-center justify-between px-6 py-4 border-b bg-slate-500/5`} style={{ borderColor: divB }}>
+                <div className={`flex items-center justify-between px-6 py-4 border-b bg-slate-500/5 ${divB}`}>
                   <div className="flex items-center gap-3">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
                     <span className={`text-[9px] font-black uppercase tracking-widest ${sub}`}>
@@ -409,7 +290,7 @@ export default function TeachersPage() {
                 </div>
               )}
 
-              <div className="divide-y" style={{ borderColor: divB }}>
+              <div className={`divide-y ${dm ? "divide-slate-700/40" : "divide-slate-200/80"}`}>
                 {pagedTeachers.map(t => (
                   <div key={t.id}>
                     {/* ── Desktop row ── */}
@@ -505,7 +386,7 @@ export default function TeachersPage() {
 
               {/* Teachers Pagination — Bottom */}
               {totalTeacherPages > 1 && (
-                <div className={`flex items-center justify-between px-6 py-5 border-t bg-slate-500/5`} style={{ borderColor: divB }}>
+                <div className={`flex items-center justify-between px-6 py-5 border-t bg-slate-500/5 ${divB}`}>
                   <span className={`text-[9px] font-black uppercase tracking-widest ${sub}`}>
                     {filtered.length} teacher{filtered.length !== 1 ? "s" : ""} · Overall count
                   </span>
@@ -560,23 +441,19 @@ export default function TeachersPage() {
           />
         )}
 
-        {/* Reports — shows all sections/subjects across all teachers */}
-        {tab === "reports" && (
-          <div className={`rounded-2xl sm:rounded-3xl border overflow-hidden ${surface} ${border} relative`}>
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-pink-400" />
-            <div className={`px-5 sm:px-6 py-4 border-b mt-[3px] ${border}`}>
-              <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>School-Wide Attendance Reports</p>
-              <p className={`text-sm font-black mt-0.5 ${txt}`}>All sections · {schoolYear}</p>
-            </div>
-            <div className="p-4 sm:p-6">
-              <AdminAllSectionsReport isDarkMode={dm} schoolYear={schoolYear} />
-            </div>
-          </div>
+        {/* Quarterly Updates — Admin review interface */}
+        {tab === "quarterly" && (
+          <QuarterlyUpdatesAdminTab isDarkMode={dm} schoolYear={schoolYear} />
         )}
 
         {/* Calendar — read-only view of academic calendar */}
         {tab === "calendar" && (
           <AcademicCalendarTab dm={dm} schoolYear={schoolYear} />
+        )}
+
+        {/* Reports */}
+        {tab === "reports" && (
+          <AdminReportsTab dm={dm} schoolYear={schoolYear} session={{ full_name: "Administrator" }} />
         )}
       </div>
 

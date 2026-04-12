@@ -23,6 +23,7 @@ import { FinancialHub } from "./components/FinancialHub"
 import { SettingsActions } from "./components/SettingsActions"
 import { EnrollmentFormControl } from "./components/EnrollmentFormControl"
 import { GradeOperationsPanel } from "./components/GradeOperationsPanel"
+import { StudentEditControl } from "./components/StudentEditControl"
 
 type ConfigState = {
   id: string
@@ -38,6 +39,7 @@ type ConfigState = {
   notifyParentsStatus: boolean
   notifyParentsAttendance: boolean
   notifyParentsSummary: boolean
+  allowStudentEdit: boolean
 }
 
 export default function SettingsPage() {
@@ -66,6 +68,7 @@ export default function SettingsPage() {
     notifyParentsStatus: true,
     notifyParentsAttendance: false,
     notifyParentsSummary: false,
+    allowStudentEdit: false,
   })
 
   const loadSettings = useCallback(async () => {
@@ -124,6 +127,7 @@ export default function SettingsPage() {
           notifyParentsStatus: configData.notify_parents_status ?? true,
           notifyParentsAttendance: configData.notify_parents_attendance ?? false,
           notifyParentsSummary: configData.notify_parents_summary ?? false,
+          allowStudentEdit: configData.allow_student_edit ?? false,
         })
         // Lock in the DB-loaded school year so we can detect changes at save time
         originalSchoolYearRef.current = configData.school_year || ""
@@ -544,6 +548,25 @@ export default function SettingsPage() {
                 } catch {
                   setConfig(p => ({ ...p, notifyParentsSummary: prev }))
                   toast.error("Failed to update notification setting")
+                } finally { setUpdating(false) }
+              }}
+            />
+
+            <StudentEditControl
+              allowStudentEdit={config.allowStudentEdit}
+              isDarkMode={isDarkMode}
+              updating={updating}
+              onToggle={async (v) => {
+                setUpdating(true)
+                const prev = config.allowStudentEdit
+                setConfig(p => ({ ...p, allowStudentEdit: v }))
+                try {
+                  const { error } = await supabase.from('system_config').update({ allow_student_edit: v }).eq('id', config.id)
+                  if (error) throw error
+                  toast.success(`Student self-edit ${v ? 'ENABLED' : 'DISABLED'}`)
+                } catch {
+                  setConfig(p => ({ ...p, allowStudentEdit: prev }))
+                  toast.error("Failed to update student edit setting")
                 } finally { setUpdating(false) }
               }}
             />

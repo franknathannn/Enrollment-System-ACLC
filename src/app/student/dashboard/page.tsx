@@ -165,6 +165,8 @@ function DashboardContent() {
   const [copied,      setCopied]      = useState<string | null>(null)
 
   useEffect(() => {
+    let channel: ReturnType<typeof studentSupabase.channel> | null = null
+
     async function load() {
       const { data: { user } } = await studentSupabase.auth.getUser()
       if (!user) { router.replace("/student/login"); return }
@@ -193,20 +195,29 @@ function DashboardContent() {
         url.searchParams.delete("welcome")
         window.history.replaceState({}, "", url.toString())
       }
+
+      // Realtime: filter to this student's row only so changes reflect instantly
+      channel = studentSupabase
+        .channel(`student_data_rt_${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "students", filter: `id=eq.${user.id}` },
+          async (payload) => {
+            if (payload.new.account_status === "Deactivated") {
+              toast.error("Deactivated Account, Contact Admin.")
+              await studentSupabase.auth.signOut()
+              router.replace("/student/login")
+            } else {
+              setStudent(payload.new as StudentData)
+            }
+          }
+        )
+        .subscribe()
     }
     load()
 
-    const channel = studentSupabase.channel("student_status")
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'students' }, async (payload) => {
-        if (payload.new.account_status === "Deactivated") {
-          toast.error("Deactivated Account, Contact Admin.")
-          await studentSupabase.auth.signOut()
-          router.replace("/student/login")
-        }
-      }).subscribe()
-
     return () => {
-      studentSupabase.removeChannel(channel)
+      if (channel) studentSupabase.removeChannel(channel)
     }
   }, [router, isWelcome])
 
@@ -262,7 +273,7 @@ function DashboardContent() {
   const TabContent = () => (
     <div className="animate-in fade-in duration-200 pt-2">
       {activeTab === "info" && (
-        <StudentInfoTab student={student} dm={dm} />
+        <StudentInfoTab student={student} dm={dm} onStudentUpdate={(updated) => setStudent(updated as StudentData)} />
       )}
 
       {activeTab === "schedule" && student.section && student.school_year && (
@@ -425,6 +436,11 @@ export default function StudentDashboardPage() {
 function StudentAnnouncements({ studentGrade, dm }: { studentGrade: string, dm: boolean }) {
   const [announcements, setAnnouncements] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const itemsPerPage = 5
+  const totalPages = Math.max(1, Math.ceil(announcements.length / itemsPerPage))
+  const currentAnnouncements = announcements.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -473,7 +489,7 @@ function StudentAnnouncements({ studentGrade, dm }: { studentGrade: string, dm: 
 
   return (
     <div className="space-y-4 fade-in pb-12">
-      {announcements.map((ann) => (
+      {currentAnnouncements.map((ann) => (
         <div key={ann.id} className={`p-6 md:p-8 rounded-[32px] border ${
           ann.is_pinned 
             ? (dm ? "bg-blue-900/10 border-blue-900/50" : "bg-blue-50 border-blue-200") 
@@ -498,6 +514,30 @@ function StudentAnnouncements({ studentGrade, dm }: { studentGrade: string, dm: 
           </div>
         </div>
       ))}
+      
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-4">
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${textSub}`}>
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={`px-3 py-1.5 rounded-xl font-black uppercase tracking-widest text-[9px] border transition-colors disabled:opacity-30 ${dm ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-100"}`}
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-1.5 rounded-xl font-black uppercase tracking-widest text-[9px] border transition-colors disabled:opacity-30 ${dm ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-100"}`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -93,12 +93,12 @@ export function ProfileCard({ session, schedules, colorMap, dm, onAvatarUpdate }
             onClick={handleAvatarClick}
             title="Click to change profile photo"
           >
-            <div className={`p-0.5 rounded-full bg-gradient-to-br from-blue-500 to-violet-500`}>
-              <div className={`rounded-full p-0.5 ${dm ? "bg-slate-900" : "bg-white"}`}>
-                <Avatar name={session.full_name} gender={session.gender} size={50} img={avatarUrl} />
+            <div className={`p-0.5 rounded-2xl bg-blue-400/80 shadow-sm`}>
+              <div className={`rounded-[0.9rem] p-0.5 ${dm ? "bg-slate-900" : "bg-white"}`}>
+                <Avatar name={session.full_name} gender={session.gender} size={64} img={avatarUrl} shape="box" />
               </div>
             </div>
-            <div className={`absolute inset-0 rounded-full flex items-center justify-center transition-opacity
+            <div className={`absolute inset-0 rounded-2xl flex items-center justify-center transition-opacity
               ${uploading ? "opacity-100 bg-black/50" : "opacity-0 group-hover:opacity-100 bg-black/40"}`}>
               {uploading ? <Loader2 size={16} className="text-white animate-spin" /> : <Camera size={14} className="text-white" />}
             </div>

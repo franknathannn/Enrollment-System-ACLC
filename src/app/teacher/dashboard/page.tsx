@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { CalendarDays, Bell, QrCode, BarChart2, AlertTriangle, Calendar, MessageSquare } from "lucide-react"
+import { CalendarDays, Bell, QrCode, BarChart2, AlertTriangle, Calendar, MessageSquare, FileText } from "lucide-react"
 import { supabase } from "@/lib/supabase/teacher-client"
 import { toast } from "sonner"
 
@@ -14,6 +14,7 @@ import { AnnouncementsTab }        from "./components/AnnouncementsTab"
 import { StudentDetailTab }        from "./components/StudentDetailTab"
 import { AttendanceTab }           from "./components/AttendanceTab"
 import { CuttingClassDetector }    from "./components/CuttingClassDetector"
+import { QuarterlyUpdateTab }        from "./components/QuarterlyUpdateTab"
 import { ReportsTab }              from "./components/ReportsTab"
 import { AcademicCalendarTab }     from "./components/AcademicCalendarTab"
 import { ChatTab }                 from "./components/ChatTab"
@@ -23,7 +24,7 @@ import {
   COLORS, todayName,
 } from "./types"
 
-type TabName = "schedule" | "announcements" | "attendance" | "cutting" | "reports" | "calendar" | "chat"
+type TabName = "schedule" | "announcements" | "attendance" | "cutting" | "quarterly" | "reports" | "calendar" | "chat"
 
 export default function TeacherDashboard() {
   const router = useRouter()
@@ -37,7 +38,7 @@ export default function TeacherDashboard() {
   const [tab,           setTab]           = useState<TabName>(() => {
     if (typeof window !== "undefined") {
       const saved = sessionStorage.getItem("teacher_active_tab")
-      if (saved && ["schedule","announcements","attendance","cutting","reports","calendar","chat"].includes(saved))
+      if (saved && ["schedule","announcements","attendance","cutting","quarterly","reports","calendar","chat"].includes(saved))
         return saved as TabName
     }
     return "schedule"
@@ -314,22 +315,25 @@ export default function TeacherDashboard() {
           onAvatarUpdate={(url) => setSession(prev => prev ? { ...prev, avatar_url: url } : prev)}
         />
 
-        {/* Tab switcher — 7 equal columns on all sizes, labels hidden on mobile */}
-        <div className={`grid gap-1 p-1.5 rounded-2xl border backdrop-blur-sm w-full ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`} style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1.5fr 1fr 0.5fr" }}>
+        {/* Tab switcher — 8 equal columns, labels hidden on mobile */}
+        <div className={`grid grid-cols-8 gap-1 p-1.5 rounded-2xl border backdrop-blur-sm w-full ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`}>
           <button className={tabBtn(tab === "schedule")} onClick={() => setTab("schedule")}>
-            <CalendarDays size={13} /><span className="hidden md:inline">Schedule</span>
+            <CalendarDays size={13} /><span className="hidden md:inline truncate">Schedule</span>
           </button>
           <button className={tabBtn(tab === "attendance")} onClick={() => setTab("attendance")}>
-            <QrCode size={13} /><span className="hidden md:inline">Attendance</span>
+            <QrCode size={13} /><span className="hidden md:inline truncate">Scan</span>
           </button>
           <button className={tabBtn(tab === "cutting")} onClick={() => setTab("cutting")}>
-            <AlertTriangle size={13} /><span className="hidden md:inline">Cutting</span>
+            <AlertTriangle size={13} /><span className="hidden md:inline truncate">Cutting</span>
+          </button>
+          <button className={tabBtn(tab === "quarterly")} onClick={() => setTab("quarterly")}>
+            <BarChart2 size={13} /><span className="hidden md:inline truncate">Submit</span>
           </button>
           <button className={tabBtn(tab === "reports")} onClick={() => setTab("reports")}>
-            <BarChart2 size={13} /><span className="hidden md:inline">Reports</span>
+            <FileText size={13} /><span className="hidden md:inline truncate">Reports</span>
           </button>
           <button className={tabBtn(tab === "announcements")} onClick={() => setTab("announcements")}>
-            <Bell size={13} /><span className="hidden md:inline">Announcements</span>
+            <Bell size={13} /><span className="hidden md:inline truncate">News</span>
             {pinnedCount > 0 && (
               <span className="absolute top-1 right-1 bg-amber-500 text-white text-[7px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center">
                 {pinnedCount}
@@ -337,10 +341,10 @@ export default function TeacherDashboard() {
             )}
           </button>
           <button className={tabBtn(tab === "calendar")} onClick={() => setTab("calendar")}>
-            <Calendar size={13} /><span className="hidden md:inline">Calendar</span>
+            <Calendar size={13} /><span className="hidden md:inline truncate">Calendar</span>
           </button>
           <button className={tabBtn(tab === "chat")} onClick={() => setTab("chat")}>
-            <MessageSquare size={13} />
+            <MessageSquare size={13} /><span className="hidden md:inline truncate">Chat</span>
           </button>
         </div>
 
@@ -380,8 +384,12 @@ export default function TeacherDashboard() {
           />
         )}
 
+        {tab === "quarterly" && session && (
+          <QuarterlyUpdateTab dm={dm} session={session} />
+        )}
+
         {tab === "reports" && session && (
-          <ReportsTab
+          <ReportsTab 
             schedules={schedules}
             students={students}
             dm={dm}

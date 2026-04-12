@@ -72,6 +72,11 @@ export default function StudentAccountsPage() {
   const [annLoading, setAnnLoading] = useState(true)
   const [showAnnModal, setShowAnnModal] = useState(false)
   const [annForm, setAnnForm] = useState({ title: "", content: "", target: "ALL", is_pinned: false })
+  const [annCurrentPage, setAnnCurrentPage] = useState(1)
+
+  const annItemsPerPage = 5
+  const annTotalPages = Math.max(1, Math.ceil(announcements.length / annItemsPerPage))
+  const currentAnnouncements = announcements.slice((annCurrentPage - 1) * annItemsPerPage, annCurrentPage * annItemsPerPage)
 
   useEffect(() => {
     fetchConfig()
@@ -550,36 +555,62 @@ export default function StudentAccountsPage() {
                   <p className={`text-[10px] uppercase tracking-widest mt-1 ${sub}`}>Click post announcement to create one.</p>
                 </div>
               ) : (
-                announcements.map(ann => (
-                  <div key={ann.id} className={`p-6 rounded-[32px] border ${ann.is_pinned ? (dm ? "bg-blue-900/10 border-blue-800/50" : "bg-blue-50/30 border-blue-200") : emptyCrd} shadow-sm relative overflow-hidden group`}>
-                    {ann.is_pinned && <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full ${dm ? "bg-blue-500/20" : "bg-blue-500/10"}`} />}
+                <>
+                  {currentAnnouncements.map(ann => (
+                    <div key={ann.id} className={`p-6 rounded-[32px] border ${ann.is_pinned ? (dm ? "bg-blue-900/10 border-blue-800/50" : "bg-blue-50/30 border-blue-200") : emptyCrd} shadow-sm relative overflow-hidden group`}>
+                      {ann.is_pinned && <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full ${dm ? "bg-blue-500/20" : "bg-blue-500/10"}`} />}
 
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          {ann.is_pinned && <span className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${dm ? "text-blue-400 bg-blue-900/30" : "text-blue-600 bg-blue-100"}`}><Pin size={10} /> Pinned</span>}
-                          <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${dm ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500"}`}>
-                            Target: {ann.target_audience}
-                          </span>
-                          <span className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest ml-2 ${sub}`}>
-                            <Clock size={10} /> {new Date(ann.created_at).toLocaleDateString()}
-                          </span>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            {ann.is_pinned && <span className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${dm ? "text-blue-400 bg-blue-900/30" : "text-blue-600 bg-blue-100"}`}><Pin size={10} /> Pinned</span>}
+                            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${dm ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500"}`}>
+                              Target: {ann.target_audience}
+                            </span>
+                            <span className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest ml-2 ${sub}`}>
+                              <Clock size={10} /> {new Date(ann.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <h3 className={`text-lg font-black tracking-tight uppercase mb-2 ${txt}`}>{ann.title}</h3>
+                          <p className={`text-sm font-medium whitespace-pre-wrap ${sub}`}>{ann.content}</p>
                         </div>
-                        <h3 className={`text-lg font-black tracking-tight uppercase mb-2 ${txt}`}>{ann.title}</h3>
-                        <p className={`text-sm font-medium whitespace-pre-wrap ${sub}`}>{ann.content}</p>
-                      </div>
 
-                      <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleTogglePin(ann.id, ann.is_pinned)} className={`p-2 rounded-xl transition-colors ${dm ? "bg-slate-800 text-slate-400 hover:text-blue-400" : "bg-slate-100 text-slate-500 hover:text-blue-500"}`}>
-                          {ann.is_pinned ? <PinOff size={16} /> : <Pin size={16} />}
+                        <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleTogglePin(ann.id, ann.is_pinned)} className={`p-2 rounded-xl transition-colors ${dm ? "bg-slate-800 text-slate-400 hover:text-blue-400" : "bg-slate-100 text-slate-500 hover:text-blue-500"}`}>
+                            {ann.is_pinned ? <PinOff size={16} /> : <Pin size={16} />}
+                          </button>
+                          <button onClick={() => handleDeleteAnn(ann.id)} className={`p-2 rounded-xl transition-colors ${dm ? "bg-rose-900/20 text-rose-500 hover:bg-rose-900/40" : "bg-rose-50 text-rose-500 hover:bg-rose-100"}`}>
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {annTotalPages > 1 && (
+                    <div className="flex items-center justify-between pt-4">
+                      <span className={`text-[10px] font-bold uppercase tracking-widest ${sub}`}>
+                        Page {annCurrentPage} of {annTotalPages}
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setAnnCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={annCurrentPage === 1}
+                          className={`px-3 py-1.5 rounded-xl font-black uppercase tracking-widest text-[9px] border transition-colors disabled:opacity-30 ${dm ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-100"}`}
+                        >
+                          Prev
                         </button>
-                        <button onClick={() => handleDeleteAnn(ann.id)} className={`p-2 rounded-xl transition-colors ${dm ? "bg-rose-900/20 text-rose-500 hover:bg-rose-900/40" : "bg-rose-50 text-rose-500 hover:bg-rose-100"}`}>
-                          <Trash2 size={16} />
+                        <button
+                          onClick={() => setAnnCurrentPage(p => Math.min(annTotalPages, p + 1))}
+                          disabled={annCurrentPage === annTotalPages}
+                          className={`px-3 py-1.5 rounded-xl font-black uppercase tracking-widest text-[9px] border transition-colors disabled:opacity-30 ${dm ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-100"}`}
+                        >
+                          Next
                         </button>
                       </div>
                     </div>
-                  </div>
-                ))
+                  )}
+                </>
               )}
             </div>
           </div>

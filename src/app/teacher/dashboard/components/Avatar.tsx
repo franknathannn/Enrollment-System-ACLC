@@ -7,10 +7,12 @@ interface AvatarProps {
   size?: number
   img?: string | null
   gender?: string | null
+  shape?: "circle" | "box"
 }
 
-export function Avatar({ name, size = 40, img, gender }: AvatarProps) {
+export function Avatar({ name, size = 40, img, gender, shape = "circle" }: AvatarProps) {
   const initials = name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()
+  const roundClass = shape === "box" ? "rounded-xl" : "rounded-full"
   let hue = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 360
   
   if (gender === 'Male') hue = 210 // Blue
@@ -21,7 +23,7 @@ export function Avatar({ name, size = 40, img, gender }: AvatarProps) {
       <img
         src={img}
         alt={name}
-        className="rounded-full object-cover flex-shrink-0"
+        className={`${roundClass} object-cover flex-shrink-0`}
         style={{ width: size, height: size }}
         onError={e => { e.currentTarget.style.display = "none" }}
       />
@@ -30,7 +32,7 @@ export function Avatar({ name, size = 40, img, gender }: AvatarProps) {
 
   return (
     <div
-      className="rounded-full flex items-center justify-center font-black text-white select-none flex-shrink-0"
+      className={`${roundClass} flex items-center justify-center font-black text-white select-none flex-shrink-0`}
       style={{ width: size, height: size, fontSize: size * 0.33, background: `hsl(${hue},65%,45%)` }}
     >
       {initials}

@@ -752,7 +752,7 @@ export const ApplicantsTable = memo(({
       `}</style>
 
       <ThemedCard
-        className="rounded-2xl sm:rounded-3xl md:rounded-[48px] shadow-lg sm:shadow-2xl shadow-slate-200/50 dark:shadow-blue-500/10 overflow-hidden transition-colors duration-500 border w-full relative"
+        className={`rounded-2xl sm:rounded-3xl md:rounded-[48px] overflow-hidden transition-colors duration-500 border w-full relative ${!isDarkMode ? 'shadow-lg sm:shadow-2xl shadow-slate-200/50' : ''}`}
         style={{
           backgroundColor: isDarkMode ? themeColors.dark.surface : '#ffffff',
           borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9',

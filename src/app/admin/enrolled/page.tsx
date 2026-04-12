@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState } from "react"
 import { useTheme } from "@/hooks/useTheme"
 import { StarConstellation } from "./components/StarConstellation"
 import { EnrolledHeader } from "./components/EnrolledHeader"
@@ -8,27 +8,15 @@ import { EnrolledFilter } from "./components/EnrolledFilter"
 import { EnrolledTable } from "./components/EnrolledTable"
 import { EnrolledProfileModal } from "./components/EnrolledProfileModal"
 import { DocumentViewerModal } from "./components/DocumentViewerModal"
-import { EditRequestsPanel } from "./components/EditRequestsPanel"
 import { useEnrolledData } from "./hooks/useEnrolledData"
 import { useEnrolledFiltering } from "./hooks/useEnrolledFiltering"
 import { useEnrolledActions } from "./hooks/useEnrolledActions"
 import { useStudentUI } from "../applicants/hooks/useStudentUI"
 import { downloadEnrolledExcel } from "./api/exportEnrolled"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { Users, Inbox } from "lucide-react"
-
-type RegistryMainTab = "enrolled" | "reEnrollment"
 
 export default function EnrolledPage() {
   const { isDarkMode } = useTheme()
-  const [mainTab, setMainTab] = useState<RegistryMainTab>(() => {
-    if (typeof window !== "undefined") {
-      const s = sessionStorage.getItem("enrolled_main_tab")
-      if (s === "enrolled" || s === "reEnrollment") return s
-    }
-    return "enrolled"
-  })
-  useEffect(() => { sessionStorage.setItem("enrolled_main_tab", mainTab) }, [mainTab])
 
   // 1. Data Layer
   const { students, setStudents, sections, loading, fetchStudents } = useEnrolledData()
@@ -56,8 +44,6 @@ export default function EnrolledPage() {
   const {
     updateStudentProfile,
     resetStudentToPending,
-    approveEditRequest,
-    denyEditRequest
   } = useEnrolledActions({ setStudents })
 
   // 4. UI Layer (Modal & Viewer)
@@ -72,15 +58,6 @@ export default function EnrolledPage() {
 
   // Initial Fetch
   useEffect(() => { fetchStudents() }, [fetchStudents])
-
-  const tabBtn = useCallback((active: boolean) =>
-    `flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 flex-1 sm:flex-none min-h-[44px] ${
-      active
-        ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/25"
-        : isDarkMode
-          ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-          : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-    }`, [isDarkMode])
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -104,46 +81,8 @@ export default function EnrolledPage() {
             onExport={() => downloadEnrolledExcel(strandFilter, categoryFilter)}
           />
 
-          <div
-            className={`flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 p-1.5 rounded-2xl border w-fit mx-auto ${
-              isDarkMode ? "bg-slate-900/50 border-slate-700/60" : "bg-slate-100/80 border-slate-200/80"
-            }`}
-            role="tablist"
-            aria-label="Registry view"
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mainTab === "enrolled"}
-              className={tabBtn(mainTab === "enrolled")}
-              onClick={() => setMainTab("enrolled")}
-            >
-              <Users size={14} className="shrink-0 opacity-90" />
-              Enrolled
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mainTab === "reEnrollment"}
-              className={tabBtn(mainTab === "reEnrollment")}
-              onClick={() => setMainTab("reEnrollment")}
-            >
-              <Inbox size={14} className="shrink-0 opacity-90" />
-              Re-Enrollment Requests
-            </button>
-          </div>
-
-          {mainTab === "reEnrollment" && (
-            <EditRequestsPanel
-              isDarkMode={isDarkMode}
-              onApprove={approveEditRequest}
-              onDeny={denyEditRequest}
-            />
-          )}
-
-          {mainTab === "enrolled" && (
-            <>
-              <EnrolledFilter
+          <>
+            <EnrolledFilter
                 isDarkMode={isDarkMode}
                 strandFilter={strandFilter}
                 setStrandFilter={setStrandFilter}
@@ -183,8 +122,7 @@ export default function EnrolledPage() {
                 setCurrentPage={setCurrentPage}
                 loading={loading}
               />
-            </>
-          )}
+          </>
         </div>
 
         <EnrolledProfileModal
@@ -195,7 +133,7 @@ export default function EnrolledPage() {
           isDarkMode={isDarkMode}
           onOpenFile={openDocumentViewer}
           sections={sections}
-          onStatusChange={(_, status) => {
+          onStatusChange={(_: any, status: string) => {
             if (status === 'Pending' && selectedStudent) {
               resetStudentToPending(selectedStudent)
               setSelectedStudent(null)

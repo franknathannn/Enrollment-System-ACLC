@@ -5,7 +5,7 @@ import {
   GraduationCap, LayoutDashboard, Users, Settings,
   LogOut, BookOpen, User as UserIcon, Loader2,
   Camera, MessageSquare, ChevronLeft, ChevronRight, Menu, Activity, Sun, Moon, UserCheck, ChartColumnBig,
-  CalendarRange, Archive
+  CalendarRange, Archive, BarChart2
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -156,6 +156,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { href: "/admin/sections", icon: <BookOpen size={18} />, label: "Sections" },
         { href: "/admin/teachers", icon: <GraduationCap size={18} />, label: "Teachers" },
         { href: "/admin/schedules", icon: <CalendarRange size={18} />, label: "Schedules" },
+        { href: "/admin/quarterly-updates", icon: <BarChart2 size={18} />, label: "Quarterly Update" },
       ],
     },
     {

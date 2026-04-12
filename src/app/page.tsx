@@ -23,6 +23,10 @@ const ProcessSection = dynamic(
   () => import("@/components/landing/ProcessSection").then(m => ({ default: m.ProcessSection })),
   { ssr: false }
 )
+const MissionVisionSection = dynamic(
+  () => import("@/components/landing/MissionVisionSection").then(m => ({ default: m.MissionVisionSection })),
+  { ssr: false }
+)
 
 // ── TYPES ────────────────────────────────────────────────────────────────────
 interface Particle { x: number; y: number; vx: number; vy: number; size: number; pulse: number; twinkle: number }
@@ -86,8 +90,8 @@ export function Reveal({ children, delay = 0, className = "", x = 0, y = 30, sca
       animate={visible ? { opacity: 1, x: 0, y: 0, scale: 1 } : { opacity: 0, x, y, scale }}
       transition={{
         type: "spring",
-        stiffness: 40,
-        damping: 15,
+        stiffness: 120,
+        damping: 20,
         delay: delay / 1000
       }}
       className={className}
@@ -145,12 +149,11 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
   return (
     <motion.div
       ref={statsRef}
-      initial={{ opacity: 0, y: 40, scale: 0.95 }}
-      animate={statsVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 40, scale: 0.95 }}
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={statsVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 20, scale: 0.98 }}
       transition={{
-        type: "spring",
-        stiffness: 40,
-        damping: 15
+        duration: 0.4,
+        ease: [0.25, 0.46, 0.45, 0.94]
       }}
       className={cn("lg:col-span-5 relative stats-group", !isMobile && "float")}
       style={{ translate: "0 0", willChange: "transform" }}
@@ -664,7 +667,7 @@ export default function HomePage() {
       // min-h-[100dvh] = dynamic viewport height → works in Meta Messenger, Safari, etc.
       "min-h-[100dvh] font-sans overflow-x-hidden relative",
       "transition-[background-color] duration-500 ease-in-out",
-      d ? "bg-[#030712] text-white" : "bg-[#eef2ff] text-slate-900"
+      d ? "bg-[#030712] text-white" : "bg-white text-slate-900"
     )}>
 
       {/* Binary stream effect */}
@@ -755,7 +758,7 @@ export default function HomePage() {
       <nav className={cn(
         "fixed top-0 w-full z-50 backdrop-blur-2xl border-b safe-top",
         "transition-[background-color,border-color] duration-500",
-        d ? "bg-[#030712]/65 border-white/5" : "bg-white/75 border-blue-200/60"
+        d ? "bg-[#030712]/65 border-white/5" : "bg-white/90 border-slate-200/80"
       )}>
         <TerminalWidget isDark={d} />
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-[86px] flex items-center justify-between">
@@ -1073,6 +1076,9 @@ export default function HomePage() {
             <AboutSection isDark={d} />
           </Reveal>
 
+          {/* ── MISSION & VISION ──────────────────────────────────────── */}
+          <MissionVisionSection isDark={d} />
+
           {/* ── ENROLLMENT PROCESS ────────────────────────────────────────── */}
           <ProcessSection isDark={d} />
 
@@ -1082,7 +1088,7 @@ export default function HomePage() {
               <div className={cn(
                 "relative rounded-[48px] md:rounded-[80px] border overflow-hidden group",
                 "transition-all duration-700",
-                d ? "bg-[#030712] border-white/[0.12] lg:hover:border-blue-500/50" : "bg-white border-slate-200 shadow-2xl hover:shadow-blue-500/10"
+                d ? "bg-[#030712] border-white/[0.12] lg:hover:border-blue-500/50" : "bg-white border-slate-200/80 shadow-[0_4px_40px_rgba(0,0,0,0.04)] hover:shadow-blue-500/10"
               )} style={{ translate: "0 0", willChange: "transform, border-color" }}>
                 {/* Decorative Brand Accents */}
                 <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/5 to-transparent pointer-events-none" />
@@ -1119,7 +1125,7 @@ export default function HomePage() {
                           className={cn(
                             "group/card h-full p-8 rounded-[32px] border spring-hover-blue",
                             d ? "bg-white/[0.02] border-white/[0.12] lg:hover:bg-blue-600/5"
-                              : "bg-slate-50 border-slate-100 lg:hover:bg-white lg:hover:shadow-xl",
+                              : "bg-slate-50/60 border-slate-100/80 lg:hover:bg-white lg:hover:shadow-xl",
                             "cursor-pointer"
                           )}>
                           <div className={cn(
@@ -1147,7 +1153,7 @@ export default function HomePage() {
       <footer className={cn(
         "relative z-10 mt-24 md:mt-32 lg:mt-44 border-t backdrop-blur-3xl py-12 md:py-20 px-4 md:px-6 safe-bottom",
         "transition-[background-color,border-color] duration-500",
-        d ? "bg-[#020510]/90 border-white/5" : "bg-white/80 border-slate-200"
+        d ? "bg-[#020510]/90 border-white/5" : "bg-white border-slate-100"
       )}>
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16">
