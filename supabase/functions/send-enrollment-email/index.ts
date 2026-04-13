@@ -246,7 +246,8 @@ serve(async (req: Request) => {
         + qrCardHtml;
     } else if (isApproved) {
       contentHtml = '<h1 style="color:#15803d;margin-top:0;font-size:28px;text-align:center;font-weight:800;">Congratulations, ' + record.last_name + '!</h1>'
-        + '<p style="font-size:18px;line-height:1.6;color:#15803d;text-align:center;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">HELLO STUDENT ' + studentUuid + '</p>'
+        + '<p style="font-size:18px;line-height:1.6;color:#15803d;text-align:center;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">HELLO STUDENT ' + studentUuid + '</p>'
+        + '<p style="font-size:13px;color:#64748b;text-align:center;font-weight:700;margin-bottom:20px;">LRN: <strong style="color:#0f172a;">' + (record.lrn || 'N/A') + '</strong></p>'
         + '<p style="font-size:16px;line-height:1.6;color:#4b5563;text-align:center;">We are thrilled to inform you that your application has been <strong>APPROVED</strong>. Welcome to the family!</p>'
         + '<div style="background-color:#f0fdf4;border:1px solid #bbf7d0;padding:25px;margin:30px 0;border-radius:12px;text-align:center;">'
         + '<p style="margin:0;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#15803d;font-weight:700;">Assigned Section</p>'
@@ -284,18 +285,7 @@ serve(async (req: Request) => {
       + '<p style="margin:0;">&copy; ' + new Date().getFullYear() + ' AMA ACLC Northbay Campus. All rights reserved.</p>'
       + '</div></div>';
 
-    // 3. THE BREVO SEND-OFF
-    const emailBody: any = {
-      sender: { name: "ACLC Registrar", email: SENDER_EMAIL },
-      to: [{ email: record.email, name: record.first_name }],
-      subject: subject,
-      htmlContent: htmlContent
-    };
-
-    if (shouldNotifyParents && record.guardian_email) {
-      emailBody.cc = [{ email: record.guardian_email, name: record.guardian_first_name || "Guardian" }];
-    }
-
+    // 3. THE BREVO SEND-OFF — Student email
     await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -303,8 +293,91 @@ serve(async (req: Request) => {
         'api-key': BREVO_API_KEY || '',
         'content-type': 'application/json'
       },
-      body: JSON.stringify(emailBody)
+      body: JSON.stringify({
+        sender: { name: "ACLC Registrar", email: SENDER_EMAIL },
+        to: [{ email: record.email, name: record.first_name }],
+        subject: subject,
+        htmlContent: htmlContent
+      })
     });
+
+    // 4. Separate guardian email with parent-specific message
+    if (shouldNotifyParents && record.guardian_email) {
+      const pronoun = record.gender?.toLowerCase() === 'female' ? 'daughter' : 'son';
+      const guardianName = record.guardian_first_name || 'Guardian';
+      const studentFullName = record.first_name + ' ' + record.last_name;
+
+      let guardianContentHtml = '';
+
+      if (isInsert) {
+        guardianContentHtml = '<h1 style="color:#4f46e5;margin-top:0;font-size:28px;text-align:center;font-weight:800;">Enrollment Application Received</h1>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">Dear <strong>' + guardianName + '</strong>,</p>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">We would like to inform you that your ' + pronoun + ', <strong>' + studentFullName + '</strong>, has successfully submitted an enrollment application at <strong>AMA ACLC Northbay</strong>.</p>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">Our registrar team is currently reviewing the submitted documents. You will receive another notification once the application status is updated.</p>'
+          + '<p style="font-size:14px;color:#6b7280;font-style:italic;margin-top:25px;">If you have any concerns, please contact the registrar\'s office directly.</p>';
+      } else if (isSectionSwitch) {
+        guardianContentHtml = '<h1 style="color:#1d4ed8;margin-top:0;font-size:28px;text-align:center;font-weight:800;">Section Transfer Notice</h1>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">Dear <strong>' + guardianName + '</strong>,</p>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">We would like to inform you that your ' + pronoun + ', <strong>' + studentFullName + '</strong>, has been transferred to a new section.</p>'
+          + '<div style="background-color:#eff6ff;border:1px solid #bfdbfe;padding:25px;margin:30px 0;border-radius:12px;text-align:center;">'
+          + '<p style="margin:0;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#1e40af;font-weight:700;">New Section Assignment</p>'
+          + '<p style="margin:8px 0 0 0;font-size:32px;font-weight:900;color:#1e3a8a;">' + (record.section || 'TBA') + '</p>'
+          + '<p style="margin:8px 0 0 0;font-size:14px;color:#64748b;">(Previously: ' + old_record.section + ')</p>'
+          + '</div>'
+          + scheduleHtml;
+      } else if (isApproved) {
+        guardianContentHtml = '<h1 style="color:#15803d;margin-top:0;font-size:28px;text-align:center;font-weight:800;">Your ' + (pronoun === 'son' ? 'Son' : 'Daughter') + ' Has Been Enrolled!</h1>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">Dear <strong>' + guardianName + '</strong>,</p>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">We are pleased to inform you that your ' + pronoun + ', <strong>' + studentFullName + '</strong>, has been officially <strong>APPROVED</strong> for enrollment at <strong>AMA ACLC Northbay</strong>.</p>'
+          + '<div style="background-color:#f0fdf4;border:1px solid #bbf7d0;padding:25px;margin:30px 0;border-radius:12px;text-align:center;">'
+          + '<p style="margin:0;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#15803d;font-weight:700;">Assigned Section</p>'
+          + '<p style="margin:8px 0 0 0;font-size:32px;font-weight:900;color:#166534;">' + (record.section || 'TBA') + '</p>'
+          + '</div>'
+          + scheduleHtml
+          + '<p style="font-size:14px;color:#6b7280;font-style:italic;margin-top:25px;">For any concerns, please contact the registrar\'s office directly.</p>';
+      } else {
+        guardianContentHtml = '<h1 style="color:#991b1b;margin-top:0;font-size:26px;text-align:center;font-weight:800;">Action Required: Enrollment Application</h1>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">Dear <strong>' + guardianName + '</strong>,</p>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">We would like to inform you that your ' + pronoun + ', <strong>' + studentFullName + '</strong>\'s enrollment application requires attention. Our registrar has provided the following feedback:</p>'
+          + '<div style="background-color:#fef2f2;border-left:5px solid #ef4444;padding:20px;margin:25px 0;border-radius:8px;">'
+          + '<p style="margin:0;font-weight:800;color:#991b1b;text-transform:uppercase;font-size:12px;letter-spacing:1px;">Registrar Feedback</p>'
+          + '<div style="margin-top:10px;color:#7f1d1d;font-weight:600;line-height:1.8;font-size:15px;">' + formattedReason + '</div>'
+          + '</div>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">Please advise your ' + pronoun + ' to update their application through the status portal at the earliest convenience.</p>'
+          + '<div style="text-align:center;margin-top:35px;margin-bottom:20px;">'
+          + '<a href="' + statusLink + '" style="background-color:#2563eb;color:#ffffff;padding:18px 35px;border-radius:50px;text-decoration:none;font-weight:800;text-transform:uppercase;letter-spacing:1px;font-size:14px;display:inline-block;box-shadow:0 10px 15px -3px rgba(37,99,235,0.4);">View Application Status</a>'
+          + '</div>';
+      }
+
+      const guardianHtmlContent = '<div style="font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#1f2937;max-width:600px;margin:0 auto;padding:20px;background-color:#f9fafb;">'
+        + '<div style="text-align:center;margin-bottom:30px;">'
+        + '<a href="https://enrollment-system-aclc.vercel.app" target="_blank" style="text-decoration:none;">'
+        + '<img src="' + logoUrl + '" alt="ACLC Logo" style="width:80px;height:80px;object-fit:contain;" />'
+        + '</a>'
+        + '<h2 style="color:#1d4ed8;margin-top:10px;text-transform:uppercase;letter-spacing:2px;font-weight:800;">AMA ACLC NORTHBAY</h2>'
+        + '</div>'
+        + '<div style="background-color:#ffffff;border-radius:16px;padding:40px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);border:1px solid #e5e7eb;">'
+        + guardianContentHtml
+        + '</div>'
+        + '<div style="text-align:center;margin-top:35px;color:#9ca3af;font-size:12px;">'
+        + '<p style="margin:0;">&copy; ' + new Date().getFullYear() + ' AMA ACLC Northbay Campus. All rights reserved.</p>'
+        + '</div></div>';
+
+      await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': BREVO_API_KEY || '',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: "ACLC Registrar", email: SENDER_EMAIL },
+          to: [{ email: record.guardian_email, name: guardianName }],
+          subject: subject,
+          htmlContent: guardianHtmlContent
+        })
+      });
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

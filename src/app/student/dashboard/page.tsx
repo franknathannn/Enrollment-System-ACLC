@@ -158,11 +158,11 @@ function DashboardContent() {
   const { isDark, toggleTheme } = useThemeStore()
   const dm = isDark
 
-  const [student,     setStudent]     = useState<StudentData | null>(null)
-  const [loading,     setLoading]     = useState(true)
-  const [showWelcome, setShowWelcome] = useState(false)
-  const [activeTab,   setActiveTab]   = useState<"info" | "schedule" | "qr" | "attendance" | "announcements">("info")
-  const [copied,      setCopied]      = useState<string | null>(null)
+  const [student,              setStudent]              = useState<StudentData | null>(null)
+  const [loading,              setLoading]              = useState(true)
+  const [showWelcome,          setShowWelcome]          = useState(false)
+  const [activeTab,            setActiveTab]            = useState<"info" | "schedule" | "qr" | "attendance" | "announcements">("info")
+  const [copied,               setCopied]               = useState<string | null>(null)
 
   useEffect(() => {
     let channel: ReturnType<typeof studentSupabase.channel> | null = null

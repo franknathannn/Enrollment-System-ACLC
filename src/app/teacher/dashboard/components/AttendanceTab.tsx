@@ -12,7 +12,7 @@ import {
   QrCode, Camera, CameraOff, CheckCircle2, Clock, MinusCircle,
   Loader2, Wifi, WifiOff, Upload, AlertTriangle, User,
   Search, X, ScanLine, ChevronLeft, ChevronRight,
-  CalendarDays, BookOpen, Users, Eye, ShieldCheck, Download, Sun, Moon,
+  CalendarDays, BookOpen, Users, Eye, ShieldCheck, Download,
 } from "lucide-react"
 import { supabase } from "@/lib/supabase/teacher-client"
 import {
@@ -134,10 +134,8 @@ declare global { interface Window { QRCode?: new (el: HTMLElement, opts: { text:
 
 /** Same layout & PNG as status `StudentQRCard` — QR payload is `student.id` (scanner also accepts LRN). */
 function QRViewerModal({ student, onClose }: { student: Student; onClose: () => void }) {
-  const darkRef = useRef<HTMLDivElement>(null)
+  const theme: StudentAttendanceQrThemeKey = "light"
   const lightRef = useRef<HTMLDivElement>(null)
-  const [theme, setTheme] = useState<StudentAttendanceQrThemeKey>("dark")
-  const [darkOk, setDarkOk] = useState(false)
   const [lightOk, setLightOk] = useState(false)
   const [saving, setSaving] = useState(false)
   const SZ = 176
@@ -145,10 +143,8 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
   const studentFullName = `${student.last_name}, ${student.first_name}`
 
   useEffect(() => {
-    setDarkOk(false)
     setLightOk(false)
     const generate = () => {
-      if (darkRef.current) generateStudentAttendanceQr(darkRef.current, student.id, SZ, "dark", () => setDarkOk(true))
       if (lightRef.current) generateStudentAttendanceQr(lightRef.current, student.id, SZ, "light", () => setLightOk(true))
     }
     if (window.QRCode) { generate(); return }
@@ -183,7 +179,7 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
   }
 
   const t = QR_THEMES[theme]
-  const isOk = theme === "dark" ? darkOk : lightOk
+  const isOk = lightOk
 
   return (
     <div
@@ -233,21 +229,6 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-2 pt-4 pb-2 px-5">
-          {(["dark", "light"] as StudentAttendanceQrThemeKey[]).map(th => (
-            <button
-              key={th}
-              type="button"
-              onClick={() => setTheme(th)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-wide transition-all flex-1 justify-center"
-              style={theme === th
-                ? { background: `linear-gradient(135deg,${t.strip0},${t.strip1})`, color: "#fff", boxShadow: "0 4px 16px rgba(29,78,216,0.3)" }
-                : { background: "transparent", color: t.textSec, border: `1px solid ${t.border}` }}
-            >
-              {th === "dark" ? <Moon size={10} /> : <Sun size={10} />} {th}
-            </button>
-          ))}
-        </div>
 
         <div className="px-4 py-3">
           <div className="rounded-[20px] overflow-hidden transition-all duration-300"
@@ -267,8 +248,7 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
 
             <div className="flex justify-center py-4">
               <div className="relative p-2.5 rounded-[16px]" style={{ background: QR_THEMES[theme].qrLight }}>
-                <div ref={darkRef} style={{ display: theme === "dark" && darkOk ? "block" : "none", width: SZ, height: SZ }} />
-                <div ref={lightRef} style={{ display: theme === "light" && lightOk ? "block" : "none", width: SZ, height: SZ }} />
+                <div ref={lightRef} style={{ display: lightOk ? "block" : "none", width: SZ, height: SZ }} />
                 {!isOk && (
                   <div style={{ width: SZ, height: SZ }} className="flex items-center justify-center">
                     <div
@@ -301,7 +281,7 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
             }}
           >
             <Download size={13} />
-            {saving ? "Saving…" : `Download ${theme === "dark" ? "Dark" : "Light"}`}
+            {saving ? "Saving…" : "Download QR Card"}
           </button>
         </div>
       </div>

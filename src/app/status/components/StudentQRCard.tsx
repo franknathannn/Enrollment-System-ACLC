@@ -2,7 +2,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
-import { QrCode, Download, Shield, Info, Sun, Moon, X, Eye } from "lucide-react"
+import { QrCode, Download, Shield, Info, X, Eye } from "lucide-react"
 import {
   STUDENT_ATTENDANCE_QR_THEMES as THEMES,
   type StudentAttendanceQrThemeKey as ThemeKey,
@@ -34,22 +34,19 @@ function PreviewModal({
   studentId: string; studentName: string; lrn: string; section?: string | null
   onClose: () => void; onDownload: (theme: ThemeKey) => Promise<void>
 }) {
-  const [theme, setTheme] = useState<ThemeKey>("dark")
-  const darkRef = useRef<HTMLDivElement>(null)
+  const theme: ThemeKey = "light"
   const lightRef = useRef<HTMLDivElement>(null)
-  const [darkOk, setDarkOk] = useState(false)
   const [lightOk, setLightOk] = useState(false)
   const [saving, setSaving] = useState(false)
   const SZ = 176
 
   useEffect(() => {
     if (!window.QRCode) return
-    if (darkRef.current) generateStudentAttendanceQr(darkRef.current, studentId, SZ, "dark", () => setDarkOk(true))
     if (lightRef.current) generateStudentAttendanceQr(lightRef.current, studentId, SZ, "light", () => setLightOk(true))
   }, [studentId])
 
   const t = THEMES[theme]
-  const isOk = theme === "dark" ? darkOk : lightOk
+  const isOk = lightOk
 
   return (
     <div
@@ -86,18 +83,6 @@ function PreviewModal({
           </div>
         </div>
 
-        {/* Theme switcher */}
-        <div className="flex items-center justify-center gap-2 pt-4 pb-2 px-5">
-          {(["dark", "light"] as ThemeKey[]).map(th => (
-            <button key={th} onClick={() => setTheme(th)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-wide transition-all flex-1 justify-center"
-              style={theme === th
-                ? { background: `linear-gradient(135deg,${t.strip0},${t.strip1})`, color: "#fff", boxShadow: "0 4px 16px rgba(29,78,216,0.3)" }
-                : { background: "transparent", color: t.textSec, border: `1px solid ${t.border}` }}>
-              {th === "dark" ? <Moon size={10} /> : <Sun size={10} />} {th}
-            </button>
-          ))}
-        </div>
 
         {/* QR card preview */}
         <div className="px-4 py-3">
@@ -116,8 +101,7 @@ function PreviewModal({
             {/* QR */}
             <div className="flex justify-center py-4">
               <div className="relative p-2.5 rounded-[16px]" style={{ background: THEMES[theme].qrLight }}>
-                <div ref={darkRef} style={{ display: theme === "dark" && darkOk ? "block" : "none", width: SZ, height: SZ }} />
-                <div ref={lightRef} style={{ display: theme === "light" && lightOk ? "block" : "none", width: SZ, height: SZ }} />
+                <div ref={lightRef} style={{ display: lightOk ? "block" : "none", width: SZ, height: SZ }} />
                 {!isOk && (
                   <div style={{ width: SZ, height: SZ }} className="flex items-center justify-center">
                     <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
@@ -142,7 +126,7 @@ function PreviewModal({
             className="w-full flex items-center justify-center gap-2 rounded-[16px] text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 text-white touch-manipulation"
             style={{ background: `linear-gradient(135deg,${t.strip0},${t.strip1})`, boxShadow: "0 6px 24px rgba(29,78,216,0.35)", minHeight: 48, padding: "12px 16px" }}>
             <Download size={13} />
-            {saving ? "Saving…" : `Download ${theme === "dark" ? "Dark" : "Light"}`}
+            {saving ? "Saving…" : "Download QR Card"}
           </button>
         </div>
       </div>
@@ -182,7 +166,7 @@ export function StudentQRCard({ studentId, studentName, lrn, section, dm = true 
     if (!loaded || !qrRef.current || !studentId) return
     qrRef.current.innerHTML = ""
     setReady(false)
-    generateStudentAttendanceQr(qrRef.current, studentId, qrSize, dm ? "dark" : "light", () => setReady(true))
+    generateStudentAttendanceQr(qrRef.current, studentId, qrSize, "light", () => setReady(true))
   }, [loaded, studentId, qrSize, dm])
 
   const handleDownload = useCallback(async (theme: ThemeKey) => {

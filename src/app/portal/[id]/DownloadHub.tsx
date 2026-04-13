@@ -154,22 +154,14 @@ export default function DownloadHub({ studentId, studentName, section, lrn, stra
           </div>
 
           {/* Download Buttons */}
-          <div className="w-full max-w-sm space-y-3">
+          <div className="w-full max-w-sm">
             <button
               onClick={() => handleDownloadQR("light")}
               disabled={downloadingQR || !qrLoaded}
               className="w-full py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 text-white shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
               style={{ background: downloadingQR ? "#22c55e" : "linear-gradient(135deg,#1d4ed8,#2563eb)", boxShadow: downloadingQR ? "0 10px 25px -5px rgba(34,197,94,0.3)" : "0 10px 25px -5px rgba(29,78,216,0.3)" }}
             >
-              {downloadingQR ? <><CheckCircle2 size={16} /> Downloaded!</> : <><Download size={16} /> Download Light Card</>}
-            </button>
-            <button
-              onClick={() => handleDownloadQR("dark")}
-              disabled={downloadingQR || !qrLoaded}
-              className="w-full py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 text-white shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-              style={{ background: downloadingQR ? "#22c55e" : "linear-gradient(135deg,#0f172a,#1e293b)", boxShadow: downloadingQR ? "0 10px 25px -5px rgba(34,197,94,0.3)" : "0 10px 25px -5px rgba(15,23,42,0.3)" }}
-            >
-              {downloadingQR ? <><CheckCircle2 size={16} /> Downloaded!</> : <><Download size={16} /> Download Dark Card</>}
+              {downloadingQR ? <><CheckCircle2 size={16} /> Downloaded!</> : <><Download size={16} /> Download QR Card</>}
             </button>
           </div>
         </div>

@@ -13,7 +13,6 @@ import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { StatusBadge } from "./StatusBadge"
 import { ScheduleView } from "./ScheduleView"
-import { StudentQRCard } from "./StudentQRCard"
 import { generateSetupToken, checkStudentAccount } from "@/lib/actions/student-auth"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -28,7 +27,6 @@ interface Props {
 export function ResultCard({ result, onFixApplication }: Props) {
   const router = useRouter()
   const [showSchedule, setShowSchedule] = useState(false)
-  const [showQR, setShowQR] = useState(false)
   const [generatingToken, setGeneratingToken] = useState(false)
 
   const sectionName = result.sections?.section_name || result.section || null
@@ -90,23 +88,6 @@ export function ResultCard({ result, onFixApplication }: Props) {
         {/* Name + status — UNCHANGED from original */}
         {/* ... (keep original content here) ... */}
 
-        {/* ── QR CODE SECTION — add this block for enrolled students ── */}
-        {isEnrolled && (
-          <Section
-            title="My Attendance QR Code"
-            open={showQR}
-            onToggle={() => setShowQR(v => !v)}
-            icon={<span className="text-[14px]"></span>}
-          >
-            <StudentQRCard
-              studentId={result.id}
-              studentName={fullName}
-              lrn={result.lrn}
-              section={sectionName}
-            />
-          </Section>
-        )}
-        {/* ──────────────────────────────────────────────────────────── */}
 
         {/* Student Portal CTA — visible for enrolled students */}
         {isEnrolled && (
@@ -172,9 +153,7 @@ export function ResultCard({ result, onFixApplication }: Props) {
 // 1. Copy AttendanceTab.tsx  → src/app/teacher/dashboard/components/AttendanceTab.tsx
 // 2. Copy StudentQRCard.tsx  → src/app/status/components/StudentQRCard.tsx
 // 3. In ResultCard.tsx add the two lines marked ADD above:
-//      import { StudentQRCard } from "./StudentQRCard"
-//      const [showQR, setShowQR] = useState(false)
-//    Then insert the <Section> QR block before the Schedule section.
+//      //    //    Then insert the <Section> QR block before the Schedule section.
 // 4. No DB schema changes needed — uses the existing `attendance` table.
 // 5. The QR encodes the student's UUID (result.id / students.id).
 //    Teachers scan this UUID; AttendanceTab matches it to the student.

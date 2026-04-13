@@ -14,7 +14,6 @@ import { ParticleCanvas }   from "./components/ParticleCanvas"
 import { PortalHero }       from "./components/PortalHero"
 import { VerifyForm }       from "./components/VerifyForm"
 import { ResultCard }       from "./components/ResultCard"
-import { EditRequestForm }  from "./components/EditRequestForm"
 import type { StudentRecord } from "./types"
 
 // ── Main content (split out so Suspense works) ──────────────────────────────
@@ -145,11 +144,6 @@ function StatusContent() {
     }, 800)
   }
 
-  const showRequestForm =
-    result &&
-    result.status !== "Rejected" &&
-    !result.is_locked
-
   return (
     <div className="max-w-md md:max-w-xl w-full space-y-8 animate-in fade-in slide-in-from-bottom-12 duration-1000 relative z-10">
 
@@ -184,10 +178,6 @@ function StatusContent() {
           <ResultCard result={result} onFixApplication={handleFixApplication} />
         )}
 
-        {/* Edit request ticket form (for non-rejected, non-locked enrolled students) */}
-        {hasSearched && result && showRequestForm && (
-          <EditRequestForm studentId={result.id} studentLrn={result.lrn} />
-        )}
 
         {hasSearched && !result && (
           <div className="text-center py-20 px-10 border border-white/8 rounded-[56px] bg-white/[0.02] animate-in fade-in zoom-in-95 duration-700 relative overflow-hidden">
