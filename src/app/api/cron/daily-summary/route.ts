@@ -192,7 +192,7 @@ export async function GET(request: Request) {
             'content-type': 'application/json'
           },
           body: JSON.stringify({
-            sender: { name: "ACLC Attendance System", email: "registrar@yourdomain.com" },
+            sender: { name: "ACLC Attendance System", email: "franknathan12@gmail.com" },
             to: [{ email: student.guardian_email, name: student.guardian_first_name || "Guardian" }],
             subject: `Daily Attendance Report: ${student.first_name} ${student.last_name}`,
             htmlContent: htmlContent
