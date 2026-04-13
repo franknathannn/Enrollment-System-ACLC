@@ -71,6 +71,8 @@ export async function GET(request: Request) {
     };
 
     // 5. Evaluate Deep Mapping Per Student
+    const debugLog: any[] = [];
+
     for (const student of students) {
       // Find what classes they were supposed to have today based on their section
       const mySchedules = schedules
@@ -78,7 +80,10 @@ export async function GET(request: Request) {
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
       // If they don't have classes today, skip them
-      if (mySchedules.length === 0) continue;
+      if (mySchedules.length === 0) {
+        debugLog.push({ student: `${student.first_name} ${student.last_name}`, section: student.section, skipped: 'no_schedules_for_section' });
+        continue;
+      }
 
       // Hourly Sweep Logic: only send if the final class of the day ended at least 10 minutes ago
       const lastClass = mySchedules[mySchedules.length - 1];
@@ -88,8 +93,11 @@ export async function GET(request: Request) {
 
       if (phNow < shiftEnd) {
         // Shift is not complete yet, skip for this hour's sweep
+        debugLog.push({ student: `${student.first_name} ${student.last_name}`, section: student.section, skipped: 'shift_not_done', phNow: phNow.toISOString(), shiftEnd: shiftEnd.toISOString() });
         continue;
       }
+
+      debugLog.push({ student: `${student.first_name} ${student.last_name}`, section: student.section, skipped: false });
 
       const myAttendances = (attendances || []).filter(a => a.student_id === student.id);
       let wasCutting = false;
@@ -200,7 +208,8 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Hourly Sweep executed successfully. Sent ${emailPayloads.length} summaries.`
+      message: `Hourly Sweep executed successfully. Sent ${emailPayloads.length} summaries.`,
+      debug: debugLog
     });
 
   } catch (error: any) {
