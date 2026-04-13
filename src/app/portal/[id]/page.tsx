@@ -72,7 +72,7 @@ export default function DownloadPortalPage({ params }: { params: Promise<{ id: s
     <div className="min-h-screen bg-slate-50 flex flex-col items-center p-6 pt-12 relative overflow-x-hidden"
       style={{ fontFamily: "'Inter','Helvetica Neue',Helvetica,Arial,sans-serif" }}>
 
-      <div className="w-full max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-12 duration-1000 relative z-10">
+      <div className="w-full max-w-xl md:max-w-5xl space-y-8 animate-in fade-in slide-in-from-bottom-12 duration-1000 relative z-10">
 
         {/* Header */}
         <div className="text-center space-y-3 mb-6">

@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
-import { Download, QrCode, CalendarDays, CheckCircle2, Clock } from "lucide-react"
+import { useEffect, useRef, useState, useCallback, useMemo } from "react"
+import { Download, QrCode, CalendarDays, CheckCircle2 } from "lucide-react"
 import { toPng } from "html-to-image"
 import { saveAs } from "file-saver"
 import {
@@ -33,6 +33,7 @@ interface DownloadHubProps {
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
+// Light-mode hex colors (safe for toPng capture)
 const SUBJECT_COLORS = [
   { bg: "#eff6ff", text: "#3b82f6", border: "#bfdbfe" },
   { bg: "#f5f3ff", text: "#8b5cf6", border: "#ddd6fe" },
@@ -53,11 +54,23 @@ function formatTime(t: string) {
   return `${hr}:${String(m).padStart(2, "0")} ${ampm}`
 }
 
+function toMins(t: string) {
+  const [h, m] = t.split(":").map(Number)
+  return h * 60 + m
+}
+
+function fmtMins(m: number) {
+  const h = Math.floor(m / 60)
+  const min = m % 60
+  return `${h % 12 || 12}:${String(min).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`
+}
+
 export default function DownloadHub({ studentId, studentName, section, lrn, strand, schedules }: DownloadHubProps) {
-  const [downloadingQR, setDownloadingQR] = useState(false)
+  const [downloadingQR,       setDownloadingQR]       = useState(false)
   const [downloadingSchedule, setDownloadingSchedule] = useState(false)
-  const [qrLoaded, setQrLoaded] = useState(false)
-  const qrPreviewRef = useRef<HTMLDivElement>(null)
+  const [qrLoaded,            setQrLoaded]            = useState(false)
+  const qrPreviewRef  = useRef<HTMLDivElement>(null)
+  const scheduleRef   = useRef<HTMLDivElement>(null)
 
   // Load QRCode library
   useEffect(() => {
@@ -75,7 +88,7 @@ export default function DownloadHub({ studentId, studentName, section, lrn, stra
     generateStudentAttendanceQr(qrPreviewRef.current, studentId, 200, "light", () => {})
   }, [qrLoaded, studentId])
 
-  // Download the full styled QR card image (same as StudentQRCard's handleDownload)
+  // Download QR card
   const handleDownloadQR = useCallback(async (theme: StudentAttendanceQrThemeKey = "light") => {
     if (!qrLoaded) return
     setDownloadingQR(true)
@@ -102,15 +115,16 @@ export default function DownloadHub({ studentId, studentName, section, lrn, stra
     }
   }, [qrLoaded, studentId, studentName, lrn, section])
 
-  // Download schedule as image
+  // Download schedule grid
   const handleDownloadSchedule = useCallback(async () => {
-    if (schedules.length === 0) return
+    if (schedules.length === 0 || !scheduleRef.current) return
     setDownloadingSchedule(true)
     try {
-      const el = document.getElementById("portal-schedule-capture")
-      if (!el) throw new Error("Schedule element not found")
-
-      const dataUrl = await toPng(el, { quality: 1, backgroundColor: "#ffffff", pixelRatio: 2 })
+      const dataUrl = await toPng(scheduleRef.current, {
+        quality: 1,
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+      })
       saveAs(dataUrl, `Schedule_${section || "Unassigned"}.png`)
     } catch (err) {
       console.error("Schedule capture failed:", err)
@@ -119,26 +133,41 @@ export default function DownloadHub({ studentId, studentName, section, lrn, stra
     }
   }, [schedules, section])
 
-  // Build schedule data grouped by day
-  const byDay: Record<string, ScheduleRow[]> = {}
-  for (const day of DAYS) {
-    byDay[day] = schedules
-      .filter(s => s.day === day)
-      .sort((a, b) => a.start_time.localeCompare(b.start_time))
-  }
+  // ── Schedule data prep ────────────────────────────────────────────────────
+  const { byDay, colorMap, uniqueSubjects, minMins, timeLabels, gridH } = useMemo(() => {
+    const byDay: Record<string, ScheduleRow[]> = {}
+    for (const d of DAYS) byDay[d] = schedules.filter(s => s.day === d).sort((a, b) => a.start_time.localeCompare(b.start_time))
 
-  const uniqueSubjects = [...new Set(schedules.map(s => s.subject))]
-  const colorMap: Record<string, typeof SUBJECT_COLORS[0]> = {}
-  uniqueSubjects.forEach((sub, i) => { colorMap[sub] = SUBJECT_COLORS[i % SUBJECT_COLORS.length] })
+    const uniqueSubjects = [...new Set(schedules.map(s => s.subject))]
+    const colorMap: Record<string, typeof SUBJECT_COLORS[0]> = {}
+    uniqueSubjects.forEach((sub, i) => { colorMap[sub] = SUBJECT_COLORS[i % SUBJECT_COLORS.length] })
+
+    if (schedules.length === 0) return { byDay, colorMap, uniqueSubjects, minMins: 420, timeLabels: [] as number[], gridH: 0 }
+
+    let min = 24 * 60, max = 0
+    schedules.forEach(s => {
+      const st = toMins(s.start_time), en = toMins(s.end_time)
+      if (st < min) min = st
+      if (en > max) max = en
+    })
+    const minMins = Math.floor(min / 30) * 30
+    const maxMins = Math.ceil(max / 30) * 30
+    const timeLabels: number[] = []
+    for (let m = minMins; m <= maxMins; m += 30) timeLabels.push(m)
+
+    return { byDay, colorMap, uniqueSubjects, minMins, timeLabels, gridH: (timeLabels.length - 1) * 44 + 20 }
+  }, [schedules])
+
+  const borderColor = "rgba(226,232,240,1)"   // slate-200
+  const halfBorder  = "rgba(241,245,249,1)"   // slate-100
 
   return (
     <div className="space-y-10">
 
       {/* ─── 1. QR CODE SECTION ─── */}
+      <div className="max-w-md mx-auto">
       <div className="bg-white rounded-[28px] shadow-xl border border-slate-100 overflow-hidden">
-        {/* Blue accent bar */}
         <div className="h-1.5" style={{ background: "linear-gradient(135deg,#1d4ed8,#2563eb)" }} />
-
         <div className="p-8 flex flex-col items-center space-y-6">
           <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
             <QrCode size={28} />
@@ -147,13 +176,9 @@ export default function DownloadHub({ studentId, studentName, section, lrn, stra
             <h2 className="text-lg font-black text-slate-800 uppercase tracking-[0.15em]">Attendance QR Code</h2>
             <p className="text-slate-400 font-medium text-xs">Save the full styled card to your device.</p>
           </div>
-
-          {/* QR Preview */}
           <div className="p-6 rounded-[20px] border border-slate-100 bg-slate-50">
             <div ref={qrPreviewRef} className="mx-auto" style={{ width: 200, height: 200 }} />
           </div>
-
-          {/* Download Buttons */}
           <div className="w-full max-w-sm">
             <button
               onClick={() => handleDownloadQR("light")}
@@ -166,14 +191,12 @@ export default function DownloadHub({ studentId, studentName, section, lrn, stra
           </div>
         </div>
       </div>
-
+      </div>
 
       {/* ─── 2. SCHEDULE SECTION ─── */}
       {schedules.length > 0 ? (
         <div className="bg-white rounded-[28px] shadow-xl border border-slate-100 overflow-hidden">
-          {/* Orange accent bar */}
           <div className="h-1.5" style={{ background: "linear-gradient(135deg,#ea580c,#f97316)" }} />
-
           <div className="p-8 flex flex-col items-center space-y-6">
             <div className="w-14 h-14 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center">
               <CalendarDays size={28} />
@@ -185,54 +208,109 @@ export default function DownloadHub({ studentId, studentName, section, lrn, stra
               </p>
             </div>
 
-            {/* Schedule Preview (capturable) */}
+            {/* ── Schedule Grid Preview (capturable) ── */}
             <div className="w-full overflow-x-auto">
-              <div id="portal-schedule-capture" className="bg-white rounded-2xl border border-slate-200 overflow-hidden" style={{ minWidth: 360 }}>
-                {/* Section Header */}
-                <div className="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500" />
-                    <span className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-700">{section}</span>
+              <div
+                ref={scheduleRef}
+                id="portal-schedule-capture"
+                style={{
+                  background: "#fff",
+                  padding: 20,
+                  fontFamily: "Inter,'Helvetica Neue',Helvetica,Arial,sans-serif",
+                  width: "100%",
+                  minWidth: 680,
+                  borderRadius: 16,
+                  border: `1px solid ${borderColor}`,
+                  overflow: "hidden",
+                }}
+              >
+                {/* Section / SY header */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6" }} />
+                    <span style={{ fontSize: 12, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.15em", color: "#1e293b" }}>{section}</span>
                   </div>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                    {schedules[0]?.school_year || "2025-2026"}
-                  </span>
+                  <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>{schedules[0]?.school_year || ""}</span>
                 </div>
 
-                {/* Day rows */}
-                {DAYS.filter(d => byDay[d].length > 0).map(day => (
-                  <div key={day} className="border-b border-slate-100 last:border-b-0">
-                    <div className="flex">
-                      <div className="w-20 shrink-0 px-4 py-3 bg-slate-50/50 border-r border-slate-100 flex items-start">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 pt-1">{day.slice(0, 3)}</span>
-                      </div>
-                      <div className="flex-1 p-3 flex flex-wrap gap-2">
-                        {byDay[day].map(s => {
-                          const col = colorMap[s.subject]
-                          return (
-                            <div key={s.id} className="rounded-xl px-3 py-2" style={{ background: col.bg, border: `1px solid ${col.border}` }}>
-                              <p className="text-[10px] font-black uppercase" style={{ color: col.text }}>{s.subject}</p>
-                              <p className="text-[9px] font-bold text-slate-500 mt-0.5 flex items-center gap-1">
-                                <Clock size={8} className="shrink-0" />
-                                {formatTime(s.start_time)} – {formatTime(s.end_time)}
-                              </p>
-                              {s.room && <p className="text-[8px] text-slate-400 mt-0.5">{s.room}</p>}
-                              {s.teacher && <p className="text-[8px] text-slate-400">{s.teacher}</p>}
-                            </div>
-                          )
-                        })}
-                      </div>
+                {/* Day header row */}
+                <div style={{ display: "flex", borderBottom: `1px solid ${borderColor}`, background: "#f8fafc", borderRadius: "8px 8px 0 0", overflow: "hidden" }}>
+                  <div style={{ width: 70, minWidth: 70, borderRight: `1px solid ${borderColor}` }} />
+                  {DAYS.map((day, i) => (
+                    <div key={day} style={{ flex: 1, padding: "10px 6px", textAlign: "center", borderRight: i < DAYS.length - 1 ? `1px solid ${borderColor}` : "none" }}>
+                      <p style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", color: byDay[day].length > 0 ? "#3b82f6" : "#cbd5e1", margin: 0 }}>{day}</p>
+                      <p style={{ fontSize: 7.5, fontWeight: 600, color: "#94a3b8", margin: "2px 0 0" }}>{byDay[day].length} period{byDay[day].length !== 1 ? "s" : ""}</p>
                     </div>
+                  ))}
+                </div>
+
+                {/* Timetable body */}
+                <div style={{ display: "flex", position: "relative", height: gridH, border: `1px solid ${borderColor}`, borderTop: "none", borderRadius: "0 0 8px 8px", overflow: "hidden" }}>
+
+                  {/* Time axis */}
+                  <div style={{ width: 70, minWidth: 70, position: "relative", borderRight: `1px solid ${borderColor}`, background: "#f8fafc" }}>
+                    {timeLabels.map((m, i) => {
+                      const isHour = m % 60 === 0
+                      return (
+                        <div key={m} style={{ position: "absolute", top: i * 44, left: 0, right: 0, height: 20, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 10 }}>
+                          <span style={{ fontSize: isHour ? 9.5 : 7.5, fontWeight: isHour ? 900 : 600, color: isHour ? "#475569" : "#94a3b8", fontFamily: "monospace" }}>
+                            {fmtMins(m)}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
-                ))}
+
+                  {/* Day columns */}
+                  {DAYS.map((day, dIdx) => (
+                    <div key={day} style={{ flex: 1, position: "relative", overflow: "hidden", borderRight: dIdx < DAYS.length - 1 ? `1px solid ${borderColor}` : "none" }}>
+
+                      {/* Horizontal grid lines */}
+                      {timeLabels.slice(0, -1).map((m, i) => {
+                        const isHour = m % 60 === 0
+                        return (
+                          <div key={m} style={{ position: "absolute", top: i * 44 + 10, left: 0, right: 0, height: 44, borderBottom: `1px solid ${isHour ? borderColor : halfBorder}`, pointerEvents: "none" }} />
+                        )
+                      })}
+
+                      {/* Subject cards */}
+                      {byDay[day].map(s => {
+                        const col = colorMap[s.subject] ?? SUBJECT_COLORS[0]
+                        const startMins = toMins(s.start_time)
+                        const endMins   = toMins(s.end_time)
+                        const top    = ((startMins - minMins) / 30) * 44
+                        const height = ((endMins - startMins) / 30) * 44
+                        const compact = height <= 50
+                        return (
+                          <div key={s.id} style={{
+                            position: "absolute",
+                            left: 4, right: 4,
+                            top: top + 11.5,
+                            height: height - 3,
+                            borderRadius: 12,
+                            background: col.bg,
+                            border: `1px solid ${col.border}`,
+                            padding: compact ? 6 : 8,
+                            overflow: "hidden",
+                            zIndex: 10,
+                          }}>
+                            <p style={{ fontSize: compact ? 8 : 9, fontWeight: 900, textTransform: "uppercase", color: col.text, margin: "0 0 2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.subject}</p>
+                            {!compact && <p style={{ fontSize: 8, color: "#64748b", fontWeight: 600, margin: 0 }}>{formatTime(s.start_time)} – {formatTime(s.end_time)}</p>}
+                            {!compact && s.teacher && <p style={{ fontSize: 7.5, color: "#94a3b8", margin: "1px 0 0" }}>{s.teacher}</p>}
+                            {!compact && s.room    && <p style={{ fontSize: 7.5, color: "#94a3b8", margin: 0 }}>{s.room}</p>}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
 
                 {/* Subject legend */}
-                <div className="px-5 py-3 bg-slate-50/50 border-t border-slate-100 flex flex-wrap gap-1.5 justify-center">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14, paddingTop: 12, borderTop: `1px solid ${halfBorder}` }}>
                   {uniqueSubjects.map(sub => {
                     const col = colorMap[sub]
                     return (
-                      <span key={sub} className="inline-block rounded-full px-3 py-1 text-[8px] font-black uppercase tracking-wide"
-                        style={{ background: col.bg, border: `1px solid ${col.border}`, color: col.text }}>
+                      <span key={sub} style={{ fontSize: 8, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 10px", borderRadius: 999, background: col.bg, border: `1px solid ${col.border}`, color: col.text }}>
                         {sub}
                       </span>
                     )

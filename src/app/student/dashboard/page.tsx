@@ -6,7 +6,10 @@ import { studentSupabase } from "@/lib/supabase/student-client"
 import {
   Loader2, LogOut, GraduationCap, QrCode, CalendarDays,
   BookOpen, Copy, Check, ClipboardList, Sun, Moon, User,
+  LayoutGrid, List, Download, CheckCircle2,
 } from "lucide-react"
+import { toPng } from "html-to-image"
+import { saveAs } from "file-saver"
 import { Button } from "@/components/ui/button"
 import { StudentQRCard } from "@/app/status/components/StudentQRCard"
 import { ScheduleView } from "@/app/status/components/ScheduleView"
@@ -163,6 +166,10 @@ function DashboardContent() {
   const [showWelcome,          setShowWelcome]          = useState(false)
   const [activeTab,            setActiveTab]            = useState<"info" | "schedule" | "qr" | "attendance" | "announcements">("info")
   const [copied,               setCopied]               = useState<string | null>(null)
+  const [viewMode,             setViewMode]             = useState<"list" | "grid">("list")
+  const [gridSchedules,        setGridSchedules]        = useState<any[]>([])
+  const [gridLoading,          setGridLoading]          = useState(false)
+  const [downloadingGrid,      setDownloadingGrid]      = useState(false)
 
   useEffect(() => {
     let channel: ReturnType<typeof studentSupabase.channel> | null = null
@@ -233,6 +240,142 @@ function DashboardContent() {
     setTimeout(() => setCopied(null), 2000)
   }
 
+  const fetchGridSchedules = async (sec: string, sy: string) => {
+    setGridLoading(true)
+    const { data } = await studentSupabase
+      .from("schedules")
+      .select("*")
+      .eq("section", sec)
+      .eq("school_year", sy)
+      .order("day").order("start_time")
+    setGridSchedules(data ?? [])
+    setGridLoading(false)
+  }
+
+  const downloadScheduleGrid = async () => {
+    if (!gridSchedules.length || !student?.section) return
+    setDownloadingGrid(true)
+    try {
+      const DAYS_LIST = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+      const COLORS = [
+        { bg:"#eff6ff", text:"#3b82f6", border:"#bfdbfe" },
+        { bg:"#f5f3ff", text:"#8b5cf6", border:"#ddd6fe" },
+        { bg:"#ecfdf5", text:"#10b981", border:"#a7f3d0" },
+        { bg:"#fffbeb", text:"#f59e0b", border:"#fde68a" },
+        { bg:"#fef2f2", text:"#ef4444", border:"#fecaca" },
+        { bg:"#ecfeff", text:"#06b6d4", border:"#a5f3fc" },
+        { bg:"#fdf4ff", text:"#d946ef", border:"#f0abfc" },
+        { bg:"#f0fdfa", text:"#14b8a6", border:"#99f6e4" },
+        { bg:"#fff7ed", text:"#f97316", border:"#fed7aa" },
+        { bg:"#f7fee7", text:"#84cc16", border:"#bef264" },
+      ]
+      const toM  = (t: string) => { const [h,m] = t.split(":").map(Number); return h*60+m }
+      const fmtT = (t: string) => { const [h,m] = t.split(":").map(Number); return `${h%12||12}:${String(m).padStart(2,"0")} ${h>=12?"PM":"AM"}` }
+      const fmtM = (m: number) => { const h=Math.floor(m/60); return `${h%12||12}:${String(m%60).padStart(2,"0")} ${h>=12?"PM":"AM"}` }
+
+      let min=24*60,max=0
+      gridSchedules.forEach((s:any) => {
+        const st=toM(s.start_time),en=toM(s.end_time)
+        if(st<min)min=st; if(en>max)max=en
+      })
+      const minMins=Math.floor(min/30)*30, maxMins=Math.ceil(max/30)*30
+      const timeLabels:number[]=[]
+      for(let m=minMins;m<=maxMins;m+=30) timeLabels.push(m)
+      const gridH=(timeLabels.length-1)*44+20
+
+      const uniqSubs=[...new Set(gridSchedules.map((s:any)=>s.subject as string))]
+      const colorMap:Record<string,typeof COLORS[0]>={}
+      uniqSubs.forEach((s,i)=>{colorMap[s]=COLORS[i%COLORS.length]})
+
+      const byDay:Record<string,any[]>={}
+      for(const d of DAYS_LIST) byDay[d]=gridSchedules.filter((s:any)=>s.day===d).sort((a:any,b:any)=>a.start_time.localeCompare(b.start_time))
+
+      const bc="rgba(226,232,240,1)", hbc="rgba(241,245,249,1)"
+
+      const wrap=document.createElement("div")
+      wrap.style.cssText="position:absolute;left:0;top:0;z-index:-1;pointer-events:none;background:#fff;padding:24px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;width:880px;"
+      document.body.appendChild(wrap)
+
+      // Header
+      const hdr=document.createElement("div")
+      hdr.style.cssText="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;"
+      hdr.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;"></div><span style="font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.15em;color:#1e293b;">${student.section}</span></div><span style="font-size:10px;color:#94a3b8;font-weight:700;">${student.school_year||""}</span>`
+      wrap.appendChild(hdr)
+
+      // Grid outer
+      const go=document.createElement("div")
+      go.style.cssText=`border:1px solid ${bc};border-radius:16px;overflow:hidden;`
+
+      // Day header
+      const dh=document.createElement("div")
+      dh.style.cssText=`display:flex;border-bottom:1px solid ${bc};background:#f8fafc;`
+      dh.innerHTML=`<div style="width:70px;min-width:70px;border-right:1px solid ${bc};"></div>`+
+        DAYS_LIST.map((d,i)=>`<div style="flex:1;padding:10px 6px;text-align:center;${i<DAYS_LIST.length-1?`border-right:1px solid ${bc};`:""}"><p style="font-size:11px;font-weight:900;text-transform:uppercase;color:${byDay[d].length>0?"#3b82f6":"#cbd5e1"};margin:0;">${d}</p><p style="font-size:7.5px;font-weight:600;color:#94a3b8;margin:2px 0 0;">${byDay[d].length} period${byDay[d].length!==1?"s":""}</p></div>`).join("")
+      go.appendChild(dh)
+
+      // Body
+      const body=document.createElement("div")
+      body.style.cssText=`display:flex;position:relative;height:${gridH}px;`
+
+      // Time axis
+      const ta=document.createElement("div")
+      ta.style.cssText=`width:70px;min-width:70px;position:relative;border-right:1px solid ${bc};background:#f8fafc;`
+      timeLabels.forEach((m,i)=>{
+        const isH=m%60===0
+        const t=document.createElement("div")
+        t.style.cssText=`position:absolute;top:${i*44}px;left:0;right:0;height:20px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;`
+        t.innerHTML=`<span style="font-size:${isH?9.5:7.5}px;font-weight:${isH?900:600};color:${isH?"#475569":"#94a3b8"};font-family:monospace;">${fmtM(m)}</span>`
+        ta.appendChild(t)
+      })
+      body.appendChild(ta)
+
+      DAYS_LIST.forEach((day,dIdx)=>{
+        const col=document.createElement("div")
+        col.style.cssText=`flex:1;position:relative;overflow:hidden;${dIdx<DAYS_LIST.length-1?`border-right:1px solid ${bc}`:""}`
+        timeLabels.slice(0,-1).forEach((m,i)=>{
+          const isH=m%60===0
+          const line=document.createElement("div")
+          line.style.cssText=`position:absolute;top:${i*44+10}px;left:0;right:0;height:44px;border-bottom:1px solid ${isH?bc:hbc};pointer-events:none;`
+          col.appendChild(line)
+        })
+        byDay[day].forEach((s:any)=>{
+          const c=colorMap[s.subject]||COLORS[0]
+          const st=toM(s.start_time),en=toM(s.end_time)
+          const top=((st-minMins)/30)*44, h=((en-st)/30)*44
+          const compact=h<=50
+          const card=document.createElement("div")
+          card.style.cssText=`position:absolute;left:4px;right:4px;top:${top+11.5}px;height:${h-3}px;border-radius:12px;background:${c.bg};border:1px solid ${c.border};padding:${compact?6:8}px;overflow:hidden;z-index:10;`
+          card.innerHTML=`<p style="font-size:${compact?8:9}px;font-weight:900;text-transform:uppercase;color:${c.text};margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.subject}</p>${!compact?`<p style="font-size:8px;color:#64748b;font-weight:600;margin:0;">${fmtT(s.start_time)} – ${fmtT(s.end_time)}</p>`:""}${!compact&&s.teacher?`<p style="font-size:7.5px;color:#94a3b8;margin:1px 0 0;">${s.teacher}</p>`:""}${!compact&&s.room?`<p style="font-size:7.5px;color:#94a3b8;margin:0;">${s.room}</p>`:""}`
+          col.appendChild(card)
+        })
+        body.appendChild(col)
+      })
+      go.appendChild(body)
+
+      // Legend
+      const leg=document.createElement("div")
+      leg.style.cssText=`display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid ${hbc};background:#fafafa;`
+      uniqSubs.forEach(sub=>{
+        const c=colorMap[sub]
+        const tag=document.createElement("span")
+        tag.style.cssText=`font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;border-radius:999px;background:${c.bg};border:1px solid ${c.border};color:${c.text};`
+        tag.textContent=sub
+        leg.appendChild(tag)
+      })
+      go.appendChild(leg)
+      wrap.appendChild(go)
+
+      const dataUrl = await toPng(wrap, { quality:1, backgroundColor:"#ffffff", pixelRatio:2 })
+      saveAs(dataUrl, `Schedule_${student.section}.png`)
+      document.body.removeChild(wrap)
+    } catch(err) {
+      console.error("Schedule download failed:", err)
+      toast.error("Download failed. Please try again.")
+    } finally {
+      setTimeout(()=>setDownloadingGrid(false), 800)
+    }
+  }
+
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading) return (
     <div className={`fixed inset-0 flex flex-col items-center justify-center gap-4 ${dm ? "bg-slate-950" : "bg-slate-50"}`}>
@@ -276,14 +419,72 @@ function DashboardContent() {
         <StudentInfoTab student={student} dm={dm} onStudentUpdate={(updated) => setStudent(updated as StudentData)} />
       )}
 
-      {activeTab === "schedule" && student.section && student.school_year && (
-        <ScheduleView section={student.section} schoolYear={student.school_year} dm={dm} />
-      )}
       {activeTab === "schedule" && !student.section && (
         <div className={`text-center py-20 ${emptyCard}`}>
           <CalendarDays className={`w-8 h-8 mx-auto mb-3 ${textMuted}`} />
           <p className={`text-[11px] font-black uppercase tracking-widest ${textSub}`}>No section assigned yet</p>
           <p className={`text-[9px] mt-1 ${textMuted}`}>Check back once your section is set</p>
+        </div>
+      )}
+      {activeTab === "schedule" && student.section && student.school_year && (
+        <div className="space-y-4">
+          {/* View toggle + Download */}
+          <div className="flex items-center justify-between gap-3">
+            <div className={`inline-flex items-center gap-0.5 p-1 rounded-2xl border ${dm ? "border-white/[0.08] bg-white/[0.02]" : "border-slate-200 bg-slate-100/60"}`}>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                  viewMode === "list"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : dm ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-700"
+                }`}
+              >
+                <List size={11} /> Day View
+              </button>
+              <button
+                onClick={() => {
+                  setViewMode("grid")
+                  if (gridSchedules.length === 0 && !gridLoading) {
+                    fetchGridSchedules(student.section!, student.school_year!)
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                  viewMode === "grid"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : dm ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-700"
+                }`}
+              >
+                <LayoutGrid size={11} /> Weekly Grid
+              </button>
+            </div>
+
+            {viewMode === "grid" && !gridLoading && gridSchedules.length > 0 && (
+              <button
+                onClick={downloadScheduleGrid}
+                disabled={downloadingGrid}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95 disabled:opacity-50 ${
+                  downloadingGrid
+                    ? "border-green-500/30 bg-green-500/10 text-green-400"
+                    : dm
+                      ? "border-white/10 bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/[0.06]"
+                      : "border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                }`}
+              >
+                {downloadingGrid ? <><CheckCircle2 size={11} /> Saved!</> : <><Download size={11} /> Download</>}
+              </button>
+            )}
+          </div>
+
+          {viewMode === "list" ? (
+            <ScheduleView section={student.section} schoolYear={student.school_year} dm={dm} />
+          ) : gridLoading ? (
+            <div className="flex items-center justify-center gap-3 py-16">
+              <Loader2 className="animate-spin text-blue-500 w-5 h-5" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Loading grid…</p>
+            </div>
+          ) : (
+            <ReadOnlyScheduleGrid schedules={gridSchedules} dm={dm} />
+          )}
         </div>
       )}
 
@@ -430,6 +631,210 @@ export default function StudentDashboardPage() {
     }>
       <DashboardContent />
     </Suspense>
+  )
+}
+
+// ── Read-only weekly schedule grid ────────────────────────────────────────────
+const GRID_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const
+
+const GRID_COLORS = [
+  { bg: "bg-blue-500/10",    border: "border-blue-500/25",    text: "text-blue-400"    },
+  { bg: "bg-violet-500/10",  border: "border-violet-500/25",  text: "text-violet-400"  },
+  { bg: "bg-emerald-500/10", border: "border-emerald-500/25", text: "text-emerald-400" },
+  { bg: "bg-amber-500/10",   border: "border-amber-500/25",   text: "text-amber-400"   },
+  { bg: "bg-rose-500/10",    border: "border-rose-500/25",    text: "text-rose-400"    },
+  { bg: "bg-cyan-500/10",    border: "border-cyan-500/25",    text: "text-cyan-400"    },
+  { bg: "bg-fuchsia-500/10", border: "border-fuchsia-500/25", text: "text-fuchsia-400" },
+  { bg: "bg-teal-500/10",    border: "border-teal-500/25",    text: "text-teal-400"    },
+  { bg: "bg-orange-500/10",  border: "border-orange-500/25",  text: "text-orange-400"  },
+  { bg: "bg-sky-500/10",     border: "border-sky-500/25",     text: "text-sky-400"     },
+]
+
+function fmtMins(m: number): string {
+  const h = Math.floor(m / 60)
+  const min = m % 60
+  const ampm = h >= 12 ? "PM" : "AM"
+  const hr = h % 12 || 12
+  return `${hr}:${String(min).padStart(2, "0")} ${ampm}`
+}
+
+function fmtTime(t: string): string {
+  const [h, m] = t.split(":").map(Number)
+  const ampm = h >= 12 ? "PM" : "AM"
+  const hr = h % 12 || 12
+  return `${hr}:${String(m).padStart(2, "0")} ${ampm}`
+}
+
+function ReadOnlyScheduleGrid({ schedules, dm }: { schedules: any[], dm: boolean }) {
+  const subjectColorMap = (() => {
+    const unique = [...new Set(schedules.map((s: any) => s.subject as string))]
+    return Object.fromEntries(unique.map((sub, i) => [sub, GRID_COLORS[i % GRID_COLORS.length]]))
+  })()
+
+  const byDay = (() => {
+    const map: Record<string, any[]> = {}
+    for (const day of GRID_DAYS) {
+      map[day] = schedules.filter((s: any) => s.day === day).sort((a: any, b: any) => a.start_time.localeCompare(b.start_time))
+    }
+    return map
+  })()
+
+  const toM = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m }
+
+  const { minMins, maxMins, timeLabels, gridH } = (() => {
+    if (schedules.length === 0) return { minMins: 420, maxMins: 1020, timeLabels: [] as number[], gridH: 0 }
+    let min = 24 * 60, max = 0
+    schedules.forEach((s: any) => {
+      const st = toM(s.start_time), en = toM(s.end_time)
+      if (st < min) min = st
+      if (en > max) max = en
+    })
+    const minMins = Math.floor(min / 30) * 30
+    const maxMins = Math.ceil(max / 30) * 30
+    const labels: number[] = []
+    for (let m = minMins; m <= maxMins; m += 30) labels.push(m)
+    return { minMins, maxMins, timeLabels: labels, gridH: (labels.length - 1) * 44 + 20 }
+  })()
+
+  if (schedules.length === 0) {
+    return (
+      <div className={`flex flex-col items-center justify-center py-24 rounded-[28px] border-2 border-dashed ${dm ? "border-slate-800 text-slate-600" : "border-slate-200 text-slate-400"}`}>
+        <CalendarDays size={40} strokeWidth={1} className="mb-3 opacity-30" />
+        <p className="font-black uppercase tracking-[0.3em] text-xs opacity-40">No Schedule Configured</p>
+      </div>
+    )
+  }
+
+  const border = dm ? "rgba(148,163,184,0.12)" : "rgba(100,116,139,0.14)"
+  const headerBg = dm ? "rgba(15,23,42,0.97)" : "rgba(255,255,255,0.97)"
+  const activeDays = GRID_DAYS.filter(d => byDay[d].length > 0)
+
+  return (
+    <div className="space-y-5">
+      {/* ── MOBILE: stacked cards ── */}
+      <div className="md:hidden space-y-3">
+        {activeDays.map(day => (
+          <div key={day} className={`rounded-2xl border overflow-hidden ${dm ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
+            <div className={`px-4 py-2 flex items-center gap-2 ${dm ? "bg-slate-800/80" : "bg-slate-50"}`}>
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">{day}</span>
+            </div>
+            <div className={`divide-y ${dm ? "divide-slate-800" : "divide-slate-100"}`}>
+              {byDay[day].map((s: any) => {
+                const color = subjectColorMap[s.subject] ?? GRID_COLORS[0]
+                return (
+                  <div key={s.id} className="flex items-center gap-3 px-4 py-3">
+                    <div className={`flex-shrink-0 rounded-lg border px-2 py-1 ${color.bg} ${color.border}`}>
+                      <CalendarDays size={10} className={color.text} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-black uppercase truncate ${dm ? "text-white" : "text-slate-900"}`}>{s.subject}</p>
+                      <p className={`text-[10px] font-bold ${dm ? "text-slate-400" : "text-slate-500"}`}>
+                        {fmtTime(s.start_time)} – {fmtTime(s.end_time)}
+                        {s.room && <span className="ml-2 opacity-60">{s.room}</span>}
+                      </p>
+                      {s.teacher && <p className={`text-[9px] font-bold mt-0.5 ${dm ? "text-slate-500" : "text-slate-400"}`}>{s.teacher}</p>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── DESKTOP: timetable canvas ── */}
+      <div className="hidden md:block overflow-x-auto">
+        <div className={`rounded-[24px] border overflow-hidden ${dm ? "bg-slate-900/40 border-slate-800/80" : "bg-white border-slate-200 shadow-sm"}`}
+          style={{ width: "fit-content", minWidth: "100%" }}>
+          <div style={{ display: "flex", flexDirection: "column", width: "100%", minWidth: 800 }}>
+
+            {/* Header row */}
+            <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: headerBg, position: "sticky", top: 0, zIndex: 30 }}>
+              <div style={{ width: 70, minWidth: 70, borderRight: `1px solid ${border}` }} />
+              {GRID_DAYS.map((day, i) => (
+                <div key={day} style={{ flex: 1, padding: "12px 8px", textAlign: "center", borderRight: i < GRID_DAYS.length - 1 ? `1px solid ${border}` : "none" }}>
+                  <p className={`text-[11px] font-black uppercase tracking-[0.05em] ${byDay[day].length > 0 ? "text-blue-400" : (dm ? "text-slate-600" : "text-slate-400")}`}>{day}</p>
+                  <p className={`text-[7.5px] font-bold mt-1 ${dm ? "text-slate-500" : "text-slate-400"}`}>{byDay[day].length} period{byDay[day].length !== 1 ? "s" : ""}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Body */}
+            <div style={{ display: "flex", position: "relative", height: gridH }}>
+              {/* Time axis */}
+              <div style={{ width: 70, minWidth: 70, position: "relative", zIndex: 15, borderRight: `1px solid ${border}`, background: headerBg }}>
+                {timeLabels.map((m, i) => {
+                  const isHour = m % 60 === 0
+                  return (
+                    <div key={m} style={{ position: "absolute", top: i * 44, left: 0, right: 0, height: 20, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 10, pointerEvents: "none" }}>
+                      <span className={`tabular-nums tracking-wide ${isHour ? "font-black text-[9.5px]" : "font-semibold text-[7.5px]"} ${dm ? (isHour ? "text-slate-300" : "text-slate-600") : (isHour ? "text-slate-600" : "text-slate-400")}`}>
+                        {fmtMins(m)}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Day columns */}
+              {GRID_DAYS.map((day, dIdx) => (
+                <div key={day} style={{ flex: 1, position: "relative", overflow: "hidden", borderRight: dIdx < GRID_DAYS.length - 1 ? `1px solid ${border}` : "none" }}>
+                  {/* Horizontal grid lines */}
+                  {timeLabels.slice(0, -1).map((m, i) => {
+                    const isHour = m % 60 === 0
+                    return (
+                      <div key={m} style={{ position: "absolute", top: i * 44 + 10, left: 0, right: 0, height: 44, pointerEvents: "none", borderBottom: `1px solid ${dm ? (isHour ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.025)") : (isHour ? "rgba(0,0,0,0.07)" : "rgba(0,0,0,0.03)")}` }} />
+                    )
+                  })}
+
+                  {/* Subject cards */}
+                  {byDay[day].map((s: any) => {
+                    const color = subjectColorMap[s.subject] ?? GRID_COLORS[0]
+                    const startMins = toM(s.start_time)
+                    const endMins   = toM(s.end_time)
+                    const top    = ((startMins - minMins) / 30) * 44
+                    const height = ((endMins - startMins) / 30) * 44
+                    const compact = height <= 50
+                    return (
+                      <div key={s.id}
+                        className={`absolute left-1.5 right-1.5 rounded-[14px] border ${compact ? "p-1.5" : "p-2.5"} flex flex-col overflow-hidden ${color.bg} ${color.border}`}
+                        style={{ top: top + 11.5, height: height - 3, zIndex: 10, backdropFilter: "blur(4px)" }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start gap-1">
+                            <p className={`${compact ? "text-[8.5px]" : "text-[10px]"} font-black uppercase leading-[1.2] tracking-[0.05em] ${color.text} truncate`}>{s.subject}</p>
+                            {compact && <p className={`text-[7px] font-bold opacity-70 flex-shrink-0 leading-none ${dm ? "text-white" : "text-slate-900"}`}>{fmtTime(s.start_time)}</p>}
+                          </div>
+                          {!compact && (
+                            <p className={`text-[8.5px] mt-1 font-bold opacity-80 truncate ${dm ? "text-white" : "text-slate-900"}`}>
+                              {fmtTime(s.start_time)} <span className="opacity-50 mx-0.5">–</span> {fmtTime(s.end_time)}
+                            </p>
+                          )}
+                        </div>
+                        <div className={`${compact ? "mt-0 flex justify-between items-baseline gap-2" : "mt-auto space-y-0.5"}`} style={{ opacity: 0.6 }}>
+                          {s.teacher && <p className={`text-[7.5px] font-bold truncate ${dm ? "text-slate-200" : "text-slate-600"}`}>{s.teacher}</p>}
+                          {s.room    && <p className={`text-[7.5px] truncate ${dm ? "text-slate-400" : "text-slate-500"}`}>{s.room}</p>}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Subject legend */}
+      <div className="flex flex-wrap gap-2 px-1">
+        {Object.entries(subjectColorMap).map(([subject, color]) => (
+          <div key={subject} className={`flex items-center gap-1.5 rounded-full border px-3 py-1 ${color.bg} ${color.border}`}>
+            <BookOpen size={9} className={color.text} />
+            <span className={`text-[9px] font-black uppercase tracking-wider ${color.text}`}>{subject}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
