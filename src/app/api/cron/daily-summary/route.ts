@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 // Opt out of caching so cron always runs fresh
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // 1. Check if Daily Summary Notification is Enabled
     const { data: config } = await supabase.from('system_config').select('notify_parents_summary').maybeSingle();
@@ -71,8 +71,6 @@ export async function GET(request: Request) {
     };
 
     // 5. Evaluate Deep Mapping Per Student
-    const debugLog: any[] = [];
-
     for (const student of students) {
       // Find what classes they were supposed to have today based on their section
       const mySchedules = schedules
@@ -80,10 +78,7 @@ export async function GET(request: Request) {
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
       // If they don't have classes today, skip them
-      if (mySchedules.length === 0) {
-        debugLog.push({ student: `${student.first_name} ${student.last_name}`, section: student.section, skipped: 'no_schedules_for_section' });
-        continue;
-      }
+      if (mySchedules.length === 0) continue;
 
       // Hourly Sweep Logic: only send if the final class of the day ended at least 10 minutes ago
       const lastClass = mySchedules[mySchedules.length - 1];
@@ -93,11 +88,8 @@ export async function GET(request: Request) {
 
       if (phNow < shiftEnd) {
         // Shift is not complete yet, skip for this hour's sweep
-        debugLog.push({ student: `${student.first_name} ${student.last_name}`, section: student.section, skipped: 'shift_not_done', phNow: phNow.toISOString(), shiftEnd: shiftEnd.toISOString() });
         continue;
       }
-
-      debugLog.push({ student: `${student.first_name} ${student.last_name}`, section: student.section, skipped: false });
 
       const myAttendances = (attendances || []).filter(a => a.student_id === student.id);
       let wasCutting = false;
@@ -121,14 +113,13 @@ export async function GET(request: Request) {
         const isPresent = !!match;
         const note = match?.notes || '';
         const isCutting = note.toUpperCase() === 'CUTTING';
+        const arrivalTime = match?.time ? fmtT(match.time) : null;
 
         if (isCutting) wasCutting = true;
 
         const rowBg = index % 2 === 0 ? '#f8fafc' : '#ffffff';
-        const icon = '';
-        const color = isPresent ? '#16a34a' : '#dc2626';
-        let statusString = isPresent ? 'Attended' : 'Missing';
-        let statusColor = color;
+        let statusString = isPresent ? 'Present' : 'Missing';
+        let statusColor = isPresent ? '#16a34a' : '#dc2626';
 
         if (isCutting) { statusString = 'CUTTING FLAG'; statusColor = '#ca8a04'; }
 
@@ -136,7 +127,11 @@ export async function GET(request: Request) {
           <tr style="background-color: ${rowBg}; border-bottom: 1px solid #f1f5f9;">
             <td style="padding: 12px 10px; color: #1e293b;">
               <strong>${sched.subject}</strong><br/>
-              <span style="font-size: 11px; color: #64748b;">${fmtT(sched.start_time)} - ${fmtT(sched.end_time)}</span>
+              <span style="font-size: 11px; color: #64748b;">
+                Class Starts: ${fmtT(sched.start_time)}<br/>
+                ${arrivalTime ? `Time Arrival: <strong style="color: #b45309;">${arrivalTime}</strong><br/>` : ''}
+                Class Ends: ${fmtT(sched.end_time)}
+              </span>
             </td>
             <td style="padding: 12px 10px; text-align: center; color: ${statusColor}; font-weight: 700;">
               ${statusString}
@@ -156,7 +151,7 @@ export async function GET(request: Request) {
         `;
       }
 
-      const logoUrl = "https://enrollment-system-aclc.vercel.app/";
+      const logoUrl = "https://enrollment-system-aclc.vercel.app/logo-aclc.png";
       const htmlContent = `
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
           <div style="text-align: center; margin-bottom: 30px;">
@@ -202,24 +197,13 @@ export async function GET(request: Request) {
     }
 
     // Process all emails in parallel
-    const brevoResults: any[] = [];
     if (emailPayloads.length > 0) {
-      const results = await Promise.allSettled(emailPayloads);
-      for (const result of results) {
-        if (result.status === 'fulfilled') {
-          const body = await result.value.json();
-          brevoResults.push({ status: result.value.status, body });
-        } else {
-          brevoResults.push({ status: 'rejected', error: result.reason?.message });
-        }
-      }
+      await Promise.allSettled(emailPayloads);
     }
 
     return NextResponse.json({
       success: true,
-      message: `Hourly Sweep executed successfully. Sent ${emailPayloads.length} summaries.`,
-      debug: debugLog,
-      brevo: brevoResults
+      message: `Hourly Sweep executed successfully. Sent ${emailPayloads.length} summaries.`
     });
 
   } catch (error: any) {
