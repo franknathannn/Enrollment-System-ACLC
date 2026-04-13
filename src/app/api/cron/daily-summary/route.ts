@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     // Basic authorization check for cron requests
     const authHeader = request.headers.get('authorization');
     if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const supabase = await createClient();
@@ -23,14 +23,14 @@ export async function GET(request: Request) {
     const BREVO_API_KEY = process.env.BREVO_API_KEY;
     if (!BREVO_API_KEY) throw new Error("Missing BREVO_API_KEY");
 
-    const today = new Date();
+    // Use Philippine time (UTC+8) — Vercel servers run in UTC
+    const PH_OFFSET_MS = 8 * 60 * 60 * 1000;
+    const phNow = new Date(Date.now() + PH_OFFSET_MS);
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const currentDay = days[today.getDay()];
+    const currentDay = days[phNow.getUTCDay()];
 
-    // YYYY-MM-DD bounds
-    const dateStr = today.toISOString().split('T')[0];
-    const dayStart = `${dateStr}T00:00:00+08:00`;
-    const dayEnd = `${dateStr}T23:59:59+08:00`;
+    // YYYY-MM-DD in PH time
+    const dateStr = phNow.toISOString().split('T')[0];
 
     // 2. Fetch All Students (Who have a guardian email assigned)
     const { data: students } = await supabase
@@ -83,10 +83,10 @@ export async function GET(request: Request) {
       // Hourly Sweep Logic: only send if the final class of the day ended at least 10 minutes ago
       const lastClass = mySchedules[mySchedules.length - 1];
       const [lcH, lcM] = lastClass.end_time.split(':').map(Number);
-      const shiftEnd = new Date(today);
-      shiftEnd.setHours(lcH, lcM + 10, 0, 0); // pad 10 mins
+      const shiftEnd = new Date(phNow);
+      shiftEnd.setUTCHours(lcH, lcM + 10, 0, 0); // pad 10 mins, compare in UTC
 
-      if (today < shiftEnd) {
+      if (phNow < shiftEnd) {
         // Shift is not complete yet, skip for this hour's sweep
         continue;
       }

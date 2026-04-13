@@ -11,4 +11,5 @@ jobs:
     steps:
       - name: Trigger Daily Summary
         run: |
-          curl -f -X GET "https://enrollment-system-aclc.vercel.app/api/cron/daily-summary"
+          curl -f -X GET "https://enrollment-system-aclc.vercel.app/api/cron/daily-summary" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
