@@ -202,14 +202,24 @@ export async function GET(request: Request) {
     }
 
     // Process all emails in parallel
+    const brevoResults: any[] = [];
     if (emailPayloads.length > 0) {
-      await Promise.allSettled(emailPayloads);
+      const results = await Promise.allSettled(emailPayloads);
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          const body = await result.value.json();
+          brevoResults.push({ status: result.value.status, body });
+        } else {
+          brevoResults.push({ status: 'rejected', error: result.reason?.message });
+        }
+      }
     }
 
     return NextResponse.json({
       success: true,
       message: `Hourly Sweep executed successfully. Sent ${emailPayloads.length} summaries.`,
-      debug: debugLog
+      debug: debugLog,
+      brevo: brevoResults
     });
 
   } catch (error: any) {
