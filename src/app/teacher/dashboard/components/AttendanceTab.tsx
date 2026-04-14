@@ -13,6 +13,7 @@ import {
   Loader2, Wifi, WifiOff, Upload, AlertTriangle, User,
   Search, X, ScanLine, ChevronLeft, ChevronRight,
   CalendarDays, BookOpen, Users, Eye, ShieldCheck, Download,
+  Flag, Globe,
 } from "lucide-react"
 import { supabase } from "@/lib/supabase/teacher-client"
 import {
@@ -289,6 +290,53 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
   )
 }
 
+interface PublicHoliday {
+  date: string
+  localName: string
+  name: string
+  types: string[]
+}
+
+const COUNTRIES = [
+  { code: "PH", flag: "🇵🇭", name: "Philippines" },
+  { code: "US", flag: "🇺🇸", name: "United States" },
+  { code: "JP", flag: "🇯🇵", name: "Japan" },
+  { code: "KR", flag: "🇰🇷", name: "South Korea" },
+  { code: "SG", flag: "🇸🇬", name: "Singapore" },
+  { code: "AU", flag: "🇦🇺", name: "Australia" },
+  { code: "GB", flag: "🇬🇧", name: "United Kingdom" },
+  { code: "CA", flag: "🇨🇦", name: "Canada" },
+  { code: "DE", flag: "🇩🇪", name: "Germany" },
+  { code: "FR", flag: "🇫🇷", name: "France" },
+]
+
+const holidayCache: Record<string, PublicHoliday[]> = {}
+
+async function fetchPublicHolidays(year: number, countryCode: string): Promise<PublicHoliday[]> {
+  const key = `${year}_${countryCode}`
+  if (holidayCache[key]) return holidayCache[key]
+  try {
+    const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`, { signal: AbortSignal.timeout(8000) })
+    if (!res.ok) return []
+    const data: PublicHoliday[] = await res.json()
+    holidayCache[key] = data
+    return data
+  } catch { return [] }
+}
+
+function publicHolidayToEvent(h: PublicHoliday, countryCode: string, schoolYear: string) {
+  return {
+    id: `nager_${countryCode}_${h.date}`,
+    title: h.localName || h.name,
+    description: h.localName !== h.name ? h.name : undefined,
+    event_date: h.date,
+    event_type: "holiday",
+    color: "#ef4444",
+    school_year: schoolYear,
+    source: "public",
+  }
+}
+
 const ATT_TAB_KEY = "att_active_tab"
 
 export function AttendanceTab({ schedules, students, dm, session, schoolYear, advisorySections = [] }: Props) {
@@ -381,6 +429,11 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
     id: string; title: string; event_date: string; end_date?: string
     event_type: string; school_year: string
   }>>([])
+  const [publicHols, setPublicHols] = useState<Array<any>>([])
+  const [showHols, setShowHols] = useState(true)
+  const [holLoading, setHolLoading] = useState(false)
+  const [country, setCountry] = useState("PH")
+  const [showPicker, setShowPicker] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -447,6 +500,19 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [])
+
+  useEffect(() => {
+    if (!showHols) { setPublicHols([]); return }
+    setHolLoading(true)
+    const years = [calYear]
+    Promise.all(years.map(y => fetchPublicHolidays(y, country)))
+      .then(results => {
+        const all = results.flat().map(h => publicHolidayToEvent(h, country, schoolYear))
+        const seen = new Set<string>()
+        setPublicHols(all.filter(e => { if (seen.has(e.id)) return false; seen.add(e.id); return true }))
+      })
+      .finally(() => setHolLoading(false))
+  }, [calYear, country, showHols, schoolYear])
 
   useEffect(() => {
     let probeTimer: ReturnType<typeof setInterval>
@@ -988,11 +1054,17 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
   const isCurrentCalMonth = calYear === new Date().getFullYear() && calMonth === new Date().getMonth()
 
   const getCalendarEventsForDate = useCallback((dateStr: string) => {
-    return calendarEvents.filter(e => {
+    let combined = [...calendarEvents]
+    if (showHols) {
+      const adminHolDates = new Set(calendarEvents.filter(e => e.event_type === "holiday").map(e => e.event_date))
+      const extra = publicHols.filter(h => !adminHolDates.has(h.event_date))
+      combined = [...combined, ...extra]
+    }
+    return combined.filter(e => {
       if (e.end_date) return dateStr >= e.event_date && dateStr <= e.end_date
       return e.event_date === dateStr
     })
-  }, [calendarEvents])
+  }, [calendarEvents, publicHols, showHols])
 
   const isHolidayOrSuspension = useCallback((dateStr: string) => {
     return getCalendarEventsForDate(dateStr).some(e => e.event_type === "holiday" || e.event_type === "suspension")
@@ -1579,6 +1651,41 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              <button onClick={() => setShowHols(v => !v)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide border transition-all mr-2
+                  ${showHols
+                    ? (dm ? "bg-red-500/15 border-red-500/30 text-red-400" : "bg-red-50 border-red-200 text-red-600")
+                    : (dm ? "border-slate-700 text-slate-500" : "border-slate-200 text-slate-400")}`}>
+                <Flag size={10} /> {showHols ? "Holidays ON" : "Holidays OFF"}
+              </button>
+              {showHols && (
+                <div className="relative mr-2">
+                  <button onClick={() => setShowPicker(v => !v)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide border transition-all
+                      ${dm ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:bg-slate-700" : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>
+                    <Globe size={10} /> {COUNTRIES.find(c => c.code === country)?.flag} {country}
+                  </button>
+                  {showPicker && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
+                      <div className={`absolute right-0 top-full mt-1.5 z-50 rounded-2xl border shadow-xl overflow-hidden w-52
+                        ${dm ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"}`}>
+                        {COUNTRIES.map(c => (
+                          <button key={c.code} onClick={() => { setCountry(c.code); setShowPicker(false) }}
+                            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-[10px] font-bold transition-colors
+                              ${country === c.code
+                                ? "bg-blue-600 text-white"
+                                : (dm ? "hover:bg-slate-800 text-slate-300" : "hover:bg-slate-50 text-slate-700")}`}>
+                            <span className="text-base leading-none">{c.flag}</span>
+                            <span>{c.name}</span>
+                            {country === c.code && <span className="ml-auto text-[8px]">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
               <button onClick={() => { const d = new Date(calYear, calMonth - 1); setCalMonth(d.getMonth()); setCalYear(d.getFullYear()); setSelectedDay(null) }}
                 className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-colors ${dm ? "border-slate-700 hover:bg-slate-700" : "border-slate-200 hover:bg-slate-100"}`}>
                 <ChevronLeft size={14} className={sub} />

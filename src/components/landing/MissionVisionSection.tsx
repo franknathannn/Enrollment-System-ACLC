@@ -172,12 +172,12 @@ export function MissionVisionSection({ isDark }: MissionVisionProps) {
               {/* Active Tab Icon & Label */}
               <div className="flex items-center justify-center gap-3 mb-10 md:mb-14">
                 <div className={cn(
-                  "w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-500",
+                  "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-500 overflow-hidden",
                   activeTab === "vision"
                     ? "bg-gradient-to-br from-blue-600 to-indigo-700 shadow-blue-600/30"
                     : "bg-gradient-to-br from-red-600 to-rose-700 shadow-red-600/30"
                 )}>
-                  <Icon size={24} className="text-white" />
+                  <img src="/logo-aclc.png" alt="ACLC Logo" className="w-[90%] h-[90%] object-contain" />
                 </div>
                 <div>
                   <p className={cn(

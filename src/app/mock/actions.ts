@@ -16,9 +16,7 @@ export async function clearMockData(ids: string[]) {
   const { error: attErr } = await supabase.from('attendance').delete().in('student_id', ids)
   if (attErr) throw new Error(`attendance delete: ${attErr.message}`)
 
-  // 2. Delete references in activity_logs
-  const { error: logErr } = await supabase.from('activity_logs').delete().in('student_id', ids)
-  if (logErr) throw new Error(`activity_logs delete: ${logErr.message}`)
+  // (activity_logs concept removed)
 
   // 3. Delete students
   const { data, error: stErr } = await supabase.from('students').delete().in('id', ids).select('id')

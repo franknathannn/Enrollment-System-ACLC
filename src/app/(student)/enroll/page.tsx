@@ -547,7 +547,7 @@ export default function EnrollmentPage() {
   if (loading) return (
     <div className={cn(
       "min-h-screen flex flex-col items-center justify-center gap-6",
-      isDark ? "bg-[#020617]" : "bg-[#eef2ff]"
+      isDark ? "bg-[#020617]" : "bg-[#f8f9fc]"
     )}>
       <div className="relative flex items-center justify-center">
         <span className="absolute w-20 h-20 rounded-full border-2 border-blue-500/20 animate-ping" />
@@ -571,7 +571,7 @@ export default function EnrollmentPage() {
       data-theme={isDark ? "dark" : "light"}
       className={cn(
         "min-h-screen p-6 md:p-12 overflow-x-hidden relative",
-        isDark ? "bg-[#020617] text-white" : "bg-[#eef2ff] text-slate-900"
+        isDark ? "bg-[#020617] text-white" : "bg-[#f8f9fc] text-slate-900"
       )}
     >
       <style>{`

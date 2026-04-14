@@ -703,14 +703,14 @@ export default function Step2Academic() {
           <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl sm:rounded-[24px] flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform duration-500">
             <GraduationCap className="text-white w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_2px_10px_rgba(255,255,255,0.4)]" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 pb-1">
             <div className="flex items-center gap-2 mb-1">
               <span className="px-2 py-0.5 rounded-md bg-blue-600/20 text-blue-400 text-[8px] font-black uppercase tracking-[0.2em] border border-blue-500/20">Step 02</span>
               <div className="h-px w-8 bg-blue-500/20" />
               <Sparkles size={10} className="text-blue-400 animate-pulse" />
             </div>
             <h2 className={cn(
-              "text-lg sm:text-2xl md:text-3xl font-black tracking-tighter uppercase italic leading-none",
+              "text-lg sm:text-2xl md:text-3xl font-black tracking-tighter uppercase italic leading-tight",
               isDark ? "text-white" : "text-slate-900"
             )}>Academic <span className="text-blue-600">Background</span></h2>
           </div>
