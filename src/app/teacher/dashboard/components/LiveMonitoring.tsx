@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, LayoutDashboard } from "lucide-react"
+import { X, LayoutDashboard, Globe, ExternalLink, Wifi } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Student, ScheduleRow } from "../types"
 import { AttRecord, AttStatus } from "./AttendanceTab"
@@ -151,15 +151,15 @@ export function LiveMonitoring({
         </div>
       </div>
 
-      {/* 3 Columns Layout */}
+      {/* Layout — 3 columns for in-person, 2 columns for online */}
       <div className="flex-1 flex overflow-hidden p-4 gap-4">
         {/* Left Column: Attendance List */}
-        <div className={`w-[28%] min-w-[320px] max-w-[400px] flex flex-col rounded-3xl border overflow-hidden
+        <div className={`${period.is_online ? "w-[40%]" : "w-[28%]"} min-w-[320px] max-w-[480px] flex flex-col rounded-3xl border overflow-hidden
           ${dm ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"}`}>
-          <LiveMonitoringList 
-            students={sectionStudents} 
-            attendance={attendance} 
-            dm={dm} 
+          <LiveMonitoringList
+            students={sectionStudents}
+            attendance={attendance}
+            dm={dm}
             onUpdateStatus={onUpdateStatus}
             onMarkAllPresent={onMarkAllPresent}
             onMarkRemainingAbsent={onMarkRemainingAbsent}
@@ -167,24 +167,54 @@ export function LiveMonitoring({
           />
         </div>
 
-        {/* Middle Column: Scanner */}
+        {/* Middle Column: Scanner (in-person) OR Online Class Guidance */}
         <div className={`flex-1 flex flex-col rounded-3xl border overflow-hidden
           ${dm ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"}`}>
-          <LiveMonitoringScanner 
-            dm={dm} 
-            onScan={onScan}
-            isScannerLive={isScannerLive}
-            period={period}
-          />
+          {period.is_online ? (
+            /* ── Online Class Guidance Panel ── */
+            <div className="flex flex-col h-full items-center justify-center gap-6 p-8 text-center">
+              <div className={`p-5 rounded-3xl border ${dm ? "bg-blue-500/10 border-blue-500/20" : "bg-blue-50 border-blue-200"}`}>
+                <Globe size={40} className="text-blue-400" />
+              </div>
+              <div>
+                <p className={`text-sm font-black uppercase tracking-widest mb-1 ${dm ? "text-white" : "text-slate-900"}`}>
+                  Online Class
+                </p>
+                <p className={`text-xs font-bold max-w-xs ${dm ? "text-slate-400" : "text-slate-500"}`}>
+                  This is a virtual class. QR scanning is not available. Mark attendance manually using the student list.
+                </p>
+              </div>
+              {period.gclass_link && (
+                <a
+                  href={period.gclass_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/25">
+                  <ExternalLink size={13} /> Open Google Classroom
+                </a>
+              )}
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[9px] font-black uppercase tracking-wider
+                ${dm ? "bg-slate-800/60 border-slate-700 text-slate-400" : "bg-slate-100 border-slate-200 text-slate-500"}`}>
+                <Wifi size={11} /> Virtual — Manual Attendance Only
+              </div>
+            </div>
+          ) : (
+            <LiveMonitoringScanner
+              dm={dm}
+              onScan={onScan}
+              isScannerLive={isScannerLive}
+              period={period}
+            />
+          )}
         </div>
 
         {/* Right Column: Scan History */}
         <div className={`w-[25%] min-w-[280px] max-w-[350px] flex flex-col rounded-3xl border overflow-hidden
           ${dm ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"}`}>
-          <LiveMonitoringHistory 
-            students={sectionStudents} 
-            attendance={attendance} 
-            dm={dm} 
+          <LiveMonitoringHistory
+            students={sectionStudents}
+            attendance={attendance}
+            dm={dm}
           />
         </div>
       </div>

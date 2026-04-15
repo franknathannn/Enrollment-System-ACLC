@@ -47,6 +47,8 @@ export interface SubjectInput {
   duration:        number       // minutes
   preferred_shift: "AM" | "PM"
   repetition:      RepetitionMode
+  is_online?:      boolean
+  gclass_link?:    string | null
 }
 
 export interface AutoScheduleConfig {
@@ -179,7 +181,10 @@ export function validateSlot(
     }
 
     // ── ROOM RULE ─────────────────────────────────────────────────────────────
+    // Skip room conflict entirely when either side is an online class
     if (
+      !(candidate as any).is_online &&
+      !(ex as any).is_online &&
       candidate.room?.trim() &&
       ex.room?.trim() &&
       candidate.room.trim().toLowerCase() === ex.room.trim().toLowerCase() &&
@@ -327,10 +332,11 @@ export function generateSchedule(cfg: AutoScheduleConfig): AutoScheduleResult {
    * miss the room/teacher checks. Now ALL three rules are enforced consistently.
    */
   const getOccupied = (
-    day:     string,
-    room:    string | null | undefined,
-    teacher: string | null | undefined,
-    section: string
+    day:        string,
+    room:       string | null | undefined,
+    teacher:    string | null | undefined,
+    section:    string,
+    subj_is_online = false
   ): { start: number; end: number }[] => {
     const slots: { start: number; end: number }[] = []
 
@@ -352,7 +358,10 @@ export function generateSchedule(cfg: AutoScheduleConfig): AutoScheduleResult {
       }
 
       // ROOM RULE: same room used by ANY other section blocks this room
+      // Skip when either the candidate or existing entry is an online class
       if (
+        !subj_is_online &&
+        !(ex as any).is_online &&
         room?.trim() &&
         ex.room?.trim() &&
         room.trim().toLowerCase() === ex.room.trim().toLowerCase()
@@ -381,7 +390,7 @@ export function generateSchedule(cfg: AutoScheduleConfig): AutoScheduleResult {
     const shiftEnd   = subj.preferred_shift === "AM" ? lunchS : dayEndMins
 
     // Get all occupied blocks for this room, teacher, and section on this day
-    const occupied = getOccupied(day, subj.room, subj.teacher ?? null, sectionName)
+    const occupied = getOccupied(day, subj.room, subj.teacher ?? null, sectionName, subj.is_online)
 
     const start = findNextSlot(shiftStart, subj.duration, lunchS, lunchE, shiftEnd, occupied)
 
@@ -411,8 +420,10 @@ export function generateSchedule(cfg: AutoScheduleConfig): AutoScheduleResult {
         end_time:    toTime(end),
         school_year: schoolYear,
         teacher:     subj.teacher?.trim() || null,
-        room:        subj.room?.trim()    || null,
+        room:        subj.is_online ? null : (subj.room?.trim() || null),
         notes:       null,
+        is_online:   subj.is_online ?? false,
+        gclass_link: subj.gclass_link ?? null,
       })
       daySubjectSet[day].add(subj.subject)
       return true
@@ -428,8 +439,10 @@ export function generateSchedule(cfg: AutoScheduleConfig): AutoScheduleResult {
       end_time:    toTime(end),
       school_year: schoolYear,
       teacher:     subj.teacher?.trim() || null,
-      room:        subj.room?.trim()    || null,
+      room:        subj.is_online ? null : (subj.room?.trim() || null),
       notes:       null,
+      is_online:   subj.is_online ?? false,
+      gclass_link: subj.gclass_link ?? null,
     })
 
     daySubjectSet[day].add(subj.subject)

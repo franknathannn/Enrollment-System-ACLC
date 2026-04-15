@@ -314,11 +314,16 @@ export function DemoTools() {
     if (!confirm("Delete all mock students?")) return
     setLoading("mock-clear")
     try {
-      const { data } = await supabase.from("students").select("id").eq("mock", true).limit(500)
-      if (data && data.length > 0) {
+      let total = 0
+      while (true) {
+        const { data } = await supabase.from("students").select("id").eq("mock", true).limit(500)
+        if (!data || data.length === 0) break
         const ids = data.map((d: any) => d.id)
         await clearMockData(ids)
-        toast.success(`Cleared ${ids.length} mock rows.`)
+        total += ids.length
+      }
+      if (total > 0) {
+        toast.success(`Cleared ${total} mock rows.`)
       } else {
         toast.info("No mock students found.")
       }
@@ -436,6 +441,8 @@ export function DemoTools() {
       await new Promise(r => setTimeout(r, 1000))
 
       // 2. Clear all tables safely
+      // activity_logs must be cleared before students due to FK constraint
+      await supabase.from("activity_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000")
       // In Production Supabase, doing .delete().neq('id', null) wipes all rows accessible.
       await Promise.all([
         supabase.from("students").delete().neq("id", "0"),

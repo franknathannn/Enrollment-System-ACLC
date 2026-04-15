@@ -52,6 +52,8 @@ export interface StudentRecord {
     school_year: string
     teacher?: string | null
     room?: string | null
+    is_online?: boolean
+    gclass_link?: string | null
   }
   
   export const ALL_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] as const

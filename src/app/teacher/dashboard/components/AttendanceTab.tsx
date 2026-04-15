@@ -13,7 +13,7 @@ import {
   Loader2, Wifi, WifiOff, Upload, AlertTriangle, User,
   Search, X, ScanLine, ChevronLeft, ChevronRight,
   CalendarDays, BookOpen, Users, Eye, ShieldCheck, Download,
-  Flag, Globe,
+  Flag, Globe, ExternalLink,
 } from "lucide-react"
 import { supabase } from "@/lib/supabase/teacher-client"
 import {
@@ -1274,88 +1274,118 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={scanning ? stopCam : () => startCam(scannerClosed)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all
-                      ${scanning
-                      ? "bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20"
-                      : scannerClosed
-                        ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
-                        : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"}`}>
-                  {scanning
-                    ? <><CameraOff size={11} /> Stop</>
-                    : scannerClosed
-                      ? <><Camera size={11} /> Force Open</>
-                      : <><Camera size={11} /> {jsQRReady ? "Start Scanner" : "Loading..."}</>
-                  }
-                </button>
+                {period.is_online
+                  ? <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-wider border
+                      ${dm ? "bg-blue-500/10 border-blue-500/20 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600"}`}>
+                      <Globe size={11} /> Online
+                    </span>
+                  : <button onClick={scanning ? stopCam : () => startCam(scannerClosed)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all
+                          ${scanning
+                          ? "bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20"
+                          : scannerClosed
+                            ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
+                            : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"}`}>
+                      {scanning
+                        ? <><CameraOff size={11} /> Stop</>
+                        : scannerClosed
+                          ? <><Camera size={11} /> Force Open</>
+                          : <><Camera size={11} /> {jsQRReady ? "Start Scanner" : "Loading..."}</>
+                      }
+                    </button>
+                }
               </div>
             </div>
 
             <div className="p-4 space-y-4">
-              {camErr && (
-                <div className={`rounded-xl border p-3 flex items-center gap-2 ${dm ? "bg-red-500/10 border-red-500/20" : "bg-red-50 border-red-200"}`}>
-                  <CameraOff size={14} className="text-red-500" />
-                  <p className="text-[10px] text-red-500 font-bold">{camErr}</p>
+              {period.is_online ? (
+                /* ── Online class — no scanner ── */
+                <div className={`rounded-2xl border flex flex-col items-center justify-center gap-4 py-10 text-center
+                  ${dm ? "bg-blue-500/5 border-blue-500/15" : "bg-blue-50 border-blue-100"}`}>
+                  <div className={`p-4 rounded-2xl border ${dm ? "bg-blue-500/10 border-blue-500/20" : "bg-blue-100 border-blue-200"}`}>
+                    <Globe size={32} className="text-blue-400" />
+                  </div>
+                  <div>
+                    <p className={`text-[11px] font-black uppercase tracking-widest mb-1 ${dm ? "text-white" : "text-slate-800"}`}>Online Class</p>
+                    <p className={`text-[10px] font-bold max-w-[220px] ${sub}`}>
+                      QR scanning is unavailable for online classes. Mark attendance manually in the list below.
+                    </p>
+                  </div>
+                  {period.gclass_link && (
+                    <a href={period.gclass_link} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-blue-500/20">
+                      <ExternalLink size={12} /> Open Google Classroom
+                    </a>
+                  )}
                 </div>
+              ) : (
+                <>
+                  {camErr && (
+                    <div className={`rounded-xl border p-3 flex items-center gap-2 ${dm ? "bg-red-500/10 border-red-500/20" : "bg-red-50 border-red-200"}`}>
+                      <CameraOff size={14} className="text-red-500" />
+                      <p className="text-[10px] text-red-500 font-bold">{camErr}</p>
+                    </div>
+                  )}
+
+                  {scannerClosed && !scanning && (
+                    <div className={`rounded-xl border p-3 flex items-center justify-between gap-3 ${dm ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50 border-amber-200"}`}>
+                      <div className="flex items-center gap-2">
+                        <Clock size={13} className="text-amber-500 shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-wide text-amber-500">Scanner Auto-Closed</p>
+                          <p className={`text-[9px] ${dm ? "text-amber-400/70" : "text-amber-700/70"}`}>
+                            {period ? `${period.subject} ended at ${fmtT(period.end_time)}` : "Period ended"}
+                          </p>
+                        </div>
+                      </div>
+                      <button onClick={() => startCam(true)}
+                        className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 text-white text-[8px] font-black uppercase tracking-wide hover:bg-amber-600 transition-colors">
+                        <Camera size={10} /> Force Open
+                      </button>
+                    </div>
+                  )}
+
+                  <div className={`relative rounded-2xl overflow-hidden aspect-video flex items-center justify-center ${dm ? "bg-slate-800" : "bg-slate-100"}`}>
+                    <video ref={videoRef} className={`w-full h-full object-cover ${scanning ? "opacity-100" : "opacity-0 absolute"}`} muted playsInline
+                      style={isFrontCamera ? { transform: "scaleX(-1)" } : undefined} />
+                    <canvas ref={canvasRef} className="hidden" />
+
+                    {!scanning && (
+                      <div className="flex flex-col items-center gap-3 py-8">
+                        <div className={`p-5 rounded-2xl border ${dm ? "bg-slate-700/40 border-slate-600/40" : "bg-white border-slate-200"}`}>
+                          <ScanLine size={36} className={dm ? "text-slate-500" : "text-slate-400"} />
+                        </div>
+                        <p className={`text-[10px] font-black uppercase tracking-widest ${sub}`}>Camera off</p>
+                      </div>
+                    )}
+
+                    {scanning && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="relative w-72 h-72">
+                          {["top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-xl",
+                            "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-xl",
+                            "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-xl",
+                            "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-xl",
+                          ].map((c, i) => <div key={i} className={`absolute w-10 h-10 border-blue-400 ${c}`} />)}
+                          <div className="absolute inset-x-0 top-0 h-0.5 bg-blue-400/90"
+                            style={{ animation: "scanLine 2s ease-in-out infinite", boxShadow: "0 0 10px 3px rgba(96,165,250,0.7)" }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {lastScan && (
+                      <div className={`absolute bottom-3 left-3 right-3 rounded-xl px-3 py-2.5 flex items-center gap-2
+                          ${lastScan.ok ? "bg-green-600/90" : "bg-amber-600/90"} backdrop-blur-sm`}>
+                        {lastScan.ok ? <CheckCircle2 size={14} className="text-white shrink-0" /> : <AlertTriangle size={14} className="text-white shrink-0" />}
+                        <div>
+                          <p className="text-[10px] font-black text-white">{lastScan.name}</p>
+                          <p className="text-[8px] text-white/70">{lastScan.ok ? "Marked Present" : "Not registered / already scanned"}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
-
-              {scannerClosed && !scanning && (
-                <div className={`rounded-xl border p-3 flex items-center justify-between gap-3 ${dm ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50 border-amber-200"}`}>
-                  <div className="flex items-center gap-2">
-                    <Clock size={13} className="text-amber-500 shrink-0" />
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-wide text-amber-500">Scanner Auto-Closed</p>
-                      <p className={`text-[9px] ${dm ? "text-amber-400/70" : "text-amber-700/70"}`}>
-                        {period ? `${period.subject} ended at ${fmtT(period.end_time)}` : "Period ended"}
-                      </p>
-                    </div>
-                  </div>
-                  <button onClick={() => startCam(true)}
-                    className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 text-white text-[8px] font-black uppercase tracking-wide hover:bg-amber-600 transition-colors">
-                    <Camera size={10} /> Force Open
-                  </button>
-                </div>
-              )}
-
-              <div className={`relative rounded-2xl overflow-hidden aspect-video flex items-center justify-center ${dm ? "bg-slate-800" : "bg-slate-100"}`}>
-                <video ref={videoRef} className={`w-full h-full object-cover ${scanning ? "opacity-100" : "opacity-0 absolute"}`} muted playsInline
-                  style={isFrontCamera ? { transform: "scaleX(-1)" } : undefined} />
-                <canvas ref={canvasRef} className="hidden" />
-
-                {!scanning && (
-                  <div className="flex flex-col items-center gap-3 py-8">
-                    <div className={`p-5 rounded-2xl border ${dm ? "bg-slate-700/40 border-slate-600/40" : "bg-white border-slate-200"}`}>
-                      <ScanLine size={36} className={dm ? "text-slate-500" : "text-slate-400"} />
-                    </div>
-                    <p className={`text-[10px] font-black uppercase tracking-widest ${sub}`}>Camera off</p>
-                  </div>
-                )}
-
-                {scanning && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="relative w-72 h-72">
-                      {["top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-xl",
-                        "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-xl",
-                        "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-xl",
-                        "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-xl",
-                      ].map((c, i) => <div key={i} className={`absolute w-10 h-10 border-blue-400 ${c}`} />)}
-                      <div className="absolute inset-x-0 top-0 h-0.5 bg-blue-400/90"
-                        style={{ animation: "scanLine 2s ease-in-out infinite", boxShadow: "0 0 10px 3px rgba(96,165,250,0.7)" }} />
-                    </div>
-                  </div>
-                )}
-
-                {lastScan && (
-                  <div className={`absolute bottom-3 left-3 right-3 rounded-xl px-3 py-2.5 flex items-center gap-2
-                      ${lastScan.ok ? "bg-green-600/90" : "bg-amber-600/90"} backdrop-blur-sm`}>
-                    {lastScan.ok ? <CheckCircle2 size={14} className="text-white shrink-0" /> : <AlertTriangle size={14} className="text-white shrink-0" />}
-                    <div>
-                      <p className="text-[10px] font-black text-white">{lastScan.name}</p>
-                      <p className="text-[8px] text-white/70">{lastScan.ok ? "Marked Present" : "Not registered / already scanned"}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
 
               <div className={`flex items-center justify-between gap-3 px-1 ${dm ? "text-slate-200" : "text-slate-800"}`}>
                 <span className="text-[11px] font-bold">Beep</span>

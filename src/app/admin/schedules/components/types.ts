@@ -24,6 +24,8 @@ export interface SectionRow {
     room_id: string | null
     notes: string | null
     teacher_id: string | null
+    is_online?: boolean
+    gclass_link?: string | null
   }
   
   export type StrandFilter = "BOTH" | "ICT" | "GAS"

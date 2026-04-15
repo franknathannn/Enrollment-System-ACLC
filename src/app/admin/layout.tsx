@@ -111,7 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
     if (error) toast.error(error.message, { id: toastId });
     else {
-      toast.success("Student Updated.", { id: toastId });
+      toast.success("Profile Updated.", { id: toastId });
       fetchAdminIdentity();
     }
     setUpdating(false);
@@ -343,7 +343,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {!isCollapsed && (
               <p
-                className="text-[11px] font-black truncate uppercase tracking-tighter italic animate-in slide-in-from-left-2"
+                className="text-[11px] font-black truncate tracking-tighter animate-in slide-in-from-left-2"
                 style={{ color: isDarkMode ? themeColors.dark.text.primary : themeColors.light.text.primary }}
               >
                 {adminProfile.name}
@@ -526,7 +526,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
                 <div className="flex flex-col items-start text-left">
                   <span
-                    className="text-[10px] font-black uppercase tracking-widest leading-none"
+                    className="text-[10px] font-black tracking-widest leading-none"
                     style={{ color: isDarkMode ? themeColors.dark.text.primary : themeColors.light.text.primary }}
                   >
                     {adminProfile.name}
@@ -589,7 +589,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <Input
                         value={adminProfile.name}
                         onChange={(e) => setAdminProfile({ ...adminProfile, name: e.target.value })}
-                        className="h-16 rounded-[28px] font-black px-8 focus:border-blue-500 transition-all uppercase italic tracking-tighter"
+                        className="h-16 rounded-[28px] font-black px-8 focus:border-blue-500 transition-all tracking-tighter"
                         style={{
                           backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surfaceHighlight,
                           borderColor: isDarkMode ? themeColors.dark.border : themeColors.light.border,

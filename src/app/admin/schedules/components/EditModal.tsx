@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Loader2, X, Save, AlertCircle, Edit3, Trash2, Clock, ChevronDown, Search } from "lucide-react"
+import { Loader2, X, Save, AlertCircle, Edit3, Trash2, Clock, ChevronDown, Search, Globe, Link } from "lucide-react"
 import { ScheduleRow, toMins, toDisp, toStr, TIME_OPTS } from "./types"
 
 import { useRooms, Room } from "../../sections/hooks/useRooms"
@@ -505,16 +505,77 @@ export function EditModal({
             />
           </div>
 
-          {/* Room */}
-          <div>
-            <label style={labelStyle}>Room</label>
-            <SearchableSelect
-              value={row.room || ""} options={roomNames}
-              placeholder="Select room…"
-              isDarkMode={isDarkMode} surf={surf} bdr={bdr} txt={txt} muted={muted}
-              onChange={v => onChangeRow({ ...row, room: v || null })}
-            />
+          {/* Online toggle */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "10px 14px", borderRadius: 14,
+            background: row.is_online
+              ? (isDarkMode ? "rgba(59,130,246,0.08)" : "rgba(239,246,255,0.8)")
+              : (isDarkMode ? "rgba(30,41,59,0.4)" : "rgba(248,250,252,0.8)"),
+            border: `1px solid ${row.is_online
+              ? (isDarkMode ? "rgba(59,130,246,0.25)" : "rgba(147,197,253,0.5)")
+              : bdr}`,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Globe size={13} style={{ color: row.is_online ? "#60a5fa" : muted }} />
+              <div>
+                <p style={{ margin: 0, fontSize: 9.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: row.is_online ? "#60a5fa" : txt }}>
+                  Online Class
+                </p>
+                <p style={{ margin: 0, fontSize: 8, color: muted }}>
+                  {row.is_online ? "No physical room required" : "Toggle for virtual class"}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onChangeRow({ ...row, is_online: !row.is_online, room: row.is_online ? row.room : null })}
+              style={{
+                position: "relative", width: 36, height: 18, borderRadius: 99, border: "none",
+                background: row.is_online ? "#3b82f6" : (isDarkMode ? "#334155" : "#cbd5e1"),
+                cursor: "pointer", flexShrink: 0, transition: "background 0.2s",
+              }}>
+              <span style={{
+                position: "absolute", top: 2, width: 14, height: 14, borderRadius: "50%", background: "#fff",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                transform: row.is_online ? "translateX(20px)" : "translateX(1px)",
+                transition: "transform 0.2s",
+              }} />
+            </button>
           </div>
+
+          {/* Room (hidden when online) */}
+          {!row.is_online && (
+            <div>
+              <label style={labelStyle}>Room</label>
+              <SearchableSelect
+                value={row.room || ""} options={roomNames}
+                placeholder="Select room…"
+                isDarkMode={isDarkMode} surf={surf} bdr={bdr} txt={txt} muted={muted}
+                onChange={v => onChangeRow({ ...row, room: v || null })}
+              />
+            </div>
+          )}
+
+          {/* Google Classroom link (shown when online) */}
+          {row.is_online && (
+            <div>
+              <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 4 }}>
+                <Link size={9} style={{ color: "#60a5fa" }} /> Google Classroom Link
+                <span style={{ opacity: 0.4, textTransform: "lowercase", fontWeight: 600, marginLeft: 2 }}>(optional)</span>
+              </label>
+              <input
+                value={row.gclass_link ?? ""}
+                onChange={e => onChangeRow({ ...row, gclass_link: e.target.value || null })}
+                placeholder="https://classroom.google.com/c/..."
+                style={{
+                  width: "100%", padding: "9px 12px", borderRadius: 12,
+                  border: `1px solid ${bdr}`, background: surf, color: txt,
+                  fontSize: 11, fontWeight: 500, outline: "none", boxSizing: "border-box",
+                }}
+              />
+            </div>
+          )}
 
           {/* Duration badge / error */}
           {editStart >= editEnd ? (

@@ -8,7 +8,7 @@ import { createPortal } from "react-dom"
 import {
   CalendarDays, Plus, Trash2, ChevronRight, ChevronLeft,
   AlertTriangle, CheckCircle2, X, Info, Clock,
-  ChevronDown, Search, User, RefreshCw,
+  ChevronDown, Search, User, RefreshCw, Globe, Link,
 } from "lucide-react"
 import type { TeacherOption } from "./ScheduleEntryForm"
 import { Button } from "@/components/ui/button"
@@ -560,21 +560,44 @@ function SubjectCard({
         />
       </div>
 
-      {/* 2-col: Room + Duration */}
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <FieldLabel isDarkMode={isDarkMode}>Room *</FieldLabel>
-          <SearchableSelect
-            value={subj.room}
-            options={roomNames}
-            placeholder="Pick room…"
-            isDarkMode={isDarkMode}
-            isICT={isICT}
-            onChange={v => onChange(subj.id, "room", v)}
-            emptyLabel="— No room —"
-          />
+      {/* Online toggle */}
+      <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl border mb-3 transition-all
+        ${subj.is_online
+          ? isDarkMode ? "bg-blue-500/10 border-blue-500/30" : "bg-blue-50 border-blue-200"
+          : isDarkMode ? "bg-slate-800/40 border-slate-700" : "bg-slate-50 border-slate-200"}`}>
+        <div className="flex items-center gap-2">
+          <Globe size={12} className={subj.is_online ? "text-blue-400" : isDarkMode ? "text-slate-500" : "text-slate-400"} />
+          <span className={`text-[9px] font-black uppercase tracking-widest ${subj.is_online ? "text-blue-400" : isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+            Online Class
+          </span>
         </div>
-        <div>
+        <button
+          type="button"
+          onClick={() => onChange(subj.id, "is_online", !subj.is_online)}
+          className={`relative w-9 h-[18px] rounded-full transition-colors duration-200
+            ${subj.is_online ? "bg-blue-500" : isDarkMode ? "bg-slate-700" : "bg-slate-300"}`}>
+          <span className={`absolute top-[1px] w-4 h-4 rounded-full bg-white shadow transition-transform duration-200
+            ${subj.is_online ? "translate-x-4" : "translate-x-[1px]"}`} />
+        </button>
+      </div>
+
+      {/* 2-col: Room (hidden when online) + Duration */}
+      <div className={`gap-3 mb-3 ${subj.is_online ? "flex" : "grid grid-cols-2"}`}>
+        {!subj.is_online && (
+          <div>
+            <FieldLabel isDarkMode={isDarkMode}>Room *</FieldLabel>
+            <SearchableSelect
+              value={subj.room}
+              options={roomNames}
+              placeholder="Pick room…"
+              isDarkMode={isDarkMode}
+              isICT={isICT}
+              onChange={v => onChange(subj.id, "room", v)}
+              emptyLabel="— No room —"
+            />
+          </div>
+        )}
+        <div className={subj.is_online ? "w-full" : ""}>
           <FieldLabel isDarkMode={isDarkMode}>Duration</FieldLabel>
           <OptionSelect
             value={subj.duration}
@@ -585,6 +608,25 @@ function SubjectCard({
           />
         </div>
       </div>
+
+      {/* GClass link (shown when online) */}
+      {subj.is_online && (
+        <div className="mb-3">
+          <FieldLabel isDarkMode={isDarkMode}>
+            <Link size={9} className="inline mr-1 text-blue-400" />
+            Google Classroom Link <span className="opacity-40 normal-case font-bold">(optional)</span>
+          </FieldLabel>
+          <input
+            value={subj.gclass_link ?? ""}
+            onChange={e => onChange(subj.id, "gclass_link", e.target.value)}
+            placeholder="https://classroom.google.com/c/..."
+            className={`w-full rounded-xl border px-3 py-2 text-[11px] font-medium outline-none transition-all
+              ${isDarkMode
+                ? "bg-slate-800 border-slate-700 text-white placeholder-slate-600 focus:border-blue-500/60"
+                : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-400"}`}
+          />
+        </div>
+      )}
 
       {/* 2-col: Shift + Repetition */}
       <div className="grid grid-cols-2 gap-3">
@@ -654,6 +696,7 @@ const newSubject = (shift: "AM" | "PM") => ({
   id: String(++uid), subject: "", room: "", teacher: null as string | null,
   teacher_id: "" as string, duration: 60 as number,
   preferred_shift: shift as "AM" | "PM", repetition: "ONCE" as RepetitionMode,
+  is_online: false, gclass_link: null as string | null,
 })
 
 // ── SPREAD OPTIONS ─────────────────────────────────────────────────────────────
@@ -717,7 +760,7 @@ export const AutoScheduleWizard = memo(function AutoScheduleWizard({
     if (empty) return "All subjects require a name."
     const noTeacher = subjects.find(s => !(s as any).teacher_id)
     if (noTeacher) return `"${noTeacher.subject || "A subject"}" does not have a teacher assigned.`
-    const noRoom = subjects.find(s => !s.room)
+    const noRoom = subjects.find(s => !s.is_online && !s.room)
     if (noRoom) return `"${noRoom.subject}" does not have a room assigned.`
     return ""
   }

@@ -12,6 +12,8 @@ export interface ScheduleRow {
   teacher?: string | null
   room?: string | null
   notes?: string | null
+  is_online?: boolean
+  gclass_link?: string | null
   created_at?: string
 }
 
@@ -27,6 +29,8 @@ export interface ScheduleImportRow {
   room?: string
   room_id?: string
   notes?: string
+  is_online?: boolean
+  gclass_link?: string | null
   // validation
   _errors?: string[]
   _rowIndex?: number

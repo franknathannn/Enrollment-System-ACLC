@@ -54,7 +54,7 @@ serve(async (req: Request) => {
 
     const { data: scheds } = await supabaseClient
       .from('schedules')
-      .select('subject, start_time, end_time, room, teacher')
+      .select('subject, start_time, end_time, room, teacher, is_online, gclass_link')
       .eq('section', student.section)
       .eq('day', currentDay)
       .order('start_time', { ascending: true });
@@ -133,6 +133,7 @@ serve(async (req: Request) => {
         for (const ms of missedSubjects) {
           scheduleContextHtml += '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;margin-bottom:6px;">'
             + '<span style="font-weight:800;color:#991b1b;font-size:12px;">' + ms.subject + '</span>'
+            + (ms.is_online ? '<span style="color:#3b82f6;font-size:10px;font-weight:800;margin-left:6px;">(online)</span>' : '')
             + '<span style="float:right;color:#b91c1c;font-size:11px;font-weight:700;">' + fmtT(ms.start_time) + ' – ' + fmtT(ms.end_time) + '</span>'
             + '<span style="display:block;font-size:10px;color:#dc2626;font-weight:700;margin-top:2px;">(Absent)</span>'
             + '</div>';
@@ -147,6 +148,7 @@ serve(async (req: Request) => {
           + '<p style="margin:0 0 8px;font-weight:800;color:#15803d;font-size:11px;text-transform:uppercase;letter-spacing:1px;">✓ Checked In</p>'
           + '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;">'
           + '<span style="font-weight:800;color:#166534;font-size:12px;">' + checkedInSubject + '</span>'
+          + (scheds && scheds.find((s: any) => s.subject === checkedInSubject)?.is_online ? '<span style="color:#3b82f6;font-size:10px;font-weight:800;margin-left:6px;">(online)</span>' : '')
           + '<span style="float:right;color:#15803d;font-size:11px;font-weight:700;">' + checkedInOrder + ordinalSuffix + ' Subject</span>'
           + '<span style="display:block;font-size:10px;color:#16a34a;font-weight:700;margin-top:2px;">' + (record.status || 'PRESENT') + '</span>'
           + '</div></div>';
@@ -162,6 +164,7 @@ serve(async (req: Request) => {
         for (const rs of remaining) {
           scheduleContextHtml += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;margin-bottom:4px;">'
             + '<span style="font-weight:700;color:#475569;font-size:12px;">' + rs.subject + '</span>'
+            + (rs.is_online ? '<span style="color:#3b82f6;font-size:10px;font-weight:800;margin-left:6px;">(online)</span>' : '')
             + '<span style="float:right;color:#94a3b8;font-size:11px;font-weight:600;">' + fmtT(rs.start_time) + ' – ' + fmtT(rs.end_time) + '</span>'
             + '</div>';
         }

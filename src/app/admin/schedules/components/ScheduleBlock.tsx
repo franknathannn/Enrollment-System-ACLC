@@ -55,8 +55,8 @@ function HoverCard({
   const details = [
     { label: "Time",     val: `${toDisp(toMins(row.start_time))} – ${toDisp(toMins(row.end_time))}` },
     { label: "Duration", val: `${dur} min` },
-    row.teacher ? { label: "Teacher", val: row.teacher } : null,
-    row.room    ? { label: "Room",    val: row.room    } : null,
+    row.teacher    ? { label: "Teacher", val: row.teacher } : null,
+    row.is_online  ? { label: "Room",    val: "🌐 Online" } : row.room ? { label: "Room", val: row.room } : null,
     { label: "Section",  val: row.section },
   ].filter(Boolean) as { label: string; val: string }[]
 
@@ -250,9 +250,9 @@ export function ScheduleBlock({ row, timeStart, timeEnd, isDarkMode, onDragStart
               {row.teacher}
             </p>
           )}
-          {hPx >= 76 && row.room && (
-            <p style={{ fontSize: 8, margin: 0, paddingLeft: 13, opacity: 0.50, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {row.room}
+          {hPx >= 76 && (row.is_online || row.room) && (
+            <p style={{ fontSize: 8, margin: 0, paddingLeft: 13, opacity: 0.65, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: row.is_online ? "#60a5fa" : "inherit" }}>
+              {row.is_online ? "🌐 Online" : row.room}
             </p>
           )}
         </div>

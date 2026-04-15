@@ -14,11 +14,12 @@ interface ScheduleTabProps {
   colorMap: Record<string, typeof COLORS[number]>
   dm: boolean
   onStudentClick: (student: Student) => void
+  onLinkUpdated?: (scheduleId: string, link: string | null) => void
   session: TeacherSession
   schoolYear: string
 }
 
-export function ScheduleTab({ schedules, students, studLoad, colorMap, dm, onStudentClick, session, schoolYear }: ScheduleTabProps) {
+export function ScheduleTab({ schedules, students, studLoad, colorMap, dm, onStudentClick, onLinkUpdated, session, schoolYear }: ScheduleTabProps) {
   // Smart initial day: find the next day that has scheduled classes, starting from today
   const getSmartDay = (): DayName => {
     const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
@@ -92,11 +93,11 @@ export function ScheduleTab({ schedules, students, studLoad, colorMap, dm, onStu
                 }`}
             >
               <span>{d.slice(0, 3)}</span>
-              {isToday && !isActive && <span className="w-1 h-1 rounded-full bg-blue-400 mt-0.5 animate-pulse" />}
               {count > 0
                 ? <span className={`text-[8px] font-black rounded-full w-4 h-4 flex items-center justify-center mt-0.5 ${isActive ? "bg-white/25 text-white" : (dm ? "bg-slate-700 text-slate-300" : "bg-slate-100 text-slate-500")}`}>{count}</span>
                 : <span className={`text-[8px] ${isActive ? "text-white/40" : (dm ? "text-slate-700" : "text-slate-300")}`}>—</span>
               }
+              {isToday && !isActive && <span className="w-1 h-1 rounded-full bg-blue-400 animate-pulse" />}
             </button>
           )
         })}
@@ -155,6 +156,7 @@ export function ScheduleTab({ schedules, students, studLoad, colorMap, dm, onStu
                 loading={studLoad}
                 dm={dm}
                 onStudentClick={onStudentClick}
+                onLinkUpdated={onLinkUpdated}
                 session={session}
                 schoolYear={schoolYear}
               />

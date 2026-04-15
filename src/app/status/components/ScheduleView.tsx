@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Clock, MapPin, User, Loader2 } from "lucide-react"
+import { Clock, MapPin, User, Loader2, Globe, ExternalLink } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { ALL_DAYS, SUBJ_COLORS, fmt, todayDayName, type ScheduleRow } from "../types"
 
@@ -103,13 +103,20 @@ export function ScheduleView({ section, schoolYear, dm = true }: Props) {
             return (
               <div key={s.id} className={`rounded-2xl border p-4 ${col.bg} ${col.border}`}>
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className={`text-sm font-black ${col.text}`}>{s.subject}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={`text-sm font-black ${col.text}`}>{s.subject}</p>
+                      {s.is_online && (
+                        <span className="flex items-center gap-1 text-[9px] font-black text-blue-400 bg-blue-400/10 border border-blue-400/20 px-2 py-0.5 rounded-full">
+                          <Globe size={8} /> online
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                       <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
                         <Clock size={10} /> {fmt(s.start_time)} – {fmt(s.end_time)}
                       </span>
-                      {s.room && (
+                      {!s.is_online && s.room && (
                         <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
                           <MapPin size={10} /> {s.room}
                         </span>
@@ -119,6 +126,16 @@ export function ScheduleView({ section, schoolYear, dm = true }: Props) {
                       <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-600 mt-1">
                         <User size={10} /> {s.teacher}
                       </span>
+                    )}
+                    {s.is_online && s.gclass_link && (
+                      <a
+                        href={s.gclass_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 mt-2 text-[9px] font-black text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        <ExternalLink size={9} /> Open Google Classroom
+                      </a>
                     )}
                   </div>
                   <span className={`flex-shrink-0 w-2 h-2 rounded-full mt-1 ${col.dot}`} />
@@ -152,6 +169,7 @@ export function ScheduleView({ section, schoolYear, dm = true }: Props) {
                         className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[8px] font-bold transition-opacity hover:opacity-80 ${col.bg} ${col.border} ${col.text}`}
                       >
                         {s.subject} · {fmt(s.start_time)}
+                        {s.is_online && <span className="text-blue-400 font-black ml-0.5">(online)</span>}
                       </button>
                     )
                   })

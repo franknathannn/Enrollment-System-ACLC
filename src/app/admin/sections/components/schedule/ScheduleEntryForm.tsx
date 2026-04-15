@@ -1,7 +1,7 @@
 // sections/components/schedule/ScheduleEntryForm.tsx
 
 import { memo, useState, useEffect, useRef, useMemo } from "react"
-import { X, Save, Clock, ChevronDown, Search, User, MapPin } from "lucide-react"
+import { X, Save, Clock, ChevronDown, Search, User, MapPin, Globe, Link } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DAYS } from "./types"
 import type { ScheduleRow } from "./types"
@@ -397,7 +397,7 @@ function subjectColorIndex(subject: string): number {
 
 const EMPTY = {
   subject: "", day: "Monday", start_time: "07:30", end_time: "08:30",
-  teacher_id: "", teacher: "", room: "", notes: "",
+  teacher_id: "", teacher: "", room: "", notes: "", is_online: false, gclass_link: "",
 }
 
 export const ScheduleEntryForm = memo(function ScheduleEntryForm({
@@ -410,14 +410,16 @@ export const ScheduleEntryForm = memo(function ScheduleEntryForm({
   useEffect(() => {
     if (editing) {
       setForm({
-        subject:    editing.subject,
-        day:        editing.day,
-        start_time: normalizeTime(editing.start_time),
-        end_time:   normalizeTime(editing.end_time),
-        teacher_id: (editing as any).teacher_id ?? "",
-        teacher:    editing.teacher ?? "",
-        room:       editing.room    ?? "",
-        notes:      editing.notes   ?? "",
+        subject:     editing.subject,
+        day:         editing.day,
+        start_time:  normalizeTime(editing.start_time),
+        end_time:    normalizeTime(editing.end_time),
+        teacher_id:  (editing as any).teacher_id ?? "",
+        teacher:     editing.teacher ?? "",
+        room:        editing.room    ?? "",
+        notes:       editing.notes   ?? "",
+        is_online:   editing.is_online ?? false,
+        gclass_link: editing.gclass_link ?? "",
       })
     } else {
       setForm({ ...EMPTY })
@@ -425,7 +427,7 @@ export const ScheduleEntryForm = memo(function ScheduleEntryForm({
     setErrors({})
   }, [editing])
 
-  const set = (key: string, value: string) => {
+  const set = (key: string, value: string | boolean) => {
     setForm(prev => ({ ...prev, [key]: value }))
     setErrors(prev => ({ ...prev, [key]: "" }))
   }
@@ -438,7 +440,7 @@ export const ScheduleEntryForm = memo(function ScheduleEntryForm({
     if (form.start_time && form.end_time && form.start_time >= form.end_time)
       e.end_time = "End time must be after start time"
     if (!(form as any).teacher_id) e.teacher_id = "Assign a teacher"
-    if (!form.room)            e.room       = "Room is required"
+    if (!(form as any).is_online && !form.room) e.room = "Room is required"
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -457,8 +459,10 @@ export const ScheduleEntryForm = memo(function ScheduleEntryForm({
         school_year: schoolYear,
         teacher:     selectedTeacher?.full_name ?? form.teacher.trim() ?? null,
         teacher_id:  (form as any).teacher_id || null,
-        room:        form.room.trim()  || null,
+        room:        (form as any).is_online ? null : (form.room.trim() || null),
         notes:       form.notes.trim() || null,
+        is_online:   (form as any).is_online ?? false,
+        gclass_link: (form as any).gclass_link?.trim() || null,
       })
     } finally {
       setSaving(false)
@@ -557,20 +561,64 @@ export const ScheduleEntryForm = memo(function ScheduleEntryForm({
           />
         </div>
 
-        {/* Room + Notes */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Room *</label>
-            <RoomSelect value={form.room} onChange={v => set("room", v)} isDarkMode={isDarkMode} isICT={isICT} error={errors.room} />
+        {/* Online toggle */}
+        <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border transition-all
+          ${(form as any).is_online
+            ? isDarkMode ? "bg-blue-500/10 border-blue-500/30" : "bg-blue-50 border-blue-200"
+            : isDarkMode ? "bg-slate-800/60 border-slate-700" : "bg-slate-50 border-slate-200"}`}>
+          <div className="flex items-center gap-2.5">
+            <Globe size={14} className={(form as any).is_online ? "text-blue-400" : isDarkMode ? "text-slate-500" : "text-slate-400"} />
+            <div>
+              <p className={`text-[10px] font-black uppercase tracking-widest ${(form as any).is_online ? "text-blue-400" : isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+                Online Class
+              </p>
+              <p className={`text-[9px] font-bold ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                {(form as any).is_online ? "No physical room required" : "Toggle for virtual / Google Classroom class"}
+              </p>
+            </div>
           </div>
-          <div>
-            <label className={labelClass}>
-              Notes <span className="opacity-40 normal-case font-bold">(optional)</span>
-            </label>
-            <input className={inputClass} placeholder="Additional notes…"
-              value={form.notes} onChange={e => set("notes", e.target.value)} />
-          </div>
+          <button
+            type="button"
+            onClick={() => set("is_online", !(form as any).is_online)}
+            className={`relative w-10 h-5 rounded-full transition-colors duration-200 flex-shrink-0
+              ${(form as any).is_online ? "bg-blue-500" : isDarkMode ? "bg-slate-700" : "bg-slate-300"}`}>
+            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200
+              ${(form as any).is_online ? "translate-x-5" : "translate-x-0.5"}`} />
+          </button>
         </div>
+
+        {/* Room (hidden when online) + Notes */}
+        {!(form as any).is_online && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Room *</label>
+              <RoomSelect value={form.room} onChange={v => set("room", v)} isDarkMode={isDarkMode} isICT={isICT} error={errors.room} />
+            </div>
+            <div>
+              <label className={labelClass}>
+                Notes <span className="opacity-40 normal-case font-bold">(optional)</span>
+              </label>
+              <input className={inputClass} placeholder="Additional notes…"
+                value={form.notes} onChange={e => set("notes", e.target.value)} />
+            </div>
+          </div>
+        )}
+
+        {/* Google Classroom link (shown when online) */}
+        {(form as any).is_online && (
+          <div>
+            <label className={`${labelClass} flex items-center gap-1.5`}>
+              <Link size={9} className="text-blue-400" />
+              Google Classroom Link <span className="opacity-40 normal-case font-bold">(optional)</span>
+            </label>
+            <input
+              className={`${inputClass} ${isDarkMode ? "focus:ring-blue-500/40 focus:border-blue-500" : "focus:ring-blue-400/40 focus:border-blue-400"}`}
+              placeholder="https://classroom.google.com/c/..."
+              value={(form as any).gclass_link}
+              onChange={e => set("gclass_link", e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Footer */}

@@ -213,7 +213,12 @@ export default function TeacherDashboard() {
     if (!session) return
     const chan = supabase
       .channel("teacher_dashboard_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "schedules" },             () => loadData(session))
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "schedules" }, (payload) => {
+        // Patch the changed row in-place — no full reload, no spinner
+        setSchedules(prev => prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s))
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "schedules" }, () => loadData(session))
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "schedules" }, () => loadData(session))
       .on("postgres_changes", { event: "*", schema: "public", table: "students" },              () => loadData(session))
       .on("postgres_changes", { event: "*", schema: "public", table: "teacher_announcements" }, () => loadData(session))
       .on(
@@ -357,6 +362,7 @@ export default function TeacherDashboard() {
             colorMap={colorMap}
             dm={dm}
             onStudentClick={setSelectedStudent}
+            onLinkUpdated={(id, link) => setSchedules(prev => prev.map(s => s.id === id ? { ...s, gclass_link: link } : s))}
             session={session}
             schoolYear={schoolYear}
           />

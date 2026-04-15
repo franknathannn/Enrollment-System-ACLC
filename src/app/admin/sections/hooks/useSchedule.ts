@@ -94,9 +94,11 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
       throw new Error("Schedule conflict detected — entry not saved.")
     }
 
-    const { data: dbRooms } = await supabase.from("rooms").select("id, name")
-    const rMap = (dbRooms || []).reduce((acc: any, r: any) => ({ ...acc, [r.name]: r.id }), {})
-    if (data.room && rMap[data.room]) data.room_id = rMap[data.room]
+    if (!data.is_online) {
+      const { data: dbRooms } = await supabase.from("rooms").select("id, name")
+      const rMap = (dbRooms || []).reduce((acc: any, r: any) => ({ ...acc, [r.name]: r.id }), {})
+      if (data.room && rMap[data.room]) data.room_id = rMap[data.room]
+    }
 
     const { error } = await supabase.from("schedules").insert([data])
     if (error) { toast.error(error.message); throw error }
@@ -128,9 +130,14 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
       throw new Error("Schedule conflict detected — entry not saved.")
     }
 
-    const { data: dbRooms } = await supabase.from("rooms").select("id, name")
-    const rMap = (dbRooms || []).reduce((acc: any, r: any) => ({ ...acc, [r.name]: r.id }), {})
-    if (data.room && rMap[data.room]) data.room_id = rMap[data.room]
+    if (!data.is_online) {
+      const { data: dbRooms } = await supabase.from("rooms").select("id, name")
+      const rMap = (dbRooms || []).reduce((acc: any, r: any) => ({ ...acc, [r.name]: r.id }), {})
+      if (data.room && rMap[data.room]) data.room_id = rMap[data.room]
+    } else {
+      data.room_id = null
+      data.room = null
+    }
 
     const { error } = await supabase.from("schedules").update(data).eq("id", id)
     if (error) { toast.error(error.message); throw error }
@@ -179,10 +186,12 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
         start_time:  r.start_time,
         end_time:    r.end_time,
         school_year: r.school_year,
-        teacher:     r.teacher ?? null,
-        room:        r.room    ?? null,
-        room_id:     r.room ? rMap[r.room] : null,
-        notes:       r.notes   ?? null,
+        teacher:     r.teacher    ?? null,
+        room:        r.is_online  ? null : (r.room ?? null),
+        room_id:     r.is_online  ? null : (r.room ? rMap[r.room] : null),
+        notes:       r.notes      ?? null,
+        is_online:   r.is_online  ?? false,
+        gclass_link: r.gclass_link ?? null,
       }))
 
       const conflicts = checkConflicts(inserts, otherSchedules, sectionName)
@@ -255,9 +264,11 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
           school_year: r.school_year,
           teacher:     r.teacher     ?? null,
           teacher_id:  (r as any).teacher_id ?? null,
-          room:        r.room        ?? null,
-          room_id:     r.room ? rMap[r.room] : null,
+          room:        (r as any).is_online ? null : (r.room ?? null),
+          room_id:     (r as any).is_online ? null : (r.room ? rMap[r.room] : null),
           notes:       r.notes       ?? null,
+          is_online:   (r as any).is_online  ?? false,
+          gclass_link: (r as any).gclass_link ?? null,
         }))
         .filter(r => !alreadyPlaced.has(`${r.subject}|${r.day}`))
 

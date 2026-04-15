@@ -44,13 +44,16 @@ UPSTASH_REDIS_REST_TOKEN=
 
 ### Data Layer
 
-Most DB mutations go through **Next.js Server Actions** in `src/lib/actions/`. These files use `"use server"` and import from `src/lib/supabase/server.ts`. **Exception**: the Teachers and Communication admin pages call the Supabase client singleton directly (no server action) — they are the only admin features that do this.
+Most DB mutations go through **Next.js Server Actions** in `src/lib/actions/`. These files use `"use server"` and import from `src/lib/supabase/server.ts`. **Exception**: the Teachers, Communication, Student Accounts, and Quarterly Updates admin pages import `supabase` from `src/lib/supabase/admin-client.ts` directly (no server action).
 
-Two Supabase clients exist:
-- `createClient()` — cookie-based, respects RLS. Use for standard operations.
-- `createAdminClient()` — service role key, **bypasses RLS**. Use only in trusted server actions that need unrestricted access (e.g. archiving, grade rollover).
+Supabase client files in `src/lib/supabase/`:
+- `server.ts` — exports `createClient()` (cookie-based, respects RLS) and `createAdminClient()` (service role key, **bypasses RLS** — use only in trusted server actions like archiving/grade rollover). Used by server actions.
+- `admin-client.ts` — browser singleton with `storageKey: 'sb-aclc-admin-auth'`. Used by admin pages that query Supabase directly.
+- `teacher-client.ts` — browser singleton with `storageKey: 'sb-aclc-teacher-auth'`. Used by the teacher portal.
+- `student-client.ts` — browser singleton for the student portal.
+- `client.ts` — generic browser singleton for realtime subscriptions and shared hooks.
 
-Client-side realtime subscriptions use the singleton from `src/lib/supabase/client.ts`.
+Each auth storage key is intentionally namespaced so admin, teacher, and student sessions don't collide in the same browser.
 
 ### State Management
 
@@ -82,6 +85,8 @@ Whether the portal is open is controlled by `system_config` (single row): `is_po
 - **Settings** (`/admin/settings`) — enrollment portal control, capacity, financial config, grade operations (rollover, archive)
 - **Archive** (`/admin/archive`) — view/restore archived students by school year; graduate lock/unlock
 - **Predictive Analytics** (`/admin/predictive-analytics`) — charts using Recharts; predictions powered by a pure-TypeScript 4-model ensemble in `src/lib/utils/ensemble.ts` (OLS, Recency-Weighted OLS, Polynomial, Exponential Smoothing)
+- **Student Accounts** (`/admin/student-accounts`) — manage student OED credentials (USN/password), account status, and per-student announcements
+- **Quarterly Updates** (`/admin/quarterly-updates`) — admin view of the quarterly grade update tab (reuses `QuarterlyUpdatesAdminTab` from the teachers feature)
 - **Activity Logs** (`/admin/activity_logs`) — audit trail
 - **Communication** (`/admin/communication`) — realtime announcement board backed by Supabase (not EmailJS)
 
@@ -101,7 +106,7 @@ src/
   hooks/                  # Global custom hooks (useTheme, use-realtime, etc.)
   lib/
     actions/              # All server actions (one file per domain)
-    supabase/             # client.ts + server.ts
+    supabase/             # client.ts, server.ts, admin-client.ts, teacher-client.ts, student-client.ts
     utils/                # Field requirements, predictive data helpers
     validators/           # Zod-style enrollment validation
   store/                  # Zustand stores

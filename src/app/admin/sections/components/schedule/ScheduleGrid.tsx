@@ -1,7 +1,7 @@
 // sections/components/schedule/ScheduleGrid.tsx
 
 import { memo, useMemo } from "react"
-import { CalendarDays, Clock, BookOpen, Pencil, Trash2 } from "lucide-react"
+import { CalendarDays, Clock, BookOpen, Pencil, Trash2, Globe } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { DAYS, formatTime } from "./types"
 import type { ScheduleRow } from "./types"
@@ -141,9 +141,11 @@ export const ScheduleGrid = memo(function ScheduleGrid({
                       <p className={`text-sm font-black uppercase truncate ${isDarkMode ? "text-white" : "text-slate-900"}`}>
                         {s.subject}
                       </p>
-                      <p className={`text-[10px] font-bold ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                      <p className={`text-[10px] font-bold ${isDarkMode ? "text-slate-400" : "text-slate-500"} flex items-center gap-1.5`}>
                         {formatTime(s.start_time)} – {formatTime(s.end_time)}
-                        {s.room && <span className="ml-2 opacity-60">{s.room}</span>}
+                        {s.is_online
+                          ? <span className="ml-1 flex items-center gap-0.5 text-blue-400"><Globe size={9} /> Online</span>
+                          : s.room && <span className="ml-2 opacity-60">{s.room}</span>}
                       </p>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
@@ -292,7 +294,9 @@ export const ScheduleGrid = memo(function ScheduleGrid({
                                 
                                 <div className={`${isExtremelyCompact ? 'mt-0 flex justify-between items-baseline gap-2' : 'mt-auto flex-col space-y-0.5'}`} style={{ opacity: 0.6 }}>
                                    {s.teacher && <p className={`text-[7.5px] font-bold truncate ${isDarkMode ? "text-slate-200" : "text-slate-600"}`}>{s.teacher}</p>}
-                                   {s.room && <p className={`text-[7.5px] truncate ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>{s.room}</p>}
+                                   {s.is_online
+                                     ? <p className={`text-[7.5px] flex items-center gap-0.5 text-blue-400 font-bold`}><Globe size={7} /> Online</p>
+                                     : s.room && <p className={`text-[7.5px] truncate ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>{s.room}</p>}
                                 </div>
 
                                 <div data-actions

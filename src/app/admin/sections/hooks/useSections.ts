@@ -357,6 +357,7 @@ export function useSections() {
     setSections(prev => prev.map(s => ({ ...s, students: [] })))
 
     try {
+      await supabase.from('activity_logs').delete().not('student_id', 'is', null)
       await supabase.from('students').delete().neq('id', '00000000-0000-0000-0000-000000000000')
       const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
       supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'DELETED', student_name: 'ALL STUDENTS', details: "Executed complete registry wipe (Factory Reset)" }]).then()

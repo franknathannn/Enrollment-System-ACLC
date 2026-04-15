@@ -275,7 +275,12 @@ export async function updateStudentSection(id: string, sectionId: string) {
 export async function deleteApplicant(id: string) {
   const supabase = await createClient()
 
-  await supabase.from('activity_logs').delete().eq('student_id', id)
+  await Promise.all([
+    supabase.from('activity_logs').delete().eq('student_id', id),
+    supabase.from('attendance').delete().eq('student_id', id),
+    supabase.from('attendance_excuses').delete().eq('student_id', id),
+    supabase.from('password_reset_tokens').delete().eq('student_id', id),
+  ])
 
   const { error } = await supabase
     .from('students')
@@ -638,12 +643,18 @@ export async function bulkDeleteApplicants(ids: string[]) {
   const CHUNK = 200
 
   try {
-    // Delete logs first (parallel chunks)
-    const logChunks: Promise<any>[] = []
+    // Delete all FK-dependent rows first (parallel chunks across all child tables)
+    const depChunks: Promise<any>[] = []
     for (let i = 0; i < ids.length; i += CHUNK) {
-      logChunks.push(supabase.from('activity_logs').delete().in('student_id', ids.slice(i, i + CHUNK)))
+      const slice = ids.slice(i, i + CHUNK)
+      depChunks.push(
+        supabase.from('activity_logs').delete().in('student_id', slice),
+        supabase.from('attendance').delete().in('student_id', slice),
+        supabase.from('attendance_excuses').delete().in('student_id', slice),
+        supabase.from('password_reset_tokens').delete().in('student_id', slice),
+      )
     }
-    await Promise.all(logChunks)
+    await Promise.all(depChunks)
 
     // Delete students (parallel chunks)
     const delChunks: Promise<any>[] = []

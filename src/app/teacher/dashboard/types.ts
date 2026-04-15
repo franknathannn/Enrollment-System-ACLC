@@ -19,6 +19,8 @@ export interface ScheduleRow {
   room?: string | null
   teacher?: string | null
   teacher_id?: string | null
+  is_online?: boolean
+  gclass_link?: string | null
 }
 
 export interface Student {

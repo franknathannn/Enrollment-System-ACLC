@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Users, MapPin, Clock, ChevronDown, ChevronUp, Loader2, CheckCircle2, MinusCircle, User, FileDown } from "lucide-react"
+import { Users, MapPin, Clock, ChevronDown, ChevronUp, Loader2, CheckCircle2, MinusCircle, User, FileDown, Globe, ExternalLink, Pencil, X, Save } from "lucide-react"
 import { StudentRow } from "./StudentRow"
 import { ScheduleRow, Student, TeacherSession, COLORS, fmt } from "../types"
 import { supabase } from "@/lib/supabase/teacher-client"
@@ -21,6 +21,7 @@ interface PeriodCardProps {
   onStudentClick: (student: Student) => void
   session: TeacherSession
   schoolYear: string
+  onLinkUpdated?: (scheduleId: string, link: string | null) => void
 }
 
 type AttendanceStatus = "Present" | "Late" | "Absent"
@@ -39,12 +40,36 @@ function fmtT(t: string) {
   return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`
 }
 
-export function PeriodCard({ period, idx, color, students, loading: studLoad, dm, onStudentClick, session, schoolYear }: PeriodCardProps) {
+export function PeriodCard({ period, idx, color, students, loading: studLoad, dm, onStudentClick, session, schoolYear, onLinkUpdated }: PeriodCardProps) {
   const [open, setOpen] = useState(() => {
     if (typeof window !== "undefined")
       return sessionStorage.getItem(`teacher_period_open_${period.id}`) === "true"
     return false
   })
+
+  // ── GClass link inline editor ─────────────────────────────────────────────
+  const [editingLink, setEditingLink] = useState(false)
+  const [linkDraft,   setLinkDraft]   = useState(period.gclass_link ?? "")
+  const [savingLink,  setSavingLink]  = useState(false)
+
+  const saveLink = async () => {
+    setSavingLink(true)
+    try {
+      const trimmed = linkDraft.trim() || null
+      const { error } = await supabase
+        .from("schedules")
+        .update({ gclass_link: trimmed })
+        .eq("id", period.id)
+      if (error) throw error
+      toast.success("Google Classroom link updated")
+      setEditingLink(false)
+      onLinkUpdated?.(period.id, trimmed)
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to save link")
+    } finally {
+      setSavingLink(false)
+    }
+  }
 
   useEffect(() => {
     sessionStorage.setItem(`teacher_period_open_${period.id}`, String(open))
@@ -172,9 +197,54 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
           <p className={`text-sm md:text-base font-black ${color.text}`}>{period.subject}</p>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
             <span className={`flex items-center gap-1 text-[10px] font-bold ${sub2}`}><Users size={9} />{period.section}</span>
-            {period.room && <span className={`flex items-center gap-1 text-[10px] font-bold ${sub2}`}><MapPin size={9} />{period.room}</span>}
+            {period.is_online
+              ? <span className="flex items-center gap-1 text-[10px] font-bold text-blue-400"><Globe size={9} /> Online</span>
+              : period.room && <span className={`flex items-center gap-1 text-[10px] font-bold ${sub2}`}><MapPin size={9} />{period.room}</span>}
             <span className={`flex items-center gap-1 text-[10px] font-bold ${dm ? "text-slate-600" : "text-slate-400"}`}><Clock size={9} />{dur} min</span>
+            {period.is_online && !editingLink && period.gclass_link && (
+              <a href={period.gclass_link} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[10px] font-black text-blue-400 hover:text-blue-300 transition-colors">
+                <ExternalLink size={9} /> Open Class
+              </a>
+            )}
           </div>
+          {/* GClass link editor — only for online periods */}
+          {period.is_online && (
+            <div className="mt-2">
+              {editingLink ? (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    autoFocus
+                    value={linkDraft}
+                    onChange={e => setLinkDraft(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") saveLink(); if (e.key === "Escape") setEditingLink(false) }}
+                    placeholder="https://classroom.google.com/c/..."
+                    className={`flex-1 text-[10px] font-medium px-2.5 py-1.5 rounded-xl border outline-none min-w-0
+                      ${dm ? "bg-slate-800 border-slate-600 text-white placeholder-slate-500 focus:border-blue-500" : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-blue-400"}`}
+                  />
+                  <button onClick={saveLink} disabled={savingLink}
+                    className="flex items-center gap-1 px-2 py-1.5 rounded-xl text-[9px] font-black bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50 flex-shrink-0">
+                    {savingLink ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}
+                  </button>
+                  <button onClick={() => { setEditingLink(false); setLinkDraft(period.gclass_link ?? "") }}
+                    className={`p-1.5 rounded-xl transition-colors flex-shrink-0 ${dm ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-600"}`}>
+                    <X size={10} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setLinkDraft(period.gclass_link ?? ""); setEditingLink(true) }}
+                  className={`flex items-center gap-1 text-[9px] font-black transition-colors
+                    ${period.gclass_link
+                      ? "text-blue-400 hover:text-blue-300"
+                      : dm ? "text-slate-600 hover:text-blue-400" : "text-slate-400 hover:text-blue-500"}`}>
+                  <Pencil size={9} />
+                  {period.gclass_link ? "Edit GClass Link" : "Add GClass Link"}
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Today attendance mini-summary */}
           {isToday && scannedCount > 0 && (
             <div className="flex items-center gap-2 mt-2 flex-wrap">

@@ -312,7 +312,10 @@ export default function SchedulesPage() {
         end_time:   toStr(en) + ":00",
         ...extra,
       }
-      if (extra?.room) {
+      if (extra?.is_online) {
+        updateData.room = null
+        updateData.room_id = null
+      } else if (extra?.room) {
         updateData.room = extra.room
         if (rMap[extra.room]) updateData.room_id = rMap[extra.room]
       }
