@@ -2,7 +2,6 @@
 // NOTE: No "use client" here — metadata/viewport exports require a server component
 
 import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/shared/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
@@ -10,7 +9,6 @@ import { ThemeApplier } from "@/components/shared/ThemeApplier"
 import { DemoTools } from "@/components/DemoTools"
 import Script from "next/script"
 
-const inter = Inter({ subsets: ["latin"] })
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -40,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }catch(e){}
         `}} />
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <Script
           src="https://cdnjs.cloudflare.com/ajax/libs/xlsx-populate/1.21.0/xlsx-populate.min.js"
           strategy="beforeInteractive"
