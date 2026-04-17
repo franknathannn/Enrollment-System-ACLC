@@ -6,8 +6,9 @@ import { studentSupabase } from "@/lib/supabase/student-client"
 import {
   Loader2, LogOut, GraduationCap, QrCode, CalendarDays,
   BookOpen, Copy, Check, ClipboardList, Sun, Moon, User,
-  LayoutGrid, List, Download, CheckCircle2,
+  LayoutGrid, List, Download, CheckCircle2, Clock,
 } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { toPng } from "html-to-image"
 import { saveAs } from "file-saver"
 import { Button } from "@/components/ui/button"
@@ -59,6 +60,7 @@ interface StudentData {
   gwa_grade_10?: number | null
   preferred_modality?: string | null
   preferred_shift?: string | null
+  last_login_at?: string | null
 }
 
 // ── Welcome modal ─────────────────────────────────────────────────────────────
@@ -69,7 +71,7 @@ function WelcomeModal({ studentId, lrn, onClose, dm }: {
   const [copied, setCopied] = useState<string | null>(null)
 
   const copy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text).catch(() => {})
+    navigator.clipboard.writeText(text).catch(() => { })
     setCopied(key)
     setTimeout(() => setCopied(null), 2000)
   }
@@ -79,9 +81,8 @@ function WelcomeModal({ studentId, lrn, onClose, dm }: {
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.88)", backdropFilter: "blur(20px)" }}
     >
-      <div className={`w-full max-w-sm rounded-[40px] p-8 space-y-6 animate-in zoom-in-95 duration-300 shadow-2xl border ${
-        dm ? "bg-slate-950 border-white/10" : "bg-white border-slate-200"
-      }`}>
+      <div className={`w-full max-w-sm rounded-[40px] p-8 space-y-6 animate-in zoom-in-95 duration-300 shadow-2xl border ${dm ? "bg-slate-950 border-white/10" : "bg-white border-slate-200"
+        }`}>
         <div className="text-center space-y-3">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
             <GraduationCap className="w-8 h-8 text-green-400" />
@@ -154,22 +155,22 @@ function StudentAvatar({ url, name, size, dm }: {
 
 // ── Dashboard content ──────────────────────────────────────────────────────────
 function DashboardContent() {
-  const router       = useRouter()
+  const router = useRouter()
   const searchParams = useSearchParams()
-  const isWelcome    = searchParams.get("welcome") === "true"
+  const isWelcome = searchParams.get("welcome") === "true"
 
   const { isDark, toggleTheme } = useThemeStore()
   const dm = isDark
 
-  const [student,              setStudent]              = useState<StudentData | null>(null)
-  const [loading,              setLoading]              = useState(true)
-  const [showWelcome,          setShowWelcome]          = useState(false)
-  const [activeTab,            setActiveTab]            = useState<"info" | "schedule" | "qr" | "attendance" | "announcements">("info")
-  const [copied,               setCopied]               = useState<string | null>(null)
-  const [viewMode,             setViewMode]             = useState<"list" | "grid">("list")
-  const [gridSchedules,        setGridSchedules]        = useState<any[]>([])
-  const [gridLoading,          setGridLoading]          = useState(false)
-  const [downloadingGrid,      setDownloadingGrid]      = useState(false)
+  const [student, setStudent] = useState<StudentData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [showWelcome, setShowWelcome] = useState(false)
+  const [activeTab, setActiveTab] = useState<"info" | "schedule" | "qr" | "attendance" | "announcements">("info")
+  const [copied, setCopied] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list")
+  const [gridSchedules, setGridSchedules] = useState<any[]>([])
+  const [gridLoading, setGridLoading] = useState(false)
+  const [downloadingGrid, setDownloadingGrid] = useState(false)
 
   useEffect(() => {
     let channel: ReturnType<typeof studentSupabase.channel> | null = null
@@ -192,6 +193,10 @@ function DashboardContent() {
         router.replace("/student/login")
         return
       }
+
+      studentSupabase.from("students").update({
+        last_login_at: new Date().toISOString()
+      }).eq("id", user.id).then()
 
       setStudent(data as StudentData)
       setLoading(false)
@@ -235,7 +240,7 @@ function DashboardContent() {
   }
 
   const copyVal = (val: string, key: string) => {
-    navigator.clipboard.writeText(val).catch(() => {})
+    navigator.clipboard.writeText(val).catch(() => { })
     setCopied(key)
     setTimeout(() => setCopied(null), 2000)
   }
@@ -256,96 +261,96 @@ function DashboardContent() {
     if (!gridSchedules.length || !student?.section) return
     setDownloadingGrid(true)
     try {
-      const DAYS_LIST = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+      const DAYS_LIST = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
       const COLORS = [
-        { bg:"#eff6ff", text:"#3b82f6", border:"#bfdbfe" },
-        { bg:"#f5f3ff", text:"#8b5cf6", border:"#ddd6fe" },
-        { bg:"#ecfdf5", text:"#10b981", border:"#a7f3d0" },
-        { bg:"#fffbeb", text:"#f59e0b", border:"#fde68a" },
-        { bg:"#fef2f2", text:"#ef4444", border:"#fecaca" },
-        { bg:"#ecfeff", text:"#06b6d4", border:"#a5f3fc" },
-        { bg:"#fdf4ff", text:"#d946ef", border:"#f0abfc" },
-        { bg:"#f0fdfa", text:"#14b8a6", border:"#99f6e4" },
-        { bg:"#fff7ed", text:"#f97316", border:"#fed7aa" },
-        { bg:"#f7fee7", text:"#84cc16", border:"#bef264" },
+        { bg: "#eff6ff", text: "#3b82f6", border: "#bfdbfe" },
+        { bg: "#f5f3ff", text: "#8b5cf6", border: "#ddd6fe" },
+        { bg: "#ecfdf5", text: "#10b981", border: "#a7f3d0" },
+        { bg: "#fffbeb", text: "#f59e0b", border: "#fde68a" },
+        { bg: "#fef2f2", text: "#ef4444", border: "#fecaca" },
+        { bg: "#ecfeff", text: "#06b6d4", border: "#a5f3fc" },
+        { bg: "#fdf4ff", text: "#d946ef", border: "#f0abfc" },
+        { bg: "#f0fdfa", text: "#14b8a6", border: "#99f6e4" },
+        { bg: "#fff7ed", text: "#f97316", border: "#fed7aa" },
+        { bg: "#f7fee7", text: "#84cc16", border: "#bef264" },
       ]
-      const toM  = (t: string) => { const [h,m] = t.split(":").map(Number); return h*60+m }
-      const fmtT = (t: string) => { const [h,m] = t.split(":").map(Number); return `${h%12||12}:${String(m).padStart(2,"0")} ${h>=12?"PM":"AM"}` }
-      const fmtM = (m: number) => { const h=Math.floor(m/60); return `${h%12||12}:${String(m%60).padStart(2,"0")} ${h>=12?"PM":"AM"}` }
+      const toM = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m }
+      const fmtT = (t: string) => { const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}` }
+      const fmtM = (m: number) => { const h = Math.floor(m / 60); return `${h % 12 || 12}:${String(m % 60).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}` }
 
-      let min=24*60,max=0
-      gridSchedules.forEach((s:any) => {
-        const st=toM(s.start_time),en=toM(s.end_time)
-        if(st<min)min=st; if(en>max)max=en
+      let min = 24 * 60, max = 0
+      gridSchedules.forEach((s: any) => {
+        const st = toM(s.start_time), en = toM(s.end_time)
+        if (st < min) min = st; if (en > max) max = en
       })
-      const minMins=Math.floor(min/30)*30, maxMins=Math.ceil(max/30)*30
-      const timeLabels:number[]=[]
-      for(let m=minMins;m<=maxMins;m+=30) timeLabels.push(m)
-      const gridH=(timeLabels.length-1)*44+20
+      const minMins = Math.floor(min / 30) * 30, maxMins = Math.ceil(max / 30) * 30
+      const timeLabels: number[] = []
+      for (let m = minMins; m <= maxMins; m += 30) timeLabels.push(m)
+      const gridH = (timeLabels.length - 1) * 44 + 20
 
-      const uniqSubs=[...new Set(gridSchedules.map((s:any)=>s.subject as string))]
-      const colorMap:Record<string,typeof COLORS[0]>={}
-      uniqSubs.forEach((s,i)=>{colorMap[s]=COLORS[i%COLORS.length]})
+      const uniqSubs = [...new Set(gridSchedules.map((s: any) => s.subject as string))]
+      const colorMap: Record<string, typeof COLORS[0]> = {}
+      uniqSubs.forEach((s, i) => { colorMap[s] = COLORS[i % COLORS.length] })
 
-      const byDay:Record<string,any[]>={}
-      for(const d of DAYS_LIST) byDay[d]=gridSchedules.filter((s:any)=>s.day===d).sort((a:any,b:any)=>a.start_time.localeCompare(b.start_time))
+      const byDay: Record<string, any[]> = {}
+      for (const d of DAYS_LIST) byDay[d] = gridSchedules.filter((s: any) => s.day === d).sort((a: any, b: any) => a.start_time.localeCompare(b.start_time))
 
-      const bc="rgba(226,232,240,1)", hbc="rgba(241,245,249,1)"
+      const bc = "rgba(226,232,240,1)", hbc = "rgba(241,245,249,1)"
 
-      const wrap=document.createElement("div")
-      wrap.style.cssText="position:absolute;left:0;top:0;z-index:-1;pointer-events:none;background:#fff;padding:24px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;width:880px;"
+      const wrap = document.createElement("div")
+      wrap.style.cssText = "position:absolute;left:0;top:0;z-index:-1;pointer-events:none;background:#fff;padding:24px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;width:880px;"
       document.body.appendChild(wrap)
 
       // Header
-      const hdr=document.createElement("div")
-      hdr.style.cssText="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;"
-      hdr.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;"></div><span style="font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.15em;color:#1e293b;">${student.section}</span></div><span style="font-size:10px;color:#94a3b8;font-weight:700;">${student.school_year||""}</span>`
+      const hdr = document.createElement("div")
+      hdr.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;"
+      hdr.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;"></div><span style="font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.15em;color:#1e293b;">${student.section}</span></div><span style="font-size:10px;color:#94a3b8;font-weight:700;">${student.school_year || ""}</span>`
       wrap.appendChild(hdr)
 
       // Grid outer
-      const go=document.createElement("div")
-      go.style.cssText=`border:1px solid ${bc};border-radius:16px;overflow:hidden;`
+      const go = document.createElement("div")
+      go.style.cssText = `border:1px solid ${bc};border-radius:16px;overflow:hidden;`
 
       // Day header
-      const dh=document.createElement("div")
-      dh.style.cssText=`display:flex;border-bottom:1px solid ${bc};background:#f8fafc;`
-      dh.innerHTML=`<div style="width:70px;min-width:70px;border-right:1px solid ${bc};"></div>`+
-        DAYS_LIST.map((d,i)=>`<div style="flex:1;padding:10px 6px;text-align:center;${i<DAYS_LIST.length-1?`border-right:1px solid ${bc};`:""}"><p style="font-size:11px;font-weight:900;text-transform:uppercase;color:${byDay[d].length>0?"#3b82f6":"#cbd5e1"};margin:0;">${d}</p><p style="font-size:7.5px;font-weight:600;color:#94a3b8;margin:2px 0 0;">${byDay[d].length} period${byDay[d].length!==1?"s":""}</p></div>`).join("")
+      const dh = document.createElement("div")
+      dh.style.cssText = `display:flex;border-bottom:1px solid ${bc};background:#f8fafc;`
+      dh.innerHTML = `<div style="width:70px;min-width:70px;border-right:1px solid ${bc};"></div>` +
+        DAYS_LIST.map((d, i) => `<div style="flex:1;padding:10px 6px;text-align:center;${i < DAYS_LIST.length - 1 ? `border-right:1px solid ${bc};` : ""}"><p style="font-size:11px;font-weight:900;text-transform:uppercase;color:${byDay[d].length > 0 ? "#3b82f6" : "#cbd5e1"};margin:0;">${d}</p><p style="font-size:7.5px;font-weight:600;color:#94a3b8;margin:2px 0 0;">${byDay[d].length} period${byDay[d].length !== 1 ? "s" : ""}</p></div>`).join("")
       go.appendChild(dh)
 
       // Body
-      const body=document.createElement("div")
-      body.style.cssText=`display:flex;position:relative;height:${gridH}px;`
+      const body = document.createElement("div")
+      body.style.cssText = `display:flex;position:relative;height:${gridH}px;`
 
       // Time axis
-      const ta=document.createElement("div")
-      ta.style.cssText=`width:70px;min-width:70px;position:relative;border-right:1px solid ${bc};background:#f8fafc;`
-      timeLabels.forEach((m,i)=>{
-        const isH=m%60===0
-        const t=document.createElement("div")
-        t.style.cssText=`position:absolute;top:${i*44}px;left:0;right:0;height:20px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;`
-        t.innerHTML=`<span style="font-size:${isH?9.5:7.5}px;font-weight:${isH?900:600};color:${isH?"#475569":"#94a3b8"};font-family:monospace;">${fmtM(m)}</span>`
+      const ta = document.createElement("div")
+      ta.style.cssText = `width:70px;min-width:70px;position:relative;border-right:1px solid ${bc};background:#f8fafc;`
+      timeLabels.forEach((m, i) => {
+        const isH = m % 60 === 0
+        const t = document.createElement("div")
+        t.style.cssText = `position:absolute;top:${i * 44}px;left:0;right:0;height:20px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;`
+        t.innerHTML = `<span style="font-size:${isH ? 9.5 : 7.5}px;font-weight:${isH ? 900 : 600};color:${isH ? "#475569" : "#94a3b8"};font-family:monospace;">${fmtM(m)}</span>`
         ta.appendChild(t)
       })
       body.appendChild(ta)
 
-      DAYS_LIST.forEach((day,dIdx)=>{
-        const col=document.createElement("div")
-        col.style.cssText=`flex:1;position:relative;overflow:hidden;${dIdx<DAYS_LIST.length-1?`border-right:1px solid ${bc}`:""}`
-        timeLabels.slice(0,-1).forEach((m,i)=>{
-          const isH=m%60===0
-          const line=document.createElement("div")
-          line.style.cssText=`position:absolute;top:${i*44+10}px;left:0;right:0;height:44px;border-bottom:1px solid ${isH?bc:hbc};pointer-events:none;`
+      DAYS_LIST.forEach((day, dIdx) => {
+        const col = document.createElement("div")
+        col.style.cssText = `flex:1;position:relative;overflow:hidden;${dIdx < DAYS_LIST.length - 1 ? `border-right:1px solid ${bc}` : ""}`
+        timeLabels.slice(0, -1).forEach((m, i) => {
+          const isH = m % 60 === 0
+          const line = document.createElement("div")
+          line.style.cssText = `position:absolute;top:${i * 44 + 10}px;left:0;right:0;height:44px;border-bottom:1px solid ${isH ? bc : hbc};pointer-events:none;`
           col.appendChild(line)
         })
-        byDay[day].forEach((s:any)=>{
-          const c=colorMap[s.subject]||COLORS[0]
-          const st=toM(s.start_time),en=toM(s.end_time)
-          const top=((st-minMins)/30)*44, h=((en-st)/30)*44
-          const compact=h<=50
-          const card=document.createElement("div")
-          card.style.cssText=`position:absolute;left:4px;right:4px;top:${top+11.5}px;height:${h-3}px;border-radius:12px;background:${c.bg};border:1px solid ${c.border};padding:${compact?6:8}px;overflow:hidden;z-index:10;`
-          card.innerHTML=`<p style="font-size:${compact?8:9}px;font-weight:900;text-transform:uppercase;color:${c.text};margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.subject}</p>${!compact?`<p style="font-size:8px;color:#64748b;font-weight:600;margin:0;">${fmtT(s.start_time)} – ${fmtT(s.end_time)}</p>`:""}${!compact&&s.teacher?`<p style="font-size:7.5px;color:#94a3b8;margin:1px 0 0;">${s.teacher}</p>`:""}${!compact&&s.room?`<p style="font-size:7.5px;color:#94a3b8;margin:0;">${s.room}</p>`:""}`
+        byDay[day].forEach((s: any) => {
+          const c = colorMap[s.subject] || COLORS[0]
+          const st = toM(s.start_time), en = toM(s.end_time)
+          const top = ((st - minMins) / 30) * 44, h = ((en - st) / 30) * 44
+          const compact = h <= 50
+          const card = document.createElement("div")
+          card.style.cssText = `position:absolute;left:4px;right:4px;top:${top + 11.5}px;height:${h - 3}px;border-radius:12px;background:${c.bg};border:1px solid ${c.border};padding:${compact ? 6 : 8}px;overflow:hidden;z-index:10;`
+          card.innerHTML = `<p style="font-size:${compact ? 8 : 9}px;font-weight:900;text-transform:uppercase;color:${c.text};margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.subject}</p>${!compact ? `<p style="font-size:8px;color:#64748b;font-weight:600;margin:0;">${fmtT(s.start_time)} – ${fmtT(s.end_time)}</p>` : ""}${!compact && s.teacher ? `<p style="font-size:7.5px;color:#94a3b8;margin:1px 0 0;">${s.teacher}</p>` : ""}${!compact && s.room ? `<p style="font-size:7.5px;color:#94a3b8;margin:0;">${s.room}</p>` : ""}`
           col.appendChild(card)
         })
         body.appendChild(col)
@@ -353,26 +358,26 @@ function DashboardContent() {
       go.appendChild(body)
 
       // Legend
-      const leg=document.createElement("div")
-      leg.style.cssText=`display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid ${hbc};background:#fafafa;`
-      uniqSubs.forEach(sub=>{
-        const c=colorMap[sub]
-        const tag=document.createElement("span")
-        tag.style.cssText=`font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;border-radius:999px;background:${c.bg};border:1px solid ${c.border};color:${c.text};`
-        tag.textContent=sub
+      const leg = document.createElement("div")
+      leg.style.cssText = `display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid ${hbc};background:#fafafa;`
+      uniqSubs.forEach(sub => {
+        const c = colorMap[sub]
+        const tag = document.createElement("span")
+        tag.style.cssText = `font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;border-radius:999px;background:${c.bg};border:1px solid ${c.border};color:${c.text};`
+        tag.textContent = sub
         leg.appendChild(tag)
       })
       go.appendChild(leg)
       wrap.appendChild(go)
 
-      const dataUrl = await toPng(wrap, { quality:1, backgroundColor:"#ffffff", pixelRatio:2 })
+      const dataUrl = await toPng(wrap, { quality: 1, backgroundColor: "#ffffff", pixelRatio: 2 })
       saveAs(dataUrl, `Schedule_${student.section}.png`)
       document.body.removeChild(wrap)
-    } catch(err) {
+    } catch (err) {
       console.error("Schedule download failed:", err)
       toast.error("Download failed. Please try again.")
     } finally {
-      setTimeout(()=>setDownloadingGrid(false), 800)
+      setTimeout(() => setDownloadingGrid(false), 800)
     }
   }
 
@@ -392,25 +397,25 @@ function DashboardContent() {
 
   if (!student) return null
 
-  const fullName       = `${student.last_name}, ${student.first_name}${student.middle_name ? " " + student.middle_name : ""}`
+  const fullName = `${student.last_name}, ${student.first_name}${student.middle_name ? " " + student.middle_name : ""}`
   const trackingPrefix = student.id.split("-")[0]
-  const isEnrolled     = student.status === "Approved" || student.status === "Accepted"
-  const gradeLabel     = student.grade_level ? `Grade ${student.grade_level}` : "Grade 11"
+  const isEnrolled = student.status === "Approved" || student.status === "Accepted"
+  const gradeLabel = student.grade_level ? `Grade ${student.grade_level}` : "Grade 11"
 
   // ── Theme tokens ─────────────────────────────────────────────────────────────
-  const pageBg      = dm ? "bg-slate-950"              : "bg-slate-50"
-  const textPri     = dm ? "text-white"                : "text-slate-900"
-  const textSub     = dm ? "text-slate-500"            : "text-slate-500"
-  const textMuted   = dm ? "text-slate-700"            : "text-slate-300"
-  const emptyCard   = dm
+  const pageBg = dm ? "bg-slate-950" : "bg-slate-50"
+  const textPri = dm ? "text-white" : "text-slate-900"
+  const textSub = dm ? "text-slate-500" : "text-slate-500"
+  const textMuted = dm ? "text-slate-700" : "text-slate-300"
+  const emptyCard = dm
     ? "border border-white/[0.06] rounded-[28px] bg-white/[0.02]"
     : "border border-slate-200 rounded-[28px] bg-white"
 
   const tabBtn = (active: boolean) =>
     `flex items-center justify-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-widest py-2.5 rounded-2xl transition-all duration-200 w-full relative
      ${active
-       ? "text-white bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/25"
-       : (dm ? "text-slate-500 hover:text-slate-200 hover:bg-slate-700/50" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/60")}`
+      ? "text-white bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/25"
+      : (dm ? "text-slate-500 hover:text-slate-200 hover:bg-slate-700/50" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/60")}`
 
   // ── Shared tab content ───────────────────────────────────────────────────────
   const TabContent = () => (
@@ -433,11 +438,10 @@ function DashboardContent() {
             <div className={`inline-flex items-center gap-0.5 p-1 rounded-2xl border ${dm ? "border-white/[0.08] bg-white/[0.02]" : "border-slate-200 bg-slate-100/60"}`}>
               <button
                 onClick={() => setViewMode("list")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                  viewMode === "list"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === "list"
                     ? "bg-blue-600 text-white shadow-sm"
                     : dm ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-700"
-                }`}
+                  }`}
               >
                 <List size={11} /> Day View
               </button>
@@ -448,11 +452,10 @@ function DashboardContent() {
                     fetchGridSchedules(student.section!, student.school_year!)
                   }
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                  viewMode === "grid"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === "grid"
                     ? "bg-blue-600 text-white shadow-sm"
                     : dm ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-700"
-                }`}
+                  }`}
               >
                 <LayoutGrid size={11} /> Weekly Grid
               </button>
@@ -462,13 +465,12 @@ function DashboardContent() {
               <button
                 onClick={downloadScheduleGrid}
                 disabled={downloadingGrid}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95 disabled:opacity-50 ${
-                  downloadingGrid
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95 disabled:opacity-50 ${downloadingGrid
                     ? "border-green-500/30 bg-green-500/10 text-green-400"
                     : dm
                       ? "border-white/10 bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/[0.06]"
                       : "border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:border-slate-300"
-                }`}
+                  }`}
               >
                 {downloadingGrid ? <><CheckCircle2 size={11} /> Saved!</> : <><Download size={11} /> Download</>}
               </button>
@@ -533,7 +535,7 @@ function DashboardContent() {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] bg-gradient-to-r from-blue-500 to-blue-400 bg-clip-text text-transparent">Student Portal</p>
-                <p className={`text-[8px] font-bold uppercase tracking-widest ${textSub}`}>AMA ACLC NORTHBAY</p>
+                <p className={`text-[8px] font-bold uppercase tracking-widest ${textSub}`}>ACLC NORTHBAY</p>
               </div>
             </div>
 
@@ -569,6 +571,17 @@ function DashboardContent() {
                     {student.first_name} {student.last_name}
                   </h1>
                   <p className={`text-xs mt-0.5 ${textSub}`}>{student.strand} · {gradeLabel}</p>
+                  {student.last_login_at && (
+                    <p className={`flex items-center gap-1.5 text-[10px] mt-1.5 ${textSub}`}>
+                      <Clock size={11} className="shrink-0" />
+                      Previous Log In:{" "}
+                      <span className={dm ? "text-blue-400" : "text-blue-600"}>
+                        {new Date(student.last_login_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        {" · "}
+                        {new Date(student.last_login_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+                      </span>
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -576,15 +589,15 @@ function DashboardContent() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-5">
                 {[
                   { label: "Tracking ID", value: trackingPrefix, copy: true },
-                  { label: "LRN",         value: student.lrn, copy: true },
-                  { label: "Section",     value: student.section || "TBA", copy: false },
-                  { label: "Status",      value: student.status === "Approved" ? "Enrolled" : student.status, copy: false },
+                  { label: "LRN", value: student.lrn, copy: true },
+                  { label: "Section", value: student.section || "TBA", copy: false },
+                  { label: "Status", value: student.status === "Approved" ? "Enrolled" : student.status, copy: false },
                 ].map(({ label, value, copy }) => (
                   <div key={label} className={`rounded-2xl border p-3 md:py-2.5 text-center flex flex-col justify-center relative group ${dm ? "bg-slate-800/50 border-slate-700/60" : "bg-slate-50 border-slate-200"}`}>
                     {copy && (
-                       <button onClick={() => copyVal(value, label)} className={`absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity ${dm ? "hover:bg-slate-700" : "hover:bg-slate-200"}`}>
-                         {copied === label ? <Check size={11} className="text-green-500" /> : <Copy size={11} className={textSub} />}
-                       </button>
+                      <button onClick={() => copyVal(value, label)} className={`absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity ${dm ? "hover:bg-slate-700" : "hover:bg-slate-200"}`}>
+                        {copied === label ? <Check size={11} className="text-green-500" /> : <Copy size={11} className={textSub} />}
+                      </button>
                     )}
                     <p className={`text-[12px] font-black mt-0.5 ${textPri}`}>{value}</p>
                     <p className={`text-[7px] font-black uppercase tracking-widest mt-1 ${textSub}`}>{label}</p>
@@ -595,23 +608,60 @@ function DashboardContent() {
           </div>
 
           {/* Tabs array for mapping */}
-          <div className={`grid gap-1 p-1.5 rounded-[20px] md:rounded-2xl border backdrop-blur-sm w-full ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`} style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
-            <button className={tabBtn(activeTab === "info")} onClick={() => setActiveTab("info")}>
-              <User size={13} /><span className="hidden md:inline">Info</span>
-            </button>
-            <button className={tabBtn(activeTab === "schedule")} onClick={() => setActiveTab("schedule")}>
-              <CalendarDays size={13} /><span className="hidden md:inline">Schedule</span>
-            </button>
-            <button className={tabBtn(activeTab === "qr")} onClick={() => setActiveTab("qr")}>
-              <QrCode size={13} /><span className="hidden md:inline">My QR</span>
-            </button>
-            <button className={tabBtn(activeTab === "attendance")} onClick={() => setActiveTab("attendance")}>
-              <ClipboardList size={13} /><span className="hidden md:inline">Attendance</span>
-            </button>
-            <button className={tabBtn(activeTab === "announcements")} onClick={() => setActiveTab("announcements")}>
-              <BookOpen size={13} /><span className="hidden md:inline">News</span>
-            </button>
-          </div>
+          <TooltipProvider delayDuration={300}>
+            <div className={`grid gap-1 p-1.5 rounded-[20px] md:rounded-2xl border backdrop-blur-sm w-full ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`} style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className={tabBtn(activeTab === "info")} onClick={() => setActiveTab("info")}>
+                    <User size={13} /><span className="hidden md:inline">Info</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                  <p className="font-bold text-[10px] uppercase tracking-widest">Your personal info</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className={tabBtn(activeTab === "schedule")} onClick={() => setActiveTab("schedule")}>
+                    <CalendarDays size={13} /><span className="hidden md:inline">Schedule</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                  <p className="font-bold text-[10px] uppercase tracking-widest">Your class schedule</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className={tabBtn(activeTab === "qr")} onClick={() => setActiveTab("qr")}>
+                    <QrCode size={13} /><span className="hidden md:inline">My QR</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                  <p className="font-bold text-[10px] uppercase tracking-widest">Your QR code for scanning</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className={tabBtn(activeTab === "attendance")} onClick={() => setActiveTab("attendance")}>
+                    <ClipboardList size={13} /><span className="hidden md:inline">Attendance</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                  <p className="font-bold text-[10px] uppercase tracking-widest">Your attendance record</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className={tabBtn(activeTab === "announcements")} onClick={() => setActiveTab("announcements")}>
+                    <BookOpen size={13} /><span className="hidden md:inline">News</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                  <p className="font-bold text-[10px] uppercase tracking-widest">School news for you</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
 
           {/* Tab Content */}
           <TabContent />
@@ -638,16 +688,16 @@ export default function StudentDashboardPage() {
 const GRID_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const
 
 const GRID_COLORS = [
-  { bg: "bg-blue-500/10",    border: "border-blue-500/25",    text: "text-blue-400"    },
-  { bg: "bg-violet-500/10",  border: "border-violet-500/25",  text: "text-violet-400"  },
+  { bg: "bg-blue-500/10", border: "border-blue-500/25", text: "text-blue-400" },
+  { bg: "bg-violet-500/10", border: "border-violet-500/25", text: "text-violet-400" },
   { bg: "bg-emerald-500/10", border: "border-emerald-500/25", text: "text-emerald-400" },
-  { bg: "bg-amber-500/10",   border: "border-amber-500/25",   text: "text-amber-400"   },
-  { bg: "bg-rose-500/10",    border: "border-rose-500/25",    text: "text-rose-400"    },
-  { bg: "bg-cyan-500/10",    border: "border-cyan-500/25",    text: "text-cyan-400"    },
+  { bg: "bg-amber-500/10", border: "border-amber-500/25", text: "text-amber-400" },
+  { bg: "bg-rose-500/10", border: "border-rose-500/25", text: "text-rose-400" },
+  { bg: "bg-cyan-500/10", border: "border-cyan-500/25", text: "text-cyan-400" },
   { bg: "bg-fuchsia-500/10", border: "border-fuchsia-500/25", text: "text-fuchsia-400" },
-  { bg: "bg-teal-500/10",    border: "border-teal-500/25",    text: "text-teal-400"    },
-  { bg: "bg-orange-500/10",  border: "border-orange-500/25",  text: "text-orange-400"  },
-  { bg: "bg-sky-500/10",     border: "border-sky-500/25",     text: "text-sky-400"     },
+  { bg: "bg-teal-500/10", border: "border-teal-500/25", text: "text-teal-400" },
+  { bg: "bg-orange-500/10", border: "border-orange-500/25", text: "text-orange-400" },
+  { bg: "bg-sky-500/10", border: "border-sky-500/25", text: "text-sky-400" },
 ]
 
 function fmtMins(m: number): string {
@@ -791,8 +841,8 @@ function ReadOnlyScheduleGrid({ schedules, dm }: { schedules: any[], dm: boolean
                   {byDay[day].map((s: any) => {
                     const color = subjectColorMap[s.subject] ?? GRID_COLORS[0]
                     const startMins = toM(s.start_time)
-                    const endMins   = toM(s.end_time)
-                    const top    = ((startMins - minMins) / 30) * 44
+                    const endMins = toM(s.end_time)
+                    const top = ((startMins - minMins) / 30) * 44
                     const height = ((endMins - startMins) / 30) * 44
                     const compact = height <= 50
                     return (
@@ -813,7 +863,7 @@ function ReadOnlyScheduleGrid({ schedules, dm }: { schedules: any[], dm: boolean
                         </div>
                         <div className={`${compact ? "mt-0 flex justify-between items-baseline gap-2" : "mt-auto space-y-0.5"}`} style={{ opacity: 0.6 }}>
                           {s.teacher && <p className={`text-[7.5px] font-bold truncate ${dm ? "text-slate-200" : "text-slate-600"}`}>{s.teacher}</p>}
-                          {s.room    && <p className={`text-[7.5px] truncate ${dm ? "text-slate-400" : "text-slate-500"}`}>{s.room}</p>}
+                          {s.room && <p className={`text-[7.5px] truncate ${dm ? "text-slate-400" : "text-slate-500"}`}>{s.room}</p>}
                         </div>
                       </div>
                     )
@@ -869,8 +919,8 @@ function StudentAnnouncements({ studentGrade, dm }: { studentGrade: string, dm: 
   const emptyCard = dm
     ? "border border-white/[0.06] rounded-[28px] bg-white/[0.02]"
     : "border border-slate-200 rounded-[28px] bg-white"
-  const textPri   = dm ? "text-white" : "text-slate-900"
-  const textSub   = dm ? "text-slate-500" : "text-slate-500"
+  const textPri = dm ? "text-white" : "text-slate-900"
+  const textSub = dm ? "text-slate-500" : "text-slate-500"
 
   if (loading) {
     return (
@@ -895,18 +945,17 @@ function StudentAnnouncements({ studentGrade, dm }: { studentGrade: string, dm: 
   return (
     <div className="space-y-4 fade-in pb-12">
       {currentAnnouncements.map((ann) => (
-        <div key={ann.id} className={`p-6 md:p-8 rounded-[32px] border ${
-          ann.is_pinned 
-            ? (dm ? "bg-blue-900/10 border-blue-900/50" : "bg-blue-50 border-blue-200") 
+        <div key={ann.id} className={`p-6 md:p-8 rounded-[32px] border ${ann.is_pinned
+            ? (dm ? "bg-blue-900/10 border-blue-900/50" : "bg-blue-50 border-blue-200")
             : (dm ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200")
-        } shadow-sm relative overflow-hidden group`}>
+          } shadow-sm relative overflow-hidden group`}>
           {ann.is_pinned && <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full shrink-0 ${dm ? "bg-blue-500/20" : "bg-blue-500/10"}`} />}
-          
+
           <div className="relative z-10 shrink-0">
             <div className="flex items-center gap-2 mb-3">
               {ann.is_pinned && (
                 <span className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md ${dm ? "text-blue-400 bg-blue-900/30" : "text-blue-600 bg-blue-100"}`}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg> 
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 17v5" /><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" /></svg>
                   Pinned
                 </span>
               )}
@@ -919,7 +968,7 @@ function StudentAnnouncements({ studentGrade, dm }: { studentGrade: string, dm: 
           </div>
         </div>
       ))}
-      
+
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-4">
           <span className={`text-[10px] font-bold uppercase tracking-widest ${textSub}`}>

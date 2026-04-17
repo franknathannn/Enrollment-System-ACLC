@@ -35,6 +35,7 @@ export interface Student {
   status: string
   profile_picture?: string | null
   two_by_two_url?: string | null
+  last_login_at?: string | null
 }
 
 export interface Announcement {

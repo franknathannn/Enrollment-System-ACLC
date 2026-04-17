@@ -13,7 +13,7 @@ serve(async (req: Request) => {
 
     // Only handle 'reset' types (setup tokens might be handled differently or we can add them later)
     if (record.type !== 'reset') {
-       return new Response('Not a reset token', { status: 200 });
+      return new Response('Not a reset token', { status: 200 });
     }
 
     const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
@@ -50,7 +50,7 @@ serve(async (req: Request) => {
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
         <div style="text-align: center; margin-bottom: 30px;">
           <img src="${logoUrl}" alt="ACLC Logo" style="width: 80px; height: 80px; object-fit: contain;" />
-          <h2 style="color: #1d4ed8; margin-top: 10px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800;">AMA ACLC NORTHBAY</h2>
+          <h2 style="color: #1d4ed8; margin-top: 10px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800;">ACLC NORTHBAY</h2>
         </div>
         
         <div style="background-color: #ffffff; border-radius: 16px; padding: 40px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb;">

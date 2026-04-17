@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
-import { Search, Loader2, KeyRound, Ban, CheckCircle, ShieldAlert, Mail, User, BookOpen, Clock, Pin, PinOff, Plus, Trash2, Laptop, BellRing, Eye, EyeOff, Copy, Check } from "lucide-react"
+import { Search, Loader2, KeyRound, Ban, CheckCircle, ShieldAlert, Mail, User, BookOpen, Clock, Pin, PinOff, Plus, Trash2, Laptop, BellRing, Eye, EyeOff, Copy, Check, CalendarDays, ChevronDown, CheckCircle2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,13 +19,18 @@ type StudentUser = {
   lrn: string
   grade_level: string | null
   section: string | null
+  strand: string | null
   status: string
   email: string | null
   two_by_two_url: string | null
   oed_usn: string | null
   oed_password: string | null
   account_status: string | null
+  created_at: string | null
+  last_login_at: string | null
 }
+
+type ActivityFilter = "ALL" | "RECENT" | "SUPER_LATE" | "INACTIVE_3M" | "INACTIVE_5M" | "INACTIVE_10M" | "INACTIVE_12M"
 
 type StudentAnnouncement = {
   id: string
@@ -52,8 +57,11 @@ export default function StudentAccountsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filter, setFilter] = useState<"ALL" | "GRADE 11" | "GRADE 12">("ALL")
   const [oedFilter, setOedFilter] = useState<"ALL" | "WITH_OED" | "WITHOUT_OED">("ALL")
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("ALL")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
+  const [credDropdownOpen, setCredDropdownOpen] = useState(false)
+  const [actDropdownOpen, setActDropdownOpen] = useState(false)
 
   const [selectedStudent, setSelectedStudent] = useState<StudentUser | null>(null)
   const [openPwModal, setOpenPwModal] = useState(false)
@@ -105,13 +113,13 @@ export default function StudentAccountsPage() {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [filter, oedFilter, searchTerm])
+  }, [filter, oedFilter, activityFilter, searchTerm])
 
   const fetchStudents = async () => {
     setLoading(true)
     const { data, error } = await supabase
       .from("students")
-      .select("id, first_name, last_name, lrn, grade_level, section, status, email, two_by_two_url, oed_usn, oed_password, account_status")
+      .select("id, first_name, last_name, lrn, grade_level, section, strand, status, email, two_by_two_url, oed_usn, oed_password, account_status, created_at, last_login_at")
       .not("status", "eq", "Pending")
       .not("status", "eq", "Rejected")
 
@@ -311,6 +319,20 @@ export default function StudentAccountsPage() {
       return true
     })
     .filter(s => {
+      if (activityFilter === "ALL") return true
+      const now = Date.now()
+      const login = s.last_login_at ? new Date(s.last_login_at).getTime() : 0
+      const diffMs = now - login
+      const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30)
+      if (activityFilter === "RECENT") return login > 0 && diffMonths <= 1
+      if (activityFilter === "SUPER_LATE") return !login || diffMonths >= 2
+      if (activityFilter === "INACTIVE_3M") return !login || diffMonths >= 3
+      if (activityFilter === "INACTIVE_5M") return !login || diffMonths >= 5
+      if (activityFilter === "INACTIVE_10M") return !login || diffMonths >= 10
+      if (activityFilter === "INACTIVE_12M") return !login || diffMonths >= 12
+      return true
+    })
+    .filter(s => {
       const q = searchTerm.toLowerCase()
       return s.first_name.toLowerCase().includes(q) || s.last_name.toLowerCase().includes(q) || s.lrn.toLowerCase().includes(q)
     })
@@ -363,169 +385,245 @@ export default function StudentAccountsPage() {
         {activeTab === "accounts" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
             <div className={`rounded-[32px] p-6 sm:p-8 shadow-sm flex flex-col gap-6 ${surface} ${border} border`}>
-              <div className="flex flex-col xl:flex-row justify-between gap-4">
-                <div className="relative w-full xl:w-[400px] shrink-0 group">
-                  <Search className={`absolute left-5 top-1/2 -translate-y-1/2 group-focus-within:text-blue-500 transition-colors ${sub}`} size={18} />
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative flex-1 min-w-[200px] max-w-[400px] group">
+                  <Search className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none group-focus-within:text-blue-500 transition-colors ${sub}`} size={16} />
                   <Input
                     placeholder="Search by Name or LRN..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className={`pl-12 h-12 rounded-[20px] transition-all text-sm font-bold placeholder:font-medium w-full ${inputBg} focus:border-blue-500`}
+                    className={`pl-11 h-11 rounded-[16px] transition-all text-sm font-bold placeholder:font-medium w-full ${inputBg} focus:border-blue-500`}
                   />
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <select
-                    value={oedFilter}
-                    onChange={(e) => setOedFilter(e.target.value as any)}
-                    className={`px-4 h-11 rounded-[16px] text-[10px] font-black uppercase tracking-widest border outline-none ${dm ? "bg-slate-900 border-slate-800 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-600"}`}
+                {/* Credentials dropdown */}
+                <div className="relative">
+                  <Button
+                    onClick={() => { setCredDropdownOpen(!credDropdownOpen); setActDropdownOpen(false) }}
+                    className={`h-11 px-4 rounded-[16px] font-black uppercase text-[9px] tracking-widest border transition-all flex items-center gap-2 shadow-sm ${dm ? 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                   >
-                    <option value="ALL">All Credentials</option>
-                    <option value="WITH_OED">Assigned OED</option>
-                    <option value="WITHOUT_OED">No OED</option>
-                  </select>
-                  <div className={`flex gap-2 p-1 rounded-[20px] border ${dm ? "bg-slate-900/50 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
-                    {(["ALL", "GRADE 11", "GRADE 12"] as const).map(f => (
-                      <button
-                        key={f}
-                        onClick={() => setFilter(f)}
-                        className={`px-4 sm:px-5 h-9 sm:h-10 rounded-[16px] font-black uppercase tracking-widest text-[9px] transition-all
-                          ${filter === f
-                            ? (dm ? "bg-white text-slate-900 shadow-md transform scale-105" : "bg-slate-900 text-white shadow-md transform scale-105")
-                            : `${sub} hover:opacity-80`}`}
-                      >
-                        {f}
-                      </button>
-                    ))}
-                  </div>
+                    <KeyRound size={13} className="text-blue-500" />
+                    <span className="hidden sm:inline max-w-[110px] truncate">
+                      {oedFilter === 'WITH_OED' ? 'Assigned OED' : oedFilter === 'WITHOUT_OED' ? 'No OED' : 'All Credentials'}
+                    </span>
+                    <ChevronDown size={12} className={`transition-transform duration-200 ${credDropdownOpen ? 'rotate-180' : ''} shrink-0`} />
+                  </Button>
+                  {credDropdownOpen && (
+                    <div className={`absolute top-full left-0 mt-2 w-48 rounded-2xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150 ${dm ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                      <div className="p-1.5 space-y-0.5">
+                        {[
+                          { id: 'ALL',          label: 'All Credentials' },
+                          { id: 'WITH_OED',     label: 'Assigned OED'   },
+                          { id: 'WITHOUT_OED',  label: 'No OED'         },
+                        ].map(opt => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => { setOedFilter(opt.id as any); setCredDropdownOpen(false) }}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors text-left ${oedFilter === opt.id ? (dm ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (dm ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
+                          >
+                            {opt.label}
+                            {oedFilter === opt.id && <CheckCircle2 size={11} />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Activity dropdown */}
+                <div className="relative">
+                  <Button
+                    onClick={() => { setActDropdownOpen(!actDropdownOpen); setCredDropdownOpen(false) }}
+                    className={`h-11 px-4 rounded-[16px] font-black uppercase text-[9px] tracking-widest border transition-all flex items-center gap-2 shadow-sm ${dm ? 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    <Clock size={13} className="text-emerald-500" />
+                    <span className="hidden sm:inline max-w-[110px] truncate">
+                      {activityFilter === 'RECENT'      ? 'Recent Logins'    :
+                       activityFilter === 'SUPER_LATE'  ? 'Super Late'       :
+                       activityFilter === 'INACTIVE_3M' ? 'Inactive 3M'      :
+                       activityFilter === 'INACTIVE_5M' ? 'Inactive 5M'      :
+                       activityFilter === 'INACTIVE_10M'? 'Inactive 10M'     :
+                       activityFilter === 'INACTIVE_12M'? 'Inactive 12M'     : 'All Activity'}
+                    </span>
+                    <ChevronDown size={12} className={`transition-transform duration-200 ${actDropdownOpen ? 'rotate-180' : ''} shrink-0`} />
+                  </Button>
+                  {actDropdownOpen && (
+                    <div className={`absolute top-full left-0 mt-2 w-52 rounded-2xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150 ${dm ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                      <div className="p-1.5 space-y-0.5 max-h-[280px] overflow-y-auto">
+                        {[
+                          { id: 'ALL',           label: 'All Activity'       },
+                          { id: 'RECENT',        label: 'Recent Logins'      },
+                          { id: 'SUPER_LATE',    label: 'Super Late Logins'  },
+                          { id: 'INACTIVE_3M',   label: 'Inactive 3 Months'  },
+                          { id: 'INACTIVE_5M',   label: 'Inactive 5 Months'  },
+                          { id: 'INACTIVE_10M',  label: 'Inactive 10 Months' },
+                          { id: 'INACTIVE_12M',  label: 'Inactive 12 Months' },
+                        ].map(opt => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => { setActivityFilter(opt.id as ActivityFilter); setActDropdownOpen(false) }}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors text-left ${activityFilter === opt.id ? (dm ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-50 text-emerald-600') : (dm ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
+                          >
+                            {opt.label}
+                            {activityFilter === opt.id && <CheckCircle2 size={11} />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className={`flex gap-2 p-1 rounded-[20px] border ${dm ? "bg-slate-900/50 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                  {(["ALL", "GRADE 11", "GRADE 12"] as const).map(f => (
+                    <button
+                      key={f}
+                      onClick={() => setFilter(f)}
+                      className={`px-4 sm:px-5 h-9 sm:h-10 rounded-[16px] font-black uppercase tracking-widest text-[9px] transition-all
+                        ${filter === f
+                          ? (dm ? "bg-white text-slate-900 shadow-md transform scale-105" : "bg-slate-900 text-white shadow-md transform scale-105")
+                          : `${sub} hover:opacity-80`}`}
+                    >
+                      {f}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <div className="grid gap-3">
-                {loading ? (
-                  <div className="h-40 flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                  </div>
-                ) : paginatedStudents.length === 0 ? (
-                  <div className={`h-40 flex flex-col items-center justify-center border border-dashed rounded-[24px] ${border}`}>
-                    <Ban className={`w-8 h-8 mb-2 ${sub}`} />
-                    <p className={`text-[11px] font-bold uppercase tracking-widest ${sub}`}>No students found</p>
-                  </div>
-                ) : (
-                  <>
-                    {paginatedStudents.map(student => {
-                      const isDeactivated = student.account_status === "Deactivated"
-                      return (
-                        <div key={student.id} className={`group flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-[24px] border ${dm ? "border-slate-800/60 bg-slate-900/30 hover:bg-slate-900 hover:border-blue-900/50" : "border-slate-100 bg-slate-50/50 hover:bg-white hover:border-blue-200"} hover:shadow-md transition-all`}>
+              {loading ? (
+                <div className="h-40 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                </div>
+              ) : paginatedStudents.length === 0 ? (
+                <div className={`h-40 flex flex-col items-center justify-center border border-dashed rounded-[24px] ${border}`}>
+                  <Ban className={`w-8 h-8 mb-2 ${sub}`} />
+                  <p className={`text-[11px] font-bold uppercase tracking-widest ${sub}`}>No students found</p>
+                </div>
+              ) : (
+                <>
+                  {paginatedStudents.map(student => {
+                    const isDeactivated = student.account_status === "Deactivated"
+                    return (
+                      <div key={student.id} className={`group flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-[24px] border ${dm ? "border-slate-800/60 bg-slate-900/30 hover:bg-slate-900 hover:border-blue-900/50" : "border-slate-100 bg-slate-50/50 hover:bg-white hover:border-blue-200"} hover:shadow-md transition-all`}>
 
-                          <div className="flex items-center gap-4 flex-1">
-                            <div className={`w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 shadow-sm ${dm ? "bg-slate-800 border-slate-900" : "bg-slate-200 border-white"}`}>
-                              {student.two_by_two_url ? (
-                                <img src={student.two_by_two_url} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <div className={`w-full h-full flex items-center justify-center ${sub}`}><User size={20} /></div>
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className={`w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 shadow-sm ${dm ? "bg-slate-800 border-slate-900" : "bg-slate-200 border-white"}`}>
+                            {student.two_by_two_url ? (
+                              <img src={student.two_by_two_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className={`w-full h-full flex items-center justify-center ${sub}`}><User size={20} /></div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`text-[13px] font-black uppercase tracking-wider truncate ${txt}`}>
+                              {student.last_name}, {student.first_name}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded-md ${dm ? "bg-slate-800 text-slate-400" : "bg-slate-200/50 text-slate-500"}`}>
+                                {student.lrn}
+                              </span>
+                              <span className={`w-1 h-1 rounded-full ${dm ? "bg-slate-700" : "bg-slate-300"}`} />
+                              <span className={`text-[9px] font-bold uppercase tracking-widest ${dm ? "text-blue-400" : "text-blue-600"}`}>
+                                Grade {student.grade_level}
+                              </span>
+                              <span className={`w-1 h-1 rounded-full ${dm ? "bg-slate-700" : "bg-slate-300"}`} />
+                              <span className={`text-[9px] font-bold uppercase tracking-widest ${sub}`}>
+                                {student.section || "No Section"}
+                              </span>
+                              {student.strand && (
+                                <>
+                                  <span className={`w-1 h-1 rounded-full ${dm ? "bg-slate-700" : "bg-slate-300"}`} />
+                                  <span className={`text-[9px] font-bold uppercase tracking-widest ${sub}`}>{student.strand}</span>
+                                </>
                               )}
                             </div>
-                            <div className="min-w-0">
-                              <p className={`text-[13px] font-black uppercase tracking-wider truncate ${txt}`}>
-                                {student.last_name}, {student.first_name}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded-md ${dm ? "bg-slate-800 text-slate-400" : "bg-slate-200/50 text-slate-500"}`}>
-                                  {student.lrn}
+                            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                              {student.created_at && (
+                                <span className={`flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest ${dm ? "text-slate-500" : "text-slate-400"}`}>
+                                  <CalendarDays size={9} /> Created: {new Date(student.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                 </span>
-                                <span className={`w-1 h-1 rounded-full ${dm ? "bg-slate-700" : "bg-slate-300"}`} />
-                                <span className={`text-[9px] font-bold uppercase tracking-widest ${dm ? "text-blue-400" : "text-blue-600"}`}>
-                                  Grade {student.grade_level}
-                                </span>
-                                <span className={`w-1 h-1 rounded-full ${dm ? "bg-slate-700" : "bg-slate-300"}`} />
-                                <span className={`text-[9px] font-bold uppercase tracking-widest ${sub}`}>
-                                  {student.section || "No Section"}
-                                </span>
-                              </div>
+                              )}
+                              <span className={`flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest ${student.last_login_at ? (dm ? "text-blue-400" : "text-blue-600") : (dm ? "text-slate-600" : "text-slate-400")}`}>
+                                <Clock size={9} />
+                                {student.last_login_at
+                                  ? `Last Login: ${new Date(student.last_login_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} · ${new Date(student.last_login_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`
+                                  : "No login yet"}
+                              </span>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-4 justify-between sm:justify-end shrink-0 pl-16 sm:pl-0">
-                            <div className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border flex items-center gap-1.5 ${isDeactivated
-                              ? (dm ? "bg-rose-500/10 text-rose-500 border-rose-500/20" : "bg-rose-50 text-rose-600 border-rose-200")
-                              : (dm ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-emerald-50 text-emerald-600 border-emerald-200")
-                              }`}>
-                              {isDeactivated ? <Ban size={10} /> : <CheckCircle size={10} />}
-                              {isDeactivated ? "Deactivated" : "Active"}
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <button
-                                title="OED Credentials"
-                                onClick={() => handleOedModalOpen(student)}
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-colors shadow-sm ${(student.oed_usn || student.oed_password)
-                                  ? (dm ? "bg-blue-900/20 border-blue-800 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600")
-                                  : (dm ? "bg-slate-800 border-slate-700 hover:text-blue-400 hover:border-blue-900/50 text-slate-400" : "bg-white border-slate-200 hover:text-blue-600 hover:border-blue-200 text-slate-500")
-                                  }`}
-                              >
-                                <Laptop size={14} />
-                              </button>
-                              <button
-                                title="Manage Password"
-                                onClick={() => handlePasswordModalOpen(student)}
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-colors shadow-sm ${dm ? "bg-slate-800 border-slate-700 hover:text-blue-400 hover:border-blue-900/50 text-slate-400" : "bg-white border-slate-200 hover:text-blue-600 hover:border-blue-200 text-slate-500"}`}
-                              >
-                                <KeyRound size={14} />
-                              </button>
-                              <button
-                                title={isDeactivated ? "Activate Account" : "Deactivate Account"}
-                                onClick={() => handleDeactivate(student.id, student.account_status)}
-                                className={`px-4 h-9 rounded-xl font-black uppercase tracking-widest text-[9px] border transition-colors shadow-sm ${isDeactivated
-                                  ? (dm ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/30" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200")
-                                  : (dm ? "bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border-rose-500/30" : "bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200")
-                                  }`}
-                              >
-                                {isDeactivated ? "Activate" : "Deactivate"}
-                              </button>
-                            </div>
-                          </div>
-
                         </div>
-                      )
-                    })}
 
-                    {totalPages > 1 && (
-                      <div className="flex flex-col sm:flex-row items-center justify-between pt-4 mt-2 gap-4">
-                        <span className={`text-[10px] font-bold uppercase tracking-widest ${sub}`}>
-                          Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredStudents.length)} of {filteredStudents.length}
-                        </span>
-                        <div className="flex gap-1.5 flex-wrap justify-center">
+                        <div className="flex items-center gap-2 justify-between sm:justify-end shrink-0 pl-16 sm:pl-0">
                           <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className={`px-3 h-8 rounded-[12px] font-black uppercase tracking-widest text-[9px] border transition-colors disabled:opacity-30 ${dm ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-white"}`}
+                            title="OED Credentials"
+                            onClick={() => handleOedModalOpen(student)}
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-colors shadow-sm ${(student.oed_usn || student.oed_password)
+                              ? (dm ? "bg-blue-900/20 border-blue-800 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600")
+                              : (dm ? "bg-slate-800 border-slate-700 hover:text-blue-400 hover:border-blue-900/50 text-slate-400" : "bg-white border-slate-200 hover:text-blue-600 hover:border-blue-200 text-slate-500")
+                              }`}
                           >
-                            Prev
+                            <Laptop size={14} />
                           </button>
-
-                          {Array.from({ length: totalPages }).map((_, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setCurrentPage(i + 1)}
-                              className={`w-8 h-8 rounded-[12px] font-black text-[10px] border transition-all ${currentPage === i + 1 ? (dm ? "bg-blue-600 border-blue-500 text-white" : "bg-blue-600 border-blue-600 text-white shadow-md") : (dm ? "border-slate-700 text-slate-400 hover:bg-slate-800" : "border-slate-200 text-slate-500 hover:bg-white")}`}
-                            >
-                              {i + 1}
-                            </button>
-                          ))}
-
                           <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className={`px-3 h-8 rounded-[12px] font-black uppercase tracking-widest text-[9px] border transition-colors disabled:opacity-30 ${dm ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-white"}`}
+                            title="Manage Password"
+                            onClick={() => handlePasswordModalOpen(student)}
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-colors shadow-sm ${dm ? "bg-slate-800 border-slate-700 hover:text-blue-400 hover:border-blue-900/50 text-slate-400" : "bg-white border-slate-200 hover:text-blue-600 hover:border-blue-200 text-slate-500"}`}
                           >
-                            Next
+                            <KeyRound size={14} />
+                          </button>
+                          <button
+                            title={isDeactivated ? "Click to Activate" : "Click to Deactivate"}
+                            onClick={() => handleDeactivate(student.id, student.account_status)}
+                            className={`px-4 h-9 rounded-xl font-black uppercase tracking-widest text-[9px] border transition-colors shadow-sm flex items-center gap-1.5 ${isDeactivated
+                              ? (dm ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/30" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200")
+                              : (dm ? "bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border-rose-500/30" : "bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200")
+                              }`}
+                          >
+                            {isDeactivated ? <><CheckCircle size={10} /> Activate</> : <><Ban size={10} /> Deactivate</>}
                           </button>
                         </div>
+
                       </div>
-                    )}
-                  </>
-                )}
-              </div>
+                    )
+                  })}
+
+                  {totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between pt-4 mt-2 gap-4">
+                      <span className={`text-[10px] font-bold uppercase tracking-widest ${sub}`}>
+                        Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredStudents.length)} of {filteredStudents.length}
+                      </span>
+                      <div className="flex gap-1.5 flex-wrap justify-center">
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className={`px-3 h-8 rounded-[12px] font-black uppercase tracking-widest text-[9px] border transition-colors disabled:opacity-30 ${dm ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-white"}`}
+                        >
+                          Prev
+                        </button>
+
+                        {Array.from({ length: totalPages }).map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setCurrentPage(i + 1)}
+                            className={`w-8 h-8 rounded-[12px] font-black text-[10px] border transition-all ${currentPage === i + 1 ? (dm ? "bg-blue-600 border-blue-500 text-white" : "bg-blue-600 border-blue-600 text-white shadow-md") : (dm ? "border-slate-700 text-slate-400 hover:bg-slate-800" : "border-slate-200 text-slate-500 hover:bg-white")}`}
+                          >
+                            {i + 1}
+                          </button>
+                        ))}
+
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className={`px-3 h-8 rounded-[12px] font-black uppercase tracking-widest text-[9px] border transition-colors disabled:opacity-30 ${dm ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-white"}`}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
             </div>
           </div>
         )}
@@ -586,7 +684,7 @@ export default function StudentAccountsPage() {
                       </div>
                     </div>
                   ))}
-                  
+
                   {annTotalPages > 1 && (
                     <div className="flex items-center justify-between pt-4">
                       <span className={`text-[10px] font-bold uppercase tracking-widest ${sub}`}>

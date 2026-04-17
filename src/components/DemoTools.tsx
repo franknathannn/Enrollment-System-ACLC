@@ -42,7 +42,7 @@ export function DemoTools() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'z') {
+      if (e.key?.toLowerCase() === 'z') {
         if (e.target instanceof HTMLElement) {
           const tag = e.target.tagName
           if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return

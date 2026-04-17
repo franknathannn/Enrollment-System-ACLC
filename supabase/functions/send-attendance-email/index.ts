@@ -184,7 +184,7 @@ serve(async (req: Request) => {
       + '<a href="https://ama-aclc-northbay-es.vercel.app" target="_blank" style="text-decoration:none;">'
       + '<img src="' + logoUrl + '" alt="ACLC Logo" style="width:80px;height:80px;object-fit:contain;" />'
       + '</a>'
-      + '<h2 style="color:#1d4ed8;margin-top:10px;text-transform:uppercase;letter-spacing:2px;font-weight:800;">AMA ACLC NORTHBAY</h2>'
+      + '<h2 style="color:#1d4ed8;margin-top:10px;text-transform:uppercase;letter-spacing:2px;font-weight:800;">ACLC NORTHBAY</h2>'
       + '</div>'
       + '<div style="background-color:#ffffff;border-radius:16px;padding:40px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);border:1px solid #e5e7eb;">'
       + '<h1 style="color:#b45309;margin-top:0;font-size:26px;text-align:center;font-weight:800;">Arrival Notification</h1>'
@@ -201,7 +201,7 @@ serve(async (req: Request) => {
       + '<p style="font-size:14px;line-height:1.6;color:#94a3b8;text-align:center;font-style:italic;">A comprehensive attendance summary will be provided at the end of the school day.</p>'
       + '</div>'
       + '<div style="text-align:center;margin-top:35px;color:#9ca3af;font-size:12px;">'
-      + '<p style="margin:0;">&copy; ' + new Date().getFullYear() + ' AMA ACLC Northbay Campus. All rights reserved.</p>'
+      + '<p style="margin:0;">&copy; ' + new Date().getFullYear() + ' ACLC NORTHBAY Campus. All rights reserved.</p>'
       + '</div></div>';
 
     // 7. Dispatch via Brevo

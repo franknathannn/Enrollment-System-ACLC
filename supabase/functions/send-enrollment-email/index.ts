@@ -97,7 +97,7 @@ serve(async (req: Request) => {
 
         '<div style="background:#f0f4ff;border-radius:24px;border:1.5px solid #c7d7f8;overflow:hidden;position:relative;">',
         '<div style="position:absolute;top:0;left:0;right:0;bottom:0;opacity:0.5;background-image:linear-gradient(#c7d7f8 1px, transparent 1px), linear-gradient(90deg, #c7d7f8 1px, transparent 1px);background-size:20px 20px;"></div>',
-        
+
         // Header
         '<div style="position:relative;background:linear-gradient(135deg,#1d4ed8,#1e40af);padding:16px 20px;">',
         '<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>',
@@ -120,13 +120,13 @@ serve(async (req: Request) => {
         '<img src="' + qrLightUrl + '" alt="QR Code" style="width:220px;height:220px;display:block;" />',
         '</div>',
         '</div>',
-        
+
         sectionPill,
-        
+
         '<div style="position:relative;text-align:center;padding:12px 20px 24px;">',
         '<p style="margin:0;color:#0f172a;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:1px;">' + studentName + '</p>',
         '<p style="margin:4px 0 0;color:#64748b;font-size:10px;font-weight:700;">LRN: ' + (record.lrn || 'N/A') + '</p>',
-        
+
         '<div style="margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;">',
         '<p style="margin:0;color:#64748b;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Scan this QR for attendance · Keep it private</p>',
         '</div>',
@@ -230,7 +230,7 @@ serve(async (req: Request) => {
       contentHtml = '<h1 style="color:#4f46e5;margin-top:0;font-size:28px;text-align:center;font-weight:800;">Application Received</h1>'
         + '<p style="font-size:18px;line-height:1.6;color:#4f46e5;text-align:center;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">HELLO STUDENT ' + studentUuid + '</p>'
         + '<p style="font-size:16px;line-height:1.6;color:#4b5563;text-align:center;">Dear <strong>' + record.last_name + '</strong> LRN <strong>' + record.lrn + '</strong>,</p>'
-        + '<p style="font-size:16px;line-height:1.6;color:#4b5563;text-align:center;">We have successfully received your application for enrollment at AMA ACLC NORTHBAY.</p>'
+        + '<p style="font-size:16px;line-height:1.6;color:#4b5563;text-align:center;">We have successfully received your application for enrollment at ACLC NORTHBAY.</p>'
         + '<p style="font-size:14px;color:#6b7280;text-align:center;font-style:italic;margin-top:25px;">Our registrar team is currently reviewing your documents. We will send you another email once your application status changes.</p>';
     } else if (isSectionSwitch) {
       contentHtml = '<h1 style="color:#1d4ed8;margin-top:0;font-size:28px;text-align:center;font-weight:800;">Section Transfer Notice</h1>'
@@ -276,13 +276,13 @@ serve(async (req: Request) => {
       + '<a href="https://enrollment-system-aclc.vercel.app" target="_blank" style="text-decoration:none;">'
       + '<img src="' + logoUrl + '" alt="ACLC Logo" style="width:80px;height:80px;object-fit:contain;" />'
       + '</a>'
-      + '<h2 style="color:#1d4ed8;margin-top:10px;text-transform:uppercase;letter-spacing:2px;font-weight:800;">AMA ACLC NORTHBAY</h2>'
+      + '<h2 style="color:#1d4ed8;margin-top:10px;text-transform:uppercase;letter-spacing:2px;font-weight:800;">ACLC NORTHBAY</h2>'
       + '</div>'
       + '<div style="background-color:#ffffff;border-radius:16px;padding:40px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);border:1px solid #e5e7eb;">'
       + contentHtml
       + '</div>'
       + '<div style="text-align:center;margin-top:35px;color:#9ca3af;font-size:12px;">'
-      + '<p style="margin:0;">&copy; ' + new Date().getFullYear() + ' AMA ACLC Northbay Campus. All rights reserved.</p>'
+      + '<p style="margin:0;">&copy; ' + new Date().getFullYear() + ' ACLC NORTHBAY Campus. All rights reserved.</p>'
       + '</div></div>';
 
     // 3. THE BREVO SEND-OFF — Student email
@@ -312,7 +312,7 @@ serve(async (req: Request) => {
       if (isInsert) {
         guardianContentHtml = '<h1 style="color:#4f46e5;margin-top:0;font-size:28px;text-align:center;font-weight:800;">Enrollment Application Received</h1>'
           + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">Dear <strong>' + guardianName + '</strong>,</p>'
-          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">We would like to inform you that your ' + pronoun + ', <strong>' + studentFullName + '</strong>, has successfully submitted an enrollment application at <strong>AMA ACLC Northbay</strong>.</p>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">We would like to inform you that your ' + pronoun + ', <strong>' + studentFullName + '</strong>, has successfully submitted an enrollment application at <strong>ACLC NORTHBAY</strong>.</p>'
           + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">Our registrar team is currently reviewing the submitted documents. You will receive another notification once the application status is updated.</p>'
           + '<p style="font-size:14px;color:#6b7280;font-style:italic;margin-top:25px;">If you have any concerns, please contact the registrar\'s office directly.</p>';
       } else if (isSectionSwitch) {
@@ -328,7 +328,7 @@ serve(async (req: Request) => {
       } else if (isApproved) {
         guardianContentHtml = '<h1 style="color:#15803d;margin-top:0;font-size:28px;text-align:center;font-weight:800;">Your ' + (pronoun === 'son' ? 'Son' : 'Daughter') + ' Has Been Enrolled!</h1>'
           + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">Dear <strong>' + guardianName + '</strong>,</p>'
-          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">We are pleased to inform you that your ' + pronoun + ', <strong>' + studentFullName + '</strong>, has been officially <strong>APPROVED</strong> for enrollment at <strong>AMA ACLC Northbay</strong>.</p>'
+          + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">We are pleased to inform you that your ' + pronoun + ', <strong>' + studentFullName + '</strong>, has been officially <strong>APPROVED</strong> for enrollment at <strong>ACLC NORTHBAY</strong>.</p>'
           + '<div style="background-color:#f0fdf4;border:1px solid #bbf7d0;padding:25px;margin:30px 0;border-radius:12px;text-align:center;">'
           + '<p style="margin:0;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#15803d;font-weight:700;">Assigned Section</p>'
           + '<p style="margin:8px 0 0 0;font-size:32px;font-weight:900;color:#166534;">' + (record.section || 'TBA') + '</p>'
@@ -354,13 +354,13 @@ serve(async (req: Request) => {
         + '<a href="https://enrollment-system-aclc.vercel.app" target="_blank" style="text-decoration:none;">'
         + '<img src="' + logoUrl + '" alt="ACLC Logo" style="width:80px;height:80px;object-fit:contain;" />'
         + '</a>'
-        + '<h2 style="color:#1d4ed8;margin-top:10px;text-transform:uppercase;letter-spacing:2px;font-weight:800;">AMA ACLC NORTHBAY</h2>'
+        + '<h2 style="color:#1d4ed8;margin-top:10px;text-transform:uppercase;letter-spacing:2px;font-weight:800;">ACLC NORTHBAY</h2>'
         + '</div>'
         + '<div style="background-color:#ffffff;border-radius:16px;padding:40px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);border:1px solid #e5e7eb;">'
         + guardianContentHtml
         + '</div>'
         + '<div style="text-align:center;margin-top:35px;color:#9ca3af;font-size:12px;">'
-        + '<p style="margin:0;">&copy; ' + new Date().getFullYear() + ' AMA ACLC Northbay Campus. All rights reserved.</p>'
+        + '<p style="margin:0;">&copy; ' + new Date().getFullYear() + ' ACLC NORTHBAY Campus. All rights reserved.</p>'
         + '</div></div>';
 
       await fetch('https://api.brevo.com/v3/smtp/email', {

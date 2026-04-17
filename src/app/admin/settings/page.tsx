@@ -40,6 +40,8 @@ type ConfigState = {
   notifyParentsAttendance: boolean
   notifyParentsSummary: boolean
   allowStudentEdit: boolean
+  closePortalWhenFull: boolean
+  slotDisplayMode: string
 }
 
 export default function SettingsPage() {
@@ -69,6 +71,8 @@ export default function SettingsPage() {
     notifyParentsAttendance: false,
     notifyParentsSummary: false,
     allowStudentEdit: false,
+    closePortalWhenFull: true,
+    slotDisplayMode: "grade11",
   })
 
   const loadSettings = useCallback(async () => {
@@ -128,6 +132,8 @@ export default function SettingsPage() {
           notifyParentsAttendance: configData.notify_parents_attendance ?? false,
           notifyParentsSummary: configData.notify_parents_summary ?? false,
           allowStudentEdit: configData.allow_student_edit ?? false,
+          closePortalWhenFull: configData.close_portal_when_full ?? true,
+          slotDisplayMode: configData.slot_display_mode || "total",
         })
         // Lock in the DB-loaded school year so we can detect changes at save time
         originalSchoolYearRef.current = configData.school_year || ""
@@ -141,6 +147,19 @@ export default function SettingsPage() {
   }, [])
 
   useEffect(() => { loadSettings() }, [loadSettings])
+
+  useEffect(() => {
+    const savedScroll = sessionStorage.getItem("settings_scroll_pos")
+    if (savedScroll) {
+      setTimeout(() => window.scrollTo({ top: parseInt(savedScroll), behavior: 'instant' }), 100)
+    }
+
+    const handleScroll = () => {
+      sessionStorage.setItem("settings_scroll_pos", window.scrollY.toString())
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   // --- LOGIC A: System Mode Toggle (STRICTLY RETAINED) ---
   const handleModeToggle = async (isManual: boolean) => {
@@ -259,7 +278,7 @@ export default function SettingsPage() {
   const runCapacityGuardian = async () => {
     setUpdating(true)
     try {
-      const currentCap = Number(config.capacity)
+      const currentCap = Number(config.capacity) * 2
       if (currentAccepted >= currentCap) {
         const { error } = await supabase.from('system_config').update({
           is_portal_active: false,
@@ -339,6 +358,8 @@ export default function SettingsPage() {
         notify_parents_status: boolean
         notify_parents_attendance: boolean
         notify_parents_summary: boolean
+        close_portal_when_full: boolean
+        slot_display_mode: string
       } = {
         school_year: config.schoolYear,
         enrollment_start: config.startDate || null,
@@ -348,7 +369,9 @@ export default function SettingsPage() {
         is_portal_active: calculatedStatus,
         notify_parents_status: config.notifyParentsStatus,
         notify_parents_attendance: config.notifyParentsAttendance,
-        notify_parents_summary: config.notifyParentsSummary
+        notify_parents_summary: config.notifyParentsSummary,
+        close_portal_when_full: config.closePortalWhenFull,
+        slot_display_mode: config.slotDisplayMode
       }
 
       const { error } = await supabase.from('system_config')
@@ -423,7 +446,7 @@ export default function SettingsPage() {
 
   // --- REACTIVE SATURATION ENGINE ---
   const capacityPercentage = useMemo(() => {
-    const cap = Number(config.capacity)
+    const cap = Number(config.capacity) * 2
     if (!cap || cap <= 0) return 0
     return Math.min((currentAccepted / cap) * 100, 100)
   }, [currentAccepted, config.capacity])
@@ -591,8 +614,36 @@ export default function SettingsPage() {
               capacityPercentage={capacityPercentage}
               isDarkMode={isDarkMode}
               updating={updating}
+              closePortalWhenFull={config.closePortalWhenFull}
+              slotDisplayMode={config.slotDisplayMode}
               onCapacityChange={(value) => setConfig({ ...config, capacity: value })}
               onIntegrityScan={runCapacityGuardian}
+              onClosePortalChange={async (v) => {
+                setUpdating(true)
+                const prev = config.closePortalWhenFull
+                setConfig(p => ({ ...p, closePortalWhenFull: v }))
+                try {
+                  const { error } = await supabase.from('system_config').update({ close_portal_when_full: v }).eq('id', config.id)
+                  if (error) throw error
+                  toast.success(`Auto-close portal ${v ? 'ENABLED' : 'DISABLED'}`)
+                } catch {
+                  setConfig(p => ({ ...p, closePortalWhenFull: prev }))
+                  toast.error("Failed to update auto-close setting")
+                } finally { setUpdating(false) }
+              }}
+              onSlotDisplayChange={async (v) => {
+                setUpdating(true)
+                const prev = config.slotDisplayMode
+                setConfig(p => ({ ...p, slotDisplayMode: v }))
+                try {
+                  const { error } = await supabase.from('system_config').update({ slot_display_mode: v }).eq('id', config.id)
+                  if (error) throw error
+                  toast.success(`Slot display mode updated to ${v.toUpperCase()}`)
+                } catch {
+                  setConfig(p => ({ ...p, slotDisplayMode: prev }))
+                  toast.error("Failed to update slot display mode")
+                } finally { setUpdating(false) }
+              }}
             />
 
             <FinancialHub

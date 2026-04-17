@@ -1242,6 +1242,7 @@ export default function PredictiveAnalytics() {
       lowestPossible:  ensembleResult.declining,
       highestPossible: ensembleResult.optimistic,
       hasHistory:      true,
+      lastYearTotal:   lastYearPt?.total ?? 0,
     }
   }, [ensembleResult, history, activeConfig?.school_year, analyticsData, mode, simulationValue, effectiveLiveCount])
 
@@ -1395,6 +1396,7 @@ export default function PredictiveAnalytics() {
             isSimulation={mode === 'simulation'}
             hasHistory={ensembleMetrics ? ensembleMetrics.hasHistory : false}
             isDarkMode={isDarkMode}
+            lastYearTotal={ensembleMetrics ? ensembleMetrics.lastYearTotal : 0}
         />
 
         {/* ── ENROLLMENT CHART ── */}

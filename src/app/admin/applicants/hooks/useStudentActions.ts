@@ -43,6 +43,9 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
       await new Promise(resolve => setTimeout(resolve, 280))
       setHiddenRows(prev => { const next = new Set(prev); next.add(studentId); return next })
       const result = await updateApplicantStatus(studentId, status, feedback);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to update status")
+      }
       if (result.success) {
         const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
         const student = students.find(s => s.id === studentId);
@@ -178,10 +181,18 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
           return s;
         }));
         const count = successfulUpdates.length;
+        const failedCount = result.results.length - count;
         const sectionInfo = successfulUpdates.some(u => u.assignedSection && u.assignedSection !== 'Unassigned')
           ? ` → ${successfulUpdates.filter(u => u.assignedSection && u.assignedSection !== 'Unassigned').length} assigned to sections`
           : '';
-        toast.success(`${count} student${count !== 1 ? 's' : ''} moved to ${newStatus}${sectionInfo}`, { id: toastId })
+        
+        if (count === 0 && failedCount > 0) {
+          toast.error(`No students could be accepted due to lack of available slots.`, { id: toastId })
+        } else if (failedCount > 0) {
+          toast.warning(`${count} moved to ${newStatus}. ${failedCount} skipped due to slot limits.`, { id: toastId })
+        } else {
+          toast.success(`${count} student${count !== 1 ? 's' : ''} moved to ${newStatus}${sectionInfo}`, { id: toastId })
+        }
         modals.setBulkDeclineModalOpen(false); modals.setDeclineReason("")
       }
     } catch (err: any) {

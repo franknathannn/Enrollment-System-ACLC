@@ -33,7 +33,7 @@ export async function getEnrollmentStatus() {
     const isManualOpen = config.is_portal_active;
     const isPastStart = !start || now >= start;
     const isBeforeEnd = !end || now <= end;
-    const isFull = (approvedCount || 0) >= config.capacity;
+    const isFull = (approvedCount || 0) >= config.capacity * 2;
 
     const isOpen = isManualOpen && isPastStart && isBeforeEnd && !isFull;
 
@@ -48,7 +48,7 @@ export async function getEnrollmentStatus() {
       reason,
       closingTime: config.enrollment_end,
       openingTime: config.enrollment_start,
-      capacity: config.capacity,
+      capacity: config.capacity * 2,
       schoolYear: config.school_year,
       currentCount: approvedCount || 0,
       isFull
@@ -82,21 +82,33 @@ export async function syncSectionCapacities() {
 
   const { data: sections } = await supabase
     .from('sections')
-    .select('id, section_name, strand')
+    .select('id, section_name, strand, grade_level')
     .order('section_name', { ascending: true })
     
   if (!sections || sections.length === 0) {
     return { success: false, error: "No sections found to synchronize." }
   }
 
-  const totalSections = sections.length
-  const baseCapacity = Math.floor(globalLimit / totalSections)
-  const remainder = globalLimit % totalSections
+  const g11Sections = sections.filter(s => s.grade_level === '11')
+  const g12Sections = sections.filter(s => s.grade_level === '12')
 
-  const sectionCapacities = sections.map((sec, index) => ({
-    ...sec,
-    newCapacity: index < remainder ? baseCapacity + 1 : baseCapacity
-  }))
+  const g11Base = g11Sections.length > 0 ? Math.floor(globalLimit / g11Sections.length) : 0
+  const g11Rem = g11Sections.length > 0 ? globalLimit % g11Sections.length : 0
+
+  const g12Base = g12Sections.length > 0 ? Math.floor(globalLimit / g12Sections.length) : 0
+  const g12Rem = g12Sections.length > 0 ? globalLimit % g12Sections.length : 0
+
+  const sectionCapacities = sections.map((sec) => {
+    let newCap = 0;
+    if (sec.grade_level === '11') {
+      const idx = g11Sections.findIndex(s => s.id === sec.id)
+      newCap = idx < g11Rem ? g11Base + 1 : g11Base
+    } else {
+      const idx = g12Sections.findIndex(s => s.id === sec.id)
+      newCap = idx < g12Rem ? g12Base + 1 : g12Base
+    }
+    return { ...sec, newCapacity: newCap }
+  })
 
   const updatePromises = sectionCapacities.map(sec => 
     supabase.from('sections').update({ capacity: sec.newCapacity }).eq('id', sec.id)
@@ -195,13 +207,12 @@ export async function syncSectionCapacities() {
           }
         }
 
-        // Collect updates for batch processing
-        for (const student of studentsForSection) {
-          if (student.is_locked) continue; // Skip update for locked students as they are already set
+        const idsToUpdate = studentsForSection.filter(s => !s.is_locked).map(s => s.id)
+        if (idsToUpdate.length > 0) {
           allUpdates.push({
-            id: student.id,
             section_id: section.id,
-            section: section.section_name
+            section: section.section_name,
+            ids: idsToUpdate
           })
         }
         
@@ -212,18 +223,24 @@ export async function syncSectionCapacities() {
       }
     }
 
-    // 🚀 BATCH UPDATE: Process in chunks to prevent timeouts and partial update errors
+    // 🚀 BATCH UPDATE: Process by section instead of individual students
     if (allUpdates.length > 0) {
-      const chunkSize = 50
-      for (let i = 0; i < allUpdates.length; i += chunkSize) {
-        const chunk = allUpdates.slice(i, i + chunkSize)
-        await Promise.all(chunk.map(u => 
-          supabase
-            .from('students')
-            .update({ section_id: u.section_id, section: u.section })
-            .eq('id', u.id)
-        ))
+      const updatePromises = []
+      for (const update of allUpdates) {
+        // Postgres IN clause can handle thousands of items, but we chunk at 500 for safety
+        const chunkSize = 500
+        for (let i = 0; i < update.ids.length; i += chunkSize) {
+          const chunkIds = update.ids.slice(i, i + chunkSize)
+          updatePromises.push(
+            supabase
+              .from('students')
+              .update({ section_id: update.section_id, section: update.section })
+              .in('id', chunkIds)
+          )
+        }
       }
+      // Execute all section bulk updates concurrently
+      await Promise.all(updatePromises)
     }
 
     revalidatePath("/admin/sections")

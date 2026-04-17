@@ -60,6 +60,13 @@ function LoginContent() {
       return
     }
 
+    const userId = (await studentSupabase.auth.getUser()).data.user?.id
+    if (userId) {
+      await studentSupabase.from("students").update({
+        last_login_at: new Date().toISOString()
+      }).eq("id", userId)
+    }
+
     router.replace("/student/dashboard")
   }
 
@@ -329,6 +336,14 @@ function LoginContent() {
 export default function StudentLoginPage() {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center p-6 pt-16 relative overflow-hidden">
+      {/* Back to Dashboard */}
+      <Link
+        href="/"
+        className="absolute top-5 left-5 z-20 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest border transition-all duration-200 text-slate-400 border-slate-700 bg-slate-900/80 backdrop-blur-sm hover:bg-slate-800 hover:text-white shadow-sm"
+      >
+        <ArrowLeft size={12} />
+        Back to Dashboard
+      </Link>
       <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-900/15 rounded-full blur-[160px] pointer-events-none" />
       <div className="absolute bottom-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-900/10 rounded-full blur-[160px] pointer-events-none" />
       <Suspense fallback={<Loader2 className="animate-spin text-blue-500 w-10 h-10 mt-32" />}>

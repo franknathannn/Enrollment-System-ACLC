@@ -16,6 +16,10 @@ interface CapacityGuardianProps {
   updating: boolean
   onCapacityChange: (value: string | number) => void
   onIntegrityScan: () => void
+  closePortalWhenFull?: boolean
+  slotDisplayMode?: string
+  onClosePortalChange?: (v: boolean) => void
+  onSlotDisplayChange?: (v: string) => void
 }
 
 export function CapacityGuardian({
@@ -25,7 +29,11 @@ export function CapacityGuardian({
   isDarkMode,
   updating,
   onCapacityChange,
-  onIntegrityScan
+  onIntegrityScan,
+  closePortalWhenFull = true,
+  slotDisplayMode = "grade11",
+  onClosePortalChange,
+  onSlotDisplayChange
 }: CapacityGuardianProps) {
   return (
     <ThemedCard
@@ -64,7 +72,7 @@ export function CapacityGuardian({
       <div className="space-y-8">
         <div className="space-y-3">
           <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>
-            School Capacity (MORE THAN 50)
+            Per-Grade Capacity (G11/G12 independently)
           </ThemedText>
           <Input
             type="text"
@@ -84,13 +92,56 @@ export function CapacityGuardian({
           />
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>
+              Auto-Close Threshold
+            </ThemedText>
+            <div className={`p-4 rounded-3xl border transition-all duration-500 flex items-center justify-between gap-4 ${isDarkMode ? "bg-slate-900 border-slate-700/60" : "bg-white border-slate-200"}`}>
+              <div className="flex flex-col">
+                <span className={`text-xs font-bold ${isDarkMode ? "text-white" : "text-slate-900"}`}>Close Portal When Full</span>
+                <span className={`text-[9px] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>Automatically lock enrollment if limit reached</span>
+              </div>
+              <button
+                type="button"
+                disabled={updating}
+                onClick={() => onClosePortalChange?.(!closePortalWhenFull)}
+                role="switch"
+                aria-checked={closePortalWhenFull}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 flex-shrink-0 disabled:opacity-50 ${closePortalWhenFull ? "bg-red-500" : isDarkMode ? "bg-slate-600" : "bg-slate-300"}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${closePortalWhenFull ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>
+              Slot Display Mode
+            </ThemedText>
+            <div className={`p-1.5 rounded-3xl border flex transition-all duration-500 ${isDarkMode ? "bg-slate-900 border-slate-700/60" : "bg-white border-slate-200"}`}>
+              {[{ id: 'grade11', label: 'G11 Only' }, { id: 'grade11_12', label: 'G11+12' }, { id: 'total', label: 'Total' }].map(mode => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  disabled={updating}
+                  onClick={() => onSlotDisplayChange?.(mode.id)}
+                  className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest rounded-[20px] transition-all duration-300 ${slotDisplayMode === mode.id ? (isDarkMode ? 'bg-blue-600 text-white shadow-lg' : 'bg-blue-500 text-white shadow-md') : (isDarkMode ? 'text-slate-500 hover:text-white' : 'text-slate-500 hover:text-slate-900')}`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="w-full bg-slate-950 p-8 rounded-[36px] text-white relative overflow-hidden shadow-2xl border border-slate-700">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full -mr-10 -mt-10" />
           <div className="flex justify-between items-end mb-4 relative z-10">
             <div>
-              <span className="text-[10px] font-bold uppercase text-blue-400 tracking-wide">Current Capacity</span>
+              <span className="text-[10px] font-bold uppercase text-blue-400 tracking-wide">System Total (G11 + G12)</span>
               <p className="text-2xl font-bold mt-1">
-                {currentAccepted} <span className="text-slate-500 text-sm">/ {capacity || "—"} Seats</span>
+                {currentAccepted} <span className="text-slate-500 text-sm">/ {capacity ? Number(capacity) * 2 : "—"} Seats</span>
               </p>
             </div>
             <span className="text-xl font-bold text-white">{Math.round(capacityPercentage)}%</span>

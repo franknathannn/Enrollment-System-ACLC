@@ -396,7 +396,7 @@ function TerminalWidget({ isDark }: { isDark: boolean }) {
   const [text, setText] = useState("")
   const [phase, setPhase] = useState(0)
   const fullText = "Enrollment System For "
-  const fullText2 = "AMA ACLC NORTHBAY."
+  const fullText2 = "ACLC NORTHBAY."
 
   useEffect(() => {
     let index = 0;
@@ -460,12 +460,20 @@ export default function HomePage() {
     try {
       const { data: configData } = await supabase.from('system_config').select('*').single()
       if (configData) setConfig(configData)
+
+      const displayMode = configData?.slot_display_mode || "total"
+
       const [sectionsRes, studentsRes] = await Promise.all([
-        supabase.from('sections').select('strand, capacity'),
-        supabase.from('students').select('status, strand')
+        supabase.from('sections').select('strand, capacity, grade_level'),
+        supabase.from('students').select('status, strand, grade_level')
       ])
-      const sections = sectionsRes.data || []
-      const students = studentsRes.data || []
+      let sections = sectionsRes.data || []
+      let students = studentsRes.data || []
+
+      if (displayMode === "grade11") {
+        sections = sections.filter(s => String(s.grade_level) !== "12")
+        students = students.filter(s => String(s.grade_level) !== "12")
+      }
       const active = students.filter(s => s.status === 'Accepted' || s.status === 'Approved')
       const ictMax = sections.filter(s => s.strand === 'ICT').reduce((sum, s) => sum + (s.capacity || 40), 0)
       const ictCount = active.filter(s => s.strand === 'ICT').length

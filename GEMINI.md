@@ -1,6 +1,6 @@
 # GEMINI.md - Enrollment System
 
-This project is a comprehensive Enrollment Management System for AMA ACLC Northbay, built with a modern web stack including Next.js 16, React 19, and Supabase.
+This project is a comprehensive Enrollment Management System for ACLC NORTHBAY, built with a modern web stack including Next.js 16, React 19, and Supabase.
 
 ## Project Overview
 

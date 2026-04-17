@@ -1,52 +1,62 @@
 // app/teacher/dashboard/page.tsx
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { CalendarDays, Bell, QrCode, BarChart2, AlertTriangle, Calendar, MessageSquare, FileText } from "lucide-react"
 import { supabase } from "@/lib/supabase/teacher-client"
 import { toast } from "sonner"
 
-import { DashboardNav }            from "./components/DashboardNav"
-import { ProfileCard }             from "./components/ProfileCard"
-import { ScheduleTab }             from "./components/ScheduleTab"
-import { AnnouncementsTab }        from "./components/AnnouncementsTab"
-import { StudentDetailTab }        from "./components/StudentDetailTab"
-import { AttendanceTab }           from "./components/AttendanceTab"
-import { CuttingClassDetector }    from "./components/CuttingClassDetector"
-import { QuarterlyUpdateTab }        from "./components/QuarterlyUpdateTab"
-import { ReportsTab }              from "./components/ReportsTab"
-import { AcademicCalendarTab }     from "./components/AcademicCalendarTab"
-import { ChatTab }                 from "./components/ChatTab"
+import { DashboardNav } from "./components/DashboardNav"
+import { ProfileCard } from "./components/ProfileCard"
+import { ScheduleTab } from "./components/ScheduleTab"
+import { AnnouncementsTab } from "./components/AnnouncementsTab"
+import { StudentDetailTab } from "./components/StudentDetailTab"
+import { AttendanceTab } from "./components/AttendanceTab"
+import { CuttingClassDetector } from "./components/CuttingClassDetector"
+import { QuarterlyUpdateTab } from "./components/QuarterlyUpdateTab"
+import { ReportsTab } from "./components/ReportsTab"
+import { AcademicCalendarTab } from "./components/AcademicCalendarTab"
+import { ChatTab } from "./components/ChatTab"
 
 import {
   TeacherSession, ScheduleRow, Student, Announcement,
   COLORS, todayName,
 } from "./types"
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 
 type TabName = "schedule" | "announcements" | "attendance" | "cutting" | "quarterly" | "reports" | "calendar" | "chat"
 
 export default function TeacherDashboard() {
   const router = useRouter()
 
-  const [session,       setSession]       = useState<TeacherSession | null>(null)
-  const [schedules,     setSchedules]     = useState<ScheduleRow[]>([])
-  const [students,      setStudents]      = useState<Student[]>([])
+  const [session, setSession] = useState<TeacherSession | null>(null)
+  const [schedules, setSchedules] = useState<ScheduleRow[]>([])
+  const [students, setStudents] = useState<Student[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [loading,       setLoading]       = useState(true)
-  const [studLoad,      setStudLoad]      = useState(false)
-  const [tab,           setTab]           = useState<TabName>(() => {
+  const [loading, setLoading] = useState(true)
+  const [studLoad, setStudLoad] = useState(false)
+  const [tab, setTab] = useState<TabName>(() => {
     if (typeof window !== "undefined") {
       const saved = sessionStorage.getItem("teacher_active_tab")
-      if (saved && ["schedule","announcements","attendance","cutting","quarterly","reports","calendar","chat"].includes(saved))
+      if (saved && ["schedule", "announcements", "attendance", "cutting", "quarterly", "reports", "calendar", "chat"].includes(saved))
         return saved as TabName
     }
     return "schedule"
   })
-  const [online,        setOnline]        = useState(true)
+  const [online, setOnline] = useState(true)
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
-  const [schoolYear,    setSchoolYear]    = useState("2025-2026")
+  const [schoolYear, setSchoolYear] = useState("2025-2026")
   const [advisorySections, setAdvisorySections] = useState<string[]>([])
+  
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const debouncedLoadData = useCallback((sess: TeacherSession) => {
+    if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
+    fetchTimeoutRef.current = setTimeout(() => {
+      loadData(sess, true)
+    }, 300)
+  }, [])
 
   // Persistent dark mode — initialise as false (safe for SSR), then sync from
   // localStorage in a useEffect so server and client HTML always start identical.
@@ -100,11 +110,11 @@ export default function TeacherDashboard() {
         return
       }
       const sess: TeacherSession = {
-        id:         teacher!.id,
-        full_name:  teacher!.full_name,
-        email:      teacher!.email,
+        id: teacher!.id,
+        full_name: teacher!.full_name,
+        email: teacher!.email,
         avatar_url: teacher!.avatar_url ?? null,
-        gender:     teacher!.gender ?? null,
+        gender: teacher!.gender ?? null,
       }
       setSession(sess)
       loadData(sess)
@@ -123,8 +133,8 @@ export default function TeacherDashboard() {
   }, []) // eslint-disable-line
 
   // ── Load data ──────────────────────────────────────────────────────────────
-  const loadData = useCallback(async (sess: TeacherSession) => {
-    setLoading(true)
+  const loadData = useCallback(async (sess: TeacherSession, silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const [{ data: byId }, { data: byName }, { data: config }] = await Promise.all([
         supabase.from("schedules").select("*, rooms(name)").eq("teacher_id", sess.id).order("day").order("start_time"),
@@ -147,7 +157,7 @@ export default function TeacherDashboard() {
 
       const sectionNames = [...new Set(merged.map(s => s.section))].filter(Boolean)
       if (sectionNames.length > 0) {
-        setStudLoad(true)
+        if (!silent) setStudLoad(true)
         // Resolve section names → section IDs so that renames don't break the lookup
         const { data: sectionRows } = await supabase
           .from("sections")
@@ -157,12 +167,12 @@ export default function TeacherDashboard() {
         if (sectionIds.length > 0) {
           const { data: studData, error: studErr } = await supabase
             .from("students")
-            .select("id, first_name, last_name, middle_name, lrn, gender, section, strand, status, profile_picture, two_by_two_url")
+            .select("id, first_name, last_name, middle_name, lrn, gender, section, strand, status, profile_picture, two_by_two_url, last_login_at")
             .in("section_id", sectionIds)
             .not("status", "eq", "Pending")
           if (!studErr) setStudents(studData ?? [])
         }
-        setStudLoad(false)
+        if (!silent) setStudLoad(false)
       }
 
       // ── Fetch advisory sections ────────────────────────────────────────
@@ -183,7 +193,7 @@ export default function TeacherDashboard() {
           if (advSecIds.length > 0) {
             const { data: advStudents } = await supabase
               .from("students")
-              .select("id, first_name, last_name, middle_name, lrn, gender, section, strand, status, profile_picture, two_by_two_url")
+              .select("id, first_name, last_name, middle_name, lrn, gender, section, strand, status, profile_picture, two_by_two_url, last_login_at")
               .in("section_id", advSecIds)
               .not("status", "eq", "Pending")
             if (advStudents?.length) {
@@ -204,7 +214,7 @@ export default function TeacherDashboard() {
         .order("created_at", { ascending: false })
       setAnnouncements(ann ?? [])
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
@@ -217,10 +227,10 @@ export default function TeacherDashboard() {
         // Patch the changed row in-place — no full reload, no spinner
         setSchedules(prev => prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s))
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "schedules" }, () => loadData(session))
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "schedules" }, () => loadData(session))
-      .on("postgres_changes", { event: "*", schema: "public", table: "students" },              () => loadData(session))
-      .on("postgres_changes", { event: "*", schema: "public", table: "teacher_announcements" }, () => loadData(session))
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "schedules" }, () => debouncedLoadData(session))
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "schedules" }, () => debouncedLoadData(session))
+      .on("postgres_changes", { event: "*", schema: "public", table: "students" }, () => debouncedLoadData(session))
+      .on("postgres_changes", { event: "*", schema: "public", table: "teacher_announcements" }, () => debouncedLoadData(session))
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "teachers", filter: `id=eq.${session.id}` },
@@ -239,7 +249,7 @@ export default function TeacherDashboard() {
       )
       .subscribe(status => setOnline(status === "SUBSCRIBED"))
     return () => { supabase.removeChannel(chan) }
-  }, [session, loadData])
+  }, [session, debouncedLoadData])
 
   useEffect(() => {
     sessionStorage.setItem("teacher_active_tab", tab)
@@ -275,13 +285,13 @@ export default function TeacherDashboard() {
 
   // ── Theme ──────────────────────────────────────────────────────────────────
   const page = dm ? "bg-slate-950" : "bg-slate-50"
-  const sub  = dm ? "text-slate-400" : "text-slate-500"
+  const sub = dm ? "text-slate-400" : "text-slate-500"
 
   const tabBtn = (active: boolean) =>
     `flex items-center justify-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-widest py-2.5 rounded-2xl transition-all duration-200 w-full relative
      ${active
-       ? "text-white bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/25"
-       : (dm ? "text-slate-500 hover:text-slate-200 hover:bg-slate-700/50" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/60")}`
+      ? "text-white bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/25"
+      : (dm ? "text-slate-500 hover:text-slate-200 hover:bg-slate-700/50" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/60")}`
 
   if (loading || !session || !dmReady) return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-slate-950">
@@ -292,7 +302,7 @@ export default function TeacherDashboard() {
       </div>
       <div className="text-center space-y-1">
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">Teacher Portal</p>
-        <p className="text-[8px] font-bold uppercase tracking-widest text-slate-600">AMA ACLC Northbay</p>
+        <p className="text-[8px] font-bold uppercase tracking-widest text-slate-600">ACLC NORTHBAY</p>
       </div>
     </div>
   )
@@ -321,37 +331,95 @@ export default function TeacherDashboard() {
         />
 
         {/* Tab switcher — 8 equal columns, labels hidden on mobile */}
-        <div className={`grid grid-cols-8 gap-1 p-1.5 rounded-2xl border backdrop-blur-sm w-full ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`}>
-          <button className={tabBtn(tab === "schedule")} onClick={() => setTab("schedule")}>
-            <CalendarDays size={13} /><span className="hidden md:inline truncate">Schedule</span>
-          </button>
-          <button className={tabBtn(tab === "attendance")} onClick={() => setTab("attendance")}>
-            <QrCode size={13} /><span className="hidden md:inline truncate">Scan</span>
-          </button>
-          <button className={tabBtn(tab === "cutting")} onClick={() => setTab("cutting")}>
-            <AlertTriangle size={13} /><span className="hidden md:inline truncate">Cutting</span>
-          </button>
-          <button className={tabBtn(tab === "quarterly")} onClick={() => setTab("quarterly")}>
-            <BarChart2 size={13} /><span className="hidden md:inline truncate">Submit</span>
-          </button>
-          <button className={tabBtn(tab === "reports")} onClick={() => setTab("reports")}>
-            <FileText size={13} /><span className="hidden md:inline truncate">Reports</span>
-          </button>
-          <button className={tabBtn(tab === "announcements")} onClick={() => setTab("announcements")}>
-            <Bell size={13} /><span className="hidden md:inline truncate">News</span>
-            {pinnedCount > 0 && (
-              <span className="absolute top-1 right-1 bg-amber-500 text-white text-[7px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center">
-                {pinnedCount}
-              </span>
-            )}
-          </button>
-          <button className={tabBtn(tab === "calendar")} onClick={() => setTab("calendar")}>
-            <Calendar size={13} /><span className="hidden md:inline truncate">Calendar</span>
-          </button>
-          <button className={tabBtn(tab === "chat")} onClick={() => setTab("chat")}>
-            <MessageSquare size={13} /><span className="hidden md:inline truncate">Chat</span>
-          </button>
-        </div>
+        <TooltipProvider delayDuration={300}>
+          <div className={`grid grid-cols-8 gap-1 p-1.5 rounded-2xl border backdrop-blur-sm w-full ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className={tabBtn(tab === "schedule")} onClick={() => setTab("schedule")}>
+                  <CalendarDays size={13} /><span className="hidden md:inline truncate">Schedule</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                <p className="font-bold text-[10px] uppercase tracking-widest">Your class schedule</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className={tabBtn(tab === "attendance")} onClick={() => setTab("attendance")}>
+                  <QrCode size={13} /><span className="hidden md:inline truncate">Scan</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                <p className="font-bold text-[10px] uppercase tracking-widest">Scan QR to mark attendance</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className={tabBtn(tab === "cutting")} onClick={() => setTab("cutting")}>
+                  <AlertTriangle size={13} /><span className="hidden md:inline truncate">Cutting</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                <p className="font-bold text-[10px] uppercase tracking-widest">Students who skipped class</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className={tabBtn(tab === "quarterly")} onClick={() => setTab("quarterly")}>
+                  <BarChart2 size={13} /><span className="hidden md:inline truncate">Submit</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                <p className="font-bold text-[10px] uppercase tracking-widest">Submit quarterly grades</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className={tabBtn(tab === "reports")} onClick={() => setTab("reports")}>
+                  <FileText size={13} /><span className="hidden md:inline truncate">Reports</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                <p className="font-bold text-[10px] uppercase tracking-widest">Download attendance reports</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className={tabBtn(tab === "announcements")} onClick={() => setTab("announcements")}>
+                  <Bell size={13} /><span className="hidden md:inline truncate">News</span>
+                  {pinnedCount > 0 && (
+                    <span className="absolute top-1 right-1 bg-amber-500 text-white text-[7px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                      {pinnedCount}
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                <p className="font-bold text-[10px] uppercase tracking-widest">School news and updates</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className={tabBtn(tab === "calendar")} onClick={() => setTab("calendar")}>
+                  <Calendar size={13} /><span className="hidden md:inline truncate">Calendar</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                <p className="font-bold text-[10px] uppercase tracking-widest">Academic calendar</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className={tabBtn(tab === "chat")} onClick={() => setTab("chat")}>
+                  <MessageSquare size={13} /><span className="hidden md:inline truncate">Chat</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                <p className="font-bold text-[10px] uppercase tracking-widest">Chat with staff</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
 
         {/* Tab content */}
         {tab === "schedule" && (
@@ -395,7 +463,7 @@ export default function TeacherDashboard() {
         )}
 
         {tab === "reports" && session && (
-          <ReportsTab 
+          <ReportsTab
             schedules={schedules}
             students={students}
             dm={dm}

@@ -476,9 +476,6 @@ function ArchiveDossier({ student, isDarkMode, onClose, onUnarchive }: {
                         </div>
                         <h3 className="text-sm font-black uppercase tracking-[0.2em]" style={{ color: isDarkMode ? "rgba(148,163,184,0.8)" : "rgba(100,116,139,0.8)" }}>Documentary Vault</h3>
                       </div>
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center shadow-sm" style={{ backgroundColor: isDarkMode ? "#0f172a" : "#fff", border: isDarkMode ? "none" : "1px solid #e2e8f0" }}>
-                        <span className="text-xs font-black" style={{ color: isDarkMode ? "white" : "#0f172a" }}>{allDocs.length}</span>
-                      </div>
                    </div>
                    
                    <div className="space-y-3">

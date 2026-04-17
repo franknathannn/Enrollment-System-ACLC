@@ -398,10 +398,32 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
             break
           }
         }
+
+        // PASS 2: If strict gender balancing failed, assign to any section with available capacity
+        if (!sectionIdToAssign) {
+          for (const sec of sections) {
+            if (!sec.capacity || sec.capacity <= 0) continue
+            const counts = occupancy[sec.id]
+            const totalInSection = counts.male + counts.female
+            if (totalInSection < sec.capacity) {
+              sectionIdToAssign = sec.id
+              sectionNameToAssign = sec.section_name
+              break
+            }
+          }
+        }
       }
     }
   } else {
     sectionIdToAssign = null
+  }
+
+  // Check if we are approving but no section could be assigned (meaning slots are full for this student's gender)
+  if (dbStatus === "Approved" && !sectionIdToAssign) {
+    return {
+      success: false,
+      error: "No available slots left for this student's gender or in any section. Please increase capacity."
+    }
   }
 
   const { error } = await supabase
@@ -584,6 +606,31 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
               break
             }
           }
+
+          // PASS 2: If strict gender balancing failed, assign to any section with available capacity
+          if (assignedId === 'null') {
+            for (const sec of sections) {
+              const occ = occupancy[sec.id]
+              if (occ.total < sec.capacity) {
+                assignedId = sec.id
+                if (student.gender === 'Male') occ.male++
+                else occ.female++
+                occ.total++
+                break
+              }
+            }
+          }
+        }
+
+        // Fix to prevent accepting if full
+        if (dbStatus === "Approved" && assignedId === 'null') {
+          // Reject this student update because we have no slots left
+          results.push({
+            id: student.id,
+            success: false,
+            reason: "No available slots left for this student's gender or in any section."
+          })
+          continue;
         }
 
         // Group the update instead of executing it immediately

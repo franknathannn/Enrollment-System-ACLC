@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo, useRef, useCallback } from "react"
 import { useEnrollmentStore } from "@/store/useEnrollmentStore"
 import { useThemeStore } from "@/store/useThemeStore"
 import { supabase } from "@/lib/supabase/client"
+import { motion, useScroll, useSpring } from "framer-motion"
 import { Loader2, Lock, Timer, ArrowLeft, Users, ShieldCheck, Sun, Moon } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -185,7 +186,7 @@ function LiveNodeSidebar({ currentStep, isDark, formData }: any) {
         <div className="flex items-center gap-3 pl-4">
           <div className={cn("w-2 h-2 rounded-full animate-pulse", isDark ? "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" : "bg-blue-600")} />
           <p className={cn("text-[10px] font-black uppercase tracking-[0.4em]", isDark ? "text-slate-500" : "text-slate-400")}>
-            <DecryptText text="LIVE SEQUENCE" />
+            <DecryptText text="Enrollment Process" />
           </p>
         </div>
 
@@ -244,14 +245,6 @@ function LiveNodeSidebar({ currentStep, isDark, formData }: any) {
           })}
         </div>
 
-        <div className="pb-10 pl-4 space-y-6">
-          <IdentityBarcode seed={formData.last_name || "ACLC"} isDark={isDark} />
-          <div className="flex items-center gap-4">
-            <RadarGlobe isDark={isDark} />
-            <div className="space-y-1">
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )
@@ -342,16 +335,6 @@ function ContextSidebar({ currentStep, isDark, formData }: any) {
         <div className="px-4">
           {content}
         </div>
-        <div className="pt-20 pr-4">
-          <div className="text-right">
-            <p className={cn("text-[9px] font-black uppercase tracking-[0.3em] mb-2", isDark ? "text-slate-600" : "text-slate-400")}>Auto-Save</p>
-            <div className="flex gap-1 justify-end">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="w-1 h-3 rounded-full bg-blue-600/40 animate-pulse" style={{ animationDelay: `${i * 0.1}s` }} />
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )
@@ -377,6 +360,11 @@ export default function EnrollmentPage() {
   const [loading, setLoading] = useState(true)
   const [timeLeft, setTimeLeft] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  const { scrollYProgress } = useScroll()
+  const scrollProgress = useSpring(scrollYProgress, {
+    stiffness: 100, damping: 30, restDelta: 0.001
+  })
 
   const progressPercentage = (currentStep / 5) * 100
 
@@ -472,13 +460,15 @@ export default function EnrollmentPage() {
       const now = new Date()
       const start = config.enrollment_start ? new Date(config.enrollment_start) : null
       const end = config.enrollment_end ? new Date(config.enrollment_end) : null
-      const isFull = currentEnrolled >= config.capacity
+      const isFull = currentEnrolled >= (config.capacity || 1000)
+      const isForcedOpen = config.control_mode === "manual" && config.is_portal_active
 
       let portalOpen = false
       let closeReason: "date" | "manual" | "capacity" | null = null
 
-      if (isFull) {
+      if (isFull && config.close_portal_when_full && !isForcedOpen) {
         closeReason = "capacity"
+        portalOpen = false
       } else if (config.control_mode === "manual") {
         portalOpen = config.is_portal_active
         closeReason = !config.is_portal_active ? "manual" : null
@@ -547,7 +537,7 @@ export default function EnrollmentPage() {
   if (loading) return (
     <div className={cn(
       "min-h-screen flex flex-col items-center justify-center gap-6",
-      isDark ? "bg-[#020617]" : "bg-[#f8f9fc]"
+      isDark ? "bg-[#020617]" : "bg-white"
     )}>
       <div className="relative flex items-center justify-center">
         <span className="absolute w-20 h-20 rounded-full border-2 border-blue-500/20 animate-ping" />
@@ -570,8 +560,8 @@ export default function EnrollmentPage() {
     <div
       data-theme={isDark ? "dark" : "light"}
       className={cn(
-        "min-h-screen p-6 md:p-12 overflow-x-hidden relative",
-        isDark ? "bg-[#020617] text-white" : "bg-[#f8f9fc] text-slate-900"
+        "min-h-screen flex flex-col p-6 md:p-12 overflow-x-hidden relative",
+        isDark ? "bg-[#020617] text-white" : "bg-white text-slate-900"
       )}
     >
       <style>{`
@@ -663,11 +653,11 @@ export default function EnrollmentPage() {
       {/* Ambient glows — CSS-only, theme class drives opacity/color statically */}
       <div className={cn(
         "fixed top-0 right-0 w-[500px] h-[500px] blur-[150px] rounded-full pointer-events-none z-0",
-        isDark ? "bg-blue-600/10" : "bg-blue-400/15"
+        isDark ? "bg-blue-600/10" : "bg-blue-200/20"
       )} />
       <div className={cn(
         "fixed bottom-0 left-0 w-[500px] h-[500px] blur-[150px] rounded-full pointer-events-none z-0",
-        isDark ? "bg-indigo-600/10" : "bg-indigo-300/15"
+        isDark ? "bg-indigo-600/10" : "bg-blue-100/30"
       )} />
 
       {/* Aurora bands */}
@@ -676,14 +666,25 @@ export default function EnrollmentPage() {
           "absolute top-[-20%] left-[-10%] w-[70vw] h-[60vh] rounded-full blur-[90px] animate-aurora-1",
           isDark
             ? "opacity-[0.12] bg-gradient-to-br from-blue-500 via-indigo-600 to-violet-700"
-            : "opacity-[0.15] bg-gradient-to-br from-blue-300 via-indigo-300 to-violet-300"
+            : "opacity-[0.15] bg-gradient-to-br from-blue-100 via-blue-200 to-transparent"
         )} />
         <div className={cn(
           "absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vh] rounded-full blur-[110px] animate-aurora-2",
           isDark
             ? "opacity-[0.08] bg-gradient-to-bl from-cyan-500 via-blue-600 to-indigo-700"
-            : "opacity-[0.10] bg-gradient-to-bl from-cyan-200 via-blue-200 to-indigo-200"
+            : "opacity-[0.15] bg-gradient-to-bl from-blue-100 via-transparent to-transparent"
         )} />
+      </div>
+
+      {/* Global Scroll Progress Bar */}
+      <div className={cn(
+        "fixed left-0 top-0 bottom-0 w-1.5 z-[100] hidden md:block",
+        isDark ? "bg-white/5" : "bg-slate-200"
+      )}>
+        <motion.div
+          className="w-full bg-blue-600 origin-top shadow-[0_0_10px_rgba(37,99,235,0.8)]"
+          style={{ height: '100%', scaleY: scrollProgress }}
+        />
       </div>
 
       {/* Global Background Logo */}
@@ -717,7 +718,11 @@ export default function EnrollmentPage() {
             "text-4xl font-black uppercase tracking-tighter italic",
             isDark ? "text-white" : "text-slate-900"
           )}>
-            {systemStatus?.reason === "date" ? "Portal is Officially Closed" : "Portal Encrypted"}
+            {systemStatus?.reason === "date"
+              ? "Portal is Officially Closed"
+              : systemStatus?.reason === "capacity"
+                ? "PORTAL AUTOMATICALLY CLOSED AND SAYS IT IN THE SETTINGS"
+                : "Portal Encrypted"}
           </h1>
           <div className="space-y-4">
             <Button disabled className={cn(
@@ -736,11 +741,11 @@ export default function EnrollmentPage() {
         </div>
       ) : (
         /* ── OPEN STATE ── */
-        <div className="relative z-10 w-full xl:max-w-[1400px] xl:mx-auto xl:grid xl:grid-cols-[1fr_2.5fr_1fr] xl:gap-8 pt-2 md:pt-4">
+        <div className="flex-1 relative z-10 w-full xl:max-w-[1400px] xl:mx-auto xl:grid xl:grid-cols-[1fr_2.5fr_1fr] xl:gap-8 pt-2 md:pt-4">
 
           <LiveNodeSidebar currentStep={currentStep} isDark={isDark} formData={formData} />
 
-          <div className="max-w-2xl mx-auto space-y-8 relative z-10 w-full">
+          <div className="max-w-2xl mx-auto space-y-8 relative z-10 w-full xl:flex xl:flex-col">
 
             {/* Top nav */}
             <div className="flex items-center justify-between">
@@ -843,7 +848,7 @@ export default function EnrollmentPage() {
 
             {/* Form container */}
             <div className={cn(
-              "p-6 sm:p-8 md:p-12 rounded-[56px] border relative overflow-hidden transition-colors duration-500",
+              "p-6 sm:p-8 md:p-12 rounded-[56px] border relative overflow-hidden transition-colors duration-500 xl:flex-1",
               isDark
                 ? "bg-[#0d1433]/90 border-white/10 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.9)]"
                 : "bg-white/95 border-blue-50 shadow-[0_20px_60px_rgba(99,102,241,0.08)]"

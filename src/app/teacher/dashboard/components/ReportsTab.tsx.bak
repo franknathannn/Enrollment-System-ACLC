@@ -557,7 +557,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
               {/* Page header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #d1d5db", paddingBottom: "14px", marginBottom: "20px" }}>
                 <div>
-                  <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>AMA ACLC Northbay College — S.Y. {schoolYear}</p>
+                  <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>ACLC NORTHBAY College — S.Y. {schoolYear}</p>
                   <h1 style={{ fontSize: "22px", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>Attendance Report</h1>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -689,7 +689,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
             {/* Full report header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #d1d5db", paddingBottom: "14px", marginBottom: "20px" }}>
               <div>
-                <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>AMA ACLC Northbay College — S.Y. {schoolYear}</p>
+                <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>ACLC NORTHBAY College — S.Y. {schoolYear}</p>
                 <h1 style={{ fontSize: "22px", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>Attendance Report</h1>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -1318,4 +1318,4 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
       })()}
     </div>
   )
-}
+}

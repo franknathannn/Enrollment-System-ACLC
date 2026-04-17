@@ -143,14 +143,14 @@ const CircularProgress = ({ pct, size = 60, strokeWidth = 5, dm }: { pct: number
 export function AdminReportsTab({ dm, session, schoolYear }: Props) {
   const [studentsCache, setStudentsCache] = useState<Record<string, Student>>({})
   const [loadingSectionStudents, setLoadingSectionStudents] = useState<Record<string, boolean>>({})
-  
+
   // Triage cache
   const [triagedStudentsList, setTriagedStudentsList] = useState<Student[]>([])
 
   const getCachedStudent = useCallback((id: string) => {
     return studentsCache[id] || { id, first_name: "Unknown", last_name: "Student", section: "Unknown" } as Student
   }, [studentsCache])
-  
+
   const ensureSectionStudents = useCallback(async (sectionName: string) => {
     if (loadingSectionStudents[sectionName] || Object.values(studentsCache).some(s => s.section === sectionName)) return;
     setLoadingSectionStudents(prev => ({ ...prev, [sectionName]: true }));
@@ -167,7 +167,7 @@ export function AdminReportsTab({ dm, session, schoolYear }: Props) {
       setLoadingSectionStudents(prev => ({ ...prev, [sectionName]: false }));
     }
   }, [studentsCache, loadingSectionStudents]);
-  
+
   const ensureTriageStudents = useCallback(async (ids: string[]) => {
     const missing = ids.filter(id => !studentsCache[id]);
     if (missing.length === 0) return;
@@ -322,11 +322,11 @@ export function AdminReportsTab({ dm, session, schoolYear }: Props) {
     }).filter((v) => v !== null)
       .sort((a, b) => b.totalAbsences - a.totalAbsences)
   }, [attData])
-  
+
   const triageList: TriageStudent[] = useMemo(() => {
     return rawTriageList.map(r => ({ ...r, student: getCachedStudent(r.student_id as string) }) as TriageStudent)
   }, [rawTriageList, getCachedStudent])
-  
+
   useEffect(() => {
     if (rawTriageList.length > 0) {
       ensureTriageStudents(rawTriageList.map(r => (r as any).student_id))
@@ -372,7 +372,7 @@ export function AdminReportsTab({ dm, session, schoolYear }: Props) {
       return s
     })
   }
-  
+
   const toggleSubjectList = (section: string, subject: string) => {
     toggleSubjectFocus(section, subject)
     ensureSectionStudents(section)
@@ -603,7 +603,7 @@ export function AdminReportsTab({ dm, session, schoolYear }: Props) {
               {/* Page header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #d1d5db", paddingBottom: "14px", marginBottom: "20px" }}>
                 <div>
-                  <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>AMA ACLC Northbay College — S.Y. {schoolYear}</p>
+                  <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>ACLC NORTHBAY College — S.Y. {schoolYear}</p>
                   <h1 style={{ fontSize: "22px", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>Attendance Report</h1>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -736,7 +736,7 @@ export function AdminReportsTab({ dm, session, schoolYear }: Props) {
             {/* Full report header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #d1d5db", paddingBottom: "14px", marginBottom: "20px" }}>
               <div>
-                <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>AMA ACLC Northbay College — S.Y. {schoolYear}</p>
+                <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>ACLC NORTHBAY College — S.Y. {schoolYear}</p>
                 <h1 style={{ fontSize: "22px", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>Attendance Report</h1>
               </div>
               <div style={{ textAlign: "right" }}>

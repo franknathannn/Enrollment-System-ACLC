@@ -11,7 +11,7 @@ export async function sendEnrollmentEmail(record: any) {
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <img src="${logoUrl}" alt="ACLC Logo" style="width: 80px; height: 80px;" />
-          <h2 style="color: #1d4ed8; margin-top: 10px; text-transform: uppercase;">AMA ACLC NORTHBAY</h2>
+          <h2 style="color: #1d4ed8; margin-top: 10px; text-transform: uppercase;">ACLC NORTHBAY</h2>
         </div>
         
         <div style="background-color: #ffffff; border-radius: 16px; padding: 30px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb;">
@@ -54,9 +54,9 @@ export async function sendEnrollmentEmail(record: any) {
       'content-type': 'application/json'
     },
     body: JSON.stringify({
-      sender: { 
-        name: "ACLC Registrar", 
-        email: process.env.SENDER_EMAIL || "your-verified-email@gmail.com" 
+      sender: {
+        name: "ACLC Registrar",
+        email: process.env.SENDER_EMAIL || "your-verified-email@gmail.com"
       },
       to: [{ email: record.email, name: record.first_name }],
       subject: isApproved ? 'Application Approved - ACLC Northbay' : 'Action Required: Status Update',

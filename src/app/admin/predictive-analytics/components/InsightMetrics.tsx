@@ -14,13 +14,18 @@ interface Props {
   isSimulation: boolean
   hasHistory: boolean
   isDarkMode: boolean
+  lastYearTotal: number
 }
 
-export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount, nextYearTotal, lowestPossible, highestPossible, isSimulation, hasHistory, isDarkMode }: Props) {
+export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount, nextYearTotal, lowestPossible, highestPossible, isSimulation, hasHistory, isDarkMode, lastYearTotal }: Props) {
   // Floor: we already have X enrolled, so lowest can't be below that
   const displayLowest = lowestPossible
   const displayHighest = Math.max(highestPossible, displayLowest)
   const progressPct = expectedOutcome > 0 ? Math.round((currentCount / expectedOutcome) * 100) : 0
+
+  const pctDiff = lastYearTotal > 0 ? ((currentCount - lastYearTotal) / lastYearTotal) * 100 : 0
+  const isIncrease = pctDiff >= 0
+  const showDiffBadge = lastYearTotal > 0 && (isSimulation || currentCount > lastYearTotal)
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -96,9 +101,21 @@ export function InsightMetrics({ projectedGrowth, expectedOutcome, currentCount,
                     </span>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      Students Enrolled
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        Students Enrolled
+                      </span>
+                      {showDiffBadge && (
+                        <Badge variant="outline" className={`text-[9px] font-bold px-1.5 py-0 border-none ${
+                          isIncrease 
+                            ? (isDarkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600') 
+                            : (isDarkMode ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600')
+                        }`}>
+                          {isIncrease ? <TrendingUp className="w-2.5 h-2.5 mr-1" /> : <TrendingDown className="w-2.5 h-2.5 mr-1" />}
+                          {Math.abs(pctDiff).toFixed(1)}% {isIncrease ? 'Increased' : 'Decreased'}
+                        </Badge>
+                      )}
+                    </div>
                     {expectedOutcome > 0 && (
                       <div className="flex items-center gap-2">
                         <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>

@@ -20,8 +20,14 @@ export function useSections() {
   const [selectedSectionName, setSelectedSectionName] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [strandFilter, setStrandFilter] = useState<"ALL" | "ICT" | "GAS">("ALL")
-  const [gradeLevelFilter, setGradeLevelFilter] = useState<"ALL" | "11" | "12">("ALL")
+  const [strandFilter, setStrandFilter] = useState<"ALL" | "ICT" | "GAS">(() => {
+    if (typeof window !== "undefined") return (localStorage.getItem("sections_strand_filter") as any) || "ALL"
+    return "ALL"
+  })
+  const [gradeLevelFilter, setGradeLevelFilter] = useState<"ALL" | "11" | "12">(() => {
+    if (typeof window !== "undefined") return (localStorage.getItem("sections_grade_filter") as any) || "ALL"
+    return "ALL"
+  })
   
   const [sectionSelection, setSectionSelection] = useState<Set<string>>(new Set())
   const [confirmAdd, setConfirmAdd] = useState<{isOpen: boolean, strand: "ICT" | "GAS" | null, gradeLevel: "11" | "12"}>({isOpen: false, strand: null, gradeLevel: "11"})
@@ -73,13 +79,12 @@ export function useSections() {
   useEffect(() => { localStorage.setItem("section_gas_expanded", gasExpanded.toString()) }, [gasExpanded])
 
   useEffect(() => {
-    const savedFilter = localStorage.getItem("sections_strand_filter")
-    if (savedFilter) setStrandFilter(savedFilter as any)
-  }, [])
-
-  useEffect(() => {
     localStorage.setItem("sections_strand_filter", strandFilter)
   }, [strandFilter])
+
+  useEffect(() => {
+    localStorage.setItem("sections_grade_filter", gradeLevelFilter)
+  }, [gradeLevelFilter])
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300)
@@ -150,7 +155,12 @@ export function useSections() {
       const { data: tData } = await supabase.from('teachers').select('id, full_name, email, is_active, created_at, gender').order('full_name', { ascending: true }).limit(5)
       setTeachers(tData || [])
     } catch (err: any) {
-      console.error("Registrar Sync Error:", err?.message || err?.code || JSON.stringify(err) || err)
+      const errMsg = err?.message || err?.code || JSON.stringify(err) || String(err);
+      if (errMsg.includes('Failed to fetch')) {
+        console.warn("Registrar Sync Warning: Network fetch failed (Supabase offline/unreachable).")
+      } else {
+        console.error("Registrar Sync Error:", errMsg)
+      }
       if (!isBackground) toast.error("Registrar Sync Error — check console for details")
     } finally {
       if (!isBackground) setLoading(false)

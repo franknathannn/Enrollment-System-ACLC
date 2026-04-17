@@ -80,7 +80,7 @@ export default function DownloadPortalPage({ params }: { params: Promise<{ id: s
           <img src="/logo-aclc.png" alt="ACLC" className="w-16 h-16 mx-auto object-contain" />
           <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Download</h1>
           <p className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.3em]">
-            AMA ACLC Northbay · Student Portal
+            ACLC NORTHBAY · Student Portal
           </p>
           <div className="inline-flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-full px-5 py-2 mt-2">
             <p className="text-xs font-black text-slate-600 uppercase tracking-wide">
@@ -101,7 +101,7 @@ export default function DownloadPortalPage({ params }: { params: Promise<{ id: s
         {/* Footer */}
         <div className="text-center pt-6 pb-8">
           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.4em]">
-            &copy; {new Date().getFullYear()} AMA ACLC Northbay Campus
+            &copy; {new Date().getFullYear()} ACLC NORTHBAY Campus
           </p>
         </div>
       </div>

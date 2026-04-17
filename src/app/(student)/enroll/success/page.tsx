@@ -32,15 +32,15 @@ function SuccessContent() {
   const d = isDark
 
   const searchParams = useSearchParams()
-  const fullId  = searchParams.get('id')  || ""
+  const fullId = searchParams.get('id') || ""
   const shortId = fullId ? fullId.split('-')[0] : "-----------"
 
   const [studentData, setStudentData] = useState<{ lastName: string | null; lrn: string }>({ lastName: null, lrn: searchParams.get('lrn') || "-----------" })
   const [isLoading, setIsLoading] = useState(true)
 
   const heroCanvasRef = useRef<HTMLCanvasElement>(null)
-  const cardRef       = useRef<HTMLDivElement>(null)
-  const isDarkRef     = useRef(isDark)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const isDarkRef = useRef(isDark)
   useEffect(() => { isDarkRef.current = isDark }, [isDark])
 
   useEffect(() => {
@@ -115,19 +115,19 @@ function SuccessContent() {
         <div className="absolute inset-0 bg-blue-500/40 blur-[80px] animate-pulse" />
         <div className="absolute inset-[-20px] rounded-full border border-blue-400/20 animate-[ping_3s_linear_infinite] opacity-20" />
         <div className="absolute inset-[-40px] rounded-full border border-blue-400/10 animate-[ping_4s_linear_infinite] opacity-10" />
-        
+
         <div className={cn("w-32 h-32 md:w-40 md:h-40 rounded-[44px] md:rounded-[56px] flex items-center justify-center border relative overflow-hidden group/logo",
           d ? "bg-slate-900/90 border-blue-500/20 shadow-[0_0_70px_rgba(59,130,246,0.3)]" : "bg-white/90 border-blue-200 shadow-[0_0_70px_rgba(59,130,246,0.2)]")}>
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent opacity-0 group-hover/logo:opacity-100 transition-opacity duration-700" />
-          <img 
-            src="/logo-aclc.png" 
-            alt="ACLC Logo" 
-            className="w-20 h-20 md:w-24 md:h-24 object-contain relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-transform duration-700 group-hover/logo:scale-110" 
+          <img
+            src="/logo-aclc.png"
+            alt="ACLC Logo"
+            className="w-20 h-20 md:w-24 md:h-24 object-contain relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-transform duration-700 group-hover/logo:scale-110"
             style={{ transform: 'translateZ(0)' }}
           />
           <Orbit size={160} className={cn("absolute animate-spin", d ? "text-blue-800/20" : "text-blue-100/60")} style={{ animationDuration: '15s' }} />
         </div>
-        
+
         <div className="absolute -top-3 -right-3 w-14 h-14 bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 rounded-2xl flex items-center justify-center text-white shadow-[0_10px_30px_rgba(59,130,246,0.5)] animate-bounce" style={{ animationDuration: '2.5s' }}>
           <Sparkles size={24} className="animate-pulse" />
         </div>
@@ -194,7 +194,7 @@ function SuccessContent() {
         <div className="space-y-6 relative z-10">
           <div className="flex items-center gap-4 justify-center">
             <Building2 className={cn("animate-pulse", d ? "text-blue-500" : "text-blue-600")} size={28} />
-            <h3 className={cn("text-xl font-black uppercase tracking-[0.2em]", d ? "text-white" : "text-slate-900")}>AMA ACLC NORTHBAY CAMPUS</h3>
+            <h3 className={cn("text-xl font-black uppercase tracking-[0.2em]", d ? "text-white" : "text-slate-900")}>ACLC NORTHBAY CAMPUS</h3>
           </div>
           <p className={cn("text-base font-medium leading-relaxed italic px-8", d ? "text-blue-100/60" : "text-slate-500")}>"Please wait until we verify your enrollment data."</p>
           <div className="flex flex-col items-center gap-3 justify-center text-[10px] font-black uppercase tracking-[0.3em]">
@@ -232,14 +232,14 @@ function SuccessContent() {
         </Button>
       </div>
 
-      <p className={cn("text-[9px] font-black uppercase tracking-[0.8em] pt-12 relative z-10", d ? "text-slate-700" : "text-slate-400")}>AMA ACLC Northbay • S.Y. 2025-2026</p>
+      <p className={cn("text-[9px] font-black uppercase tracking-[0.8em] pt-12 relative z-10", d ? "text-slate-700" : "text-slate-400")}>ACLC NORTHBAY • S.Y. 2025-2026</p>
     </div>
   )
 }
 
 export default function SuccessPage() {
   const { isDark } = useThemeStore()
-  const isMobile   = useIsMobile()
+  const isMobile = useIsMobile()
   const d = isDark
   const globalCanvasRef = useRef<HTMLCanvasElement>(null)
   const isDarkRef = useRef(isDark)

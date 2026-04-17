@@ -18,8 +18,8 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "AMA ACLC Northbay | Enrollment System",
-  description: "Official Enrollment Portal for AMA ACLC Northbay",
+  title: "ACLC NORTHBAY | Enrollment System",
+  description: "Official Enrollment Portal for ACLC NORTHBAY",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +30,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             Reads the Zustand-persisted value from localStorage so the correct
             data-theme is on <html> before React hydrates, eliminating the
             flash-of-wrong-theme AND the re-render lag on initial load. */}
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script dangerouslySetInnerHTML={{
+          __html: `
           try{
             var _t=JSON.parse(localStorage.getItem('aclc-theme')||'{}');
             var _d=_t.state&&_t.state.isDark!==undefined?_t.state.isDark:true;

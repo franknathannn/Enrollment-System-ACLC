@@ -107,11 +107,11 @@ function SectionStatsPopover({ sections, isDarkMode }: { sections: any[]; isDark
         <div className="flex items-center gap-3">
           <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
           <ThemedText variant="body" className="text-[10px] md:text-xs font-bold opacity-60 uppercase tracking-[0.2em]" isDarkMode={isDarkMode}>
-            AMA ACLC NORTHBAY SECTIONS
+            ACLC NORTHBAY SECTIONS
           </ThemedText>
           <span className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors ${open
-              ? "bg-blue-600 text-white"
-              : isDarkMode ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500"
+            ? "bg-blue-600 text-white"
+            : isDarkMode ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500"
             }`}>
             <Info size={9} /> Stats
           </span>
@@ -212,7 +212,7 @@ function SectionStatsPopover({ sections, isDarkMode }: { sections: any[]; isDark
 export const SectionsHeader = memo(({
   isDarkMode, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter,
   sectionSelection, setConfirmDeleteSelect,
-    sections, handleDeleteSection, handleClearAllStudents, initiateAdd, onBalance, isProcessing,
+  sections, handleDeleteSection, handleClearAllStudents, initiateAdd, onBalance, isProcessing,
   config, allSchedules, onExportGlobal
 }: SectionsHeaderProps) => {
 
@@ -285,8 +285,8 @@ export const SectionsHeader = memo(({
               key={gl}
               onClick={() => setGradeLevelFilter(gl)}
               className={`px-4 py-2 rounded-[18px] text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${gradeLevelFilter === gl
-                  ? "bg-blue-600 text-white shadow-md"
-                  : isDarkMode ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-800"
+                ? "bg-blue-600 text-white shadow-md"
+                : isDarkMode ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-800"
                 }`}
             >
               {gl === "ALL" ? "All Grades" : `Grade ${gl}`}
@@ -398,13 +398,13 @@ export const SectionsHeader = memo(({
         </DropdownMenu>
       </div>
 
-      <BulkScheduleManagerDialog 
-        open={scheduleManagerOpen} 
-        onOpenChange={setScheduleManagerOpen} 
-        sections={sections} 
-        isDarkMode={isDarkMode} 
-        config={config} 
-        allSchedules={allSchedules} 
+      <BulkScheduleManagerDialog
+        open={scheduleManagerOpen}
+        onOpenChange={setScheduleManagerOpen}
+        sections={sections}
+        isDarkMode={isDarkMode}
+        config={config}
+        allSchedules={allSchedules}
       />
     </ThemedCard>
   )

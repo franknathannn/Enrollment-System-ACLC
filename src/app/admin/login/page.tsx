@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { toast } from "sonner"
-import { Lock, Loader2, GraduationCap, ShieldCheck } from "lucide-react"
+import { Lock, Loader2, GraduationCap, ShieldCheck, ArrowLeft } from "lucide-react"
+import Link from "next/link"
 import { TurnstileWidget } from "@/components/TurnstileWidget"
 import { verifyTurnstile, checkAdminEmail } from "@/lib/actions/turnstile"
 
@@ -238,6 +239,14 @@ function LoginContent() {
 
   return (
     <div className="h-screen w-full bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-500">
+      {/* Back to Dashboard */}
+      <Link
+        href="/"
+        className="absolute top-5 left-5 z-20 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest border transition-all duration-200 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm hover:bg-white dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-white shadow-sm"
+      >
+        <ArrowLeft size={12} />
+        Back to Dashboard
+      </Link>
       {/* --- GLASSMORPHISM LOGO BACKGROUND --- */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
         <img

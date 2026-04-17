@@ -2,7 +2,6 @@
 "use client"
 
 import { X, User } from "lucide-react"
-
 import { Student, getStudentPhotoUrl } from "../types"
 
 interface StudentDetailTabProps {
@@ -25,13 +24,18 @@ export function StudentDetailTab({ student, dm, onClose }: StudentDetailTabProps
       ? "text-amber-500 bg-amber-500/10 border-amber-500/25"
       : (dm ? "text-slate-400 bg-slate-700/40 border-slate-600/40" : "text-slate-500 bg-slate-100 border-slate-200")
 
+  const fmtDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  const fmtTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className={`w-full max-w-sm rounded-3xl border shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 md:zoom-in-95 duration-200 ${card}`}
+        className={`w-full max-w-sm rounded-3xl border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 ${card}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Gradient header */}
@@ -46,7 +50,7 @@ export function StudentDetailTab({ student, dm, onClose }: StudentDetailTabProps
             </button>
           </div>
 
-          {/* Photo — centered on header/body boundary */}
+          {/* Photo — centered */}
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
               {photoUrl ? (
@@ -64,18 +68,29 @@ export function StudentDetailTab({ student, dm, onClose }: StudentDetailTabProps
               {/* Status dot */}
               <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 ${dm ? "border-slate-900" : "border-white"} ${student.status === "Enrolled" ? "bg-emerald-500" : "bg-amber-400"}`} />
             </div>
+
             <div className="text-center">
               <h2 className={`text-lg font-black ${head}`}>
                 {student.last_name}, {student.first_name}
                 {student.middle_name ? ` ${student.middle_name[0]}.` : ""}
               </h2>
               <p className={`text-[10px] font-mono mt-0.5 ${sub}`}>LRN: {student.lrn}</p>
+              {student.last_login_at ? (
+                <p className={`text-[9px] font-bold mt-1.5 ${sub}`}>
+                  Previous Log In:{" "}
+                  <span className={dm ? "text-blue-400" : "text-blue-600"}>
+                    {fmtDate(student.last_login_at)}{" · "}{fmtTime(student.last_login_at)}
+                  </span>
+                </p>
+              ) : (
+                <p className={`text-[9px] font-bold mt-1.5 opacity-40 ${sub}`}>No login recorded yet</p>
+              )}
             </div>
           </div>
         </div>
 
         {/* Details grid */}
-        <div className={`px-5 pb-5 pt-1 grid grid-cols-3 gap-2.5`}>
+        <div className="px-5 pb-5 pt-1 grid grid-cols-3 gap-2.5">
           <div className={`rounded-xl p-3 col-span-1 ${dm ? "bg-slate-800/60" : "bg-slate-50"}`}>
             <p className={`text-[8px] font-black uppercase tracking-widest mb-1 ${sub}`}>Gender</p>
             <p className={`text-sm font-black ${student.gender === "Male" ? "text-blue-500" : "text-pink-500"}`}>{student.gender || "—"}</p>
@@ -85,8 +100,8 @@ export function StudentDetailTab({ student, dm, onClose }: StudentDetailTabProps
             <p className={`text-sm font-black truncate ${head}`}>{student.section || "—"}</p>
           </div>
           <div className={`rounded-xl p-3 col-span-3 border ${statusColor}`}>
-            <p className={`text-[8px] font-black uppercase tracking-widest mb-1 opacity-70`}>Status</p>
-            <p className={`text-sm font-black`}>{student.status || "—"}</p>
+            <p className="text-[8px] font-black uppercase tracking-widest mb-1 opacity-70">Status</p>
+            <p className="text-sm font-black">{student.status || "—"}</p>
           </div>
         </div>
       </div>

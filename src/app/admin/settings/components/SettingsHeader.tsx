@@ -33,7 +33,7 @@ export function SettingsHeader({ isDarkMode }: SettingsHeaderProps) {
             Configuration
           </h1>
           <p className={`text-[9px] sm:text-[11px] font-semibold mt-1.5 italic ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-            AMA ACLC Northbay Enrollment Customization
+            ACLC NORTHBAY Enrollment Customization
           </p>
         </div>
       </div>
