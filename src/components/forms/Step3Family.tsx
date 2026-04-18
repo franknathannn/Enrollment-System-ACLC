@@ -246,23 +246,8 @@ export default function Step3Family() {
         }
       `}</style>
 
-      {/* BACKGROUND BRANDING */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className={cn(
-          "absolute top-1/2 left-1/2 w-[clamp(280px,80vw,500px)] aspect-square transition-opacity duration-1000 animate-float",
-          isDark ? "opacity-[0.05] brightness-150" : "opacity-[0.10]"
-        )}>
-          <img src="/logo-aclc.png" alt="" className="w-full h-full object-contain" />
-        </div>
-        <div className={cn(
-          "absolute top-0 right-0 w-1/3 h-1/3 blur-[120px] rounded-full",
-          isDark ? "bg-blue-600/10" : "bg-blue-600/5"
-        )} />
-        <div className={cn(
-          "absolute bottom-0 left-0 w-1/3 h-1/3 blur-[120px] rounded-full",
-          isDark ? "bg-red-600/10" : "bg-red-600/5"
-        )} />
-      </div>
+
+
 
       <div className="space-y-6 sm:space-y-8 pb-[140px] min-[480px]:pb-[160px]">
 

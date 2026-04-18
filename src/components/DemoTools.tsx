@@ -142,8 +142,21 @@ export function DemoTools() {
     }
 
     const advanceStep = () => {
+      // Strategy 1: explicit type="submit" button
       const submitBtn = document.querySelector('button[type="submit"]') as HTMLButtonElement
-      if (submitBtn) submitBtn.click()
+      if (submitBtn) { submitBtn.click(); return }
+
+      // Strategy 2: find the form and call requestSubmit
+      const form = document.querySelector('form')
+      if (form) { form.requestSubmit(); return }
+
+      // Strategy 3: find any button containing "Proceed" text
+      const allBtns = document.querySelectorAll('button')
+      for (const btn of allBtns) {
+        if (btn.textContent?.toLowerCase().includes("proceed")) {
+          btn.click(); return
+        }
+      }
     }
 
     return { p, dobStr, calcAge, typeReactValue, advanceStep }
@@ -151,12 +164,95 @@ export function DemoTools() {
 
   const fillStep1 = async (deps: any) => {
     const { p, dobStr, calcAge, typeReactValue } = deps
+
+    // Standard text fields
     await typeReactValue("first_name", p.f)
     await typeReactValue("middle_name", p.m)
     await typeReactValue("last_name", p.l)
-    await typeReactValue("nationality", "Filipino")
-    await typeReactValue("gender", p.g)
-    await typeReactValue("birth_date", dobStr)
+
+    // ── Nationality (Custom NationalityPicker) ──
+    // The picker is a button that opens a dropdown with a search input
+    const natContainer = document.getElementById("nationality_container")
+    if (natContainer) {
+      const natButton = natContainer.querySelector('button[type="button"]') as HTMLButtonElement
+      if (natButton) {
+        natButton.scrollIntoView({ behavior: "smooth", block: "center" })
+        await new Promise(r => setTimeout(r, 300))
+        natButton.click() // Opens the dropdown
+        await new Promise(r => setTimeout(r, 300))
+
+        // Type in the search box
+        const searchInput = natContainer.querySelector('input[placeholder*="Search"]') as HTMLInputElement
+        if (searchInput) {
+          const nativeSet = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set
+          if (nativeSet) nativeSet.call(searchInput, "Filipino")
+          searchInput.dispatchEvent(new Event("input", { bubbles: true }))
+          searchInput.dispatchEvent(new Event("change", { bubbles: true }))
+          await new Promise(r => setTimeout(r, 300))
+
+          // Click "Filipino" from the results
+          const options = natContainer.querySelectorAll('.max-h-48 button[type="button"]')
+          for (const opt of options) {
+            if (opt.textContent?.trim().toLowerCase() === "filipino") {
+              ;(opt as HTMLButtonElement).click()
+              break
+            }
+          }
+          await new Promise(r => setTimeout(r, 200))
+        }
+      }
+    }
+
+    // ── Gender (Custom button cards) ──
+    const genderContainer = document.getElementById("gender_container")
+    if (genderContainer) {
+      genderContainer.scrollIntoView({ behavior: "smooth", block: "center" })
+      await new Promise(r => setTimeout(r, 300))
+      const buttons = genderContainer.querySelectorAll('button[type="button"]')
+      for (const btn of buttons) {
+        const text = btn.textContent?.trim().toLowerCase() || ""
+        if ((p.g === "Male" && text.includes("male") && !text.includes("female")) ||
+            (p.g === "Female" && text.includes("female"))) {
+          ;(btn as HTMLButtonElement).click()
+          break
+        }
+      }
+      await new Promise(r => setTimeout(r, 200))
+    }
+
+    // ── Birth Date (Custom BirthDatePicker — three <select> dropdowns) ──
+    // dobStr format: "2005-08-15" → year=2005, month=7 (0-indexed), day=15
+    const [dobYear, dobMonth, dobDay] = dobStr.split("-").map(Number)
+    const birthContainer = document.getElementById("birth_date_container")
+    if (birthContainer) {
+      birthContainer.scrollIntoView({ behavior: "smooth", block: "center" })
+      await new Promise(r => setTimeout(r, 300))
+      const selects = birthContainer.querySelectorAll("select")
+      // selects[0] = Month (0-indexed value), selects[1] = Day, selects[2] = Year
+      if (selects.length >= 3) {
+        const nativeSelectSet = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value")?.set
+
+        // Month (0-indexed: August = 7)
+        if (nativeSelectSet) nativeSelectSet.call(selects[0], String(dobMonth - 1))
+        else selects[0].value = String(dobMonth - 1)
+        selects[0].dispatchEvent(new Event("change", { bubbles: true }))
+        await new Promise(r => setTimeout(r, 150))
+
+        // Day
+        if (nativeSelectSet) nativeSelectSet.call(selects[1], String(dobDay))
+        else selects[1].value = String(dobDay)
+        selects[1].dispatchEvent(new Event("change", { bubbles: true }))
+        await new Promise(r => setTimeout(r, 150))
+
+        // Year
+        if (nativeSelectSet) nativeSelectSet.call(selects[2], String(dobYear))
+        else selects[2].value = String(dobYear)
+        selects[2].dispatchEvent(new Event("change", { bubbles: true }))
+        await new Promise(r => setTimeout(r, 200))
+      }
+    }
+
+    // Remaining standard fields
     await typeReactValue("religion", "Catholic")
     await typeReactValue("age", calcAge)
     await typeReactValue("civil_status", "Single")
@@ -167,44 +263,97 @@ export function DemoTools() {
 
   const fillStep2 = async (deps: any) => {
     const { typeReactValue } = deps
+
+    // Helper: click a CheckCard button inside a container by matching label text
+    const clickCard = async (containerId: string, labelText: string) => {
+      const container = document.getElementById(containerId)
+      if (!container) return
+      container.scrollIntoView({ behavior: "smooth", block: "center" })
+      await new Promise(r => setTimeout(r, 300))
+      const buttons = container.querySelectorAll('button[type="button"]')
+      for (const btn of buttons) {
+        if (btn.textContent?.toLowerCase().includes(labelText.toLowerCase())) {
+          ;(btn as HTMLButtonElement).click()
+          break
+        }
+      }
+      await new Promise(r => setTimeout(r, 200))
+    }
+
+    // LRN (standard input)
     await typeReactValue("lrn", "100398849319")
 
-    const clickFirstOption = (containerId: string) => {
-      const container = document.getElementById(containerId)
-      if (container) {
-        const firstCard = container.querySelector('button, [role="button"], .cursor-pointer, .border') as HTMLElement
-        if (firstCard) firstCard.click()
+    // Grade Level (CheckCard)
+    await clickCard("grade_level_container", "Grade 11")
+
+    // Student Category (CheckCard)
+    await clickCard("student_category_container", "JHS Graduate")
+
+    // School Type (CheckCard)
+    await clickCard("school_type_container", "Public")
+
+    // Year Completed JHS (standard input)
+    await typeReactValue("year_completed_jhs", "2023-2024")
+
+    // Strand (CheckCard)
+    await clickCard("strand_container", "ICT")
+
+    // GWA (standard input)
+    await typeReactValue("gwa_grade_10", "88.50")
+
+    // ── School Name (SchoolSearchPicker — custom search component) ──
+    const schoolContainer = document.getElementById("last_school_attended_container")
+    if (schoolContainer) {
+      schoolContainer.scrollIntoView({ behavior: "smooth", block: "center" })
+      await new Promise(r => setTimeout(r, 300))
+
+      // Find the visible search input (not the hidden one)
+      const searchInput = schoolContainer.querySelector('input[type="text"]') as HTMLInputElement
+      if (searchInput) {
+        searchInput.focus()
+        await new Promise(r => setTimeout(r, 200))
+
+        const nativeSet = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set
+        const schoolName = "Manila Science High School"
+        if (nativeSet) nativeSet.call(searchInput, schoolName)
+        searchInput.dispatchEvent(new Event("input", { bubbles: true }))
+        searchInput.dispatchEvent(new Event("change", { bubbles: true }))
+        await new Promise(r => setTimeout(r, 500))
+
+        // Try to click a matching school from the dropdown results
+        const results = schoolContainer.querySelectorAll('.max-h-64 button[type="button"]')
+        let found = false
+        for (const btn of results) {
+          if (btn.textContent?.toLowerCase().includes("manila science")) {
+            ;(btn as HTMLButtonElement).click()
+            found = true
+            break
+          }
+        }
+
+        // If no match found in dropdown, the typed value is already set via onChange
+        if (!found) {
+          // The SchoolSearchPicker onChange fires on input, setting the form value
+          // Just close the dropdown by clicking outside
+          searchInput.blur()
+        }
+        await new Promise(r => setTimeout(r, 200))
       }
     }
 
-    await typeReactValue("grade_level", "11")
-    clickFirstOption("grade_level_container")
-    
-    await typeReactValue("student_category", "JHS Graduate")
-    clickFirstOption("student_category_container")
-
-    await typeReactValue("school_type", "Public")
-    clickFirstOption("school_type_container")
-
-    await typeReactValue("year_completed_jhs", "2023-2024")
-
-    await typeReactValue("strand", "ICT")
-    clickFirstOption("strand_container")
-
-    await typeReactValue("gwa_grade_10", "88.50")
-
-    await typeReactValue("last_school_attended", "Manila Science High School")
+    // School Address (standard input)
     await typeReactValue("last_school_address", "Taft Ave, Ermita, Manila")
-    
+
+    // Facebook (standard inputs)
     await typeReactValue("facebook_user", "Juan Dela Cruz")
     await typeReactValue("facebook_link", "https://www.facebook.com/juandelacruz")
 
-    await typeReactValue("preferred_modality", "Face to Face")
-    clickFirstOption("preferred_modality_container")
-    
+    // Preferred Modality (CheckCard)
+    await clickCard("preferred_modality_container", "Face to Face")
+
+    // Preferred Shift (CheckCard)
     await new Promise(r => setTimeout(r, 100))
-    await typeReactValue("preferred_shift", "AM")
-    clickFirstOption("preferred_shift_container")
+    await clickCard("preferred_shift_container", "AM")
   }
 
   const fillStep3 = async (deps: any) => {
@@ -214,7 +363,7 @@ export function DemoTools() {
     await typeReactValue("guardian_last_name", p.l)
     await typeReactValue("guardian_phone", "0918" + Math.floor(1000000 + Math.random() * 9000000))
     await typeReactValue("guardian_email", `parent.${p.l.toLowerCase().replace(" ", "")}@demo.com`)
-    await typeReactValue("guardian_relationship", "Parent")
+    await typeReactValue("phone", "0917" + Math.floor(1000000 + Math.random() * 9000000))
   }
 
   const triggerAutoFillStep = async () => {
