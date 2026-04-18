@@ -4,7 +4,7 @@ import { memo } from "react"
 import ExcelJS from "exceljs"
 import { saveAs } from "file-saver"
 import { toPng } from "html-to-image"
-import { Upload, Download, FileSpreadsheet, Trash2, RefreshCw, Plus, Wand2, Image as ImageIcon } from "lucide-react"
+import { Upload, Download, FileSpreadsheet, Trash2, RefreshCw, Plus, Wand2, Image as ImageIcon, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { formatAMPM } from "./autoScheduler"
@@ -22,11 +22,12 @@ interface ScheduleToolbarProps {
   onImportClick: () => void
   onRefresh: () => void
   onClearAll: () => void
+  onManageTeachers: () => void
 }
 
 export const ScheduleToolbar = memo(function ScheduleToolbar({
   sectionName, adviserName, schedules, isICT, isDarkMode, loading,
-  onAddEntry, onAutoSchedule, onImportClick, onRefresh, onClearAll,
+  onAddEntry, onAutoSchedule, onImportClick, onRefresh, onClearAll, onManageTeachers,
 }: ScheduleToolbarProps) {
   const accent = isICT ? "text-blue-400" : "text-orange-400"
   const accentBtn = isICT ? "bg-blue-600 hover:bg-blue-500 text-white" : "bg-orange-600 hover:bg-orange-500 text-white"
@@ -372,6 +373,18 @@ export const ScheduleToolbar = memo(function ScheduleToolbar({
             <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Completely wipe this schedule</p></TooltipContent>
           </Tooltip>
         )}
+
+        {/* Manage Teachers */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button onClick={onManageTeachers} disabled={!schedules.length}
+              className={`h-10 px-5 rounded-2xl border text-[9px] font-black uppercase tracking-widest gap-2 transition-all flex items-center disabled:opacity-30 disabled:cursor-not-allowed
+                ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-700 hover:bg-slate-100"}`}>
+              <Users size={13} /> Manage Teachers
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Bulk edit teacher assignments</p></TooltipContent>
+        </Tooltip>
 
         {/* Auto-Schedule — secondary accent */}
         <Tooltip>

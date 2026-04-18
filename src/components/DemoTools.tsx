@@ -355,49 +355,20 @@ export function DemoTools() {
     }
   }
 
-  const wipeChats = async () => {
-    if (!confirm("Are you sure you want to securely wipe ALL chat messages?")) return
-    setLoading("wipe-chats")
-    try {
-      await Promise.all([
-        supabase.from("admin_dm_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabase.from("admin_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabase.from("teacher_chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabase.from("teacher_dm_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabase.from("teacher_global_chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabase.from("teacher_message_reactions").delete().neq("id", 0),
-        supabase.from("message_reactions").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-      ])
-      toast.success("Successfully cleared all chat records.")
-    } catch (e) {
-      toast.error("Failed to wipe chats")
-    } finally {
-      setLoading(null)
-    }
-  }
+
 
   // ── Snapshot & Reset ───────────────────────────────────────────────────────
   const createSnapshot = async () => {
     setLoading("backup")
     try {
-      const [{ data: stud }, { data: sect }, { data: cfg }, { data: tea }, { data: sch }, { data: att }, 
-             { data: admDm }, { data: admMsg }, { data: teaChat }, { data: teaDm }, { data: teaGlob }, { data: teaReac }, { data: msgReac }] = await Promise.all([
+      const [{ data: stud }, { data: sect }, { data: cfg }, { data: tea }, { data: sch }, { data: att }] = await Promise.all([
         supabase.from("students").select("*"),
         supabase.from("sections").select("*"),
         supabase.from("system_config").select("*"),
         supabase.from("teachers").select("*"),
         supabase.from("schedules").select("*"),
         supabase.from("attendance").select("*"),
-        supabase.from("admin_dm_messages").select("*"),
-        supabase.from("admin_messages").select("*"),
-        supabase.from("teacher_chat_messages").select("*"),
-        supabase.from("teacher_dm_messages").select("*"),
-        supabase.from("teacher_global_chat_messages").select("*"),
-        supabase.from("teacher_message_reactions").select("*"),
-        supabase.from("message_reactions").select("*"),
       ])
-
-      const chat_data = { admDm, admMsg, teaChat, teaDm, teaGlob, teaReac, msgReac }
 
       const { error } = await supabase.from("demo_snapshots").insert({
         snapshot_name: `Snapshot ${new Date().toLocaleString()}`,
@@ -407,14 +378,14 @@ export function DemoTools() {
         teachers_data: tea || [],
         schedules_data: sch || [],
         attendance_data: att || [],
-        chat_data: chat_data // assuming this column gets added properly (jsonb variant)
       })
 
       if (error) throw error
       toast.success("System Snapshot Created!")
     } catch (e: any) {
-      toast.error("Failed to create snapshot. Ensure 'demo_snapshots' table exists.", { duration: 5000 })
-      console.error(e)
+      const errorMsg = e?.message || JSON.stringify(e)
+      toast.error(`Failed to create snapshot. Error: ${errorMsg}`, { duration: 8000 })
+      console.error("SNAPSHOT ERROR:", e)
     } finally {
       setLoading(null)
     }
@@ -451,13 +422,6 @@ export function DemoTools() {
         supabase.from("teachers").delete().neq("id", "0"),
         supabase.from("schedules").delete().neq("id", "0"),
         supabase.from("attendance").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabase.from("admin_dm_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabase.from("admin_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabase.from("teacher_chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabase.from("teacher_dm_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabase.from("teacher_global_chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabase.from("teacher_message_reactions").delete().neq("id", 0),
-        supabase.from("message_reactions").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
       ])
 
       // 3. Re-inject data
@@ -474,18 +438,7 @@ export function DemoTools() {
         inject("attendance", snap.attendance_data),
       ])
 
-      if (snap.chat_data) {
-        const cd = snap.chat_data
-        await Promise.all([
-          inject("admin_dm_messages", cd.admDm),
-          inject("admin_messages", cd.admMsg),
-          inject("teacher_chat_messages", cd.teaChat),
-          inject("teacher_dm_messages", cd.teaDm),
-          inject("teacher_global_chat_messages", cd.teaGlob),
-          inject("teacher_message_reactions", cd.teaReac),
-          inject("message_reactions", cd.msgReac),
-        ])
-      }
+
 
       // Ensure visual effect lingers for wow factor
       await new Promise(r => setTimeout(r, 2000))
@@ -626,22 +579,13 @@ export function DemoTools() {
                   {/* DB Wipe */}
                   <div className="space-y-2.5">
                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">3. Data Purge</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => wipeAttendance("today")}
-                        disabled={loading !== null}
-                        className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-500 rounded-xl px-4 py-2.5 text-[10px] font-bold transition-colors"
-                      >
-                        {loading === "wipe-today" ? <Loader2 size={12} className="animate-spin mx-auto" /> : "Wipe Attend"}
-                      </button>
-                      <button
-                        onClick={wipeChats}
-                        disabled={loading !== null}
-                        className="bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 rounded-xl px-4 py-2.5 text-[10px] font-bold transition-colors"
-                      >
-                        {loading === "wipe-chats" ? <Loader2 size={12} className="animate-spin mx-auto" /> : "Wipe Chats"}
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => wipeAttendance("today")}
+                      disabled={loading !== null}
+                      className="w-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-500 rounded-xl px-4 py-2.5 text-[10px] font-bold transition-colors flex justify-center items-center gap-2"
+                    >
+                      {loading === "wipe-today" ? <Loader2 size={12} className="animate-spin" /> : "Wipe Attendance"}
+                    </button>
                   </div>
 
                   {/* Snapshots */}
@@ -756,22 +700,13 @@ export function DemoTools() {
                 {/* DB Wipe */}
                 <div className="flex flex-col gap-1.5 items-start">
                   <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Purge DB</span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => wipeAttendance("today")}
-                      disabled={loading !== null}
-                      className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-500 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1"
-                    >
-                      {loading === "wipe-today" ? <Loader2 size={10} className="animate-spin" /> : "Attend"}
-                    </button>
-                    <button
-                      onClick={wipeChats}
-                      disabled={loading !== null}
-                      className="bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1"
-                    >
-                      {loading === "wipe-chats" ? <Loader2 size={10} className="animate-spin" /> : "Chats"}
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => wipeAttendance("today")}
+                    disabled={loading !== null}
+                    className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-500 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1"
+                  >
+                    {loading === "wipe-today" ? <Loader2 size={10} className="animate-spin" /> : "Attend"}
+                  </button>
                 </div>
 
                 <div className="w-px h-8 bg-slate-800 shrink-0"></div>

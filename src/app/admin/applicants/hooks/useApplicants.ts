@@ -188,6 +188,9 @@ export function useApplicants() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
         fetchStrandStats(); fetchStudents(true)
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, () => {
+        fetchStudents(true)
+      })
       .on('broadcast', { event: 'student_update' }, () => {
         fetchStrandStats(); fetchStudents(true)
       })

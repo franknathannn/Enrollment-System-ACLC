@@ -495,8 +495,20 @@ export default function EnrollmentPage() {
 
   useEffect(() => {
     checkStatus()
+    const channel = supabase.channel('enroll-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
+        checkStatus()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, () => {
+        checkStatus() 
+      })
+      .subscribe()
+      
     const interval = setInterval(checkStatus, 60_000)
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
   }, [checkStatus])
 
   // ── Countdown timer ────────────────────────────────────────────────────────

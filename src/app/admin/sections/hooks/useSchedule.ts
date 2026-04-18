@@ -303,6 +303,49 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
     }
   }, [sectionName])
 
+  // ── Mass update entries (e.g. for Teacher Replacement) ─────────────────────
+  const massUpdateEntries = useCallback(async (
+    ids: string[],
+    data: { teacher: string | null; teacher_id: string | null }
+  ) => {
+    if (!ids || ids.length === 0) return
+    const toastId = toast.loading("Updating schedules…")
+
+    try {
+      const allRows = await fetchAllSchedules()
+      
+      // Build the updated versions of the target rows for conflict checking
+      const updatedRows = schedules
+        .filter(s => ids.includes(s.id))
+        .map(s => ({ ...s, teacher: data.teacher, teacher_id: data.teacher_id }))
+
+      // Check conflicts for each updated row.
+      // We pass skipId as `s.id` so it doesn't conflict with its old self.
+      for (const reqRow of updatedRows) {
+        const conflicts = validateSlot(reqRow, allRows, reqRow.id)
+        if (conflicts.length > 0) {
+          toast.error(`Update blocked for ${reqRow.subject}: conflict detected.`, { id: toastId, duration: 4000 })
+          throw new Error("Schedule conflict detected — bulk update aborted.")
+        }
+      }
+
+      const { error } = await supabase
+        .from("schedules")
+        .update(data)
+        .in("id", ids)
+
+      if (error) throw error
+
+      toast.success(`Successfully updated ${ids.length} scheduling blocks.`, { id: toastId })
+      await fetchSchedules(true)
+    } catch (err: any) {
+      if (!err.message?.includes("aborted")) {
+        toast.error(err.message ?? "Update failed", { id: toastId })
+      }
+      throw err
+    }
+  }, [schedules, fetchSchedules, fetchAllSchedules])
+
   return {
     schedules,
     loading,
@@ -313,5 +356,6 @@ export function useSchedule({ sectionName, schoolYear }: UseScheduleOptions) {
     importSchedules,
     addSchedules,
     clearSchedules,
+    massUpdateEntries,
   }
-}
+}

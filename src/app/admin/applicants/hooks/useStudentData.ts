@@ -53,7 +53,7 @@ export function useStudentData() {
           .neq('is_archived', true)
           .order('created_at', { ascending: false })
           .range(0, 5999),
-        supabase.from('system_config').select('school_year').single(),
+        supabase.from('system_config').select('school_year, is_portal_active').single(),
         supabase.from('sections').select('id, section_name, strand, grade_level').order('section_name'),
       ])
 

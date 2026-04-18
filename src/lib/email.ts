@@ -21,7 +21,7 @@ export async function sendEnrollmentEmail(record: any) {
           
           <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">
             ${isApproved
-      ? 'We are thrilled to inform you that your application has been <strong>APPROVED</strong>. Welcome to the family!'
+      ? 'We are thrilled to inform you that your application has been <strong>APPROVED</strong>. Welcome our School!'
       : `Dear <strong>${record.first_name}</strong>, thank you for your interest. We noticed a few things that need your attention.`}
           </p>
   

@@ -188,7 +188,7 @@ export function useStudentFiltering({ students, processingIds, processingIdsRef,
     return () => clearInterval(cleanupInterval)
   }, [])
 
-  // Cleanup hidden rows
+  // Cleanup hidden rows AND exiting rows for students that reappear in the current tab
   useEffect(() => {
     setHiddenRows(prev => {
       if (prev.size === 0) return prev
@@ -202,7 +202,20 @@ export function useStudentFiltering({ students, processingIds, processingIdsRef,
       })
       return changed ? next : prev
     })
-  }, [filteredStudents, processingIds, setHiddenRows])
+    // Also clean up stale exitingRows so returning students don't re-exit
+    setExitingRows(prev => {
+      const keysToRemove: string[] = []
+      filteredStudents.forEach(s => {
+        if (prev[s.id] && !processingIds.has(s.id)) {
+          keysToRemove.push(s.id)
+        }
+      })
+      if (keysToRemove.length === 0) return prev
+      const next = { ...prev }
+      keysToRemove.forEach(id => delete next[id])
+      return next
+    })
+  }, [filteredStudents, processingIds, setHiddenRows, setExitingRows])
 
   return {
     searchTerm, setSearchTerm,

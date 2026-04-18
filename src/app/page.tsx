@@ -45,24 +45,42 @@ function useIsMobile() {
   return isMobile
 }
 
-// ── ANIMATED COUNTER — Optimized with RAF ────────────────────────────────────
-function useCountUp(target: number, duration = 1200, trigger = true) {
+// ── ANIMATED COUNTER — Smooth incremental transitions ────────────────────────
+function useCountUp(target: number, initialDuration = 1200, trigger = true) {
   const [val, setVal] = useState(0)
   const startTime = useRef<number | null>(null)
+  const prevTarget = useRef(0)
+  const hasInitialized = useRef(false)
 
   useEffect(() => {
-    if (!trigger || target === 0) return
+    if (!trigger) return
+    if (target === 0 && !hasInitialized.current) { setVal(0); prevTarget.current = 0; return }
+
+    const from = hasInitialized.current ? prevTarget.current : 0
+    const to = target
+    hasInitialized.current = true
+    prevTarget.current = target
+
+    // If no change, just snap
+    if (from === to) { setVal(to); return }
+
+    // Short duration for small live changes, full duration for initial load
+    const delta = Math.abs(to - from)
+    const duration = delta <= 5 ? 400 : delta <= 50 ? 600 : initialDuration
 
     let rafId: number
+    startTime.current = null
     const step = (timestamp: number) => {
       if (!startTime.current) startTime.current = timestamp
       const progress = Math.min((timestamp - startTime.current) / duration, 1)
-      setVal(Math.floor(progress * target))
+      // Ease-out curve for snappy feel
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setVal(Math.round(from + (to - from) * eased))
       if (progress < 1) { rafId = requestAnimationFrame(step) }
     }
     rafId = requestAnimationFrame(step)
     return () => cancelAnimationFrame(rafId)
-  }, [target, trigger, duration])
+  }, [target, trigger, initialDuration])
 
   return val
 }
@@ -490,8 +508,7 @@ export default function HomePage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sections' }, fetchDatabaseStats)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, fetchDatabaseStats)
       .subscribe()
-    const interval = setInterval(fetchDatabaseStats, 3000)
-    return () => { supabase.removeChannel(channel); clearInterval(interval) }
+    return () => { supabase.removeChannel(channel) }
   }, [fetchDatabaseStats])
 
   // ── CANVAS — desktop only ────────────────────────────────────────────────

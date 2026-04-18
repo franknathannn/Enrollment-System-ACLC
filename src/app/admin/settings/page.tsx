@@ -146,7 +146,18 @@ export default function SettingsPage() {
     }
   }, [])
 
-  useEffect(() => { loadSettings() }, [loadSettings])
+  useEffect(() => {
+    loadSettings()
+    const channel = supabase.channel('settings-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
+        loadSettings()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, () => {
+        loadSettings() 
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [loadSettings])
 
   useEffect(() => {
     const savedScroll = sessionStorage.getItem("settings_scroll_pos")
@@ -278,7 +289,7 @@ export default function SettingsPage() {
   const runCapacityGuardian = async () => {
     setUpdating(true)
     try {
-      const currentCap = Number(config.capacity) * 2
+      const currentCap = Number(config.capacity)
       if (currentAccepted >= currentCap) {
         const { error } = await supabase.from('system_config').update({
           is_portal_active: false,
@@ -446,10 +457,70 @@ export default function SettingsPage() {
 
   // --- REACTIVE SATURATION ENGINE ---
   const capacityPercentage = useMemo(() => {
-    const cap = Number(config.capacity) * 2
+    const cap = Number(config.capacity)
     if (!cap || cap <= 0) return 0
     return Math.min((currentAccepted / cap) * 100, 100)
   }, [currentAccepted, config.capacity])
+
+  // --- AUTO CAPACITY GUARDIAN ---
+  useEffect(() => {
+    if (_loading || !config.id || !config.closePortalWhenFull) return;
+
+    if (config.isOpen && capacityPercentage >= 100) {
+      const autoRunGuardian = async () => {
+        setUpdating(true)
+        try {
+          const { error } = await supabase.from('system_config').update({
+            is_portal_active: false,
+            control_mode: 'manual'
+          }).eq('id', config.id)
+          if (error) throw error
+          setConfig(prev => ({ ...prev, isOpen: false, controlMode: 'manual' }))
+          toast.warning("Auto-Trigger: Capacity limit reached. Portal automatically closed.")
+        } catch (_err) {
+          console.error("Auto Guardian Execution Failed.")
+        } finally {
+          setUpdating(false)
+        }
+      }
+      autoRunGuardian()
+    } else if (!config.isOpen && capacityPercentage < 100 && config.controlMode === 'manual') {
+      // Auto-reopen if slots are freed!
+      const autoReopen = async () => {
+        setUpdating(true)
+        try {
+          // Verify if it should be open based on dates
+          let calculatedStatus = true
+          if (!config.startDate || !config.endDate) {
+            calculatedStatus = false
+          } else {
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            const start = new Date(config.startDate)
+            const end = new Date(config.endDate)
+            end.setHours(23, 59, 59, 999)
+            calculatedStatus = today >= start && today <= end
+          }
+          
+          const { error } = await supabase.from('system_config').update({
+            is_portal_active: calculatedStatus,
+            control_mode: 'automatic'
+          }).eq('id', config.id)
+          
+          if (error) throw error
+          setConfig(prev => ({ ...prev, isOpen: calculatedStatus, controlMode: 'automatic' }))
+          if (calculatedStatus) {
+            toast.success("Auto-Trigger: Slot freed up! Portal automatically re-opened.")
+          }
+        } catch (_err) {
+          console.error("Auto Guardian Re-open Failed.")
+        } finally {
+          setUpdating(false)
+        }
+      }
+      autoReopen()
+    }
+  }, [_loading, capacityPercentage, config.closePortalWhenFull, config.isOpen, config.id, config.controlMode, config.startDate, config.endDate])
 
   const handleSync = async () => {
     setIsSyncing(true)

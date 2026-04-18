@@ -33,6 +33,7 @@ interface ApplicantsTableProps {
   currentPage: number
   totalPages: number
   setCurrentPage: (page: number) => void
+  isSystemLocked: boolean
 }
 
 interface ApplicantRowProps {
@@ -52,6 +53,7 @@ interface ApplicantRowProps {
   setDeclineModalOpen: (open: boolean) => void
   setActiveDeleteStudent: (student: any) => void
   setDeleteModalOpen: (open: boolean) => void
+  isSystemLocked: boolean
 }
 
 const handleCopyLRN = (e: React.MouseEvent, lrn: string) => {
@@ -72,7 +74,7 @@ const STATUS_STYLES: Record<string, { badge: string; glow: string; bar: string }
 const MobileApplicantRow = memo(({
   student, isSelected, isHidden, isExiting, isAnimatingIn, animIndex, isStrandFull, isDarkMode,
   toggleSelect, setOpenStudentDialog, handleExit, handleStatusChange,
-  setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen
+  setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen, isSystemLocked
 }: ApplicantRowProps) => {
   if (isHidden) return null
   const isMale = student.gender !== 'Female'
@@ -207,10 +209,10 @@ const MobileApplicantRow = memo(({
               onClick={(e) => { e.stopPropagation(); handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted')); }}
               variant="ghost"
               size="sm"
-              disabled={isStrandFull}
-              className={`flex-1 h-10 rounded-2xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 ${isStrandFull ? 'text-slate-400 cursor-not-allowed opacity-50' : 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}
+              disabled={isStrandFull || isSystemLocked}
+              className={`flex-1 h-10 rounded-2xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 ${isStrandFull || isSystemLocked ? 'text-slate-400 cursor-not-allowed opacity-50' : 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}
             >
-              {isStrandFull ? 'Full' : 'Approve'}
+              {isSystemLocked ? 'Locked' : isStrandFull ? 'Full' : 'Approve'}
             </Button>
             <Button
               onClick={(e) => { e.stopPropagation(); setActiveDeclineStudent(student); setDeclineModalOpen(true); }}
@@ -263,7 +265,7 @@ function ShrinkName({ text, middleInitial, className }: { text: string; middleIn
 const DesktopApplicantRow = memo(({
   student, isSelected, isHidden, isExiting, isAnimatingIn, animIndex, isStrandFull, isDarkMode,
   toggleSelect, setOpenStudentDialog, handleExit, handleStatusChange,
-  setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen
+  setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen, isSystemLocked
 }: ApplicantRowProps) => {
   if (isHidden) return null
   const isMale = student.gender !== 'Female'
@@ -413,7 +415,7 @@ const DesktopApplicantRow = memo(({
           {student.status === 'Pending' && (
             <>
               <Tooltip><TooltipTrigger asChild>
-                <Button onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted'))} variant="ghost" disabled={isStrandFull} className={`h-9 px-2 md:px-3 rounded-xl font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap ${isStrandFull ? 'text-slate-300 cursor-not-allowed' : 'text-green-600'}`} onMouseEnter={(e) => { if (!isStrandFull) { e.currentTarget.style.backgroundColor = 'rgb(22 163 74)'; e.currentTarget.style.color = 'white'; } }} onMouseLeave={(e) => { if (!isStrandFull) { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = 'rgb(22 163 74)'; } }}><span className="hidden sm:inline">{isStrandFull ? 'FULL' : 'Approve'}</span><span className="sm:hidden">{isStrandFull ? 'X' : '✓'}</span></Button>
+                <Button onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted'))} variant="ghost" disabled={isStrandFull || isSystemLocked} className={`h-9 px-2 md:px-3 rounded-xl font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap ${isStrandFull || isSystemLocked ? 'text-slate-300 cursor-not-allowed' : 'text-green-600'}`} onMouseEnter={(e) => { if (!isStrandFull && !isSystemLocked) { e.currentTarget.style.backgroundColor = 'rgb(22 163 74)'; e.currentTarget.style.color = 'white'; } }} onMouseLeave={(e) => { if (!isStrandFull && !isSystemLocked) { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = 'rgb(22 163 74)'; } }}><span className="hidden sm:inline">{isSystemLocked ? 'LOCKED' : isStrandFull ? 'FULL' : 'Approve'}</span><span className="sm:hidden">{isStrandFull || isSystemLocked ? 'X' : '✓'}</span></Button>
               </TooltipTrigger><TooltipContent className="bg-green-900 text-green-100 border-green-800"><p>Approve Application</p></TooltipContent></Tooltip>
               <Tooltip><TooltipTrigger asChild>
                 <Button
@@ -650,7 +652,7 @@ function PaginationBar({
 export const ApplicantsTable = memo(({
   isDarkMode, filteredStudents, selectedIds, toggleSelect, toggleSelectAll, hiddenRows, exitingRows, animatingIds,
   setOpenStudentDialog, handleExit, handleStatusChange, setActiveDeclineStudent, setDeclineModalOpen, setActiveDeleteStudent, setDeleteModalOpen, strandStats,
-  totalFilteredCount, currentPage, totalPages, setCurrentPage
+  totalFilteredCount, currentPage, totalPages, setCurrentPage, isSystemLocked
 }: ApplicantsTableProps) => {
   const visibleStudents = useMemo(() => {
     if (filteredStudents.length > 5 || (filteredStudents.length === totalFilteredCount && totalFilteredCount > 5)) {
@@ -809,6 +811,7 @@ export const ApplicantsTable = memo(({
                     setDeclineModalOpen={setDeclineModalOpen}
                     setActiveDeleteStudent={setActiveDeleteStudent}
                     setDeleteModalOpen={setDeleteModalOpen}
+                    isSystemLocked={isSystemLocked}
                   />
                 )
               })}
@@ -890,6 +893,7 @@ export const ApplicantsTable = memo(({
                         setDeclineModalOpen={setDeclineModalOpen}
                         setActiveDeleteStudent={setActiveDeleteStudent}
                         setDeleteModalOpen={setDeleteModalOpen}
+                        isSystemLocked={isSystemLocked}
                       />
                     )
                   })}

@@ -8,6 +8,7 @@ import { ScheduleToolbar }       from "./ScheduleToolbar"
 import { ScheduleEntryForm }     from "./ScheduleEntryForm"
 import { ScheduleImport }        from "./ScheduleImport"
 import { AutoScheduleWizard }    from "./AutoScheduleWizard"
+import { ScheduleTeacherManager } from "./ScheduleTeacherManager"
 import { useSchedule }           from "../../hooks/useSchedule"
 import { generateSchedule }      from "./autoScheduler"
 import type { ScheduleRow, ScheduleImportRow } from "./types"
@@ -38,6 +39,7 @@ export const ScheduleTab = memo(function ScheduleTab({
   const [mode,       setMode]    = useState<PanelMode>("none")
   const [editingRow, setEditing] = useState<ScheduleRow | null>(null)
   const [teachers,   setTeachers] = useState<TeacherOption[]>([])
+  const [managerOpen, setManagerOpen] = useState(false)
   const formRef  = useRef<HTMLDivElement>(null)
   const [editKey, setEditKey]   = useState(0)
 
@@ -58,7 +60,7 @@ export const ScheduleTab = memo(function ScheduleTab({
     schedules, loading,
     fetchSchedules,
     addEntry, updateEntry, deleteEntry,
-    importSchedules, addSchedules, clearSchedules,
+    importSchedules, addSchedules, clearSchedules, massUpdateEntries
   } = useSchedule({ sectionName, schoolYear })
 
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
@@ -182,6 +184,7 @@ export const ScheduleTab = memo(function ScheduleTab({
           onImportClick={() => setMode(mode === "import" ? "none" : "import")}
           onRefresh={() => fetchSchedules(false)}
           onClearAll={() => setClearConfirmOpen(true)}
+          onManageTeachers={() => setManagerOpen(true)}
         />
       </div>
 
@@ -252,6 +255,16 @@ export const ScheduleTab = memo(function ScheduleTab({
           onDelete={handleDelete}
         />
       </div>
+
+      <ScheduleTeacherManager
+        open={managerOpen}
+        onOpenChange={setManagerOpen}
+        schedules={schedules}
+        teachers={teachers}
+        isDarkMode={isDarkMode}
+        isICT={isICT}
+        onMassUpdate={massUpdateEntries}
+      />
 
       {/* ── Clear Confirmation Modal ── */}
       {clearConfirmOpen && (

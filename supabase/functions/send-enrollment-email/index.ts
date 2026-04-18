@@ -248,7 +248,7 @@ serve(async (req: Request) => {
       contentHtml = '<h1 style="color:#15803d;margin-top:0;font-size:28px;text-align:center;font-weight:800;">Congratulations, ' + record.last_name + '!</h1>'
         + '<p style="font-size:18px;line-height:1.6;color:#15803d;text-align:center;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">HELLO STUDENT ' + studentUuid + '</p>'
         + '<p style="font-size:13px;color:#64748b;text-align:center;font-weight:700;margin-bottom:20px;">LRN: <strong style="color:#0f172a;">' + (record.lrn || 'N/A') + '</strong></p>'
-        + '<p style="font-size:16px;line-height:1.6;color:#4b5563;text-align:center;">We are thrilled to inform you that your application has been <strong>APPROVED</strong>. Welcome to the family!</p>'
+        + '<p style="font-size:16px;line-height:1.6;color:#4b5563;text-align:center;">We are thrilled to inform you that your application has been <strong>APPROVED</strong>. Welcome to our School!</p>'
         + '<div style="background-color:#f0fdf4;border:1px solid #bbf7d0;padding:25px;margin:30px 0;border-radius:12px;text-align:center;">'
         + '<p style="margin:0;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#15803d;font-weight:700;">Assigned Section</p>'
         + '<p style="margin:8px 0 0 0;font-size:32px;font-weight:900;color:#166534;">' + (record.section || 'TBA') + '</p>'

@@ -1,0 +1,943 @@
+A Proposed Cross-platform Enrollment Management System with Integrated Data Analysis 
+For
+ ACLC 
+Northbay
+ Campus
+A Research Project Proposal
+Presented to the Faculty of the
+Information and Communications Technology Program
+AMA Computer Learning Center – 
+Northbay
+ Campus
+In Partial Fulfilment
+of the Requirements for the Strand
+Information and Communications Technology
+Barreto, Warren B.
+Faa, Frank Nathan V.
+Fernandez, 
+Yhunice
+ Kate G.
+Maurera
+, 
+Rizaldy
+ Jose G.
+Napiza
+, Ashley R.
+Sabejon
+, Rafael C.
+Santos, Jasraj D. 
+April, 2026
+ENDORSEMENT FORM FOR PROPOSAL DEFENSE
+TITLE OF RESEARCH: A Propose Cross-platform Enrollment Management System with Integrated Data Analysis 
+For
+ ACLC 
+Northbay
+ Campus
+NAME OF PROPONENTS:
+Barreto, Warren B.          
+Napiza
+, Ashley R.          
+Faa, Frank Nathan V.
+Sabejon
+, Rafael C.
+Fernandez, 
+Yhunice
+ Kate G.
+Santos, Jasraj D.
+Maurera
+, 
+Rizaldy
+ Jose G.     
+In Partial Fulfilment of the Requirements
+for the Strand Information and Communications Technology
+has been examined and is recommended for Proposal Defense.
+ENDORSED BY:
+MR. RONEL M. FARIOLEN
+Research Project Adviser
+APPROVED FOR PROPOSAL DEFENSE:
+MRS. JOCELYN R. ISIDRO
+Senior High School - Coordinator
+NOTED BY:
+MRS. EMILY L. QUINTANA
+School Directress
+APPROVAL SHEET
+This research project proposal titled A Propose Cross-platform Enrollment Management System with Integrated Data Analysis 
+For
+ ACLC 
+Northbay
+ Campus, prepared and submitted by Barreto, Warren B. Faa, Frank Nathan V. Fernandez, 
+Yhunice
+ Kate G. 
+Maurera
+ 
+Rizaldy
+ Jose G. 
+Napiza
+, Ashley B. 
+Sabejon
+, Rafael C. Santos, Jasraj D. in partial fulfillment of the requirements for the Strand Information and Communications Technology, has been examined and is recommended for acceptance and approval.
+MR. RONEL M. FARIOLEN
+Capstone Project Adviser
+Accepted and approved by the Capstone Project Review Panel
+in partial fulfillment of the requirements for the Strand 
+Information and Communications Technology
+<Panelist's Given Name MI. Family Name>
+<Panelist's Given Name MI. Family Name>
+Panel Member
+Panel Member
+<Panelist's Given Name MI. Family Name>
+Lead Panelist
+Noted:
+  MRS. JOCELYN R. ISIDRO
+MRS. EMILY L. QUINTANA
+     Senior High School – Coordinator
+School Directress
+April, 2026
+Acknowledgement
+We, the researchers, would like to thank the Almighty God for His guidance and blessings throughout the completion of this research project.
+We are deeply 
+thankful
+ to Mr. Ronel M. 
+Fariolen
+, our Research Project Adviser, for his invaluable guidance, patience, and support throughout the study. His expertise and constructive feedback were instrumental in shaping this research into its final form. Special recognition is given to Frank Nathan V. Faa, who served as the lead developer and system architect of the Cross-platform Enrollment Management System. His technical skills, dedication, and countless hours of development greatly contributed to the success of this project.
+We would also like to express our gratitude to Mrs. Jocelyn R. Isidro, Senior High School Coordinator, and Mrs. Emily L. 
+Quintana
+, our School Directress, for their support, guidance, and approval, which greatly helped in the completion of this research.
+Our sincere thanks go to the administrators, teachers, and students of ACLC 
+Northbay
+ Campus who generously participated in our surveys and user testing. Their honest feedback and cooperation were essential in evaluating the system and validating the findings of this study.
+We are thankful to our families for their constant support, encouragement, and understanding throughout this research. Their patience and belief in our capabilities kept us motivated during the most challenging stages of this project.
+Finally, we would like to thank all the members of our team 
+for their hard work, cooperation, and dedication, which made this research project possible.
+Table of Contents
+Introduction of the Study
+Background of the Study
+Objectives
+Statement of the Problem
+Conceptual Framework
+Hypothesis
+Scope and Delimitation of the Study
+Significance of the Study
+Data Dictionary
+Chapter 1
+Introduction and Background of the Study
+Introduction
+Since the establishment of ACLC 
+Northbay
+ Campus in Tondo, it has primarily relied on manual, paper-based processes to handle enrollment tasks. These traditional practices are usually the main roots of inefficient and slow processes, prone to human errors, and provide an extra responsibility for the school administrator. In response to these long-standing and repetitious issues, studying and implementing an Enrollment System with integrated data analysis will create a significant impact in enhancing how technology can improve academic operations while maximizing the capabilities and reliability of gathering data digitally. This system also considers the challenges faced by non-technical facility officers, providing tooltips and user-friendly features to help them explore and use the program effectively.
+Aside from that, there are also external factors that make these problems more noticeable. Most educational institutions in the country rarely take advantage of current technology, which is why the education system barely makes any progress when it comes to cutting-edge methods. However, some universities like De La Salle University are already using digital systems for gathering school data. If ACLC 
+Northbay
+ continues to rely on old methods, it may get left behind while other schools move forward with modern tools that make management more convenient.
+The Enrollment System (ES) will be the foundation of this solution since it provides a digital platform capable of storing and displaying data with the help of a database, enabling administrators and future enrollees to perform their duties efficiently, complete operations on time, and reduce the burden of repetitive work. It is also capable of assigning enrolled students into specific sections with an integrated auto-sectioning feature and auto-export of class records. Through the use of this system, schools can minimize human errors, speed up administrative tasks, improve records management across the faculty, analyze and visualize data to support decision-making, and demonstrate the benefits of automation in enhancing scalability and time management. Relying on this study will showcase ACLC 
+Northbay
+ Campus as a model for other schools, promoting innovation while highlighting the importance of technology in upgrading educational administration.
+Background of the Study
+Established on October 20, 1980, ACLC 
+Northbay
+ has been a cornerstone of quality education under the AMA Education System. One of the oldest private schools founded by Dr. Amable R. 
+Aguiluz
+ V, who is widely recognized as the "Father of IT Education in the Philippines," most administrators in ACLC 
+Northbay
+ continue to rely on traditional methods to record student information via paperwork. While this method works, it often takes a lot of time and uses up a lot of paper and other resources, which may lead to financial burden and administrative fatigue for the staff, especially when the paperwork piles up.
+With the help of modern technology, these tasks can be done much faster, easier, and more reliably. In a more specific perspective, the automation of auto-sectioning and storage will have a huge impact on an educational institution due to its capability to assign students into specific sections with a 
+gender-proportional distribution 
+feature and store student information, academic records, and documents — demonstrating the strength of automation and digital storage. These benefits are capable of eliminating the confusion and extra work that every school administrator currently faces.
+ 
+In today’s timeline, private universities are already using digital systems to help manage, store and analyze enrollment records. These systems have proven to save time, lessen errors, and make academic management more organized. For ACLC 
+Northbay
+, adapting to this kind of system is not only a sign of progress but also a way to make work easier for teachers and students who face challenges every day.
+This study aims to create an Enrollment System with Data Analysis that will be the path in upgrading ACLC 
+Northbay
+ into a new level. The Enrollment System (ES) will serve as a tool that automates the collection and distribution of student information management through the use of the latest technology. By creating a web-based and school-friendly system, the school will gradually benefit from reduced human errors, saved time, and improved coordination between administrators and future enrollees.
+In order to validate the problems identified in this study, a survey was carried out among the students of ACLC 
+Northbay
+ Campus to understand how they personally experience the current manual enrollment process. Most of the respondents expressed that the current setup is physically exhausting, as having to go to school just to line up, fill out forms by hand, and submit physical copies of their requirements takes up a lot of their time and money. Several students also shared that not knowing whether their enrollment was accepted or still pending caused them unnecessary stress and anxiety. When asked about their openness to a digital solution, the majority welcomed the idea and expressed that being able to enroll online at any time would be far more convenient for them. These responses from the students themselves served as a strong confirmation that the problems identified in this study are real and are genuinely felt by the people the system is meant to serve.
+Objectives
+The primary objective of this study is to develop a cross-platform web-based enrollment system that eliminates the need for physical queuing and student transportation by allowing students to register and submit requirements online, while providing school administrators with automated data analysis tools to support informed decision-making.
+To develop a web-based and system-based enrollment website where students can register and upload requirements online, so they don't have to line up at school.
+To
+ develop a secure and centralized student record management system that enables the registrar to efficiently store, retrieve, and manage enrollment data without risk of data loss.
+To provide Data Analysis (Charts/Graphs) for the School Administrator that automatically counts enrollees and shows trends (like the number of males vs. 
+females
+ students) to help in decision-making.
+To develop an Auto-Scheduling feature that captures and manages teacher assignments, room availability, and time slots to reduce manual scheduling conflicts.
+To implement a 
+QR code attendance system
+ that utilizes the system's existing student records to automate daily tracking and improve data integrity
+Statement of the Problem
+This study aims to address the inefficiencies, data redundancy, and lack of real-time reporting in the current manual enrollment setup of ACLC 
+Northbay
+.
+What is the level of agreement of the student respondents on the problems encountered in the current manual enrollment process of ACLC 
+Northbay
+ Campus?
+Does the absence of a centralized digital record system cause difficulty for the registrar in storing, retrieving, and managing student enrollment data?
+Does the lack of a data analysis tool limit the ability of administrators to monitor enrollment progress and make informed decisions in real time?
+Does the manual sectioning
+, 
+scheduling
+ and encoding
+ process 
+contribute to administrative fatigue and human errors in class and faculty assignments
+?
+Does the manual recording of daily attendance through Excel files cause inefficiencies in tracking student presence?
+Conceptual Framework
+Hypothesis (H1)
+There is a significant improvement in the efficiency of enrollment management, student record-keeping, data analysis, class scheduling, and attendance tracking of ACLC 
+Northbay
+ Campus through the development of the proposed cross-platform enrollment management system with integrated data analysis, which will provide a faster, more reliable, and seamless experience for the students, teachers, and administrators once approved and implemented.
+Scope and Delimitation
+This study focuses on the design and development of
+ a Cross-platform Enrollment Management System with Integrated Data Analysis 
+For
+ ACLC 
+Northbay
+ Campus. The current iteration of the system is deployed in a cloud-based Developer Environment (Free Tier) for testing and evaluation purposes. The institution should decide for full-scale implementation in the succeeding academic years, migrating to a commercial production tier (School Domain and 
+Supabase
+ Pro) will be required to handle heavy traffic and continuous deployment.
+Scope of the Study
+This section specifies the cover and inclusions of the research. This system 
+COVERS
+ the following specific functionalities:
+Online Student Registration: A public portal where students can input their demographic profile (Name, Age, Gender), educational background (LRN, Previous School), and contact details.
+Digital Requirement Submission: A feature allowing students to upload digital copies of necessary documents (Form 138, Birth Certificate, and Good Moral Character Certificate) for verification.
+Administrator Dashboard and Data Analysis: An overview of the database and analysis for the School Administrator that automatically generates visual analytics, including Enrollment Velocity, Total Enrollees, Graduates Revenue and Strand Distribution.
+Secure Student Database: A cloud-based database (
+Supabase
+) that securely stores student records, preventing data loss and allowing for easy retrieval via search filters (LRN/Name).
+QR Code Attendance 
+Tr
+acking
+: A feature that allows for the digital
+ QR code
+ recording of daily student 
+attendance
+, providing a real-time log that can be exported for 
+educational decision-making of the teachers.
+Auto-Scheduling: An automated tool that generates class schedules based on room availability and time slots, reducing the manual labor and "administrative fatigue" mentioned in the research
+.
+Delimitations of the Study
+This section specifies the boundaries and exclusions of the research. The following aspects are 
+NOT
+ included in the system:
+Exclusion of Grading & Learning Management: The system does not record quizzes, assignments, exam scores, or compute grades. It is strictly for the admission and enrollment phase only.
+No Website Payment: The system does not process transactions (credit card/
+GCash
+ payments). It only strictly focuses on the submission of enrollment data and requirements.
+No Human Resource (HR) Functions: The system does not manage school staff payroll, employee performance evaluations, or staff personal records. While the system includes an Auto-Scheduling feature that assigns teachers to subjects and rooms, it does not extend to payroll processing or performance management.
+Cloud-Only Deployment: The system requires a stable internet connection and is not designed for offline or local-only server operation.
+Significance of the Study
+This research will provide benefits to the following groups: ‎ 
+School Administrators - 
+They gain full control over the enrollment process, including approving or declining student applications, managing sections, and exporting the official student 
+masterlist
+. The data analytics dashboard provides real-time enrollment insights, while the archive feature stores historical enrollment records and gives access to website settings, schedules, and the chat system for long-term planning and school record-keeping.
+Teachers –
+ 
+They benefit from the auto-scheduling feature, which eliminates manually distributed schedules. The QR Code Attendance system allows teachers to digitally monitor daily student presence and access the 
+masterlist
+ for their assigned sections.
+Students - 
+They benefit from a fully digital enrollment process, eliminating physical queuing, long lines, and in-person document submission, saving them time and money on transportation and printing.
+Parents / Guardians 
+-
+ 
+They are automatically notified when their child's attendance is recorded 
+by
+ QR Code, ensuring they are informed of their child's presence in school and building trust in school safety.
+Future Researchers
+ - 
+This research serves as a reference for those looking to develop or improve similar systems, particularly enrollment platforms with integrated data analysis.
+Data Dictionary
+Administrative labor 
+- The physical and mental effort released by school staff to process enrollment forms, which this study aims to reduce through automation.
+Cornerstone - 
+Refers to the top of the highlight or essential foundation of education institutions when it comes to Information and Communication Technology (ICT).
+Data Analysis - 
+The feature of the proposed system that processes enrollment numbers to reveal progress and support administrative decisions.
+Data encoders - 
+The current, repetitive role of admission officers who must manually type student information from paper forms into the computer.
+Data entry - 
+The specific task of inputting student details, which the proposed system shifts from the staff to the students via online registration.
+Data verifiers - 
+The evolved, more efficient role of admission officers in the new system, where they simply check the accuracy of online submissions.
+Enrollment System (ES) - 
+The proposed web-based application designed to automate the registration, documentation, and record-keeping of ACLC 
+Northbay
+.
+Enrollment Tasks - 
+The specific activities required to admit a student, including form filling, requirement submission, and grade validation.
+Innovative technology - 
+Refers to the modern digital tools, such as web development and predictive analytics, applied to upgrade the school's outdated processes.
+Less techy admission officer - 
+School personnel who may not have advanced computer skills, indication the need for a simple, easy-to-use interface.
+Machine learning algorithms - 
+The computational logic used within the system to analyze historical data and forecast future enrollment numbers, synonym for technology.
+Machinery - 
+Refers to the internal digital mechanism and logic of the system that processes student data automatically.
+Manual Enrollment Tasks - 
+The traditional activities, such as writing on logbooks and sorting papers, that currently cause delays in the admission process.
+Manual, paper-based processes - 
+The existing method at ACLC 
+Northbay
+ relying on physical documents, which results in data redundancy and storage issues.
+Predictive Modeling - 
+A statistical function in the dashboard that uses past data to predict how many students will enroll in specific strands for the next school year.
+Repetitious issues - 
+The present problems, such as long queues and lost files, that plague the school every semester due to the manual system.
+School-Friendly - 
+A design priority ensuring the system is intuitive and easy to navigate for students, parents, and non-technical staff.
+Stand-alone application - 
+Describes the proposed system as a dedicated platform focused specifically on enrollment functions, independent of other school software.
+Traditional Methods - 
+The conventional, pre-digital ways of handling admissions that require physical presence and handwriting.
+Traditional Practices - 
+The long-standing habits and workflows in the admission’s office that are now considered inefficient compared to digital solutions.
+Chapter 2
+Review of Related Literature
+Foreign Literature
+Estimate undergraduate Student Enrollment in Courses by Re-purposing
+Recommendation Tools
+Khan, M. A. Z., et. al. (2024). ‎Resource distribution at university is challenging, as the management needs to allocate teachers, rooms, and other facilities according to the number of students in each course. In order to facilitate the aforementioned task, the research evaluated various machine learning approaches that rely on the past enrollment data to predict the number of students for each course in the next semester.
+‎ 
+The first step in this process was to implement a course recommendation model that would identify the subjects with the highest likelihood of selection by students, after which the researchers arrived at the student count based on this insight. The research concluded that their suggested method gives accurate and consistent results after experimenting with a variety of models including recommendation systems, time-series methods, and regression techniques.
+Enhanced Student Admission Procedures at Universities Using Data Mining and Machine Learning Techniques
+The research done on Foreign Literature from Saudi Arabia by 
+Assiri
+, & 
+Bashraheel
+, et al. (2024). indicates that conventional university admission methods, which are largely based on generalized cumulative scores (such as GPA and standardized test results), are not successful in predicting student success in all majors, thus, causing a high number of failures and dropouts. The scenario calls for a data-driven student placement system.
+ 
+The first point in the paper is the use of Data Mining to demonstrate that the predictive power of admission features changes drastically from one major to another and also that it is very important to use the hidden details like the grades of high school courses. It also states that Machine Learning models were implemented to determine the suitable majors for students with the K-Nearest Neighbor (KNN) algorithm reaching 100% accuracy. The research concludes that ML models are indispensable in the creation of precise, skills-based admission criteria which thus, leads to a substantial increase in student enrollment and educational outcomes.
+Materials and methods on digital enrollment system for educational institutions
+Chamilco
+, & Pacheco, e
+t 
+al
+.
+ (2023) Indicated that their literature revolves around the issues of enrollment delays and crowding at an educational institution which were addressed by the creation of a fully digital enrollment system. The researchers have undergone a four-phase development process for the system which includes: planning the system requirements, designing a simple and functional model, coding the system using appropriate programming languages, and testing it for errors.
+ 
+The digital system has made the key enrollment tasks of student registration, record handling, and report generation more efficient. Consequently, the institution has been able to lessen the long queues, waiting time, and manual workload. Additionally, the system enabled remote collaboration between students and the institution, thus, ensuring quicker, more spacious, and fairer enrollment which was very necessary during the pandemic. This evidences the proposition that digital enrollment systems can considerably facilitate efficiency and accessibility in education.
+Enrollment Appraisal Using Rule-Based Decision Support
+Villaruz, R. J. G., & Diamante, R. A. (2024) studied about Enrollment Appraisal Using Rule-Based Decision Support System. The study talks about creating a web-based system that helps schools check and approve student enrollment applications. The system uses a rule-based decision support system, where student information is reviewed based on set rules for enrollment. The system was divided into two sections. 
+One part was used by students to enter their information, while the other part handled the processing of the data in a secure way. The developers used the RAD method so they could make changes to the system as it was being built. The evaluation results showed that the system was easy to use and had acceptable security. Some users, however, pointed out issues with the layout and said that some instructions were not very clear. Even with these issues, the study showed that a rule-based system can help schools manage enrollment in a simpler and more organized manner.
+A Practice in Enrollment Prediction with Markov Chain Models
+Zhao, Y. & 
+Otteson
+ A. (2024) stated that the review is based on the described study, which aimed to determine the applicability of the Markov Chain models in the forecasting of the student enrollment of a university. In many schools, forecasting student enrollment is a significant predictive analysis that one needs in order to successfully run the schools. In many institutions, however, the process of forecasting student enrollment is not well explained. The authors of the study found that despite the uncertainty that had affected the educational sector, such as the COVID-19 pandemic, the difference between the allocated student population and the numbers projected with the help of the improved Markov Chain models ended up being less than 1%. Markov Chain models, thus, appear to be useful in the forecasting of student enrollments in institutions of higher learning in the future.
+Local Literature
+University Enrollment and Graduate Trends: Basis for Long-Term Development Plan
+Guiamalon
+, Amad, and 
+Dalamban
+ (2025) emphasized that enrollment data should serve as a strategic asset rather than a mere static record. In their analysis of university trends from 2018 to 2025, they demonstrated how historical data can be utilized to forecast future student populations and identify fluctuations in specific academic programs.
+They argued that without such data-driven insights, institutions struggle with resource allocation and long-term planning. This supports the current study’s proposition that an enrollment system must go beyond data entry; it must include predictive analytics to help administrators at ACLC 
+Northbay
+ anticipate enrollment spikes, allocate resources efficiently, and make informed decisions for upcoming academic terms.
+Enhancing Academic Efficiency: A Comprehensive Online Enrollment System for College Students in Asbury College Incorporated
+Aspa
+ et al. (2025) emphasized that in the digital era, online enrollment systems play a crucial role in resolving the inefficiencies of traditional manual processes, such as long queues, repetitive procedures, and errors arising from illegible handwriting. Their study focused on developing an Online Enrollment System for Asbury College Incorporated to enhance operational efficiency, data accuracy, and user experience.
+By implementing this platform, the researchers eliminated the need for physical forms, thereby streamlining procedures and offering a more accessible enrollment method. The results demonstrated that the system successfully minimized errors, reduced waiting times, and optimized administrative tasks, achieving an overall weighted mean score of 4.29, interpreted as “Excellent.”
+Web-Based Enrollment System: An Evaluation
+Ali‎, A. R (2022) This study assessed the effectiveness of the Online Enrollment System at 
+Baliwasan
+ Senior High School (Zamboanga City) during SY21, 22. A descriptive quantitative method was used to gather survey data through Google Forms from 11th and 12th graders. ‎ ‎The study demonstrated that respondents rated the Online Enrollment System as ‘Very Good’ in terms of use. In addition, there were no significant differences between 11th and 12th grade responses. Hence, it can be concluded that the system functions well; however, opportunities exist for further enhancement of the design and the user experience with the system.
+Evaluating Satisfaction and Intention of Online Enrollment: A Case of a University in the Philippines
+According to 
+Berro
+ and 
+Waing
+ (2025) Online Enrollment system is crucial to the expansion of the school population. Especially during the pandemic,
+ 
+system
+s 
+have become essential when it comes to ensuring students’ education will be continued safely, prioritizing online enrollment and e-learning for institutions. Their study investigates students’ satisfaction and intention to use Caraga State University’s online enrollment. Additionally, their study conducted a quantitative research approach which utilizes Partial Least Squares Structural Equation Modeling (PLS-SEM) for data analysis.
+Besides that, 
+Berro
+ and 
+Waing
+ (2025) evaluated the system by measuring Perceived Usefulness (PU), Perceived Ease of Use (PEOU), and Satisfaction (S) to determine students' Intention to Use (IU). The findings revealed a clear hierarchy of influence: while PEOU significantly enhanced both usefulness and satisfaction, it did not directly drive the intention to use. Instead, the study found that Perceived Usefulness was the pivotal factor, significantly influencing both satisfaction and intention. Consequently, the researchers concluded that while usability (ease of use) is necessary to make a system feel useful, it is the system's actual utility and the resulting user satisfaction that ultimately compel students to adopt it.
+Enrollment Management System of Novaliches High School
+Canizo
+ M. et al. (2024) The researchers conducted a study to create an EMS (Enrollment Management System) for Senior High School at Novaliches High School located in the Quezon City, where the enrollment process had been done manually. The manual system led to considerable delays, long waiting lines, and also problems for the students, their guardians and the school employees. 
+Therefore
+ the researchers brought up an EMS that would make the admission and enrollment process smoother by providing an online platform. 
+The system's main goal was to automate the enrollment, track the students who have come, and monitor those who have completed or submitted school requirements so that the time saving and the load reduction of the administrative staff could be achieved. The study's focus was on the enrollment operations and the school employees, and it aimed at improving the overall productivity and efficiency of the school’s enrollment process. 
+The researchers acknowledged that the Enrollment Management System developed indeed served the school's requirements and efficiently tackled the problems that had been previously identified. The system was declared functional, effective, and ready for use, which was the reason why students and teachers were all pleased with it. The EMS not only managed to shorten the duration of enrollment processes and submission of requirements but also to upgrade the whole enrollment experience.
+Synthesis of Related Review of Literature
+The result among researchers is clear. Relying on manual enrollment is no longer sustainable. Studies by 
+Chamilco
+ and Pacheco (2023)
+ and 
+Canizo
+ et al. (2024)
+ agree that traditional methods are the main culprit behind long queues and administrative delays. 
+Aspa
+ et al. (2025)
+ take this further, explaining that digital systems don’t just speed things up—they also fix common human errors like illegible handwriting. Furthermore, 
+Villaruz and Diamante (2024)
+ point out that while security is crucial, moving to the web is the only way to truly organize student data efficiently.
+But simply recording data isn’t enough anymore and schools need to understand it. 
+Guiamalon
+ et al. (2025)
+ argue that enrollment data should be a strategic tool, a sentiment strongly backed by 
+Khan et al. (2024)
+ and 
+Zhao and 
+Otteson
+ (2024)
+, whose work proves that historical data can accurately predict future student counts. 
+Assiri
+ and 
+Bashraheel
+ (2024)
+ also emphasize that using these 
+analysis
+ helps schools 
+in making decision-making progress.
+Finally, the success of any system depends on the people using it. 
+Ali (2022)
+ found that while digital systems function well, there is always room to improve the experience. 
+Berro
+ and 
+Waing
+ (2025)
+ offer a crucial reminder, students won’t adopt a new system just because it’s easy to use; they will only embrace it if they perceive it as genuinely useful. This research combines these insights, aiming to build a system for ACLC 
+Northbay
+ that creates the efficiency demanded by 
+Aspa
+ and 
+Canizo
+, while delivering the powerful analytics envisioned by 
+Guiamalon
+ and 
+Khan
+.
+Chapter 3
+Research Methodology
+Technical Background
+This chapter presents a summary of the technologies currently used in developing 
+A Proposed Cross-platform Enrollment Management System with Integrated Data Analysis 
+For
+ ACLC 
+Northbay
+ Campus
+, including the resources utilized, a Gantt Chart illustrating the project timeline, and the system's technical requirements.
+Research Design
+This study utilizes the developmental research design method applied in Agile methodology in creating and evaluating the proposed Cross-platform Enrollment Management System with Integrated Data Analysis for ACLC 
+Northbay
+ Campus. Developmental research is appropriate because the study aims to design, develop, test, and assess a system that will improve the school's current manual enrollment, data handling, and record-keeping processes.
+According to Richey and Klein (2007), developmental research involves the systematic study of designing, developing, and evaluating instructional programs, processes, and products that must meet criteria of internal consistency and effectiveness. This design is well-suited for the current study because it encompasses the entire lifecycle of system creation — from identifying the problems of manual enrollment at ACLC 
+Northbay
+, to designing and building the digital solution, and finally evaluating its acceptability through respondent feedback.
+System Development Method
+This study will follow the Agile Methodology for the creation of the Cross-platform Enrollment Management System with Integrated Data Analysis for ACLC 
+Northbay
+ Campus. Agile is suitable because it allows continuous improvement, regular testing, and feedback from the School Registrar, administrators, teachers, students, and possible users throughout the development process. Through Agile, the researchers can make revisions and adjustments to the system whenever problems or additional requirements are identified.
+Figure 1: Agile Methodology
+The research process will be divided into several phases:
+Planning Phase
+The researchers will conduct interviews with the School Registrar and administrators of ACLC 
+Northbay
+ Campus to identify the current problems in manual enrollment, data redundancy, and record-keeping.
+Existing procedures, paper-based processes, and stakeholder concerns will be observed and documented.
+The researchers will identify the functional and non-functional requirements of the proposed system.
+Design Phase
+The researchers will prepare the interface design, system flowchart, database structure, and webpage layout of the system.
+The design will include modules such as Online Student Registration, Admin Dashboard, Registrar Approval, Section Management, Teacher Portal, Student Portal, Data Analysis, and Notifications.
+The design phase will ensure that the system is user-friendly, accessible, and cross-platform responsive.
+Development Phase
+The researchers will develop the system using appropriate programming languages (such as Next.js and TypeScript), web technologies, and database tools.
+Features such as online registration, registrar approval, section management, real-time analytics, teacher and student portals, and automated notifications will be integrated into the system.
+The researchers will continuously test the developed features to ensure proper functionality.
+Testing Phase
+The researchers will conduct system testing to determine if all features are functioning properly.
+Testing will include usability testing, compatibility testing, functionality testing, security checks, and error checking.
+Respondents and selected users will evaluate the system based on ease of use, accessibility, security, and overall performance.
+Evaluation Phase
+The researchers will distribute survey questionnaires to respondents to evaluate the effectiveness and acceptability of the proposed system.
+The collected data will be analyzed using frequency counts and percentage formulas.
+The results will determine whether the system successfully addresses the problems of manual enrollment, data redundancy, and inefficient record management.
+Calendar of Activities (Gantt Chart)
+The activities are summarized in the Gantt Chart of activities and its duration of execution, wherein each month consists of four (4) weeks. Cells filled with yellow indicate the progress and blue indicates for completion.
+Budget Allocation
+Items
+Description
+Price
+Documents
+Printing of Hard document papers, consultation forms, endorsement letter, and folder needed
+Php
+. 
+3
+,350.00
+Others
+Transportation/Food
+Php
+. 500.00
+Total:
+Php
+. 
+3
+,850.00
+Table 1: Budget Allocation
+Data Gathering Instruments
+The primary data gathering instrument used in this study is a survey questionnaire. The questionnaire was designed to gather information regarding the problems encountered by students and school administrator in the current manual enrollment process at ACLC 
+Northbay
+ Campus, as well as their openness to adopting a digital cross-platform enrollment system. The survey used a five-point Likert scale ranging from Strongly Agree (5) to Strongly Disagree (1) to measure the level of agreement of the respondents on each statement.
+Aside from the survey questionnaire, the researchers also used interviews and observations as secondary data gathering instruments. Interviews with school administrators, the registrar, and selected teachers were conducted to gather information regarding the current enrollment process, record-keeping methods, scheduling concerns, and attendance monitoring challenges. Observation was also used to study the existing manual enrollment system and identify the common problems encountered in daily operations, including long queues, paper-based form processing, and the absence of real-time enrollment status updates for students.
+Respondents of the Study
+The respondents of the study consist of sixty (60) selected students from the Information and Communications Technology (ICT) strand of AMA Computer Learning Center – 
+Northbay
+ Campus. These respondents were chosen because they are directly affected by the current manual enrollment process and are the primary end-users of the proposed Cross-platform Enrollment Management System.
+The respondents include students from the following age groups: seventeen (17) and below, eighteen to twenty (18–20) years old, twenty-one to twenty-five (21–25) years old, and twenty-six (26) and above. The majority of the respondents fall within the typical senior high school age range, which suggests familiarity with digital tools and technology.
+The researchers used purposive sampling in selecting the respondents. Purposive sampling is appropriate because the study requires participants who have direct knowledge and experience regarding the current manual enrollment process of ACLC 
+Northbay
+ Campus. As ICT strand students, the respondents possess the technical literacy needed to meaningfully evaluate a digital enrollment system.
+Statistical Treatment of Data
+The data gathered from the survey questionnaires was analyzed using the weighted mean to determine the average responses of the respondents regarding the problems of the current manual enrollment process and their openness to the proposed digital system.
+The formula for weighted mean is:
+Weighted Mean = 
+Σfx
+ / N
+Where:
+Σfx
+ = Total weighted score (sum of frequency × scale value)
+N = Total number of respondents
+Additionally, the percentage formula was used to determine the distribution of respondents by age and sex:
+P = f / N × 100
+Where:
+P = Percentage
+f = Frequency
+N = Total number of respondents
+The interpreted results determine whether the respondents Strongly Agree, Agree, Neither Agree nor Disagree, Disagree, or Strongly Disagree 
+based on each statement.
+Technologies to be Used
+The following hardware resources are required for the development and operation of the system
+ 
+Cross-platform Enrollment Management System with Integrated Data Analysis for ACLC 
+Northbay
+ Campus 
+will require modern software technologies to ensure responsive design, secure data storage, and real-time analytics. The following technologies are proposed for the creation of the system:
+Hardware:
+Desktop Computer or Laptop – for the School Administrator and Registrar to access the main dashboard and manage student sections
+, and for QR Code Cameras.
+Mobile Devices (Smartphones/Tablets) – for students to access the enrollment portal, fill out forms, and upload requirements remotely.
+Stable Internet Connection – required for the system to communicate with the cloud database and for users to access the website.
+External Storage Devices (e.g., USB, External Hard Drive) - Used for backing up files, research documents, and system-related data.
+Both desktop and mobile devices will be used alternately depending on availability, ensuring that all proponents can contribute to the project and system regardless of the device they have.
+Resources
+To develop and document the proposed Cross-platform Enrollment Management System with Integrated Data Analysis, the proponents utilized the following resources:
+Hardware Resources:
+Laptop
+System Creator – For system development, database creation, coding, and debugging using Cursor IDE. The lead developer used this as the primary workstation for building the Next.js application, configuring the 
+Supabase
+ backend, and deploying to 
+Vercel
+.
+Leader – For inputting and correcting the research paper, compiling documentation, and printing documents for submission.
+Mobile Phones
+Used by most members for research, online information gathering, testing the system's mobile responsiveness, and sharing ideas and tasks through group communication.
+Cash
+Used by the member assigned to manage printing costs, domain hosting expenses, and other upcoming project-related expenses.
+Software Resources:
+Web Browsers (Google Chrome / Microsoft Edge)
+Used to access online research materials, test the web-based system's cross-browser compatibility, and verify responsive design across different viewport sizes.
+Cursor IDE / Visual Studio Code / Anti-Gravity
+Used as the primary code editor for programming, debugging, and building the enrollment system. Cursor and Anti-Gravity was chosen for its AI-assisted coding capabilities that accelerated development.
+Google Docs / Microsoft Word
+Used by the group to write, edit, and collaborate on the research paper. Microsoft Word was used for final formatting and submission.
+Online Communication Tools (Facebook Messenger / Discord)
+Used to coordinate tasks, share updates, distribute workload, and communicate between members throughout the development and research process.
+Git & GitHub
+Used for version control, allowing the researchers to track changes in the codebase, collaborate on code efficiently, and maintain a history of all modifications made to the system.
+Vercel
+Used as the cloud deployment platform to host the web application, providing continuous deployment from the GitHub repository and making the system accessible via the internet at https://enrollment-system-aclc.vercel.app/.
+Supabase
+Used as the cloud database backend (PostgreSQL), providing authentication services, real-time subscriptions, file storage for uploaded documents, and Row Level Security policies.
+Requirements Analysis
+This section focuses on the analysis conducted for the development “
+Cross-platform Enrollment Management System with Integrated Data Analysis for ACLC 
+Northbay
+”. It includes the collection and evaluation of both functional and non-functional requirements, assessment of user needs, system performance, security measures, and integration capabilities, all aimed at ensuring the creation and implementation of a smooth, efficient, and secure enrollment system.
+Requirements Documentation
+This document presents the Requirement Documentation for the proposed Enrollment Management System with Data Analysis. This section establishes the agreement between the School Registrar and the developers regarding what the software must do, how it will function, and what features it must contain.
+System Features
+The following system features were identified, designed, and implemented as part of the Cross-platform Enrollment Management System. These features represent both the core enrollment functionality and the enhanced school management capabilities that evolved during development:
+Online Student Registration
+Multi-step enrollment form (personal info, school history, family details, document uploads, final review)
+Generates a Tracking ID upon submission for application status monitoring
+Includes a bot-blocker to prevent spam submissions
+Administrator Dashboard and Data Analysis
+Displays real-time enrollment count, trends, gender breakdown, strand selection (ICT or GAS), and top feeder schools
+Auto-updates without page refresh
+Student Record Management
+Allows registrar to approve or decline applications and assign students to sections
+Supports Excel export, section filtering, and viewing of submitted documents and photos
+Section and Schedule Management
+Admins can create sections and set student capacity limits
+Auto-scheduler generates conflict-free timetables based on teacher and room availability
+Schedule can be viewed visually and exported
+Uses a gender-proportional distribution algorithm to evenly distribute the existing gender ratio across sections
+Teacher Management Portal
+Separate teacher login with access to personal schedule, attendance taking via QR code scanning, and absenteeism flagging
+Includes direct messaging, file sharing, announcements, school calendar, and quarterly requirement submissions
+Student Account Portal
+Separate student login showing enrollment status, class schedule, and attendance history
+Allows downloading of QR code card and enrollment records
+Predictive Analysis Engine
+Uses four mathematical models to forecast future enrollment numbers
+Supports trend chart viewing and what-if scenario simulations by adjusting past data
+Communication System
+Built-in live chat and announcement board accessible to admins, teachers, and students
+Supports file sharing, message reactions, and pinning — all synced in real time
+Automated Email Notifications
+Sends automatic emails to students upon application approval or decline
+Notifies parents when attendance is recorded and provides optional daily attendance summaries
+Notifications can be toggled on or off in settings
+Archive and History System
+Saves yearly enrollment snapshots for future reference
+Automates Grade 11 to Grade 12 promotion
+Logs all admin actions with full timestamps for audit purposes
+Security and Access Control
+Bot protection on enrollment forms and rate-limiting on login pages
+Role-based access ensures each portal (admin, teacher, student) only sees relevant data
+SQL Injection protection, uses validators for each 
+user input
+System Settings and Configuration
+Controls enrollment open/close status, form field requirements, voucher values, and section capacity
+Manages student edit permissions and year-end processes like archiving and grade promotion
+Enrollment Status Tracking Portal
+Public page where applicants check status using their LRN or Tracking ID
+Displays pending, approved, or declined status with decline reasons and correction request option
+Public Landing Page and Informational Pages
+School-facing website featuring school overview, enrollment steps, live stats, and contact information
+Supports dark and light mode with a clean, welcoming design
+Figure 3. Student Registration Diagram
+Figure 4. Admin Approval Diagram
+Figure 5. Enrollment Status Diagram
+Figure 6. Attendance Diagram
+Figure 7. Entity Relationship Diagram
+Figure 8. Data Flow Diagram
+Chapter 4
+Presentation of Data and Results Discussion
+This part of the study shows the data that was gathered and explains what the results mean. The researchers used statistical tools to properly analyze the responses and give clear interpretations based on what the respondents answered.
+This chapter covers the findings of the study on the Proposed Cross-Platform Enrollment Management System with Integrated Data Analysis for ACLC 
+Northbay
+ Campus. A total of seventy-two (72) unique respondents participated in the study: sixty (60) senior high school students, ten (10) teachers, and two (2) admin/registrar personnel. They answered the six (6) survey forms used in this study, with the admin/registrar and teacher respondents each answering both a problem-focused survey (evaluating current manual processes) and a user-testing survey (evaluating the proposed system), so the same two (2) admin/registrar and the same ten (10) teachers appear in their respective problem-focused and user-testing surveys. For the students, all sixty (60) respondents answered the problem-focused survey on the current manual enrollment process, and forty (40) of those same students also answered the user-testing survey on the proposed online enrollment system. The results are presented through tables, interpretations, and discussions for each survey item, followed by an overall evaluation of the proposed system.
+Data Analysis
+The data collected from the respondents was computed using the following formulas to organize, analyze, and interpret the survey responses:
+P = f/N × 100
+Where:
+P = Percentage
+f = Frequency (number of responses for a given option)
+N = Total number of respondents
+This formula is used to convert the counted responses into percentages for easier interpretation and comparison. By using this computation, the researchers were able to determine the proportion of respondents who selected each option in the survey, providing a clearer picture of the overall 
+result
+ toward the current enrollment process and the proposed digital system.
+4.1 Demographic Profile of Respondents
+The same demographic items (age and gender) apply to all respondents. Since the problem-focused and user-testing questionnaires were administered as a single combined instrument, one set of demographic responses covers both survey parts. For students, the forty (40) who completed user-testing are a subset of the sixty (60) problem-focused respondents. The charts below show the combined age and gender distribution (n = 72).
+Age Distribution of Respondents
+ 
+(combined, n = 72)
+.
+Of the seventy-two (72) respondents, 43.06% (31) are 18 – 20 years old, 37.5% (27) are 17 and below, 16.67% (12) are 26 and above, and 2.78% (2) are 21 – 25 years old. The 17-and-below and 18 – 20 brackets make up over 80% (the student population); the 26-and-above share covers teachers and admin/registrar.
+Gender Distribution of Respondents
+ 
+(combined, n = 72)
+.
+Of the seventy-two (72) respondents, 50% (36) are Male, 41.67% (30) are Female, and 8.33% (6) preferred not to indicate. Male and Female counts are close to even.
+4.2 Admin/Registrar Survey Results
+The two (2) admin/registrar respondents answered both parts. Part A covers the current manual enrollment process
+,
+ Part B covers the proposed Administrator Dashboard.
+Part A: Problem-Focused Evaluation of the Current Manual Enrollment Process
+The ten (10) statements below evaluate the current manual enrollment process.
+Statement 1
+ 
+The absence of a centralized digital record system makes it difficult to store and retrieve student enrollment data efficiently.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) agree. This indicates that the admin/registrar respondents generally agreed that the absence of a centralized digital record system makes it difficult to manage enrollment data.
+Statement 2
+ 
+Manually encoding student information into Excel files is time-consuming and prone to typographical errors.
+Out of 2 respondents, 100% (2) strongly agree. This indicates that the admin/registrar respondents generally agreed that manually encoding student information is time-consuming and prone to errors.
+Statement 3
+ 
+The lack of a real-time data analysis tool limits my ability to monitor enrollment progress and make timely decisions.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) agree. This indicates that the admin/registrar respondents generally agreed that the lack of a real-time data analysis tool limits their ability to monitor progress.
+Statement 4
+ 
+I find it difficult to generate accurate enrollment reports (by strand, gender, or grade level) using manual methods.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) agree. This indicates that the admin/registrar respondents generally agreed that generating accurate enrollment reports manually is difficult.
+Statement 5
+ 
+Manually creating and distributing class schedules causes administrative fatigue and scheduling conflicts.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) were neither agree nor disagree. This indicates that the admin/registrar respondents generally agreed that manually creating class schedules causes fatigue and scheduling conflicts.
+Statement 6
+ 
+Assigning students to sections manually often results in errors such as exceeding section capacity limits.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) agree. This indicates that the admin/registrar respondents generally agreed that manual section assignment often results in errors such as over-capacity.
+Statement 7
+ 
+The absence of an automated notification system means I must personally inform students about their enrollment status.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) agree. This indicates that the admin/registrar respondents generally agreed that the lack of automated notifications forces them to personally inform students.
+Statement 8
+ 
+Physical student records (paper forms, logbooks) are vulnerable to loss, damage, or misplacement.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) were neither agree nor disagree. This indicates that the admin/registrar respondents generally agreed that physical student records are vulnerable to loss, damage, or misplacement.
+Statement 9
+ 
+Tracking enrollment trends and comparing year-over-year data is difficult without a digital archive system.
+Out of 2 respondents, 100% (2) strongly agree. This indicates that the admin/registrar respondents generally agreed that tracking enrollment trends year-over-year is difficult without a digital archive.
+Statement 10
+ 
+The current manual enrollment process overall creates unnecessary workload and delays in completing administrative tasks.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) agree. This indicates that the admin/registrar respondents generally agreed that the manual enrollment process creates unnecessary workload and delays.
+Part B: User-Testing of the Administrator Dashboard
+The ten (10) statements below evaluate the proposed Administrator Dashboard.
+Statement 1
+ 
+The Admin Dashboard provided a clear and comprehensive real-time overview of enrollment data.
+Out of 2 respondents, 100% (2) strongly agree. This means that the admin/registrar respondents generally agreed that the Admin Dashboard provided a clear real-time overview of enrollment data.
+Statement 2
+ 
+The system made it easy to view, approve, or decline student applications efficiently.
+Out of 2 respondents, 100% (2) strongly agree. This means that the admin/registrar respondents generally agreed that the system made it easy to view, approve, or decline student applications.
+Statement 3
+ 
+The Data Analysis charts (Enrollment Velocity, Strand Distribution, Gender Breakdown) provided meaningful insights for decision-making.
+Out of 2 respondents, 100% (2) strongly agree. This means that the admin/registrar respondents generally agreed that the Data Analysis charts provided meaningful insights for decision-making.
+Statement 4
+ 
+The Predictive Analysis feature helped in forecasting future enrollment trends and planning resources.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) agree. This means that the admin/registrar respondents generally agreed that the Predictive Analysis feature helped in forecasting trends and planning resources.
+Statement 5
+ 
+The student record management system allowed efficient storing, retrieving, and managing of enrollment data.
+Out of 2 respondents, 100% (2) strongly agree. This means that the admin/registrar respondents generally agreed that the student record management system allowed efficient handling of enrollment data.
+Statement 6
+ 
+The Section Management and Auto-Scheduling features reduced the time and effort needed for class assignments.
+Out of 2 respondents, 100% (2) strongly agree. This means that the admin/registrar respondents generally agreed that the Section Management and Auto-Scheduling features reduced time and effort.
+Statement 7
+ 
+Exporting student 
+masterlists
+ to Excel/CSV format was convenient and accurate.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) agree. This means that the admin/registrar respondents generally agreed that exporting student 
+masterlists
+ to Excel/CSV was convenient and accurate.
+Statement 8
+ 
+The Archive and History system effectively preserved enrollment data for year-over-year comparison.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) agree. This means that the admin/registrar respondents generally agreed that the Archive and History system effectively preserved data for year-over-year comparison.
+Statement 9
+ 
+The system Settings panel (Enrollment Form Control, Notifications, Capacity Management) was intuitive to configure.
+Out of 2 respondents, 50% (1) strongly agree and 50% (1) agree. This means that the admin/registrar respondents generally agreed that the system Settings panel was intuitive to configure.
+Statement 10
+ 
+Overall, the Admin Dashboard significantly improved the efficiency of enrollment management compared to the manual process.
+Out of 2 respondents, 100% (2) strongly agree. This means that the admin/registrar respondents generally agreed that the Admin Dashboard significantly improved the efficiency of enrollment management.
+4.3 Teacher Survey Results
+The ten (10) teacher respondents answered both parts. Part A covers the current manual scheduling and attendance-tracking process; Part B covers the proposed Teacher Management Portal. All ten answered “Strongly Agree” on every Part A item — this unanimity should be read with caution (possible ceiling effect at n = 10).
+Part A: Problem-Focused Evaluation of the Current Manual Scheduling and Attendance-Tracking Process
+The ten (10) statements below evaluate the current manual scheduling and attendance-tracking process.
+Statement 1
+ 
+Receiving my class schedule through manual distribution (printed paper or verbal announcement) is often delayed and inconvenient.
+Out of 10 respondents, 100% (10) strongly agree. This indicates that the teacher respondents generally agreed that receiving class schedules through manual distribution is delayed and inconvenient.
+Statement 2
+ 
+The manual scheduling process sometimes results in time conflicts or room double-bookings that affect my classes.
+Out of 10 respondents, 100% (10) strongly agree. This indicates that the teacher respondents generally agreed that the manual scheduling process results in time conflicts and room double-bookings.
+Statement 3
+ 
+Recording daily student attendance manually through Excel files or paper logbooks is time-consuming.
+Out of 10 respondents, 100% (10) strongly agree. This indicates that the teacher respondents generally agreed that recording daily student attendance manually is time-consuming.
+Statement 4
+ 
+The manual attendance process makes it difficult to quickly identify students who are frequently absent or cutting classes.
+Out of 10 respondents, 100% (10) strongly agree. This indicates that the teacher respondents generally agreed that the manual attendance process makes it difficult to identify frequently absent students.
+Statement 5
+ 
+I find it challenging to generate accurate attendance reports and analysis using manual record-keeping methods.
+Out of 10 respondents, 100% (10) strongly agree. This indicates that the teacher respondents generally agreed that generating accurate attendance reports with manual methods is challenging.
+Statement 6
+ 
+The lack of a real-time communication tool with the administration causes delays in receiving important school announcements.
+Out of 10 respondents, 100% (10) strongly agree. This indicates that the teacher respondents generally agreed that the lack of a real-time communication tool causes delays in receiving school announcements.
+Statement 7
+ 
+Manually tracking and reporting student attendance patterns to the administration is an added burden to my workload.
+Out of 10 respondents, 100% (10) strongly agree. This indicates that the teacher respondents generally agreed that manually tracking and reporting attendance patterns adds to their workload.
+Statement 8
+ 
+The current process makes it difficult to notify parents or guardians promptly about their child's attendance status.
+Out of 10 respondents, 100% (10) strongly agree. This indicates that the teacher respondents generally agreed that the current process makes it difficult to notify parents about attendance promptly.
+Statement 9
+ 
+Physical attendance records (logbooks, Excel sheets) are vulnerable to data loss, corruption, or accidental deletion.
+Out of 10 respondents, 100% (10) strongly agree. This indicates that the teacher respondents generally agreed that physical attendance records are vulnerable to data loss, corruption, or deletion.
+Statement 10
+ 
+The overall manual process for scheduling and attendance tracking negatively impacts the efficiency of my daily teaching responsibilities.
+Out of 10 respondents, 100% (10) strongly agree. This indicates that the teacher respondents generally agreed that the manual process for scheduling and attendance tracking reduces their daily efficiency.
+Part B: User-Testing of the Teacher Management Portal
+The ten (10) statements below evaluate the proposed Teacher Management Portal.
+Statement 1
+ 
+The Teacher Portal was easy to log in to and navigate through its different tabs.
+Out of 10 respondents, 100% (10) strongly agree. This means that the teacher respondents generally agreed that the Teacher Portal was easy to log in to and navigate.
+Statement 2
+ 
+The auto-generated class schedule displayed in the Schedule Tab was accurate and easy to read.
+Out of 10 respondents, 80% (8) strongly agree and 20% (2) agree. This means that the teacher respondents generally agreed that the auto-generated class schedule was accurate and easy to read.
+Statement 3
+ 
+The QR Code Attendance Scanner effectively recognized and recorded student attendance in real time.
+Out of 10 respondents, 100% (10) strongly agree. This means that the teacher respondents generally agreed that the QR Code Attendance Scanner effectively recorded student attendance in real time.
+Statement 4
+ 
+The manual fallback option for recording attendance (when QR scanning is unavailable) was accessible and functional.
+Out of 10 respondents, 100% (10) strongly agree. This means that the teacher respondents generally agreed that the manual fallback option for recording attendance was accessible and functional.
+Statement 5
+ 
+The Cutting Class Detector feature helped identify students with irregular attendance patterns.
+Out of 10 respondents, 100% (10) strongly agree. This means that the teacher respondents generally agreed that the Cutting Class Detector helped identify students with irregular attendance.
+Statement 6
+ 
+The Reports Tab provided useful analytics and charts for understanding student attendance trends.
+Out of 10 respondents, 100% (10) strongly agree. This means that the teacher respondents generally agreed that the Reports Tab provided useful analytics for understanding attendance trends.
+Statement 7
+ 
+The real-time Chat system allowed effective communication with other teachers and the administration.
+Out of 10 respondents, 100% (10) strongly agree. This means that the teacher respondents generally agreed that the real-time Chat system allowed effective communication with peers and admins.
+Statement 8
+ 
+The Announcements Tab kept me well-informed about school updates and administrative notices.
+Out of 10 respondents, 100% (10) strongly agree. This means that the teacher respondents generally agreed that the Announcements Tab kept them well-informed about school updates.
+Statement 9
+ 
+The Student Detail view provided comprehensive and accurate information about my assigned students.
+Out of 10 respondents, 100% (10) strongly agree. This means that the teacher respondents generally agreed that the Student Detail view provided comprehensive and accurate information.
+Statement 10
+ 
+Overall, the Teacher Portal improved the efficiency of my daily tasks compared to the previous manual process.
+Out of 10 respondents, 100% (10) strongly agree. This means that the teacher respondents generally agreed that the Teacher Portal significantly improved the efficiency of their daily tasks.
+4.4 Student Survey Results
+The sixty (60) student respondents answered Part A (n = 60); a subset of forty (40) also answered Part B (n = 40).
+Part A: Problem-Focused Evaluation of the Current Manual Enrollment Process
+The fifteen (15) statements below evaluate the current manual enrollment process.
+Statement 1
+ 
+I spend too much time standing in long lines just to enroll.
+Out of 60 respondents, 25% (15) strongly agree, 43.33% (26) agree, 20% (12) were neither agree nor disagree, 10% (6) disagree, and 1.67% (1) strongly disagree. This indicates that the student respondents generally agreed that they spend too much time standing in line just to enroll.
+Statement 2
+ 
+Physically traveling to school just to submit requirements is a waste of time and fare money.
+Out of 60 respondents, 23.33% (14) strongly agree, 15% (9) agree, 31.67% (19) were neither agree nor disagree, 20% (12) disagree, and 10% (6) strongly disagree. This indicates that the student respondents generally agreed that going to school just to submit requirements wastes time and money on transportation.
+Statement 3
+ 
+I find filling out handwritten forms tiring and prone to mistakes (e.g., erasures).
+Out of 60 respondents, 23.33% (14) strongly agree, 40% (24) agree, 18.33% (11) were neither agree nor disagree, 8.33% (5) disagree, and 10% (6) strongly disagree. This indicates that the student respondents generally agreed that handwritten forms are tiring and prone to mistakes.
+Statement 4
+ 
+It is stressful when I do not know if my enrollment is accepted or still pending.
+Out of 60 respondents, 40% (24) strongly agree, 26.67% (16) agree, 21.67% (13) were neither agree nor disagree, 6.67% (4) disagree, and 5% (3) strongly disagree. This indicates that the student respondents generally agreed that it is stressful not knowing whether their enrollment has been accepted.
+Statement 5
+ 
+I sometimes forget or lose the physical list of requirements needed for enrollment.
+Out of 60 respondents, 16.67% (10) strongly agree, 38.33% (23) agree, 23.33% (14) were neither agree nor disagree, 15% (9) disagree, and 6.67% (4) strongly disagree. This indicates that the student respondents generally agreed that they sometimes forget or lose the physical list of requirements.
+Statement 6
+ 
+The manual process is confusing because I don't always know which window/desk to go to next.
+Out of 60 respondents, 25% (15) strongly agree, 36.67% (22) agree, 20% (12) were neither agree nor disagree, 13.33% (8) disagree, and 5% (3) strongly disagree. This indicates that the student respondents generally agreed that the manual process is confusing because they are unsure which window or desk to go to next.
+Statement 7
+ 
+The enrollment venue often gets crowded, hot, and uncomfortable.
+Out of 60 respondents, 45% (27) strongly agree, 33.33% (20) agree, 10% (6) were neither agree nor disagree, 8.33% (5) disagree, and 3.33% (2) strongly disagree. This indicates that the student respondents generally agreed that the enrollment venue often becomes crowded, hot, and uncomfortable.
+Statement 8
+ 
+Submitting physical photocopies of my Report Card/PSA is inconvenient and costs extra money.
+Out of 60 respondents, 23.33% (14) strongly agree, 31.67% (19) agree, 18.33% (11) were neither agree nor disagree, 16.67% (10) disagree, and 10% (6) strongly disagree. This indicates that the student respondents generally agreed that submitting physical photocopies of their records is inconvenient and costs extra money.
+Statement 9
+ 
+The manual enrollment schedule conflicts with my personal time or vacation.
+Out of 60 respondents, 16.67% (10) strongly agree, 35% (21) agree, 25% (15) were neither agree nor disagree, 16.67% (10) disagree, and 6.67% (4) strongly disagree. This indicates that the student respondents generally agreed that the manual enrollment schedule often conflicts with their personal time or vacation.
+Statement 10
+ 
+I would prefer to enroll online from home using my Mobile Phone or Desktop.
+Out of 60 respondents, 40% (24) strongly agree, 30% (18) agree, 15% (9) were neither agree nor disagree, 8.33% (5) disagree, and 5% (3) strongly disagree. This indicates that the student respondents generally agreed that they would prefer to enroll online from home.
+Statement 11
+ 
+Taking a picture/scan of my requirements (PSA/Grades) and uploading them is easier than passing papers.
+Out of 60 respondents, 38.33% (23) strongly agree, 31.67% (19) agree, 20% (12) were neither agree nor disagree, 8.33% (5) disagree, and 1.67% (1) strongly disagree. This indicates that the student respondents generally agreed that uploading scanned or photographed requirements is easier than passing papers.
+Statement 12
+ 
+I feel safer knowing my student records are stored digitally and won't get lost.
+Out of 60 respondents, 35% (21) strongly agree, 35% (21) agree, 20% (12) were neither agree nor disagree, 5% (3) disagree, and 3.33% (2) strongly disagree. This indicates that the student respondents generally agreed that they feel safer when their student records are stored digitally.
+Statement 13
+ 
+I appreciate having 24/7 access to the system so I can enroll at my own convenience.
+Out of 60 respondents, 33.33% (20) strongly agree, 46.67% (28) agree, 15% (9) were neither agree nor disagree, and 5% (3) disagree. This indicates that the student respondents generally agreed that they appreciate having 24/7 access to enroll at their own convenience.
+Statement 14
+ 
+This system saves me money on transportation and printing/photocopying costs.
+Out of 60 respondents, 40% (24) strongly agree, 41.67% (25) agree, 11.67% (7) were neither agree nor disagree, 5% (3) disagree, and 1.67% (1) strongly disagree. This indicates that the student respondents generally agreed that the system saves them money on transportation and printing costs.
+Statement 15
+ 
+I strongly recommend replacing the old manual process with a digital cross-platform enrollment system.
+Out of 60 respondents, 28.33% (17) strongly agree, 28.33% (17) agree, 30% (18) were neither agree nor disagree, 10% (6) disagree, and 3.33% (2) strongly disagree. This indicates that the student respondents generally agreed that they recommend replacing the old manual process with a digital cross-platform enrollment system.
+Part B: User-Testing of the Cross-Platform Enrollment Management System
+The ten (10) statements below evaluate the proposed Cross-Platform Enrollment Management System.
+Statement 1
+ 
+The online enrollment form was easy to navigate and understand.
+Out of 40 respondents, 97.5% (39) strongly agree and 2.5% (1) agree. This means that the student respondents generally agreed that the online enrollment form was easy to navigate and understand.
+Statement 2
+ 
+I was able to complete the five-step registration process (Identity, Academic, Family, Documents, Review) without confusion.
+Out of 40 respondents, 85% (34) strongly agree and 15% (6) agree. This means that the student respondents generally agreed that the five-step registration process was clear and easy to complete.
+Statement 3
+ 
+Uploading my requirements (PSA, Form 138, Good Moral) digitally was convenient and straightforward.
+Out of 40 respondents, 87.5% (35) strongly agree and 12.5% (5) agree. This means that the student respondents generally agreed that uploading requirements digitally was convenient and straightforward.
+Statement 4
+ 
+The system's real-time status tracking (Pending, Approved, Declined) kept me informed about my enrollment progress.
+Out of 40 respondents, 80% (32) strongly agree and 20% (8) agree. This means that the student respondents generally agreed that the real-time status tracking kept them informed of their enrollment progress.
+Statement 5
+ 
+I found the Tracking ID feature useful for checking my application status without needing to visit the school.
+Out of 40 respondents, 82.5% (33) strongly agree and 17.5% (7) agree. This means that the student respondents generally agreed that the Tracking ID feature was useful for checking application status remotely.
+Statement 6
+ 
+The system worked well on my mobile phone/tablet, and the interface was responsive and readable.
+Out of 40 respondents, 72.5% (29) strongly agree and 27.5% (11) agree. This means that the student respondents generally agreed that the system worked well on mobile devices with a responsive, readable interface.
+Statement 7
+ 
+The Student Account Portal allowed me to easily view my section assignment, schedule, and personal records.
+Out of 40 respondents, 85% (34) strongly agree and 15% (6) agree. This means that the student respondents generally agreed that the Student Account Portal made it easy to view section assignments, schedules, and records.
+Statement 8
+ 
+The QR Code Attendance Card provided through the Download Portal was easy to access and use.
+Out of 40 respondents, 62.5% (25) strongly agree and 37.5% (15) agree. This means that the student respondents generally agreed that the QR Code Attendance Card was easy to access and use.
+Statement 9
+ 
+I feel confident that my personal data and uploaded documents are stored securely in the system.
+Out of 40 respondents, 62.5% (25) strongly agree and 37.5% (15) agree. This means that the student respondents generally agreed that they are confident that their personal data is stored securely.
+Statement 10
+ 
+Overall, the online enrollment system is a significant improvement over the traditional manual enrollment process.
+Out of 40 respondents, 60% (24) strongly agree and 40% (16) agree. This means that the student respondents generally agreed that the online enrollment system is a significant improvement over the traditional manual process.
+Synthesis of Chapter 4 Findings
+All three respondent groups — admin/registrar, teachers, and students — agreed that the current manual enrollment, scheduling, and attendance-tracking processes have recurring problems, with most respondents selecting Agree or Strongly Agree on the problem-focused items. The same groups overwhelmingly selected Strongly Agree or Agree on the user-testing items for the proposed Cross-Platform Enrollment Management System — admin/registrar and teachers near unanimous, 
+students
+ strong majorities across all ten items.
+This convergence — recognized problems in the manual process and strong acceptance of the digital replacement across three stakeholder groups — forms the basis for the summary, conclusions, and recommendations in the next chapter.
+Chapter 5
+Summary, Conclusions, and Recommendations
+Summary
+Conclusion
+References
+Appendices

@@ -9,10 +9,11 @@ interface BulkActionsFloatingBarProps {
   handleBulkAction: (status: string) => void
   setBulkDeleteModalOpen: (open: boolean) => void
   setSelectedIds: (ids: string[]) => void
+  isSystemLocked: boolean
 }
 
 export const BulkActionsFloatingBar = memo(({ 
-  selectedIds, filter, handleBulkAction, setBulkDeleteModalOpen, setSelectedIds 
+  selectedIds, filter, handleBulkAction, setBulkDeleteModalOpen, setSelectedIds, isSystemLocked 
 }: BulkActionsFloatingBarProps) => {
   if (selectedIds.length === 0) return null
 
@@ -24,8 +25,8 @@ export const BulkActionsFloatingBar = memo(({
         <div className="flex items-center gap-2 flex-wrap justify-center md:justify-start">
           {filter === 'Pending' && (
             <>
-              <Button onClick={() => handleBulkAction('Accepted')} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-2xl font-black text-[10px] uppercase h-10 md:h-11 px-4 md:px-6 shadow-lg shadow-green-500/20 transition-all transform hover:scale-105">
-                <CheckCircle2 size={14} className="mr-1 md:mr-2"/> <span className="hidden sm:inline">Mass Approve</span><span className="sm:hidden">Approve</span>
+              <Button disabled={isSystemLocked} onClick={() => handleBulkAction('Accepted')} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-slate-600 disabled:to-slate-700 text-white rounded-2xl font-black text-[10px] uppercase h-10 md:h-11 px-4 md:px-6 shadow-lg shadow-green-500/20 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                <CheckCircle2 size={14} className="mr-1 md:mr-2"/> <span className="hidden sm:inline">{isSystemLocked ? 'LOCKED' : 'Mass Approve'}</span><span className="sm:hidden">{isSystemLocked ? 'LOCKED' : 'Approve'}</span>
               </Button>
               <Button onClick={() => handleBulkAction('Rejected')} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-2xl font-black text-[10px] uppercase h-10 md:h-11 px-4 md:px-6 shadow-lg shadow-red-500/20 transition-all transform hover:scale-105">
                 <XCircle size={14} className="mr-1 md:mr-2"/> <span className="hidden sm:inline">Mass Reject</span><span className="sm:hidden">Reject</span>

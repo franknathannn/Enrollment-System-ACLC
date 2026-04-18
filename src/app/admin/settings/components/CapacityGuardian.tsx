@@ -72,7 +72,7 @@ export function CapacityGuardian({
       <div className="space-y-8">
         <div className="space-y-3">
           <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>
-            Per-Grade Capacity (G11/G12 independently)
+            System Capacity
           </ThemedText>
           <Input
             type="text"
@@ -139,9 +139,9 @@ export function CapacityGuardian({
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full -mr-10 -mt-10" />
           <div className="flex justify-between items-end mb-4 relative z-10">
             <div>
-              <span className="text-[10px] font-bold uppercase text-blue-400 tracking-wide">System Total (G11 + G12)</span>
+              <span className="text-[10px] font-bold uppercase text-blue-400 tracking-wide">System Capacity</span>
               <p className="text-2xl font-bold mt-1">
-                {currentAccepted} <span className="text-slate-500 text-sm">/ {capacity ? Number(capacity) * 2 : "—"} Seats</span>
+                {currentAccepted} <span className="text-slate-500 text-sm">/ {capacity ? Number(capacity) : "—"} Seats</span>
               </p>
             </div>
             <span className="text-xl font-bold text-white">{Math.round(capacityPercentage)}%</span>

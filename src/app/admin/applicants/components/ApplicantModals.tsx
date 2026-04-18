@@ -57,22 +57,32 @@ export const ApplicantModals = memo(({
       {/* --- MODAL: DECLINE --- */}
       <Dialog open={declineModalOpen} onOpenChange={setDeclineModalOpen}>
         <DialogContent 
-          className="rounded-[32px] w-[95vw] max-w-md p-0 overflow-hidden border-none shadow-2xl transition-colors duration-500"
+          className="rounded-[24px] md:rounded-[32px] w-[95vw] sm:max-w-xl md:max-w-2xl p-0 overflow-hidden border-none shadow-2xl transition-colors duration-500 max-h-[90vh] md:max-h-[90vh] flex flex-col"
           style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface }}
         >
-          <div className="bg-gradient-to-br from-red-600 to-red-800 p-8 flex items-center gap-4 text-white relative overflow-hidden">
+          <div className="bg-gradient-to-br from-red-600 to-red-800 p-5 md:p-8 flex items-center gap-4 md:gap-5 text-white relative overflow-hidden shrink-0">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-            <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner border border-white/10 shrink-0"><AlertTriangle size={24} /></div>
-            <div className="relative z-10"><DialogTitle className="text-xl font-black uppercase tracking-tight leading-none text-white drop-shadow-sm">Admission Rejection</DialogTitle><DialogDescription className="text-red-100 text-xs mt-1 font-medium italic opacity-90">Record why this student was declined.</DialogDescription></div>
+            <div className="h-10 w-10 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner border border-white/10 shrink-0">
+              <AlertTriangle size={20} className="text-white drop-shadow-md md:w-7 md:h-7" />
+            </div>
+            <div className="relative z-10">
+              <DialogTitle className="text-lg md:text-2xl font-black uppercase tracking-tight leading-none text-white drop-shadow-sm">Admission Rejection</DialogTitle>
+              <DialogDescription className="text-red-100 text-[10px] md:text-xs mt-1 md:mt-1.5 font-bold italic opacity-90">Record why this student was declined.</DialogDescription>
+            </div>
           </div>
-          <div className="p-8 space-y-6">
-            <div className={`flex items-center gap-4 p-4 rounded-2xl border ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-              <div className="h-10 w-10 rounded-xl bg-slate-200 overflow-hidden shrink-0 ring-2 ring-white dark:ring-slate-700 shadow-sm"><img src={activeDeclineStudent?.two_by_two_url || activeDeclineStudent?.profile_2x2_url || activeDeclineStudent?.profile_picture} className="w-full h-full object-cover" /></div>
-              <div className="flex flex-col"><span className={`text-xs font-black uppercase leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{activeDeclineStudent?.first_name} {activeDeclineStudent?.last_name}</span><span className="text-[10px] font-bold text-slate-400 mt-1">LRN: {activeDeclineStudent?.lrn}</span></div>
+          <div className="p-5 md:p-8 space-y-5 md:space-y-6 overflow-y-auto custom-scrollbar flex-shrink min-h-0 relative">
+            <div className={`flex items-center gap-4 p-4 rounded-2xl md:rounded-3xl border transition-colors ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
+              <div className="h-12 w-12 rounded-xl bg-slate-200 overflow-hidden shrink-0 ring-2 ring-white dark:ring-slate-800 shadow-sm">
+                <img src={activeDeclineStudent?.two_by_two_url || activeDeclineStudent?.profile_2x2_url || activeDeclineStudent?.profile_picture} className="w-full h-full object-cover" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className={`text-sm md:text-base font-black uppercase leading-none truncate ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{activeDeclineStudent?.first_name} {activeDeclineStudent?.last_name}</span>
+                <span className="text-[10px] md:text-xs font-bold text-slate-400 mt-1 tracking-wider">LRN: {activeDeclineStudent?.lrn}</span>
+              </div>
             </div>
             <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Quick Reasons</label>
-              <div className="flex flex-wrap gap-2">
+              <label className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Quick Reasons</label>
+              <div className="flex flex-wrap gap-1.5 md:gap-2">
                 {QUICK_REASONS.map(reason => {
                   const isSelected = declineReason?.split(/,\n|, /).includes(reason)
                   return (
@@ -86,12 +96,12 @@ export const ApplicantModals = memo(({
                           setDeclineReason([...current, reason].join(',\n'))
                         }
                       }} 
-                      className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase transition-all ${
+                      className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl border text-[9px] md:text-[10px] font-bold uppercase transition-all ${
                         isSelected 
-                          ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-500/30' 
+                          ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-500/30 transform scale-105' 
                           : isDarkMode 
-                            ? 'bg-slate-800 border-slate-700 text-slate-400 hover:border-red-500/50 hover:text-red-400' 
-                            : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-red-200 hover:text-red-600'
+                            ? 'bg-slate-800 border-slate-700 text-slate-400 hover:border-red-500/50 hover:text-red-400 hover:bg-slate-800/80' 
+                            : 'bg-white border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-600 hover:bg-red-50 shadow-sm'
                       }`}
                     >
                       {reason}
@@ -99,17 +109,20 @@ export const ApplicantModals = memo(({
                   )
                 })}
               </div>
-              <div className="pt-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Registrar Feedback</label>
+              <div className="pt-2 relative">
+                <label className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Registrar Feedback</label>
                 <Textarea 
                   placeholder="Provide specific feedback..." 
-                  className={`min-h-[100px] mt-2 rounded-2xl focus:ring-red-600 font-bold text-sm resize-none ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white placeholder:text-slate-600' : 'bg-slate-50 border-slate-100 text-slate-900'}`} 
+                  className={`min-h-[100px] md:min-h-[120px] mt-2 rounded-2xl md:rounded-3xl focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-0 p-4 font-bold text-xs md:text-sm resize-none transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white placeholder:text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm'}`} 
                   value={declineReason} 
                   onChange={(e) => setDeclineReason(e.target.value)} 
                 />
               </div>
             </div>
-            <DialogFooter className="flex-col gap-2 sm:flex-col"><Button onClick={() => handleExit(activeDeclineStudent.id, () => handleStatusChange(activeDeclineStudent.id, `${activeDeclineStudent.first_name} ${activeDeclineStudent.last_name}`, 'Rejected', declineReason || "Incomplete requirements."))} className="w-full h-14 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">Confirm Rejection</Button><Button variant="ghost" onClick={() => setDeclineModalOpen(false)} className={`w-full h-12 rounded-2xl font-black uppercase text-[10px] ${isDarkMode ? 'text-slate-500 hover:text-white hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Cancel</Button></DialogFooter>
+            <DialogFooter className="flex-col gap-2 md:gap-3 sm:flex-col pt-2">
+              <Button onClick={() => handleExit(activeDeclineStudent.id, () => handleStatusChange(activeDeclineStudent.id, `${activeDeclineStudent.first_name} ${activeDeclineStudent.last_name}`, 'Rejected', declineReason || "Incomplete requirements."))} className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black uppercase text-[10px] md:text-xs tracking-widest shadow-xl shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">Confirm Rejection</Button>
+              <Button variant="ghost" onClick={() => setDeclineModalOpen(false)} className={`w-full h-10 md:h-12 rounded-xl md:rounded-2xl font-black uppercase text-[10px] md:text-[11px] ${isDarkMode ? 'text-slate-500 hover:text-white hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Cancel</Button>
+            </DialogFooter>
           </div>
         </DialogContent>
       </Dialog>
@@ -226,46 +239,45 @@ export const ApplicantModals = memo(({
       {/* --- MODAL: DELETE --- */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent 
-          className="rounded-[32px] w-[95vw] max-w-md p-0 overflow-hidden border-none shadow-2xl transition-colors duration-500"
+          className="rounded-[24px] md:rounded-[32px] w-[95vw] sm:max-w-xl md:max-w-2xl p-0 overflow-hidden border-none shadow-2xl transition-colors duration-500 max-h-[90vh] md:max-h-[90vh] flex flex-col"
           style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface }}
         >
-          <div className="bg-gradient-to-br from-red-600 to-red-800 p-8 flex items-center gap-4 text-white relative overflow-hidden">
+          <div className="bg-gradient-to-br from-red-600 to-red-800 p-5 md:p-8 flex items-center gap-4 md:gap-5 text-white relative overflow-hidden shrink-0">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-            <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner border border-white/10 shrink-0"><Trash2 size={24} /></div>
-            <div className="relative z-10"><DialogTitle className="text-xl font-black uppercase tracking-tight leading-none text-white drop-shadow-sm">Record Deletion</DialogTitle><DialogDescription className="text-red-100 text-xs mt-1 font-medium italic opacity-90">This action is irreversible.</DialogDescription></div>
+            <div className="h-10 w-10 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner border border-white/10 shrink-0"><Trash2 size={24} className="md:w-7 md:h-7 drop-shadow-md" /></div>
+            <div className="relative z-10"><DialogTitle className="text-lg md:text-2xl font-black uppercase tracking-tight leading-none text-white drop-shadow-sm">Record Deletion</DialogTitle><DialogDescription className="text-red-100 text-[10px] md:text-xs mt-1 md:mt-1.5 font-bold italic opacity-90">This action is irreversible.</DialogDescription></div>
           </div>
-          <div className="p-8 space-y-6 text-center">
-            <div className={`p-6 rounded-[32px] border ${isDarkMode ? 'bg-red-900/20 border-red-900/30' : 'bg-red-50 border-red-100'}`}>
-              <p className={`text-sm font-bold leading-relaxed text-center ${isDarkMode ? 'text-red-200' : 'text-red-900'}`}>Are you sure you want to permanently erase <br/><span className="underline decoration-2 underline-offset-4">{activeDeleteStudent?.first_name} {activeDeleteStudent?.last_name}</span>?</p>
-              <p className="text-[10px] font-black uppercase text-red-500 mt-2 tracking-widest leading-relaxed">This will purge all documents and database entries.</p>
+          <div className="p-5 md:p-8 space-y-5 md:space-y-6 overflow-y-auto custom-scrollbar text-center">
+            <div className={`p-5 md:p-6 rounded-2xl md:rounded-[32px] border ${isDarkMode ? 'bg-slate-900/50 border-red-900/30 ring-1 ring-red-900/20' : 'bg-red-50 border-red-100 shadow-sm'}`}>
+              <p className={`text-xs md:text-sm font-bold leading-relaxed text-center ${isDarkMode ? 'text-red-300' : 'text-red-900'}`}>Are you sure you want to permanently erase <br/><span className="underline decoration-2 underline-offset-4">{activeDeleteStudent?.first_name} {activeDeleteStudent?.last_name}</span>?</p>
+              <p className="text-[9px] md:text-[10px] font-black uppercase text-red-500 mt-3 md:mt-4 tracking-widest leading-relaxed">This will purge all documents and database entries.</p>
             </div>
-            <DialogFooter className="flex-col gap-2 sm:flex-col">
-              <Button onClick={() => handleExit(activeDeleteStudent.id, handleConfirmDelete)} className="w-full h-14 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">Delete Permanently</Button>
-              <Button variant="ghost" onClick={() => setDeleteModalOpen(false)} className={`w-full h-12 rounded-2xl font-black uppercase text-[10px] ${isDarkMode ? 'text-slate-500 hover:text-white hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Cancel</Button>
+            <DialogFooter className="flex-col gap-2 md:gap-3 sm:flex-col pt-2 md:pt-4">
+              <Button onClick={() => handleExit(activeDeleteStudent.id, handleConfirmDelete)} className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black uppercase text-[10px] md:text-xs tracking-widest shadow-xl shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">Delete Permanently</Button>
+              <Button variant="ghost" onClick={() => setDeleteModalOpen(false)} className={`w-full h-10 md:h-12 rounded-xl md:rounded-2xl font-black uppercase text-[10px] md:text-[11px] ${isDarkMode ? 'text-slate-500 hover:text-white hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Cancel</Button>
             </DialogFooter>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* --- MODAL: BULK DELETE --- */}
       <Dialog open={bulkDeleteModalOpen} onOpenChange={setBulkDeleteModalOpen}>
         <DialogContent 
-          className="rounded-[32px] w-[95vw] max-w-md p-0 overflow-hidden border-none shadow-2xl transition-colors duration-500"
+          className="rounded-[24px] md:rounded-[32px] w-[95vw] sm:max-w-xl md:max-w-2xl p-0 overflow-hidden border-none shadow-2xl transition-colors duration-500 max-h-[90vh] md:max-h-[90vh] flex flex-col"
           style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface }}
         >
-          <div className="bg-gradient-to-br from-red-600 to-red-800 p-8 flex items-center gap-4 text-white relative overflow-hidden">
+          <div className="bg-gradient-to-br from-red-600 to-red-800 p-5 md:p-8 flex items-center gap-4 md:gap-5 text-white relative overflow-hidden shrink-0">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-            <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner border border-white/10 shrink-0"><Trash2 size={24} /></div>
-            <div className="relative z-10"><DialogTitle className="text-xl font-black uppercase tracking-tight leading-none text-white drop-shadow-sm">Batch Deletion</DialogTitle><DialogDescription className="text-red-100 text-xs mt-1 font-medium italic opacity-90">Permanently remove {selectedIds.length} records.</DialogDescription></div>
+            <div className="h-10 w-10 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner border border-white/10 shrink-0"><Trash2 size={24} className="md:w-7 md:h-7 drop-shadow-md" /></div>
+            <div className="relative z-10"><DialogTitle className="text-lg md:text-2xl font-black uppercase tracking-tight leading-none text-white drop-shadow-sm">Batch Deletion</DialogTitle><DialogDescription className="text-red-100 text-[10px] md:text-xs mt-1 md:mt-1.5 font-bold italic opacity-90">Permanently remove {selectedIds.length} records.</DialogDescription></div>
           </div>
-          <div className="p-8 space-y-6 text-center">
-            <div className={`p-6 rounded-[32px] border ${isDarkMode ? 'bg-red-900/20 border-red-900/30' : 'bg-red-50 border-red-100'}`}>
-              <p className={`text-sm font-bold leading-relaxed text-center ${isDarkMode ? 'text-red-200' : 'text-red-900'}`}>Are you sure you want to permanently erase <br/><span className="text-lg font-black">{selectedIds.length}</span> selected applicants?</p>
-              <p className="text-[10px] font-black uppercase text-red-500 mt-2 tracking-widest leading-relaxed">This will purge all documents and database entries.</p>
+          <div className="p-5 md:p-8 space-y-5 md:space-y-6 overflow-y-auto custom-scrollbar text-center">
+            <div className={`p-5 md:p-6 rounded-2xl md:rounded-[32px] border ${isDarkMode ? 'bg-slate-900/50 border-red-900/30 ring-1 ring-red-900/20' : 'bg-red-50 border-red-100 shadow-sm'}`}>
+              <p className={`text-xs md:text-sm font-bold leading-relaxed text-center ${isDarkMode ? 'text-red-300' : 'text-red-900'}`}>Are you sure you want to permanently erase <br/><span className="text-lg md:text-xl font-black">{selectedIds.length}</span> selected applicants?</p>
+              <p className="text-[9px] md:text-[10px] font-black uppercase text-red-500 mt-3 md:mt-4 tracking-widest leading-relaxed">This will purge all documents and database entries.</p>
             </div>
-            <DialogFooter className="flex-col gap-2 sm:flex-col">
-              <Button onClick={processBulkDelete} className="w-full h-14 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">Confirm Batch Deletion</Button>
-              <Button variant="ghost" onClick={() => setBulkDeleteModalOpen(false)} className={`w-full h-12 rounded-2xl font-black uppercase text-[10px] ${isDarkMode ? 'text-slate-500 hover:text-white hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Cancel</Button>
+            <DialogFooter className="flex-col gap-2 md:gap-3 sm:flex-col pt-2 md:pt-4">
+              <Button onClick={processBulkDelete} className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black uppercase text-[10px] md:text-xs tracking-widest shadow-xl shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">Confirm Batch Deletion</Button>
+              <Button variant="ghost" onClick={() => setBulkDeleteModalOpen(false)} className={`w-full h-10 md:h-12 rounded-xl md:rounded-2xl font-black uppercase text-[10px] md:text-[11px] ${isDarkMode ? 'text-slate-500 hover:text-white hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Cancel</Button>
             </DialogFooter>
           </div>
         </DialogContent>

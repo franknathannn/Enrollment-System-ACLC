@@ -60,6 +60,63 @@ export async function getEnrollmentStatus() {
 }
 
 /**
+ * RE-EVALUATES SYSTEM CAPACITY AND TOGGLES PORTAL
+ * Intended to be called whenever a student is Accepted, Rejected, or Deleted
+ * to ensure the auto-lock/auto-unlock logic fires regardless of whether the settings page is open.
+ */
+export async function checkAndSyncSystemCapacity() {
+  try {
+    const supabase = await createClient()
+    
+    const { data: config, error } = await supabase
+      .from('system_config')
+      .select('*')
+      .single()
+      
+    if (error || !config || config.close_portal_when_full === false) return;
+
+    const { count: approvedCount } = await supabase
+      .from('students')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['Approved', 'Accepted']);
+
+    const capacityPercentage = approvedCount ? (approvedCount / (config.capacity || 750)) * 100 : 0;
+    
+    if (config.is_portal_active && capacityPercentage >= 100) {
+      await supabase.from('system_config').update({
+        is_portal_active: false,
+        control_mode: 'manual',
+        updated_at: new Date().toISOString()
+      }).eq('id', config.id);
+      
+      // We must revalidate to instantly push changes everywhere
+      revalidatePath("/enroll")
+      revalidatePath("/admin/configuration")
+    } else if (!config.is_portal_active && config.control_mode === 'manual' && capacityPercentage < 100) {
+      const now = new Date();
+      let isWithinDate = true;
+      if (config.enrollment_end) {
+        const end = new Date(config.enrollment_end);
+        if (now > end) isWithinDate = false;
+      }
+      
+      if (isWithinDate) {
+        await supabase.from('system_config').update({
+          is_portal_active: true,
+          control_mode: 'automatic',
+          updated_at: new Date().toISOString()
+        }).eq('id', config.id);
+        
+        revalidatePath("/enroll")
+        revalidatePath("/admin/configuration")
+      }
+    }
+  } catch (err) {
+    console.error("Auto Capacity Guardian Error:", err);
+  }
+}
+
+/**
  * 🎯 STRICT SEQUENTIAL GENDER-BALANCED REDISTRIBUTION
  * 
  * RULES:

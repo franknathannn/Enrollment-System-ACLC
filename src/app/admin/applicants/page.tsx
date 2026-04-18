@@ -123,6 +123,7 @@ export default function ApplicantsPage() {
       currentPage={currentPage}
       totalPages={totalPages}
       setCurrentPage={setCurrentPage}
+      isSystemLocked={!config?.is_portal_active}
     />
    </div>
 
@@ -183,6 +184,7 @@ export default function ApplicantsPage() {
      handleBulkAction={handleBulkAction}
      setBulkDeleteModalOpen={setBulkDeleteModalOpen}
      setSelectedIds={setSelectedIds}
+     isSystemLocked={!config?.is_portal_active}
    />
   </div>
   </TooltipProvider>
