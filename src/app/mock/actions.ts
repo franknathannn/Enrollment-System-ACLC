@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
+import { createClient as createSessionClient } from "@/lib/supabase/server"
 
 const getAdminSupabase = () => {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -9,7 +10,17 @@ const getAdminSupabase = () => {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 }
 
+async function requireAdmin() {
+  const supabase = await createSessionClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Unauthorized")
+  const role = (user.app_metadata?.role ?? user.user_metadata?.role) as string | undefined
+  if (role === "teacher" || role === "student") throw new Error("Unauthorized")
+  return user
+}
+
 export async function clearMockData(ids: string[]) {
+  await requireAdmin()
   const supabase = getAdminSupabase()
   
   // 1. Delete references in attendance

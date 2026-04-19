@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,8 +14,33 @@ const supabaseAdmin = createClient(
   }
 )
 
+async function getAuthenticatedAdmin() {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: { storageKey: "sb-aclc-admin-auth" },
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll() { /* read-only in route handler */ },
+      },
+    }
+  )
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const role = (user.app_metadata?.role ?? user.user_metadata?.role) as string | undefined
+  if (role === "teacher" || role === "student") return null
+  return user
+}
+
 export async function POST(req: Request) {
   try {
+    const admin = await getAuthenticatedAdmin()
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await req.json()
     const { action, userId, payload } = body
 

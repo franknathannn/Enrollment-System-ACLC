@@ -8,7 +8,7 @@ import { toast } from "sonner"
 import { generateStudent } from "@/lib/mock-utils"
 import { clearMockData } from "@/app/mock/actions"
 
-const SYSTEM_PASSWORD = "bdbestforyou03"
+const SYSTEM_PASSWORD = process.env.NEXT_PUBLIC_DEMO_TOOLS_PASSWORD ?? ""
 
 const FILIPINO_PERSONAS = [
   { f: "Juan", l: "Dela Cruz", m: "Perez", n: "Juan",   g: "Male" },
