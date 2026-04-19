@@ -1,8 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { spawn } from 'child_process'
 import path from 'path'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+async function getAuthenticatedAdmin() {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: { storageKey: 'sb-aclc-admin-auth' },
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll() { /* read-only in route handler */ },
+      },
+    }
+  )
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const role = (user.app_metadata?.role ?? user.user_metadata?.role) as string | undefined
+  if (role === 'teacher' || role === 'student') return null
+  return user
+}
 
 export async function POST(req: NextRequest) {
+  const admin = await getAuthenticatedAdmin()
+  if (!admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const body = await req.json()
   const scriptPath = path.join(process.cwd(), 'predict.py')
 
@@ -19,8 +46,9 @@ export async function POST(req: NextRequest) {
 
     py.on('close', (code: number) => {
       if (code !== 0) {
+        console.error('predict.py stderr:', errOutput)
         resolve(NextResponse.json(
-          { error: errOutput || 'Python script exited with an error.' },
+          { error: 'Prediction script failed.' },
           { status: 500 }
         ))
         return
@@ -29,7 +57,7 @@ export async function POST(req: NextRequest) {
         resolve(NextResponse.json(JSON.parse(output.trim())))
       } catch {
         resolve(NextResponse.json(
-          { error: 'Failed to parse Python output.', raw: output },
+          { error: 'Failed to parse prediction output.' },
           { status: 500 }
         ))
       }
@@ -37,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     py.on('error', () => {
       resolve(NextResponse.json(
-        { error: 'Python not found. Make sure Python is installed and in PATH, then run: pip install numpy scikit-learn statsmodels' },
+        { error: 'Prediction service unavailable.' },
         { status: 503 }
       ))
     })
