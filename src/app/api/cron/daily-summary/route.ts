@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const cronSecret = process.env.CRON_SECRET;
     const authHeader = request.headers.get('authorization');
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const supabase = createAdminClient();
@@ -34,15 +34,17 @@ export async function GET(request: Request) {
     const dateStr = phNow.toISOString().split('T')[0];
 
     // 2. Fetch All Students (Who have a guardian email assigned)
-    const { data: students } = await supabase
+    const { data: studentsRaw } = await supabase
       .from('students')
-      .select('id, section, first_name, last_name, guardian_email, guardian_first_name, lrn, gender')
+      .select('id, section, first_name, last_name, guardian_email, guardian_first_name, lrn, gender, summary_last_sent_date')
       .not('guardian_email', 'is', null)
       .not('section', 'is', null)
       .neq('section', 'Unassigned');
 
-    if (!students || students.length === 0) {
-      return NextResponse.json({ success: true, message: 'No active students with mapped guardians found.' });
+    const students = (studentsRaw || []).filter((s: any) => s.summary_last_sent_date !== dateStr);
+
+    if (students.length === 0) {
+      return NextResponse.json({ success: true, message: 'No active students needing a summary right now.' });
     }
 
     // 3. Fetch All Schedules For Today
@@ -61,8 +63,8 @@ export async function GET(request: Request) {
       .select('student_id, subject, status, notes, time, date')
       .eq('date', dateStr);
 
-    // Track emails to send
-    const emailPayloads: any[] = [];
+    // Track emails to send and map to student IDs
+    const emailPromises: Promise<{ studentId: string; response: Response }>[] = [];
 
     // Formatter
     const fmtT = (t: string) => {
@@ -205,7 +207,7 @@ export async function GET(request: Request) {
         </div>
       `;
 
-      emailPayloads.push(
+      emailPromises.push(
         fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
           headers: {
@@ -214,23 +216,54 @@ export async function GET(request: Request) {
             'content-type': 'application/json'
           },
           body: JSON.stringify({
-            sender: { name: "ACLC Attendance System", email: "franknathan12@gmail.com" },
+            sender: { name: "ACLC Attendance System", email: process.env.SENDER_EMAIL || "franknathan12@gmail.com" },
             to: [{ email: student.guardian_email, name: student.guardian_first_name || "Guardian" }],
             subject: `Daily Attendance Report: ${student.first_name} ${student.last_name} — ${currentDay}, ${dateStr}`,
             htmlContent: htmlContent
           })
-        })
+        }).then(res => ({ studentId: student.id, response: res }))
       );
     }
 
     // Process all emails in parallel
-    if (emailPayloads.length > 0) {
-      await Promise.allSettled(emailPayloads);
+    const brevoErrors: any[] = [];
+    const successfulStudentIds: string[] = [];
+    let successCount = 0;
+
+    if (emailPromises.length > 0) {
+      const results = await Promise.allSettled(emailPromises);
+      
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          const { studentId, response } = result.value;
+          const data = await response.json().catch(() => null) || await response.text().catch(() => null);
+          
+          if (!response.ok) {
+            console.error("Brevo API Error:", response.status, data);
+            brevoErrors.push({ status: response.status, data });
+          } else {
+            successCount++;
+            successfulStudentIds.push(studentId);
+          }
+        } else {
+          console.error("Fetch Network Error:", result.reason);
+          brevoErrors.push({ error: String(result.reason) });
+        }
+      }
+    }
+
+    // 6. Bulk update the sent date for the successful ones
+    if (successfulStudentIds.length > 0) {
+      await supabase
+        .from('students')
+        .update({ summary_last_sent_date: dateStr })
+        .in('id', successfulStudentIds);
     }
 
     return NextResponse.json({
-      success: true,
-      message: `Hourly Sweep executed successfully. Sent ${emailPayloads.length} summaries.`
+      success: brevoErrors.length === 0,
+      message: `Hourly Sweep executed. Sent ${successCount} successful emails. Failed: ${brevoErrors.length}.`,
+      brevo_errors: brevoErrors.length > 0 ? brevoErrors : undefined
     });
 
   } catch (error: any) {

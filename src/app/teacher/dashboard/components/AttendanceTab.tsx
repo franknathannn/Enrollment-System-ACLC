@@ -842,7 +842,8 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
         return
       }
 
-      const sched = schedules.find(s => s.subject === subject && s.section === student.section)
+      const dow = new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { weekday: "long" })
+      const sched = schedules.find(s => s.subject === subject && s.section === student.section && s.day === dow)
       const rec: AttRecord = existingRec
         ? { ...existingRec, status: newStatus }
         : {
@@ -2036,7 +2037,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                         subjsOnDay.forEach(subj => {
                           const existing = dayRecords.find(r => r.student_id === s.id && r.subject === subj)
                           if (!existing) {
-                            const sched = schedules.find(sc => sc.subject === subj && sc.section === s.section)
+                            const sched = schedules.find(sc => sc.subject === subj && sc.section === s.section && sc.day === dayOfWeek2)
                             toInsert.push({
                               student_id: s.id, lrn: s.lrn,
                               student_name: `${s.last_name}, ${s.first_name}`,
