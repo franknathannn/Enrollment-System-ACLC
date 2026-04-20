@@ -112,7 +112,7 @@ export const BulkScheduleManagerDialog = memo(function BulkScheduleManagerDialog
       <DialogContent className={`w-[98vw] md:w-[95vw] lg:w-[90vw] max-w-[1400px] h-[95vh] max-h-[95vh] flex flex-col p-0 border-none rounded-[32px] md:rounded-[48px] shadow-2xl overflow-hidden [&>button]:hidden ${theme.bg}`}>
         
         {/* Header */}
-        <div className={`p-6 border-b ${theme.surface} flex items-center justify-between`}>
+        <div className={`p-6 ${theme.surface} flex items-center justify-between`}>
           <div>
             <DialogTitle className={`text-xl font-black uppercase tracking-widest flex items-center gap-2 ${theme.text}`}>
               <Layers className="text-blue-500"/> Schedule Manager
@@ -132,7 +132,7 @@ export const BulkScheduleManagerDialog = memo(function BulkScheduleManagerDialog
         <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
           
           {/* Sidebar / Filters */}
-          <div className={`w-full md:w-[320px] p-6 lg:p-8 flex flex-col gap-8 border-r ${theme.surface} overflow-y-auto`}>
+          <div className={`w-full md:w-[320px] p-6 lg:p-8 flex flex-col gap-8 ${theme.surface} overflow-y-auto`}>
             
             <div className="space-y-4">
               <label className={`text-[11px] font-black uppercase tracking-[0.2em] ${theme.muted}`}>Filter by Strand</label>
@@ -143,10 +143,10 @@ export const BulkScheduleManagerDialog = memo(function BulkScheduleManagerDialog
                     onClick={() => setStrandFilter(s)}
                     className={`py-3 rounded-[16px] text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${
                       strandFilter === s 
-                        ? "bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/30" 
+                        ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/25" 
                         : isDarkMode 
-                          ? "bg-transparent text-slate-500 border-slate-700 hover:bg-slate-800" 
-                          : "bg-transparent text-slate-500 border-slate-300 hover:bg-slate-100"
+                          ? "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-300" 
+                          : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 hover:border-slate-300 shadow-sm"
                     }`}
                   >
                     {s}
@@ -164,10 +164,10 @@ export const BulkScheduleManagerDialog = memo(function BulkScheduleManagerDialog
                     onClick={() => setGradeFilter(g)}
                     className={`py-3 rounded-[16px] text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${
                       gradeFilter === g 
-                        ? "bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-500/30" 
+                        ? "bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-500/25" 
                         : isDarkMode 
-                          ? "bg-transparent text-slate-500 border-slate-700 hover:bg-slate-800" 
-                          : "bg-transparent text-slate-500 border-slate-300 hover:bg-slate-100"
+                          ? "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-300" 
+                          : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 hover:border-slate-300 shadow-sm"
                     }`}
                   >
                     {g === "ALL" ? "ALL" : `G${g}`}
@@ -176,24 +176,27 @@ export const BulkScheduleManagerDialog = memo(function BulkScheduleManagerDialog
               </div>
             </div>
 
-            <div className={`pt-8 mt-auto border-t space-y-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+            <div className="pt-8 mt-auto space-y-4">
               <label className={`text-[11px] font-black uppercase tracking-[0.2em] ${theme.muted}`}>Bulk Destructive Actions</label>
               <div className="space-y-3">
                 <Button 
-                    variant="destructive" 
-                    className="w-full justify-start text-[10px] uppercase font-black tracking-widest rounded-[16px] hover:scale-[1.02] transition-transform h-12 px-5"
-                    onClick={() => handleWipe("ALL")}
+                    variant="ghost" 
+                    className={`w-full justify-start text-[10px] uppercase font-black tracking-widest rounded-[16px] hover:scale-[1.02] transition-all h-12 px-5 shadow-sm border ${
+                      isDarkMode
+                        ? 'bg-red-950/30 text-red-400 hover:bg-red-900/50 hover:text-red-300 border-red-900/50'
+                        : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-100 hover:border-red-200'
+                    }`}
                     disabled={selection.size === 0 || isProcessing}
                 >
                     <Trash2 className="mr-3" size={16}/> Wipe Entire Schedule
                 </Button>
                 
                 <Button 
-                    variant="outline" 
-                    className={`w-full justify-start text-[10px] uppercase font-bold tracking-widest rounded-[16px] h-12 px-5 transition-all hover:scale-[1.02] ${
+                    variant="ghost" 
+                    className={`w-full justify-start text-[10px] uppercase font-black tracking-widest rounded-[16px] hover:scale-[1.02] transition-all h-12 px-5 shadow-sm border ${
                       isDarkMode 
-                        ? 'text-orange-500 hover:text-orange-400 border-orange-900/40 hover:bg-orange-950/40' 
-                        : 'text-orange-500 hover:text-orange-600 border-orange-200 hover:bg-orange-50'
+                        ? 'bg-orange-950/20 text-orange-400 hover:bg-orange-900/40 hover:text-orange-300 border-orange-900/30 hover:border-orange-800/50' 
+                        : 'bg-orange-50/50 text-orange-600 hover:bg-orange-100/80 hover:border-orange-300 border-orange-200'
                     }`}
                     onClick={() => handleWipe("TEACHERS")}
                     disabled={selection.size === 0 || isProcessing}
@@ -202,11 +205,11 @@ export const BulkScheduleManagerDialog = memo(function BulkScheduleManagerDialog
                 </Button>
                 
                 <Button 
-                    variant="outline" 
-                    className={`w-full justify-start text-[10px] uppercase font-bold tracking-widest rounded-[16px] h-12 px-5 transition-all hover:scale-[1.02] ${
+                    variant="ghost" 
+                    className={`w-full justify-start text-[10px] uppercase font-black tracking-widest rounded-[16px] hover:scale-[1.02] transition-all h-12 px-5 shadow-sm border ${
                       isDarkMode 
-                        ? 'text-indigo-500 hover:text-indigo-400 border-indigo-900/40 hover:bg-indigo-950/40' 
-                        : 'text-indigo-500 hover:text-indigo-600 border-indigo-200 hover:bg-indigo-50'
+                        ? 'bg-indigo-950/20 text-indigo-400 hover:bg-indigo-900/40 hover:text-indigo-300 border-indigo-900/30 hover:border-indigo-800/50' 
+                        : 'bg-indigo-50/50 text-indigo-600 hover:bg-indigo-100/80 hover:border-indigo-300 border-indigo-200'
                     }`}
                     onClick={() => handleWipe("ROOMS")}
                     disabled={selection.size === 0 || isProcessing}
@@ -221,7 +224,7 @@ export const BulkScheduleManagerDialog = memo(function BulkScheduleManagerDialog
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-h-0 bg-transparent">
             {/* List Header */}
-            <div className={`p-4 border-b flex items-center justify-between ${isDarkMode ? 'border-slate-800 bg-slate-900/50' : 'border-slate-200 bg-slate-50/50'}`}>
+            <div className={`p-4 md:p-6 pb-4 flex items-center justify-between ${isDarkMode ? 'bg-slate-900/50' : 'bg-transparent'}`}>
                 <div className="flex items-center gap-3">
                   <button onClick={handleSelectAll} className={`p-1 rounded-md transition-colors ${
                     isDarkMode 
@@ -248,7 +251,11 @@ export const BulkScheduleManagerDialog = memo(function BulkScheduleManagerDialog
                       const isExpanded = expandedSection === s.section_name
 
                       return (
-                          <div key={s.id} className={`rounded-[24px] border overflow-hidden transition-all duration-300 ${isDarkMode ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}>
+                          <div key={s.id} className={`rounded-[24px] border border-transparent overflow-hidden transition-all duration-500 hover:-translate-y-0.5 ${
+                            isSelected 
+                              ? (isDarkMode ? 'border-blue-500 bg-slate-900 ring-2 ring-blue-500/20' : 'border-blue-400 bg-white ring-4 ring-blue-500/10 shadow-[0_8px_30px_rgb(59,130,246,0.12)]')
+                              : (isDarkMode ? 'bg-slate-900/40 hover:bg-slate-900/80 shadow-md border-slate-800/30' : 'bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.08)]')
+                          }`}>
                               
                               <div className={`p-4 flex items-center gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isSelected ? (isDarkMode ? 'bg-blue-950/20' : 'bg-blue-50/50') : ''}`} onClick={() => setExpandedSection(isExpanded ? null : s.section_name)}>
                                 <button 
@@ -260,19 +267,30 @@ export const BulkScheduleManagerDialog = memo(function BulkScheduleManagerDialog
 
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                                          s.strand === 'ICT' 
+                                            ? (isDarkMode ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-50 text-blue-600') 
+                                            : (isDarkMode ? 'bg-orange-900/40 text-orange-400' : 'bg-orange-50 text-orange-600')
+                                        }`}>
+                                            {s.strand === 'ICT' ? <Cpu size={14} /> : <BookOpen size={14} />}
+                                        </div>
                                         <Badge variant="outline" className={`text-[9px] font-black border-none uppercase px-2 py-0.5 rounded-md ${
                                           s.strand === 'ICT' 
-                                            ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-700') 
-                                            : (isDarkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700')
+                                            ? (isDarkMode ? 'bg-blue-900/20 text-blue-400' : 'bg-blue-50/50 text-blue-700') 
+                                            : (isDarkMode ? 'bg-orange-900/20 text-orange-400' : 'bg-orange-50/50 text-orange-700')
                                         }`}>
                                             {s.strand} {s.grade_level}
                                         </Badge>
-                                        <h4 className={`text-sm md:text-base font-black truncate ${theme.text}`}>{s.section_name}</h4>
+                                        <h4 className={`text-sm md:text-base font-black truncate tracking-wide ${theme.text}`}>{s.section_name}</h4>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                  <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                                  <div className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                                    (s.students ? s.students.filter((st: any) => st.status === "Approved" || st.status === "Accepted").length : 0) > 0 
+                                      ? (isDarkMode ? 'bg-emerald-950/30 border-emerald-900/50 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-600')
+                                      : (isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500')
+                                  }`}>
                                       {s.students ? s.students.filter((st: any) => st.status === "Approved" || st.status === "Accepted").length : 0} Enrolled
                                   </div>
                                   <div className="text-slate-400">

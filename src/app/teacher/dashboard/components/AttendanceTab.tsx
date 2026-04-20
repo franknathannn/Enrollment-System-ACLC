@@ -892,13 +892,20 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
       try {
         if (p.action === "insert") {
           const { error } = await supabase.from("attendance").insert(p.record)
-          if (!error) { removeFromQueue(p.key); synced++ }
+          if (!error) { 
+            removeFromQueue(p.key); synced++ 
+          } else if (error.code === "23505" || error.message?.toLowerCase().includes("duplicate")) {
+            // Fix: If it already exists, update its status instead and clear from queue to prevent an infinite loop.
+            await supabase.from("attendance").update({ status: p.record.status })
+              .eq("student_id", p.record.student_id).eq("date", p.record.date).eq("subject", p.record.subject)
+            removeFromQueue(p.key); synced++
+          }
         } else {
           const { error } = await supabase.from("attendance").update({ status: p.record.status })
             .eq("student_id", p.record.student_id).eq("date", p.record.date).eq("subject", p.record.subject)
           if (!error) { removeFromQueue(p.key); synced++ }
         }
-      } catch { }
+      } catch { } // Network errors safely throw and are caught here, keeping the item in the queue.
     }
     setPending(getQueue()); setSyncing(false)
     if (synced > 0) { toast.success(`Saved ${synced} offline record${synced > 1 ? "s" : ""}`); if (period) loadAttendance(period) }

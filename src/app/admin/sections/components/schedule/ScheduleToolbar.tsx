@@ -295,8 +295,11 @@ export const ScheduleToolbar = memo(function ScheduleToolbar({
     }
   }
 
-  const ghostBtn = `h-10 px-4 rounded-2xl border text-[9px] font-black uppercase tracking-widest gap-2 transition-all flex items-center
-    ${isDarkMode ? "border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white" : "border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`
+  const ghostBtn = `h-10 px-4 rounded-2xl border text-[9px] font-black uppercase tracking-widest gap-2 transition-all flex items-center shadow-sm active:scale-95
+    ${isICT 
+      ? isDarkMode ? "border-blue-900/50 text-blue-400 bg-blue-950/20 hover:bg-blue-900/40 hover:border-blue-700/50" : "border-blue-200 text-blue-600 bg-blue-50/50 hover:bg-blue-100/80 hover:border-blue-300"
+      : isDarkMode ? "border-orange-900/50 text-orange-400 bg-orange-950/20 hover:bg-orange-900/40 hover:border-orange-700/50" : "border-orange-200 text-orange-600 bg-orange-50/50 hover:bg-orange-100/80 hover:border-orange-300"
+    }`
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -317,8 +320,11 @@ export const ScheduleToolbar = memo(function ScheduleToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="sm" onClick={onRefresh}
-              className={`h-10 w-10 p-0 rounded-2xl border transition-all
-                ${isDarkMode ? "border-slate-700 text-slate-400 hover:bg-slate-800" : "border-slate-200 text-slate-500 hover:bg-slate-100"}`}>
+              className={`h-10 w-10 p-0 rounded-2xl border transition-all active:scale-95 shadow-sm
+                ${isICT 
+                  ? isDarkMode ? "border-blue-900/50 text-blue-400 bg-blue-950/20 hover:bg-blue-900/40 hover:border-blue-700/50" : "border-blue-200 text-blue-600 bg-blue-50/50 hover:bg-blue-100/80 hover:border-blue-300"
+                  : isDarkMode ? "border-orange-900/50 text-orange-400 bg-orange-950/20 hover:bg-orange-900/40 hover:border-orange-700/50" : "border-orange-200 text-orange-600 bg-orange-50/50 hover:bg-orange-100/80 hover:border-orange-300"
+                }`}>
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             </Button>
           </TooltipTrigger>
@@ -378,8 +384,7 @@ export const ScheduleToolbar = memo(function ScheduleToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <button onClick={onManageTeachers} disabled={!schedules.length}
-              className={`h-10 px-5 rounded-2xl border text-[9px] font-black uppercase tracking-widest gap-2 transition-all flex items-center disabled:opacity-30 disabled:cursor-not-allowed
-                ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-700 hover:bg-slate-100"}`}>
+              className={`${ghostBtn} disabled:opacity-30 disabled:cursor-not-allowed`}>
               <Users size={13} /> Manage Teachers
             </button>
           </TooltipTrigger>

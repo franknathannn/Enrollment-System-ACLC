@@ -61,7 +61,7 @@ function TeacherPicker({
           </span>
         }>
           {value === "unassigned" ? (
-            "Unassigned (TBA)"
+            "Unassigned Replacement"
           ) : selectedTeacher ? (
             <div className="flex items-center gap-2 truncate">
               {selectedTeacher.avatar_url ? (
@@ -81,7 +81,7 @@ function TeacherPicker({
           <SelectItem value="unassigned" className="text-xs cursor-pointer font-medium text-red-500 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30">
             <div className="flex items-center gap-2 pr-4">
               <UserMinus size={13} />
-              Set as Unassigned (TBA)
+              Set as Unassigned Replacement
             </div>
           </SelectItem>
         )}
@@ -224,7 +224,7 @@ export function ScheduleTeacherManager({
             
             if (mode === "teacher") {
               if (key === "unassigned") {
-                label = "Unassigned (TBA)"
+                label = "Unassigned Replacement"
               } else {
                 const t = teachers.find(x => x.id === key)
                 label = t?.full_name || "Unknown Teacher"
@@ -309,7 +309,7 @@ export function ScheduleTeacherManager({
                       value={currentValue} 
                       onSelect={(val) => setReplacementTeacherId(prev => ({ ...prev, [key]: val }))}
                       teachers={teachers}
-                      excludeTeacherIds={mode === "teacher" ? [key] : []}
+                      excludeTeacherIds={[]}
                       isDarkMode={isDarkMode}
                       isICT={isICT}
                     />
