@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
-import { Settings, X, DatabaseBackup, Zap, Eraser, Loader2, ShieldAlert, Users, Trash2, ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { Settings, X, DatabaseBackup, Zap, Eraser, Loader2, ShieldAlert, Users, Trash2, ArrowUpRight, ArrowDownRight, Calendar, CalendarX2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
 import { generateStudent } from "@/lib/mock-utils"
 import { clearMockData } from "@/app/mock/actions"
+import { generateSchedule, type SubjectInput, type RepetitionMode } from "@/app/admin/sections/components/schedule/autoScheduler"
+import type { ScheduleRow } from "@/app/admin/sections/components/schedule/types"
 
 const SYSTEM_PASSWORD = process.env.NEXT_PUBLIC_DEMO_TOOLS_PASSWORD ?? ""
 
@@ -17,6 +19,51 @@ const FILIPINO_PERSONAS = [
   { f: "Andres", l: "Bonifacio", m: "Castro", n: "Andres", g: "Male" },
   { f: "Gabriela", l: "Silang", m: "Cariño", n: "Gabi", g: "Female" }
 ]
+
+type MockSubjectDef = { name: string; duration: number; repetition: RepetitionMode; shift: "AM" | "PM"; preferComlab?: boolean }
+
+const MOCK_SUBJECTS: Record<string, MockSubjectDef[]> = {
+  "ICT-11": [
+    { name: "Oral Communication", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Komunikasyon at Pananaliksik", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "General Mathematics", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Earth and Life Science", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Understanding Culture, Society, and Politics", duration: 60, repetition: "ONCE", shift: "PM" },
+    { name: "Physical Education and Health", duration: 60, repetition: "ONCE", shift: "PM" },
+    { name: "Computer Systems Servicing", duration: 90, repetition: "TWICE", shift: "PM", preferComlab: true },
+    { name: "Programming (Java)", duration: 90, repetition: "TWICE", shift: "PM", preferComlab: true },
+  ],
+  "ICT-12": [
+    { name: "21st Century Literature", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Contemporary Philippine Arts", duration: 60, repetition: "ONCE", shift: "AM" },
+    { name: "Media and Information Literacy", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Physical Science", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Entrepreneurship", duration: 60, repetition: "ONCE", shift: "PM" },
+    { name: "Empowerment Technologies", duration: 90, repetition: "TWICE", shift: "PM", preferComlab: true },
+    { name: "Animation", duration: 90, repetition: "TWICE", shift: "PM", preferComlab: true },
+    { name: "Inquiries, Investigations and Immersion", duration: 60, repetition: "ONCE", shift: "PM" },
+  ],
+  "GAS-11": [
+    { name: "Oral Communication", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Komunikasyon at Pananaliksik", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "General Mathematics", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Earth and Life Science", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Understanding Culture, Society, and Politics", duration: 60, repetition: "ONCE", shift: "PM" },
+    { name: "Physical Education and Health", duration: 60, repetition: "ONCE", shift: "PM" },
+    { name: "Humanities 1", duration: 60, repetition: "TWICE", shift: "PM" },
+    { name: "Social Science 1", duration: 60, repetition: "TWICE", shift: "PM" },
+  ],
+  "GAS-12": [
+    { name: "21st Century Literature", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Contemporary Philippine Arts", duration: 60, repetition: "ONCE", shift: "AM" },
+    { name: "Media and Information Literacy", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Physical Science", duration: 60, repetition: "TWICE", shift: "AM" },
+    { name: "Entrepreneurship", duration: 60, repetition: "ONCE", shift: "PM" },
+    { name: "Humanities 2", duration: 60, repetition: "TWICE", shift: "PM" },
+    { name: "Social Science 2", duration: 60, repetition: "TWICE", shift: "PM" },
+    { name: "Inquiries, Investigations and Immersion", duration: 60, repetition: "ONCE", shift: "PM" },
+  ],
+}
 
 export function DemoTools() {
   const pathname = usePathname()
@@ -483,6 +530,112 @@ export function DemoTools() {
     }
   }
 
+  // ── Fill / Unfill Mock Schedules ────────────────────────────────────────────
+  const MAX_FILL_SECTIONS = 3
+
+  const handleFillSchedules = async (strand: "ICT" | "GAS") => {
+    const loadKey = `fill-${strand.toLowerCase()}`
+    setLoading(loadKey)
+    const toastId = toast.loading(`Generating ${strand} mock schedules…`)
+    try {
+      const [{ data: sysCfg }, { data: sectionsData }, { data: roomsData }, { data: existingData }] = await Promise.all([
+        supabase.from("system_config").select("school_year").single(),
+        supabase.from("sections").select("section_name, strand, grade_level").eq("strand", strand).order("section_name", { ascending: true }),
+        supabase.from("rooms").select("id, name"),
+        supabase.from("schedules").select("*, rooms(name)"),
+      ])
+
+      const schoolYear = sysCfg?.school_year || "2025-2026"
+      const allSections = sectionsData || []
+      const rooms = roomsData || []
+
+      if (allSections.length === 0) { toast.error(`No ${strand} sections found.`, { id: toastId }); return }
+      if (rooms.length === 0) { toast.error("No rooms found.", { id: toastId }); return }
+
+      // Build a set of sections that already have ANY schedule entry → skip them
+      const existingRows = (existingData || []) as any[]
+      const sectionsWithSchedules = new Set(existingRows.map((r: any) => r.section))
+
+      // Filter to only empty sections, take first N alphabetically
+      const eligibleSections = allSections.filter((s: any) => !sectionsWithSchedules.has(s.section_name))
+      const targetSections = eligibleSections.slice(0, MAX_FILL_SECTIONS)
+
+      if (targetSections.length === 0) {
+        toast.info(`All ${strand} sections already have schedules — nothing to fill.`, { id: toastId })
+        return
+      }
+
+      const roomMap = rooms.reduce((acc: Record<string, string>, r: any) => ({ ...acc, [r.name]: r.id }), {})
+      const comlabRooms = rooms.filter((r: any) => r.name.toLowerCase().includes("comlab") || r.name.toLowerCase().includes("lab")).map((r: any) => r.name)
+      const regularRooms = rooms.filter((r: any) => !r.name.toLowerCase().includes("comlab") && !r.name.toLowerCase().includes("lab")).map((r: any) => r.name)
+      const comlabPool = comlabRooms.length > 0 ? comlabRooms : rooms.map((r: any) => r.name)
+      const regularPool = regularRooms.length > 0 ? regularRooms : rooms.map((r: any) => r.name)
+
+      let accumulated: ScheduleRow[] = existingRows.map((r: any) => ({ ...r, room: r.rooms?.name || r.room }))
+      const allNewRows: any[] = []
+      let tempId = 0
+      const filledNames: string[] = []
+
+      for (const section of targetSections) {
+        const key = `${section.strand}-${section.grade_level}`
+        const subjectDefs = MOCK_SUBJECTS[key]
+        if (!subjectDefs) continue
+
+        let cIdx = 0, rIdx = 0
+        const subjects: SubjectInput[] = subjectDefs.map((s, i) => {
+          let room: string
+          if (s.preferComlab) { room = comlabPool[cIdx % comlabPool.length]; cIdx++ }
+          else { room = regularPool[rIdx % regularPool.length]; rIdx++ }
+          return { id: String(i), subject: s.name, room, teacher: null, duration: s.duration, preferred_shift: s.shift, repetition: s.repetition, is_online: false }
+        })
+
+        const result = generateSchedule({
+          sectionName: section.section_name, schoolYear, subjects, spreadMode: "MON_FRI",
+          schoolDayStart: "07:00", schoolDayEnd: "17:00", lunchStart: "12:00", lunchEnd: "13:00",
+          existingSchedules: accumulated,
+        })
+
+        const rowsWithMeta = result.rows.map(r => ({ ...r, room_id: r.room ? (roomMap as any)[r.room] || null : null, mock: true }))
+        allNewRows.push(...rowsWithMeta)
+        accumulated.push(...result.rows.map(r => ({ ...r, id: `temp-${tempId++}` })))
+        filledNames.push(section.section_name)
+      }
+
+      if (allNewRows.length === 0) { toast.info("No schedules generated.", { id: toastId }); return }
+
+      for (let i = 0; i < allNewRows.length; i += 500) {
+        const { error } = await supabase.from("schedules").insert(allNewRows.slice(i, i + 500))
+        if (error) throw error
+      }
+
+      toast.success(`Filled ${filledNames.join(", ")} (${allNewRows.length} entries)`, { id: toastId })
+    } catch (e: any) {
+      toast.error(`Fill error: ${e.message}`, { id: toastId })
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  const handleUnfillSchedules = async () => {
+    if (!confirm("Delete all mock schedules? Only entries marked as mock will be removed.")) return
+    setLoading("unfill-schedules")
+    try {
+      let total = 0
+      while (true) {
+        const { data, error } = await supabase.from("schedules").delete().eq("mock", true).select("id").limit(500)
+        if (error) throw error
+        if (!data || data.length === 0) break
+        total += data.length
+      }
+      if (total > 0) toast.success(`Removed ${total} mock schedule entries.`)
+      else toast.info("No mock schedules found.")
+    } catch (e: any) {
+      toast.error(`Unfill error: ${e.message}`)
+    } finally {
+      setLoading(null)
+    }
+  }
+
   // ── Purgative Actions ────────────────────────────────────────────────────────
   const wipeAttendance = async (scope: "today" | "all") => {
     if (!confirm(`Are you sure you want to securely wipe ${scope} attendance logs?`)) return
@@ -725,9 +878,37 @@ export function DemoTools() {
                     </div>
                   </div>
 
+                  {/* Schedule Engine */}
+                  <div className="space-y-2.5">
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">3. Schedule Engine</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => handleFillSchedules("ICT")}
+                        disabled={loading !== null}
+                        className="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 rounded-xl px-3 py-2.5 text-[10px] font-bold transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        {loading === "fill-ict" ? <Loader2 size={12} className="animate-spin" /> : <><Calendar size={12} /> ICT</>}
+                      </button>
+                      <button
+                        onClick={() => handleFillSchedules("GAS")}
+                        disabled={loading !== null}
+                        className="bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 rounded-xl px-3 py-2.5 text-[10px] font-bold transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        {loading === "fill-gas" ? <Loader2 size={12} className="animate-spin" /> : <><Calendar size={12} /> GAS</>}
+                      </button>
+                      <button
+                        onClick={handleUnfillSchedules}
+                        disabled={loading !== null}
+                        className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 rounded-xl px-3 py-2.5 text-[10px] font-bold transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        {loading === "unfill-schedules" ? <Loader2 size={12} className="animate-spin" /> : <><CalendarX2 size={12} /> Unfill</>}
+                      </button>
+                    </div>
+                  </div>
+
                   {/* DB Wipe */}
                   <div className="space-y-2.5">
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">3. Data Purge</span>
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">4. Data Purge</span>
                     <button
                       onClick={() => wipeAttendance("today")}
                       disabled={loading !== null}
@@ -739,7 +920,7 @@ export function DemoTools() {
 
                   {/* Snapshots */}
                   <div className="space-y-2.5">
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">4. State Restoration</span>
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">5. State Restoration</span>
                     <button
                       onClick={createSnapshot}
                       disabled={loading !== null}
@@ -840,6 +1021,36 @@ export function DemoTools() {
                       className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1"
                     >
                       {loading === "mock-clear" ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />} Clear
+                    </button>
+                  </div>
+                </div>
+
+                <div className="w-px h-8 bg-slate-800 shrink-0"></div>
+
+                {/* Schedule Engine */}
+                <div className="flex flex-col gap-1.5 items-start">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Schedules</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleFillSchedules("ICT")}
+                      disabled={loading !== null}
+                      className="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1"
+                    >
+                      {loading === "fill-ict" ? <Loader2 size={10} className="animate-spin" /> : <Calendar size={10} />} ICT
+                    </button>
+                    <button
+                      onClick={() => handleFillSchedules("GAS")}
+                      disabled={loading !== null}
+                      className="bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1"
+                    >
+                      {loading === "fill-gas" ? <Loader2 size={10} className="animate-spin" /> : <Calendar size={10} />} GAS
+                    </button>
+                    <button
+                      onClick={handleUnfillSchedules}
+                      disabled={loading !== null}
+                      className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1"
+                    >
+                      {loading === "unfill-schedules" ? <Loader2 size={10} className="animate-spin" /> : <CalendarX2 size={10} />} Unfill
                     </button>
                   </div>
                 </div>
