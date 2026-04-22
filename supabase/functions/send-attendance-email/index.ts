@@ -21,19 +21,27 @@ serve(async (req: Request) => {
       return new Response('Attendance notifications are disabled globally', { status: 200 });
     }
 
-    // 2. Anti-Spam (First Scan of the Day)
-    const today = new Date().toISOString().split('T')[0];
+    // 2. Anti-Spam (First Scan of the Day) - Fixed for Bulk Inserts
+    const attendanceDate = record.date || new Date().toISOString().split('T')[0];
     const studentId = record.student_id || record.id;
 
-    const { count, error: countErr } = await supabaseClient
+    // To fix the race condition where bulk inserting 4 subjects causes all 4 webhooks
+    // to see a count of 4 and cancel, we deterministically sort them and only send
+    // the email for the "first" record.
+    const { data: dayRecords, error: fetchErr } = await supabaseClient
       .from('attendance')
-      .select('*', { count: 'exact', head: true })
+      .select('id, created_at')
       .eq('student_id', studentId)
-      .eq('date', today);
+      .eq('date', attendanceDate)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true });
 
-    if (countErr) throw new Error("Count query failed: " + countErr.message);
-    if (count && count > 1) {
-      return new Response('Silent Logging: Not the first scan of the day', { status: 200 });
+    if (fetchErr) throw new Error("Fetch query failed: " + fetchErr.message);
+    
+    if (dayRecords && dayRecords.length > 0) {
+      if (dayRecords[0].id !== record.id) {
+        return new Response('Silent Logging: Not the first scan of the day', { status: 200 });
+      }
     }
 
     // 3. Fetch Student Context
@@ -103,7 +111,7 @@ serve(async (req: Request) => {
 
       // Build the context block
       scheduleContextHtml = '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;">'
-        + '<p style="margin:0 0 12px;font-weight:900;color:#475569;text-transform:uppercase;font-size:11px;letter-spacing:1.5px;">Today\'s Schedule Context</p>';
+        + '<p style="margin:0 0 12px;font-weight:900;color:#475569;text-transform:uppercase;font-size:11px;letter-spacing:1.5px;">Attendance Update Report</p>';
 
       // Class start time
       scheduleContextHtml += '<table style="width:100%;border-bottom:1px dashed #cbd5e1;padding:8px 0;"><tr>'
@@ -143,13 +151,18 @@ serve(async (req: Request) => {
 
       // Checked-in subject
       if (foundCheckedIn) {
+        const checkedInSched = scheds[checkedInOrder - 1];
+        const checkedInTimeStr = checkedInSched ? (fmtT(checkedInSched.start_time) + ' – ' + fmtT(checkedInSched.end_time)) : '';
         const ordinalSuffix = checkedInOrder === 1 ? 'st' : checkedInOrder === 2 ? 'nd' : checkedInOrder === 3 ? 'rd' : 'th';
         scheduleContextHtml += '<div style="margin-top:12px;">'
           + '<p style="margin:0 0 8px;font-weight:800;color:#15803d;font-size:11px;text-transform:uppercase;letter-spacing:1px;">✓ Checked In</p>'
           + '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;">'
           + '<span style="font-weight:800;color:#166534;font-size:12px;">' + checkedInSubject + '</span>'
-          + (scheds && scheds.find((s: any) => s.subject === checkedInSubject)?.is_online ? '<span style="color:#3b82f6;font-size:10px;font-weight:800;margin-left:6px;">(online)</span>' : '')
-          + '<span style="float:right;color:#15803d;font-size:11px;font-weight:700;">' + checkedInOrder + ordinalSuffix + ' Subject</span>'
+          + (checkedInSched?.is_online ? '<span style="color:#3b82f6;font-size:10px;font-weight:800;margin-left:6px;">(online)</span>' : '')
+          + '<span style="float:right;text-align:right;">'
+          + '<span style="display:block;color:#15803d;font-size:11px;font-weight:700;">' + checkedInTimeStr + '</span>'
+          + '<span style="display:block;color:#16a34a;font-size:10px;font-weight:700;margin-top:2px;">' + checkedInOrder + ordinalSuffix + ' Subject</span>'
+          + '</span>'
           + '<span style="display:block;font-size:10px;color:#16a34a;font-weight:700;margin-top:2px;">' + (record.status || 'PRESENT') + '</span>'
           + '</div></div>';
       }
@@ -179,6 +192,20 @@ serve(async (req: Request) => {
     const SENDER_EMAIL = Deno.env.get('SENDER_EMAIL');
     const logoUrl = "https://ama-aclc-northbay-es.vercel.app/logo-aclc.png";
 
+    const isManual = record.notes === 'MANUAL';
+    const recordTypeHeader = isManual ? 'MANUAL ATTENDANCE UPDATE' : 'LIVE SCAN RECORD';
+    const timeLabel = isManual ? 'Recorded Time' : 'Time of Arrival';
+    let formattedDate = 'Unknown Date';
+    if (record.date) {
+      const d = new Date(record.date);
+      const datePart = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+      const dayPart = d.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+      formattedDate = `${datePart} (${dayPart})`;
+    }
+    const arrivalText = isManual
+      ? 'This is an automated alert to notify you of an attendance update for <strong>' + student.first_name + ' ' + student.last_name + '</strong>.'
+      : 'This is an automated alert to notify you that <strong>' + student.first_name + ' ' + student.last_name + '</strong> has arrived on campus.';
+
     const htmlContent = '<div style="font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#1f2937;max-width:600px;margin:0 auto;padding:20px;background-color:#f9fafb;">'
       + '<div style="text-align:center;margin-bottom:30px;">'
       + '<a href="https://ama-aclc-northbay-es.vercel.app" target="_blank" style="text-decoration:none;">'
@@ -189,11 +216,12 @@ serve(async (req: Request) => {
       + '<div style="background-color:#ffffff;border-radius:16px;padding:40px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);border:1px solid #e5e7eb;">'
       + '<h1 style="color:#b45309;margin-top:0;font-size:26px;text-align:center;font-weight:800;">Arrival Notification</h1>'
       + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">Dear <strong>' + (student.guardian_first_name || 'Guardian') + '</strong>,</p>'
-      + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">This is an automated alert to notify you that <strong>' + student.first_name + ' ' + student.last_name + '</strong> has arrived on campus.</p>'
+      + '<p style="font-size:16px;line-height:1.6;color:#4b5563;">' + arrivalText + '</p>'
       + '<div style="background-color:#fffbeb;border-left:5px solid #f59e0b;padding:20px;margin:25px 0;border-radius:8px;">'
-      + '<p style="margin:0;font-weight:800;color:#b45309;text-transform:uppercase;font-size:12px;letter-spacing:1px;">Scan Record</p>'
+      + '<p style="margin:0;font-weight:800;color:#b45309;text-transform:uppercase;font-size:12px;letter-spacing:1px;">' + recordTypeHeader + '</p>'
       + '<div style="margin-top:10px;color:#92400e;font-size:15px;">'
-      + '<strong>Time of Arrival:</strong> ' + scanTimeFormatted + '<br/>'
+      + '<strong>Date:</strong> ' + formattedDate + '<br/>'
+      + '<strong>' + timeLabel + ':</strong> ' + scanTimeFormatted + '<br/>'
       + '<strong>Subject Check-In:</strong> ' + (record.subject || 'Unknown Subject') + '<br/>'
       + '<strong>Status:</strong> ' + (record.status || 'Present')
       + '</div></div>'

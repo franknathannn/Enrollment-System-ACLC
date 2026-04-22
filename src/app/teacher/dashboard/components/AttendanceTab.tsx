@@ -7,7 +7,7 @@
  * This component dynamically imports jsQR at runtime.
  */
 
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react"
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, startTransition } from "react"
 import {
   QrCode, Camera, CameraOff, CheckCircle2, Clock, MinusCircle,
   Loader2, Wifi, WifiOff, Upload, AlertTriangle, User,
@@ -814,7 +814,6 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
   const calActionLockRef = useRef<Set<string>>(new Set())
   const dayDetailRef = useRef<HTMLDivElement>(null)
   const scannerPanelRef = useRef<HTMLDivElement>(null)
-  const pendingScrollRef = useRef<number | null>(null)
   const [collapsedSubjs, setCollapsedSubjs] = useState<Set<string>>(new Set())
   const [collapsedStus, setCollapsedStus] = useState<Set<string>>(new Set())
   const [calSortMode, setCalSortMode] = useState<"alpha" | "status">("alpha")
@@ -856,11 +855,12 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
           notes: "MANUAL",
         }
 
-      pendingScrollRef.current = dayDetailRef.current?.scrollTop ?? 0
-      setDayRecords(prev => {
-        const idx = prev.findIndex(r => r.student_id === student.id && r.subject === subject)
-        if (idx >= 0) { const updated = [...prev]; updated[idx] = { ...updated[idx], status: newStatus }; return updated }
-        return [...prev, rec]
+      startTransition(() => {
+        setDayRecords(prev => {
+          const idx = prev.findIndex(r => r.student_id === student.id && r.subject === subject)
+          if (idx >= 0) { const updated = [...prev]; updated[idx] = { ...updated[idx], status: newStatus }; return updated }
+          return [...prev, rec]
+        })
       })
 
       if (existingRec?.id) {
@@ -877,10 +877,12 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
       }
       toast.success(`${student.first_name} → ${newStatus}`, { duration: 1800 })
     } catch (e: any) {
-      setDayRecords(prev => {
-        const idx = prev.findIndex(r => r.student_id === student.id && r.subject === subject)
-        if (idx >= 0 && existingRec) { const reverted = [...prev]; reverted[idx] = existingRec; return reverted }
-        return prev.filter(r => !(r.student_id === student.id && r.subject === subject))
+      startTransition(() => {
+        setDayRecords(prev => {
+          const idx = prev.findIndex(r => r.student_id === student.id && r.subject === subject)
+          if (idx >= 0 && existingRec) { const reverted = [...prev]; reverted[idx] = existingRec; return reverted }
+          return prev.filter(r => !(r.student_id === student.id && r.subject === subject))
+        })
       })
       toast.error(e.message || "Failed to update")
     } finally { setCalOverrideId(null) }
@@ -969,7 +971,6 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
   const refreshDayRecordsSilent = useCallback(async (dateStr: string) => {
     const sectionStudents = students.filter(s => s.section === calSection)
     if (!sectionStudents.length) return
-    const scrollPos = dayDetailRef.current?.scrollTop ?? 0
     const [{ data: attData }, { data: excData }] = await Promise.all([
       supabase.from("attendance").select("*")
         .in("student_id", sectionStudents.map(s => s.id))
@@ -978,10 +979,8 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
         .in("student_id", sectionStudents.map(s => s.id))
         .eq("attendance_date", dateStr),
     ])
-    if (attData) setDayRecords(attData)
-    if (excData) setCalDayExcuses(excData)
-    Promise.resolve().then(() => { if (dayDetailRef.current) dayDetailRef.current.scrollTop = scrollPos })
-    requestAnimationFrame(() => { if (dayDetailRef.current && dayDetailRef.current.scrollTop !== scrollPos) dayDetailRef.current.scrollTop = scrollPos })
+    if (attData) startTransition(() => setDayRecords(attData))
+    if (excData) startTransition(() => setCalDayExcuses(excData))
   }, [students, calSection])
 
   const loadDay = useCallback(async (dateStr: string) => {
@@ -1006,13 +1005,6 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [selectedDay, calSection, refreshDayRecordsSilent])
-
-  useLayoutEffect(() => {
-    if (pendingScrollRef.current !== null && dayDetailRef.current) {
-      dayDetailRef.current.scrollTop = pendingScrollRef.current
-      pendingScrollRef.current = null
-    }
-  })
 
   const sectionStudents = period ? students.filter(s => s.section === period.section) : []
   const filtered = sectionStudents.filter(s => {
@@ -2051,18 +2043,21 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                         })
                       })
                       if (!toInsert.length) { toast.info("All students already recorded"); return }
-                      pendingScrollRef.current = dayDetailRef.current?.scrollTop ?? 0
-                      setDayRecords(prev => {
-                        const updated = [...prev]
-                        toInsert.forEach(r => {
-                          if (!updated.find(x => x.student_id === r.student_id && x.subject === r.subject)) updated.push(r)
+                      startTransition(() => {
+                        setDayRecords(prev => {
+                          const updated = [...prev]
+                          toInsert.forEach(r => {
+                            if (!updated.find(x => x.student_id === r.student_id && x.subject === r.subject)) updated.push(r)
+                          })
+                          return updated
                         })
-                        return updated
                       })
                       const { error } = await supabase.from("attendance").insert(toInsert)
                       if (error) {
                         toast.error("Failed: " + error.message)
-                        setDayRecords(prev => prev.filter(r => !toInsert.some(x => x.student_id === r.student_id && x.subject === r.subject && !r.id)))
+                        startTransition(() => {
+                          setDayRecords(prev => prev.filter(r => !toInsert.some(x => x.student_id === r.student_id && x.subject === r.subject && !r.id)))
+                        })
                       } else {
                         toast.success(`${toInsert.length} record${toInsert.length !== 1 ? "s" : ""} marked Present`)
                       }
