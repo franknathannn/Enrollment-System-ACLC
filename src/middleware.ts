@@ -85,7 +85,30 @@ export async function middleware(request: NextRequest) {
     // IMPORTANT: Always call getUser() to refresh the session token.
     // This must happen BEFORE any auth checks so the refreshed cookies
     // are captured in `refreshedCookies`.
-    const { data: { user } } = await supabase.auth.getUser()
+    let user: { app_metadata?: { role?: string }, user_metadata?: { role?: string } } | null = null
+    try {
+      const { data, error } = await supabase.auth.getUser()
+      if (error) {
+        // Happens when a stale/invalid refresh token is left in cookies.
+        // Treat as signed out and continue to role checks.
+        if ((error as { code?: string }).code === 'refresh_token_not_found') {
+          response = NextResponse.next({ request })
+          request.cookies.getAll()
+            .filter((c) => c.name.includes(storageKey))
+            .forEach((c) => {
+              request.cookies.delete(c.name)
+              response.cookies.delete(c.name)
+            })
+        }
+        // For AuthSessionMissingError and other errors, we simply leave `user` as null
+        // so the authorization logic below correctly redirects them to the login page.
+      } else {
+        user = data.user as typeof user
+      }
+    } catch (authErr) {
+      // Catch any unexpected exceptions but don't throw, let it fall through as unauthenticated.
+      console.warn("Auth check warning:", (authErr as Error).message)
+    }
 
     const url = request.nextUrl.clone()
 

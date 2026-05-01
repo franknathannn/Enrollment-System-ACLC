@@ -56,6 +56,7 @@ export default function SettingsPage() {
     updatingRef.current = val
     setUpdatingState(val)
   }, [])
+  const configIdRef = useRef("")
   const [isSyncing, setIsSyncing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isCommittingMatrix, setIsCommittingMatrix] = useState(false)
@@ -80,12 +81,18 @@ export default function SettingsPage() {
     closePortalWhenFull: true,
     slotDisplayMode: "grade11",
   })
+  useEffect(() => { configIdRef.current = config.id }, [config.id])
 
   // Full reload from DB — used on initial mount and when students change
   const loadSettings = useCallback(async () => {
     try {
       // Use maybeSingle() to avoid crashing if table is empty or RLS blocks it
-      let { data: configData, error: configError } = await supabase.from('system_config').select('*').maybeSingle()
+      const { data: configRows, error: configError } = await supabase
+        .from('system_config')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+      let configData = configRows?.[0] ?? null
 
       if (configError) {
         console.error("Error fetching system_config:", configError)
@@ -142,6 +149,7 @@ export default function SettingsPage() {
           closePortalWhenFull: configData.close_portal_when_full ?? true,
           slotDisplayMode: configData.slot_display_mode || "total",
         })
+        configIdRef.current = configData.id
         // Lock in the DB-loaded school year so we can detect changes at save time
         originalSchoolYearRef.current = configData.school_year || ""
         setCurrentAccepted(count || 0)
@@ -160,8 +168,21 @@ export default function SettingsPage() {
     // where stale DB reads overwrite optimistic state updates
     if (updatingRef.current) return;
     try {
+      const configQuery = configIdRef.current
+        ? supabase
+            .from('system_config')
+            .select('is_portal_active, control_mode, is_pre_enrollment, close_portal_when_full')
+            .eq('id', configIdRef.current)
+            .maybeSingle()
+        : supabase
+            .from('system_config')
+            .select('is_portal_active, control_mode, is_pre_enrollment, close_portal_when_full')
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
       const [{ data: configData }, { count }] = await Promise.all([
-        supabase.from('system_config').select('is_portal_active, control_mode, is_pre_enrollment, close_portal_when_full').maybeSingle(),
+        configQuery,
         supabase.from('students').select('*', { count: 'exact', head: true }).or('status.eq.Accepted,status.eq.Approved')
       ])
       // Double-check the guard after the async read
@@ -220,34 +241,32 @@ export default function SettingsPage() {
 
     const newMode = isManual ? 'manual' : 'automatic'
     try {
-      let finalPortalStatus = config.isOpen
-      if (newMode === 'automatic') {
-        if (!config.startDate || !config.endDate) {
-          finalPortalStatus = false
-          toast.info("Automatic Mode requires dates. Portal auto-locked.")
-        } else {
-          const now = new Date()
-          const start = new Date(config.startDate)
-          const end = new Date(config.endDate)
-          now.setHours(0, 0, 0, 0)
-          start.setHours(0, 0, 0, 0)
-          end.setHours(23, 59, 59, 999)
-          finalPortalStatus = now >= start && now <= end
-        }
-      }
-      const { error } = await supabase.from('system_config')
+      // Mode control must be independent from enrollment dates.
+      // Date window rules are enforced when evaluating enrollment availability,
+      // not when the admin chooses control mode.
+      const targetId = config.id || configIdRef.current
+      let modeUpdateQuery = supabase
+        .from('system_config')
         .update({
           control_mode: newMode,
-          is_portal_active: finalPortalStatus
         })
-        .eq('id', config.id)
+
+      modeUpdateQuery = targetId
+        ? modeUpdateQuery.eq('id', targetId)
+        : modeUpdateQuery.not('id', 'is', null)
+
+      const { data: updatedRow, error } = await modeUpdateQuery
+        .select('id, control_mode')
+        .maybeSingle()
       if (error) throw error
-      // Confirm final state
-      setConfig(prev => ({ ...prev, isOpen: finalPortalStatus }))
-      toast.success(`System Changed to ${newMode.toUpperCase()}`)
+      if (!updatedRow || updatedRow.control_mode !== newMode) {
+        throw new Error("Mode update was not persisted to database.")
+      }
+      configIdRef.current = updatedRow.id
+      toast.success(`Control mode set to ${newMode.toUpperCase()}. Portal state unchanged.`)
     } catch (_err) {
       setConfig(prev => ({ ...prev, controlMode: prevMode })); // Revert
-      toast.error("Protocol Sync Failed.")
+      toast.error("Control mode update failed to persist. Check database policy/trigger.")
     } finally {
       setUpdating(false)
     }
@@ -509,7 +528,7 @@ export default function SettingsPage() {
   // --- AUTO CAPACITY GUARDIAN ---
   // ONLY reacts to capacity and portal status changes.
   // Does NOT react to date changes — dates are handled by Commit and mode toggle.
-  // In MANUAL mode: only auto-closes at 100%. NEVER auto-reopens.
+  // In MANUAL mode: never auto-closes/auto-reopens. Admin override stays authoritative.
   // In AUTOMATIC mode: auto-closes at 100%, auto-reopens when slots free up (if within dates).
   const startDateRef = useRef(config.startDate)
   const endDateRef = useRef(config.endDate)
@@ -519,8 +538,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (_loading || !config.id || !config.closePortalWhenFull) return;
 
-    if (config.isOpen && capacityPercentage >= 100) {
-      // Auto-close portal when capacity is reached (both modes)
+    if (config.isOpen && capacityPercentage >= 100 && config.controlMode === 'automatic') {
+      // Auto-close portal when capacity is reached (automatic mode only)
       const autoRunGuardian = async () => {
         setUpdating(true)
         try {

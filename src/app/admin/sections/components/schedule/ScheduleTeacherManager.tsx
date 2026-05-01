@@ -89,7 +89,7 @@ function TeacherPicker({
           <SelectItem
             key={teacher.id}
             value={teacher.id}
-            className="text-xs cursor-pointer"
+            className={cn("text-xs cursor-pointer", isDarkMode ? "text-slate-100 focus:text-slate-100 focus:bg-slate-800" : "text-slate-800 focus:text-slate-900 focus:bg-slate-100")}
           >
             <div className="flex items-center gap-2 truncate pr-4">
               {teacher.avatar_url ? (
@@ -196,13 +196,23 @@ export function ScheduleTeacherManager({
             <div className={cn("flex items-center p-1 rounded-xl border w-full md:w-auto", isDarkMode ? "bg-slate-900 border-slate-800" : "bg-slate-100 border-slate-200")}>
               <button
                 onClick={() => setMode("teacher")}
-                className={cn("flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all", mode === "teacher" ? cn(accentLight, "shadow-sm") : "opacity-50 hover:opacity-100")}
+                className={cn(
+                  "flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all",
+                  mode === "teacher"
+                    ? cn(accentLight, "shadow-sm")
+                    : (isDarkMode ? "text-slate-300 opacity-80 hover:opacity-100" : "text-slate-700 opacity-80 hover:opacity-100")
+                )}
               >
                 By Teacher
               </button>
               <button
                 onClick={() => setMode("subject")}
-                className={cn("flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all", mode === "subject" ? cn(accentLight, "shadow-sm") : "opacity-50 hover:opacity-100")}
+                className={cn(
+                  "flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all",
+                  mode === "subject"
+                    ? cn(accentLight, "shadow-sm")
+                    : (isDarkMode ? "text-slate-300 opacity-80 hover:opacity-100" : "text-slate-700 opacity-80 hover:opacity-100")
+                )}
               >
                 By Subject
               </button>

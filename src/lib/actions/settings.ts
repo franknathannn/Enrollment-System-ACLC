@@ -86,8 +86,8 @@ export async function checkAndSyncSystemCapacity() {
 
     const capacityPercentage = approvedCount ? (approvedCount / (config.capacity || 750)) * 100 : 0;
     
-    // Only toggle the portal open/closed — never override the admin's chosen control_mode
-    if (config.is_portal_active && capacityPercentage >= 100) {
+    // Only auto-toggle in automatic mode — manual mode is admin-authoritative.
+    if (config.is_portal_active && capacityPercentage >= 100 && config.control_mode === 'automatic') {
       await supabase.from('system_config').update({
         is_portal_active: false,
         updated_at: new Date().toISOString()

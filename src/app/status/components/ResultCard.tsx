@@ -22,9 +22,10 @@ import type { StudentRecord } from "../types"
 interface Props {
   result: StudentRecord
   onFixApplication: () => void
+  isDarkMode: boolean
 }
 
-export function ResultCard({ result, onFixApplication }: Props) {
+export function ResultCard({ result, onFixApplication, isDarkMode }: Props) {
   const router = useRouter()
   const [showSchedule, setShowSchedule] = useState(false)
   const [generatingToken, setGeneratingToken] = useState(false)
@@ -41,21 +42,21 @@ export function ResultCard({ result, onFixApplication }: Props) {
   const Section = ({ title, open, onToggle, children, icon }: {
     title: string; open: boolean; onToggle: () => void; children: React.ReactNode; icon?: React.ReactNode
   }) => (
-    <div className="rounded-[28px] border border-white/8 bg-white/[0.02] overflow-hidden transition-all duration-200">
+      <div className={cn("rounded-[28px] border overflow-hidden transition-all duration-200", isDarkMode ? "border-white/8 bg-white/[0.02]" : "border-slate-200 bg-white")}>
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-white/5 transition-colors group"
       >
         <div className="flex items-center gap-2">
-          {icon && <span className="text-slate-600 group-hover:text-slate-400 transition-colors">{icon}</span>}
-          <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500 group-hover:text-slate-400 transition-colors">{title}</p>
+          {icon && <span className={cn("transition-colors", isDarkMode ? "text-slate-600 group-hover:text-slate-400" : "text-slate-500 group-hover:text-slate-700")}>{icon}</span>}
+          <p className={cn("text-[9px] font-black uppercase tracking-[0.3em] transition-colors", isDarkMode ? "text-slate-500 group-hover:text-slate-400" : "text-slate-500 group-hover:text-slate-700")}>{title}</p>
         </div>
         {open
-          ? <ChevronUp size={13} className="text-slate-600 group-hover:text-slate-400 transition-colors" />
-          : <ChevronDown size={13} className="text-slate-600 group-hover:text-slate-400 transition-colors" />}
+          ? <ChevronUp size={13} className={cn("transition-colors", isDarkMode ? "text-slate-600 group-hover:text-slate-400" : "text-slate-500 group-hover:text-slate-700")} />
+          : <ChevronDown size={13} className={cn("transition-colors", isDarkMode ? "text-slate-600 group-hover:text-slate-400" : "text-slate-500 group-hover:text-slate-700")} />}
       </button>
       {open && (
-        <div className="px-6 pb-6 border-t border-white/5 pt-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className={cn("px-6 pb-6 border-t pt-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200", isDarkMode ? "border-white/5" : "border-slate-200")}>
           {children}
         </div>
       )}
@@ -64,8 +65,8 @@ export function ResultCard({ result, onFixApplication }: Props) {
 
   const Field = ({ label, value }: { label: string; value?: string | number | null }) => (
     <div>
-      <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.3em]">{label}</p>
-      <p className="text-sm font-bold text-white">{value || "—"}</p>
+      <p className={cn("text-[8px] font-black uppercase tracking-[0.3em]", isDarkMode ? "text-slate-600" : "text-slate-500")}>{label}</p>
+      <p className={cn("text-sm font-bold", isDarkMode ? "text-white" : "text-slate-900")}>{value || "—"}</p>
     </div>
   )
 
@@ -78,7 +79,7 @@ export function ResultCard({ result, onFixApplication }: Props) {
     <Card className="p-[1.5px] rounded-[48px] border-none shadow-2xl shadow-blue-900/20 animate-in zoom-in-95 duration-500 relative overflow-hidden backdrop-blur-3xl"
       style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.35), rgba(139,92,246,0.15), rgba(15,23,42,0.8))" }}
     >
-      <div className="bg-slate-950/95 p-8 rounded-[46px] space-y-8">
+      <div className={cn("p-8 rounded-[46px] space-y-8", isDarkMode ? "bg-slate-950/95" : "bg-white/95")}>
 
         {/* Accent bar */}
         <div className={cn("absolute top-0 left-0 right-0 h-1 transition-colors duration-1000", accentBar)}
@@ -163,8 +164,8 @@ export function ResultCard({ result, onFixApplication }: Props) {
         {/* ── Student identity ── */}
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1 min-w-0">
-            <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.3em]">Applicant</p>
-            <p className="text-lg font-black text-white truncate">
+            <p className={cn("text-[8px] font-black uppercase tracking-[0.3em]", isDarkMode ? "text-slate-600" : "text-slate-500")}>Applicant</p>
+            <p className={cn("text-lg font-black truncate", isDarkMode ? "text-white" : "text-slate-900")}>
               {result.last_name}, {result.first_name}
               {result.middle_name ? ` ${result.middle_name.charAt(0)}.` : ""}
             </p>
@@ -173,7 +174,7 @@ export function ResultCard({ result, onFixApplication }: Props) {
         </div>
 
         {/* ── Enrollment details grid ── */}
-        <div className="grid grid-cols-2 gap-4 rounded-[20px] border border-white/5 bg-white/[0.02] p-5">
+        <div className={cn("grid grid-cols-2 gap-4 rounded-[20px] border p-5", isDarkMode ? "border-white/5 bg-white/[0.02]" : "border-slate-200 bg-slate-50/70")}>
           <Field label="LRN" value={result.lrn} />
           <Field label="Strand" value={result.strand} />
           <Field label="Section" value={sectionName} />
@@ -190,11 +191,11 @@ export function ResultCard({ result, onFixApplication }: Props) {
           )}>
             <div className="flex items-center gap-2">
               <AlertCircle size={12} className={result.status === "Rejected" ? "text-red-400" : "text-blue-400"} />
-              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
+              <p className={cn("text-[9px] font-black uppercase tracking-[0.3em]", isDarkMode ? "text-slate-400" : "text-slate-600")}>
                 Registrar Remarks
               </p>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className={cn("text-xs leading-relaxed", isDarkMode ? "text-slate-300" : "text-slate-700")}>
               {result.decline_reason || result.registrar_feedback}
             </p>
           </div>

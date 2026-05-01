@@ -14,13 +14,26 @@
 
 import { useEffect } from "react"
 import { useThemeStore } from "@/store/useThemeStore"
+import { useTheme } from "next-themes"
 
 export function useThemeApplier() {
   const { isDark } = useThemeStore()
+  const { setTheme } = useTheme()
 
   useEffect(() => {
     // Single DOM write — no React re-renders triggered anywhere
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light")
+    
+    // Sync with next-themes so it applies the Tailwind .dark class properly
+    setTheme(isDark ? "dark" : "light")
+
+    if (isDark) {
+      document.documentElement.classList.add("dark")
+      document.documentElement.classList.remove("light")
+    } else {
+      document.documentElement.classList.add("light")
+      document.documentElement.classList.remove("dark")
+    }
   }, [isDark])
 }
 

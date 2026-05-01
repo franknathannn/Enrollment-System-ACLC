@@ -176,6 +176,7 @@ export function ScheduleBlock({ row, timeStart, timeEnd, isDarkMode, onDragStart
     <>
       <div
         ref={blockRef}
+        data-schedule-block="true"
         style={{
           position: "absolute",
           top: topPx,
@@ -204,6 +205,7 @@ export function ScheduleBlock({ row, timeStart, timeEnd, isDarkMode, onDragStart
         onMouseEnter={handleEnter}
         onMouseLeave={handleLeave}
         onMouseDown={e => {
+          e.stopPropagation()
           setHovered(false)
           ;(e.currentTarget as HTMLElement).style.cursor = "grabbing"
           const colEl = (e.currentTarget as HTMLElement).closest("[data-col]") as HTMLElement

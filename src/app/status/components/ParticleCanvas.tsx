@@ -3,7 +3,7 @@
 
 import { useRef, useEffect } from "react"
 
-export function ParticleCanvas() {
+export function ParticleCanvas({ isDarkMode }: { isDarkMode: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export function ParticleCanvas() {
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      ctx.fillStyle = "rgba(255,255,255,0.18)"
+      ctx.fillStyle = isDarkMode ? "rgba(255,255,255,0.18)" : "rgba(15,23,42,0.16)"
       particles.forEach(p => {
         p.x += p.sx; p.y += p.sy
         if (p.x < 0) p.x = canvas.width;  if (p.x > canvas.width)  p.x = 0
@@ -41,7 +41,7 @@ export function ParticleCanvas() {
     init(); animate()
     window.addEventListener("resize", init)
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", init) }
-  }, [])
+  }, [isDarkMode])
 
   return <canvas ref={ref} className="absolute inset-0 pointer-events-none z-0" />
 }

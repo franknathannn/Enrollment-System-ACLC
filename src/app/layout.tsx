@@ -36,6 +36,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             var _t=JSON.parse(localStorage.getItem('aclc-theme')||'{}');
             var _d=_t.state&&_t.state.isDark!==undefined?_t.state.isDark:true;
             document.documentElement.setAttribute('data-theme',_d?'dark':'light');
+            if (_d) {
+              document.documentElement.classList.add('dark');
+              document.documentElement.classList.remove('light');
+            } else {
+              document.documentElement.classList.add('light');
+              document.documentElement.classList.remove('dark');
+            }
           }catch(e){}
         `}} />
       </head>

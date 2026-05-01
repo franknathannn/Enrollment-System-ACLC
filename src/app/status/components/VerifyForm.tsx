@@ -16,11 +16,13 @@ interface Props {
   onLastNameChange: (v: string) => void
   onTrackingIdChange: (v: string) => void
   onSubmit: (e: React.FormEvent) => void
+  isDarkMode: boolean
 }
 
 export function VerifyForm({
   lrn, lastName, trackingId, loading,
   onLrnChange, onLastNameChange, onTrackingIdChange, onSubmit,
+  isDarkMode,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const isLrnComplete = lrn.length === 12
@@ -46,7 +48,7 @@ export function VerifyForm({
     }
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      ctx.fillStyle = "rgba(59,130,246,0.35)"
+      ctx.fillStyle = isDarkMode ? "rgba(59,130,246,0.35)" : "rgba(37,99,235,0.22)"
       particles.forEach(p => {
         p.x += p.vx; p.y += p.vy
         if (p.x < 0 || p.x > canvas.width)  p.vx *= -1
@@ -57,9 +59,14 @@ export function VerifyForm({
     }
     init(); animate()
     return () => cancelAnimationFrame(raf)
-  }, [])
+  }, [isDarkMode])
 
-  const baseInput = "h-16 rounded-[28px] border-2 border-white/5 bg-white/5 text-white text-base font-mono font-bold tracking-[0.2em] focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all outline-none"
+  const baseInput = cn(
+    "h-16 rounded-[28px] border-2 text-base font-mono font-bold tracking-[0.2em] focus:border-blue-500 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all outline-none",
+    isDarkMode
+      ? "border-white/5 bg-white/5 text-white"
+      : "border-slate-200 bg-white text-slate-900"
+  )
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 relative z-10">
@@ -71,7 +78,7 @@ export function VerifyForm({
           <Fingerprint
             className={cn(
               "absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors z-10",
-              isLrnComplete ? "text-blue-400" : "text-slate-700"
+              isLrnComplete ? "text-blue-400" : (isDarkMode ? "text-slate-700" : "text-slate-400")
             )}
           />
           <Input
@@ -100,7 +107,7 @@ export function VerifyForm({
           onChange={e => onTrackingIdChange(e.target.value.toLowerCase())}
           className={cn(baseInput, "px-8")}
         />
-        <p className="text-[9px] text-slate-700 font-bold uppercase tracking-widest px-4">
+        <p className={cn("text-[9px] font-bold uppercase tracking-widest px-4", isDarkMode ? "text-slate-700" : "text-slate-500")}>
           First segment of your UUID — e.g. "a1b2c3d4" from a1b2c3d4-xxxx-xxxx-xxxx-xxxxxxxxxxxx
         </p>
       </div>

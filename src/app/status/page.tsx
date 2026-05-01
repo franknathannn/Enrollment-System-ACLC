@@ -2,13 +2,14 @@
 "use client"
 
 import { useState, useEffect, Suspense } from "react"
-import { ArrowLeft, Loader2, XCircle, Orbit } from "lucide-react"
+import { ArrowLeft, Loader2, XCircle, Orbit, Moon, Sun } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase/client"
 import { useEnrollmentStore } from "@/store/useEnrollmentStore"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { useThemeStore } from "@/store/useThemeStore"
 
 import { ParticleCanvas }   from "./components/ParticleCanvas"
 import { PortalHero }       from "./components/PortalHero"
@@ -18,6 +19,7 @@ import type { StudentRecord } from "./types"
 
 // ── Main content (split out so Suspense works) ──────────────────────────────
 function StatusContent() {
+  const { isDark: isDarkMode, toggleTheme } = useThemeStore()
   const [lrn,        setLrn]        = useState("")
   const [lastName,   setLastName]   = useState("")
   const [trackingId, setTrackingId] = useState("")
@@ -154,10 +156,23 @@ function StatusContent() {
             <ArrowLeft className="mr-2 w-4 h-4 group-hover:-translate-x-0.5 transition-transform" /> Go Back to Homepage
           </Button>
         </Link>
+        <Button
+          type="button"
+          onClick={() => toggleTheme()}
+          className={`rounded-xl font-black uppercase text-[10px] tracking-[0.2em] border transition-all ${
+            isDarkMode
+              ? "bg-slate-900/70 text-white border-slate-200 hover:bg-slate-800"
+              : "bg-white text-slate-800 border-slate-300 hover:bg-slate-50"
+          }`}
+          variant="outline"
+        >
+          {isDarkMode ? <Sun className="mr-2 w-4 h-4" /> : <Moon className="mr-2 w-4 h-4" />}
+          {isDarkMode ? "Light" : "Dark"}
+        </Button>
       </div>
 
       {/* Hero */}
-      <PortalHero schoolYear={activeSY} />
+      <PortalHero schoolYear={activeSY} isDarkMode={isDarkMode} />
 
       {/* Verify form */}
       <VerifyForm
@@ -169,13 +184,14 @@ function StatusContent() {
         onLastNameChange={setLastName}
         onTrackingIdChange={setTrackingId}
         onSubmit={handleSearch}
+        isDarkMode={isDarkMode}
       />
 
       {/* Results */}
       <div className="space-y-4 relative z-10">
 
         {hasSearched && result && (
-          <ResultCard result={result} onFixApplication={handleFixApplication} />
+          <ResultCard result={result} onFixApplication={handleFixApplication} isDarkMode={isDarkMode} />
         )}
 
 
@@ -214,18 +230,20 @@ function StatusContent() {
 
 // ── Page wrapper ─────────────────────────────────────────────────────────────
 export default function StatusPage() {
+  const { isDark: isDarkMode } = useThemeStore()
+
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center p-6 pt-16 relative overflow-hidden">
-      <ParticleCanvas />
+    <div className={`min-h-screen flex flex-col items-center p-6 pt-16 relative overflow-hidden transition-colors duration-500 ${isDarkMode ? "bg-slate-950" : "bg-slate-50"}`}>
+      <ParticleCanvas isDarkMode={isDarkMode} />
 
       {/* Ambient glow blobs */}
-      <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-900/20 rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-900/10 rounded-full blur-[160px] pointer-events-none" />
+      <div className={`absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[160px] pointer-events-none ${isDarkMode ? "bg-blue-900/20" : "bg-blue-200/40"}`} />
+      <div className={`absolute bottom-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[160px] pointer-events-none ${isDarkMode ? "bg-indigo-900/10" : "bg-indigo-200/30"}`} />
 
       <Suspense fallback={
         <div className="flex flex-col items-center justify-center gap-6 mt-32 relative z-10">
           <Loader2 className="animate-spin text-blue-500 w-12 h-12" />
-          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-blue-400 animate-pulse">
+          <p className={`text-[10px] font-black uppercase tracking-[0.5em] animate-pulse ${isDarkMode ? "text-blue-400" : "text-blue-600"}`}>
             Synchronizing Node…
           </p>
         </div>

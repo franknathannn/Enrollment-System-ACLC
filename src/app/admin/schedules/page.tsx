@@ -865,8 +865,10 @@ export default function SchedulesPage() {
           onMouseDown={(e) => {
             // Only activate on primary mouse button and not on interactive elements
             if (e.button !== 0) return
-            const tag = (e.target as HTMLElement).tagName
+            const target = e.target as HTMLElement
+            const tag = target.tagName
             if (["BUTTON", "INPUT", "SELECT", "TEXTAREA", "A"].includes(tag)) return
+            if (target.closest("[data-schedule-block='true']")) return
             const el = gridScrollRef.current
             if (!el) return
             gridDragState.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft }
