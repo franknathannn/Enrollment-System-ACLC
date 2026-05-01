@@ -30,17 +30,21 @@ export async function getEnrollmentStatus() {
     const start = config.enrollment_start ? new Date(config.enrollment_start) : null;
     const end = config.enrollment_end ? new Date(config.enrollment_end) : null;
 
+    const isManualMode = config.control_mode === 'manual';
     const isManualOpen = config.is_portal_active;
     const isPastStart = !start || now >= start;
     const isBeforeEnd = !end || now <= end;
     const isFull = (approvedCount || 0) >= config.capacity * 2;
 
-    const isOpen = isManualOpen && isPastStart && isBeforeEnd && !isFull;
+    // In manual mode, respect only the portal toggle — dates are irrelevant
+    const isOpen = isManualMode
+      ? (isManualOpen && !isFull)
+      : (isManualOpen && isPastStart && isBeforeEnd && !isFull);
 
     let reason = "Active";
     if (!isManualOpen) reason = "Manual Shutdown";
-    else if (!isPastStart) reason = "Enrollment Not Yet Started";
-    else if (!isBeforeEnd) reason = "Enrollment Period Over";
+    else if (!isManualMode && !isPastStart) reason = "Enrollment Not Yet Started";
+    else if (!isManualMode && !isBeforeEnd) reason = "Enrollment Period Over";
     else if (isFull) reason = "Capacity Reached";
 
     return { 
@@ -82,19 +86,23 @@ export async function checkAndSyncSystemCapacity() {
 
     const capacityPercentage = approvedCount ? (approvedCount / (config.capacity || 750)) * 100 : 0;
     
+    // Only toggle the portal open/closed — never override the admin's chosen control_mode
     if (config.is_portal_active && capacityPercentage >= 100) {
       await supabase.from('system_config').update({
         is_portal_active: false,
-        control_mode: 'manual',
         updated_at: new Date().toISOString()
       }).eq('id', config.id);
       
-      // We must revalidate to instantly push changes everywhere
       revalidatePath("/enroll")
       revalidatePath("/admin/configuration")
-    } else if (!config.is_portal_active && config.control_mode === 'manual' && capacityPercentage < 100) {
+    } else if (!config.is_portal_active && capacityPercentage < 100 && config.control_mode === 'automatic') {
+      // Only auto-reopen in automatic mode when within enrollment dates
       const now = new Date();
       let isWithinDate = true;
+      if (config.enrollment_start) {
+        const start = new Date(config.enrollment_start);
+        if (now < start) isWithinDate = false;
+      }
       if (config.enrollment_end) {
         const end = new Date(config.enrollment_end);
         if (now > end) isWithinDate = false;
@@ -103,7 +111,6 @@ export async function checkAndSyncSystemCapacity() {
       if (isWithinDate) {
         await supabase.from('system_config').update({
           is_portal_active: true,
-          control_mode: 'automatic',
           updated_at: new Date().toISOString()
         }).eq('id', config.id);
         

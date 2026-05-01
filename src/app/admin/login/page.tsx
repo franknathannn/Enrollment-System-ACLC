@@ -19,7 +19,7 @@ const LoginConstellation = memo(function LoginConstellation() {
   const animationFrameRef = useRef<number | undefined>(undefined);
   const particlesRef = useRef<{ x: number; y: number; vx: number; vy: number; size: number }[]>([]);
   const mouseRef = useRef<{ x: number; y: number }>({ x: -1000, y: -1000 });
-  
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -44,7 +44,7 @@ const LoginConstellation = memo(function LoginConstellation() {
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
+
       const isDarkMode = document.documentElement.classList.contains('dark');
       const particles = particlesRef.current;
       const mouse = mouseRef.current;
@@ -52,7 +52,7 @@ const LoginConstellation = memo(function LoginConstellation() {
       particles.forEach((p, i) => {
         p.x += p.vx;
         p.y += p.vy;
-        
+
         if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
         if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
 
@@ -68,8 +68,8 @@ const LoginConstellation = memo(function LoginConstellation() {
 
         if (distMouseSq < maxDistSq) {
           const distMouse = Math.sqrt(distMouseSq);
-          ctx.strokeStyle = isDarkMode 
-            ? `rgba(59, 130, 246, ${0.35 * (1 - distMouse / MOUSE_DISTANCE)})` 
+          ctx.strokeStyle = isDarkMode
+            ? `rgba(59, 130, 246, ${0.35 * (1 - distMouse / MOUSE_DISTANCE)})`
             : `rgba(37, 99, 235, ${0.25 * (1 - distMouse / MOUSE_DISTANCE)})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
@@ -85,7 +85,7 @@ const LoginConstellation = memo(function LoginConstellation() {
             const dy = p.y - p2.y;
             const distSq = dx * dx + dy * dy;
             const maxConnDistSq = CONNECTION_DISTANCE * CONNECTION_DISTANCE;
-            
+
             if (distSq < maxConnDistSq) {
               ctx.strokeStyle = isDarkMode ? "rgba(59, 130, 246, 0.12)" : "rgba(148, 163, 184, 0.12)";
               ctx.lineWidth = 0.3;
@@ -97,7 +97,7 @@ const LoginConstellation = memo(function LoginConstellation() {
           }
         }
       });
-      
+
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
@@ -107,10 +107,10 @@ const LoginConstellation = memo(function LoginConstellation() {
 
     init();
     animate();
-    
+
     window.addEventListener("resize", init);
     window.addEventListener("mousemove", handleMouseMove);
-    
+
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       window.removeEventListener("resize", init);
@@ -134,13 +134,13 @@ function LoginContent() {
 
   const raw = searchParams.get('redirect') || ''
   const redirectTo = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/admin/dashboard'
-  
+
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     document.documentElement.style.overflow = 'hidden'
     document.documentElement.style.height = '100%'
     document.body.style.height = '100%'
-    
+
     const style = document.createElement('style')
     style.textContent = `
       ::-webkit-scrollbar {
@@ -258,29 +258,29 @@ function LoginContent() {
         />
       </div>
       <div className="absolute inset-0 bg-slate-50/60 dark:bg-slate-950/70 backdrop-blur-[60px] pointer-events-none z-[1]" />
-      
+
       <LoginConstellation />
-      
+
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-100/50 dark:bg-blue-900/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[30%] bg-indigo-100/30 dark:bg-indigo-900/10 rounded-full blur-[100px] pointer-events-none" />
-      
+
       <div className="flex items-center gap-3 mb-10 relative z-10 animate-in fade-in slide-in-from-top-4 duration-700">
         <div className="w-12 h-12 bg-slate-900 dark:bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95">
-           <GraduationCap className="w-7 h-7 text-white" />
+          <GraduationCap className="w-7 h-7 text-white" />
         </div>
         <div className="flex flex-col">
-           <span className="font-black text-2xl tracking-tighter uppercase text-slate-900 dark:text-white leading-none italic">ACLC Northbay</span>
-           <div className="flex items-center gap-2 mt-1">
+          <span className="font-black text-2xl tracking-tighter uppercase text-slate-900 dark:text-white leading-none italic">ACLC Northbay</span>
+          <div className="flex items-center gap-2 mt-1">
             <span className="text-[10px] font-bold tracking-[0.4em] text-blue-600 dark:text-blue-400 uppercase">Admin Portal</span>
             <div className="h-1 w-1 rounded-full bg-blue-500 animate-pulse" />
-           </div>
+          </div>
         </div>
       </div>
 
       <Card className="max-w-md w-full p-10 rounded-[48px] border border-slate-100 dark:border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl relative z-10 transition-all duration-500 hover:shadow-blue-500/5">
         <div className="space-y-2 mb-10 text-center">
           <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-100 dark:border-white/5 transition-transform hover:rotate-6">
-             <Lock className="w-8 h-8 text-slate-900 dark:text-blue-400" />
+            <Lock className="w-8 h-8 text-slate-900 dark:text-blue-400" />
           </div>
           <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">Admin Login</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium italic">Sign in to your account</p>
@@ -289,10 +289,10 @@ function LoginContent() {
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2 group">
             <Label htmlFor="email" className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest group-focus-within:text-blue-500 transition-colors">Email</Label>
-            <Input 
+            <Input
               id="email"
-              type="email" 
-              placeholder="registrar@matrix.com"
+              type="email"
+              placeholder="registrar@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-14 rounded-2xl border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-950/50 text-slate-900 dark:text-white font-bold focus:border-blue-600 px-6 transition-all focus:scale-[1.02]"
@@ -303,9 +303,9 @@ function LoginContent() {
 
           <div className="space-y-2 group">
             <Label htmlFor="password" className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest group-focus-within:text-blue-500 transition-colors">Password</Label>
-            <Input 
+            <Input
               id="password"
-              type="password" 
+              type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -322,11 +322,10 @@ function LoginContent() {
           </div>
 
           {failedAttempts > 0 && (
-            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
-              failedAttempts >= MAX_ATTEMPTS
+            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest ${failedAttempts >= MAX_ATTEMPTS
                 ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/50'
                 : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50'
-            }`}>
+              }`}>
               <span className="text-base leading-none">⚠</span>
               {failedAttempts >= MAX_ATTEMPTS
                 ? 'Too many failed attempts. Please wait before trying again.'
@@ -352,7 +351,7 @@ function LoginContent() {
           </Button>
         </form>
       </Card>
-      
+
       <div className="mt-12 flex flex-col items-center gap-4 relative z-10">
         <div className="h-px w-20 bg-slate-200 dark:bg-slate-800" />
         <p className="text-slate-400 dark:text-slate-500 text-[9px] uppercase tracking-[0.5em] font-black italic">
@@ -367,9 +366,9 @@ function LoginContent() {
 export default function AdminLoginPage() {
   return (
     <Suspense fallback={
-        <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-            <Loader2 className="animate-spin text-blue-600" size={40} />
-        </div>
+      <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="animate-spin text-blue-600" size={40} />
+      </div>
     }>
       <LoginContent />
     </Suspense>

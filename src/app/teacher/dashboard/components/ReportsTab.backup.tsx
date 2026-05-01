@@ -557,7 +557,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear }: Pro
             className={`h-12 px-6 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 group border ${dm ? "bg-white/5 border-white/5 hover:bg-white/10 text-white" : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-600"}`}
           >
             <RefreshCw className={`w-4 h-4 text-blue-500 ${loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-700"}`} />
-            Update Matrix
+            Update Section
           </button>
           <button
             onClick={handleDownloadPDF}

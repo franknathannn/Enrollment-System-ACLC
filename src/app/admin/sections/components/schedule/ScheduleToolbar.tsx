@@ -94,7 +94,7 @@ export const ScheduleToolbar = memo(function ScheduleToolbar({
   const handleExport = async () => {
     if (!schedules.length) return
     const wb = new ExcelJS.Workbook()
-    const ws = wb.addWorksheet("Schedule Matrix", {
+    const ws = wb.addWorksheet("Schedule Section", {
       pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 1 },
     })
 
@@ -296,7 +296,7 @@ export const ScheduleToolbar = memo(function ScheduleToolbar({
   }
 
   const ghostBtn = `h-10 px-4 rounded-2xl border text-[9px] font-black uppercase tracking-widest gap-2 transition-all flex items-center shadow-sm active:scale-95
-    ${isICT 
+    ${isICT
       ? isDarkMode ? "border-blue-900/50 text-blue-400 bg-blue-950/20 hover:bg-blue-900/40 hover:border-blue-700/50" : "border-blue-200 text-blue-600 bg-blue-50/50 hover:bg-blue-100/80 hover:border-blue-300"
       : isDarkMode ? "border-orange-900/50 text-orange-400 bg-orange-950/20 hover:bg-orange-900/40 hover:border-orange-700/50" : "border-orange-200 text-orange-600 bg-orange-50/50 hover:bg-orange-100/80 hover:border-orange-300"
     }`
@@ -321,7 +321,7 @@ export const ScheduleToolbar = memo(function ScheduleToolbar({
           <TooltipTrigger asChild>
             <Button variant="ghost" size="sm" onClick={onRefresh}
               className={`h-10 w-10 p-0 rounded-2xl border transition-all active:scale-95 shadow-sm
-                ${isICT 
+                ${isICT
                   ? isDarkMode ? "border-blue-900/50 text-blue-400 bg-blue-950/20 hover:bg-blue-900/40 hover:border-blue-700/50" : "border-blue-200 text-blue-600 bg-blue-50/50 hover:bg-blue-100/80 hover:border-blue-300"
                   : isDarkMode ? "border-orange-900/50 text-orange-400 bg-orange-950/20 hover:bg-orange-900/40 hover:border-orange-700/50" : "border-orange-200 text-orange-600 bg-orange-50/50 hover:bg-orange-100/80 hover:border-orange-300"
                 }`}>

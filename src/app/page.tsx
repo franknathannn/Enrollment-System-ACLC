@@ -154,8 +154,8 @@ function StatsCard({ stats, config, isMobile, isDark }: { stats: any, config: an
     : (start && end && now >= start && now <= end)
 
   const getStatusText = () => {
-    if (isManual) return isPortalActive ? "Enrollment Form Open" : "System Lockdown"
-    if (isExpired) return "Portal Expired"
+    if (isManual) return isPortalActive ? "Enrollment Form Open" : "Enrollment Form Closed"
+    if (isExpired) return "Enrollment Closed"
     if (isPortalActive && config?.enrollment_start && config?.enrollment_end) {
       const startFmt = new Date(config.enrollment_start).toLocaleDateString("en-US", { month: "short", day: "numeric" })
       const endFmt = new Date(config.enrollment_end).toLocaleDateString("en-US", { month: "short", day: "numeric" })

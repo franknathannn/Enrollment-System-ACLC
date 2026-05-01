@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { supabase } from "@/lib/supabase/admin-client"
 import {
-  toggleEnrollment,
   forceSyncCapacities,
   updateCapacity
 } from "@/lib/actions/settings"
@@ -49,7 +48,14 @@ export default function SettingsPage() {
   // Tracks what school year was last saved to DB — used to detect changes on save
   const originalSchoolYearRef = useRef<string>("")
   const [_loading, setLoading] = useState(true)
-  const [updating, setUpdating] = useState(false)
+  const [updating, setUpdatingState] = useState(false)
+  // Ref-based guard: prevents real-time refreshes from overwriting optimistic state
+  // during active user operations (toggle, save, etc.)
+  const updatingRef = useRef(false)
+  const setUpdating = useCallback((val: boolean) => {
+    updatingRef.current = val
+    setUpdatingState(val)
+  }, [])
   const [isSyncing, setIsSyncing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isCommittingMatrix, setIsCommittingMatrix] = useState(false)
@@ -75,6 +81,7 @@ export default function SettingsPage() {
     slotDisplayMode: "grade11",
   })
 
+  // Full reload from DB — used on initial mount and when students change
   const loadSettings = useCallback(async () => {
     try {
       // Use maybeSingle() to avoid crashing if table is empty or RLS blocks it
@@ -146,18 +153,50 @@ export default function SettingsPage() {
     }
   }, [])
 
+  // Lightweight reload — only refreshes the student count + portal-affecting fields
+  // without overwriting local uncommitted edits (dates, capacity, voucher, etc.)
+  const refreshFromDb = useCallback(async () => {
+    // Skip if a user operation is in progress — prevents race conditions
+    // where stale DB reads overwrite optimistic state updates
+    if (updatingRef.current) return;
+    try {
+      const [{ data: configData }, { count }] = await Promise.all([
+        supabase.from('system_config').select('is_portal_active, control_mode, is_pre_enrollment, close_portal_when_full').maybeSingle(),
+        supabase.from('students').select('*', { count: 'exact', head: true }).or('status.eq.Accepted,status.eq.Approved')
+      ])
+      // Double-check the guard after the async read
+      if (updatingRef.current) return;
+      if (configData) {
+        setConfig(prev => ({
+          ...prev,
+          isOpen: configData.is_portal_active,
+          controlMode: (configData.control_mode === 'manual' || configData.control_mode === 'automatic')
+            ? configData.control_mode : prev.controlMode,
+          isPreEnrollment: configData.is_pre_enrollment ?? prev.isPreEnrollment,
+          closePortalWhenFull: configData.close_portal_when_full ?? prev.closePortalWhenFull,
+        }))
+      }
+      setCurrentAccepted(count || 0)
+    } catch (err) {
+      console.error("Refresh Error:", err)
+    }
+  }, [])
+
   useEffect(() => {
     loadSettings()
     const channel = supabase.channel('settings-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
-        loadSettings()
+        // Student changes affect capacity count — lightweight refresh
+        refreshFromDb()
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, () => {
-        loadSettings() 
+        // Config changes from other tabs/guardian — lightweight refresh
+        // Does NOT overwrite local uncommitted edits (dates, capacity, voucher, etc.)
+        refreshFromDb()
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [loadSettings])
+  }, [loadSettings, refreshFromDb])
 
   useEffect(() => {
     const savedScroll = sessionStorage.getItem("settings_scroll_pos")
@@ -205,7 +244,7 @@ export default function SettingsPage() {
       if (error) throw error
       // Confirm final state
       setConfig(prev => ({ ...prev, isOpen: finalPortalStatus }))
-      toast.success(`System logic synchronized to ${newMode.toUpperCase()}`)
+      toast.success(`System Changed to ${newMode.toUpperCase()}`)
     } catch (_err) {
       setConfig(prev => ({ ...prev, controlMode: prevMode })); // Revert
       toast.error("Protocol Sync Failed.")
@@ -228,13 +267,19 @@ export default function SettingsPage() {
     }));
 
     try {
-      await toggleEnrollment(checked)
-
-      if (!checked) {
-        await supabase.from('system_config')
-          .update({ is_pre_enrollment: false })
-          .eq('id', config.id)
+      // Use client-side supabase directly (same as all other toggles)
+      const updatePayload: Record<string, unknown> = {
+        is_portal_active: checked,
       }
+      if (!checked) {
+        updatePayload.is_pre_enrollment = false
+      }
+
+      const { error } = await supabase.from('system_config')
+        .update(updatePayload)
+        .eq('id', config.id)
+
+      if (error) throw error
 
       toast.success(`Override: Portal ${checked ? 'OPEN' : 'CLOSED'}`)
     } catch (_err) {
@@ -293,10 +338,9 @@ export default function SettingsPage() {
       if (currentAccepted >= currentCap) {
         const { error } = await supabase.from('system_config').update({
           is_portal_active: false,
-          control_mode: 'manual'
         }).eq('id', config.id)
         if (error) throw error
-        setConfig(prev => ({ ...prev, isOpen: false, controlMode: 'manual' }))
+        setConfig(prev => ({ ...prev, isOpen: false }))
         toast.warning("Guardian Critical: Limit reached. Portal shutdown complete.")
       } else {
         toast.info(`Integrity verified. ${currentCap - currentAccepted} slots available.`)
@@ -463,19 +507,28 @@ export default function SettingsPage() {
   }, [currentAccepted, config.capacity])
 
   // --- AUTO CAPACITY GUARDIAN ---
+  // ONLY reacts to capacity and portal status changes.
+  // Does NOT react to date changes — dates are handled by Commit and mode toggle.
+  // In MANUAL mode: only auto-closes at 100%. NEVER auto-reopens.
+  // In AUTOMATIC mode: auto-closes at 100%, auto-reopens when slots free up (if within dates).
+  const startDateRef = useRef(config.startDate)
+  const endDateRef = useRef(config.endDate)
+  useEffect(() => { startDateRef.current = config.startDate }, [config.startDate])
+  useEffect(() => { endDateRef.current = config.endDate }, [config.endDate])
+
   useEffect(() => {
     if (_loading || !config.id || !config.closePortalWhenFull) return;
 
     if (config.isOpen && capacityPercentage >= 100) {
+      // Auto-close portal when capacity is reached (both modes)
       const autoRunGuardian = async () => {
         setUpdating(true)
         try {
           const { error } = await supabase.from('system_config').update({
             is_portal_active: false,
-            control_mode: 'manual'
           }).eq('id', config.id)
           if (error) throw error
-          setConfig(prev => ({ ...prev, isOpen: false, controlMode: 'manual' }))
+          setConfig(prev => ({ ...prev, isOpen: false }))
           toast.warning("Auto-Trigger: Capacity limit reached. Portal automatically closed.")
         } catch (_err) {
           console.error("Auto Guardian Execution Failed.")
@@ -484,32 +537,30 @@ export default function SettingsPage() {
         }
       }
       autoRunGuardian()
-    } else if (!config.isOpen && capacityPercentage < 100 && config.controlMode === 'manual') {
-      // Auto-reopen if slots are freed!
+    } else if (!config.isOpen && capacityPercentage < 100 && config.controlMode === 'automatic') {
+      // Auto-reopen ONLY in automatic mode when slots freed up and dates are valid
       const autoReopen = async () => {
         setUpdating(true)
         try {
-          // Verify if it should be open based on dates
-          let calculatedStatus = true
-          if (!config.startDate || !config.endDate) {
-            calculatedStatus = false
-          } else {
+          let calculatedStatus = false
+          const sd = startDateRef.current
+          const ed = endDateRef.current
+          if (sd && ed) {
             const today = new Date()
             today.setHours(0, 0, 0, 0)
-            const start = new Date(config.startDate)
-            const end = new Date(config.endDate)
+            const start = new Date(sd)
+            const end = new Date(ed)
             end.setHours(23, 59, 59, 999)
             calculatedStatus = today >= start && today <= end
           }
-          
-          const { error } = await supabase.from('system_config').update({
-            is_portal_active: calculatedStatus,
-            control_mode: 'automatic'
-          }).eq('id', config.id)
-          
-          if (error) throw error
-          setConfig(prev => ({ ...prev, isOpen: calculatedStatus, controlMode: 'automatic' }))
+
           if (calculatedStatus) {
+            const { error } = await supabase.from('system_config').update({
+              is_portal_active: true,
+            }).eq('id', config.id)
+
+            if (error) throw error
+            setConfig(prev => ({ ...prev, isOpen: true }))
             toast.success("Auto-Trigger: Slot freed up! Portal automatically re-opened.")
           }
         } catch (_err) {
@@ -520,7 +571,7 @@ export default function SettingsPage() {
       }
       autoReopen()
     }
-  }, [_loading, capacityPercentage, config.closePortalWhenFull, config.isOpen, config.id, config.controlMode, config.startDate, config.endDate])
+  }, [_loading, capacityPercentage, config.closePortalWhenFull, config.isOpen, config.id, config.controlMode])
 
   const handleSync = async () => {
     setIsSyncing(true)

@@ -64,7 +64,7 @@ export const SectionDetailView = memo(function SectionDetailView({
       <Loader2 className={`animate-spin w-12 h-12 stroke-[1] ${isDarkMode ? 'text-blue-500' : 'text-blue-600'}`} />
       <div className="text-center">
         <p className="text-[10px] font-black uppercase tracking-[0.6em] mb-1 opacity-40">System Sync</p>
-        <p className="text-[9px] font-bold text-slate-500 italic">ACCESSING MATRIX TERMINAL...</p>
+        <p className="text-[9px] font-bold text-slate-500 italic">ACCESSING SECTION...</p>
       </div>
     </div>
   )

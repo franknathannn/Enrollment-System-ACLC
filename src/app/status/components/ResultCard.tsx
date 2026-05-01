@@ -85,48 +85,176 @@ export function ResultCard({ result, onFixApplication }: Props) {
           style={{ boxShadow: result.status === "Accepted" || result.status === "Approved" ? "0 0 16px rgba(34,197,94,0.4)" : result.status === "Rejected" ? "0 0 16px rgba(239,68,68,0.4)" : "0 0 16px rgba(245,158,11,0.4)" }}
         />
 
-        {/* Name + status — UNCHANGED from original */}
-        {/* ... (keep original content here) ... */}
-
-
-        {/* Student Portal CTA — visible for enrolled students */}
+        {/* ── Approved / Accepted celebration banner ── */}
         {isEnrolled && (
-          <div className="rounded-[28px] border border-blue-500/20 bg-blue-500/5 p-5 flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-400">Student Portal</p>
-              <p className="text-[10px] text-slate-500">
-                Access your QR code, schedule, and dashboard
+          <div className="relative overflow-hidden rounded-[28px] border border-green-500/20 bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent p-6 text-center space-y-3">
+            {/* Animated shimmer */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-400/5 to-transparent animate-shimmer pointer-events-none" />
+            
+            <div className="relative flex justify-center mb-2">
+              <div className="relative">
+                <span className="absolute inset-0 rounded-full bg-green-400/20 animate-ping" style={{ animationDuration: "2.5s" }} />
+                <div className="relative w-16 h-16 rounded-full bg-green-500/15 border-2 border-green-500/40 flex items-center justify-center shadow-[0_0_30px_rgba(34,197,94,0.25)]">
+                  <GraduationCap className="w-8 h-8 text-green-400" />
+                </div>
+              </div>
+            </div>
+
+            <div className="relative space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-green-300/60">Enrollment Status</p>
+              <p className="text-2xl font-black text-green-400 uppercase tracking-wider">Approved</p>
+              <p className="text-[10px] text-green-300/50 font-semibold tracking-wide">
+                Congratulations! Your enrollment has been confirmed.
               </p>
             </div>
-            <button
-              disabled={generatingToken}
-              onClick={async () => {
-                setGeneratingToken(true)
-                const { exists } = await checkStudentAccount(result.id)
-                if (exists) {
-                  toast.info("Account already exists. Redirecting to login…")
-                  router.push("/student/login")
-                  return
-                }
-                const { token, error } = await generateSetupToken(result.id)
-                if (error === "account_exists") {
-                  toast.info("Account already exists. Redirecting to login…")
-                  router.push("/student/login")
-                  return
-                }
-                if (!token) {
-                  toast.error(error || "Failed to generate setup link.")
-                  setGeneratingToken(false)
-                  return
-                }
-                router.push(`/student/setup?token=${token}`)
-              }}
-              className="flex items-center gap-1.5 shrink-0 px-4 py-2.5 rounded-[14px] text-[9px] font-black uppercase tracking-widest text-white transition-all active:scale-95 disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg,#1d4ed8,#2563eb)", boxShadow: "0 4px 16px rgba(29,78,216,0.3)" }}
-            >
-              {generatingToken ? <Loader2 size={12} className="animate-spin" /> : <LayoutDashboard size={12} />}
-              {generatingToken ? "Loading…" : "Open"}
-            </button>
+          </div>
+        )}
+
+        {/* ── Pending indicator ── */}
+        {result.status === "Pending" && (
+          <div className="relative overflow-hidden rounded-[28px] border border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-6 text-center space-y-3">
+            <div className="relative flex justify-center mb-2">
+              <div className="relative">
+                <span className="absolute inset-0 rounded-full bg-amber-400/20 animate-pulse" />
+                <div className="relative w-16 h-16 rounded-full bg-amber-500/15 border-2 border-amber-500/40 flex items-center justify-center">
+                  <Clock className="w-8 h-8 text-amber-400" />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-amber-300/60">Enrollment Status</p>
+              <p className="text-2xl font-black text-amber-400 uppercase tracking-wider">Pending Review</p>
+              <p className="text-[10px] text-amber-300/50 font-semibold tracking-wide">
+                Your application is being reviewed by the registrar.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Rejected indicator ── */}
+        {result.status === "Rejected" && (
+          <div className="relative overflow-hidden rounded-[28px] border border-red-500/20 bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent p-6 text-center space-y-3">
+            <div className="relative flex justify-center mb-2">
+              <div className="relative w-16 h-16 rounded-full bg-red-500/15 border-2 border-red-500/40 flex items-center justify-center">
+                <ShieldAlert className="w-8 h-8 text-red-400" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-red-300/60">Enrollment Status</p>
+              <p className="text-2xl font-black text-red-400 uppercase tracking-wider">Not Accepted</p>
+              <p className="text-[10px] text-red-300/50 font-semibold tracking-wide">
+                Your application was not approved.
+              </p>
+            </div>
+
+            {/* Registrar reason */}
+            <div className="mt-3 pt-3 border-t border-red-500/15 space-y-1.5">
+              <div className="flex items-center justify-center gap-1.5">
+                <AlertCircle size={10} className="text-red-400/70" />
+                <p className="text-[8px] font-black uppercase tracking-[0.3em] text-red-400/60">Registrar Feedback</p>
+              </div>
+              <p className="text-xs text-red-200/70 leading-relaxed text-center font-medium">
+                {result.registrar_feedback || "No specific reason provided."}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Student identity ── */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1 min-w-0">
+            <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.3em]">Applicant</p>
+            <p className="text-lg font-black text-white truncate">
+              {result.last_name}, {result.first_name}
+              {result.middle_name ? ` ${result.middle_name.charAt(0)}.` : ""}
+            </p>
+          </div>
+          <StatusBadge status={result.status} />
+        </div>
+
+        {/* ── Enrollment details grid ── */}
+        <div className="grid grid-cols-2 gap-4 rounded-[20px] border border-white/5 bg-white/[0.02] p-5">
+          <Field label="LRN" value={result.lrn} />
+          <Field label="Strand" value={result.strand} />
+          <Field label="Section" value={sectionName} />
+          <Field label="School Year" value={result.school_year} />
+        </div>
+
+        {/* ── Registrar feedback (if any) ── */}
+        {(result.registrar_feedback || result.decline_reason) && (
+          <div className={cn(
+            "rounded-[20px] border p-5 space-y-2",
+            result.status === "Rejected"
+              ? "border-red-500/20 bg-red-500/5"
+              : "border-blue-500/20 bg-blue-500/5"
+          )}>
+            <div className="flex items-center gap-2">
+              <AlertCircle size={12} className={result.status === "Rejected" ? "text-red-400" : "text-blue-400"} />
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
+                Registrar Remarks
+              </p>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {result.decline_reason || result.registrar_feedback}
+            </p>
+          </div>
+        )}
+
+        {/* ── Fix application button for pending/rejected ── */}
+        {!isEnrolled && !result.is_locked && (
+          <button
+            onClick={onFixApplication}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-[18px] border border-white/10 bg-white/5 hover:bg-white/10 transition-all text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white group"
+          >
+            <FileEdit size={12} className="group-hover:rotate-[-8deg] transition-transform" />
+            Fix My Application
+          </button>
+        )}
+
+        {/* ── Student Portal CTA — visible for enrolled students ── */}
+        {isEnrolled && (
+          <div className="rounded-[28px] border border-blue-500/20 bg-gradient-to-r from-blue-500/10 via-blue-600/5 to-indigo-500/10 p-5 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-400">Student Portal</p>
+                <p className="text-[10px] text-slate-500">
+                  Access your QR code, schedule, and dashboard
+                </p>
+              </div>
+              <button
+                disabled={generatingToken}
+                onClick={async () => {
+                  setGeneratingToken(true)
+                  const { exists } = await checkStudentAccount(result.id)
+                  if (exists) {
+                    toast.info("Account already exists. Redirecting to login…")
+                    router.push("/student/login")
+                    return
+                  }
+                  const { token, error } = await generateSetupToken(result.id)
+                  if (error === "account_exists") {
+                    toast.info("Account already exists. Redirecting to login…")
+                    router.push("/student/login")
+                    return
+                  }
+                  if (!token) {
+                    toast.error(error || "Failed to generate setup link.")
+                    setGeneratingToken(false)
+                    return
+                  }
+                  router.push(`/student/setup?token=${token}`)
+                }}
+                className="flex items-center gap-1.5 shrink-0 px-5 py-3 rounded-[14px] text-[9px] font-black uppercase tracking-widest text-white transition-all active:scale-95 disabled:opacity-50 hover:shadow-[0_6px_24px_rgba(29,78,216,0.4)]"
+                style={{ background: "linear-gradient(135deg,#1d4ed8,#2563eb)", boxShadow: "0 4px 16px rgba(29,78,216,0.3)" }}
+              >
+                {generatingToken ? <Loader2 size={12} className="animate-spin" /> : <LayoutDashboard size={12} />}
+                {generatingToken ? "Loading…" : "Proceed"}
+              </button>
+            </div>
+            <p className="text-[9px] text-emerald-400/70 font-bold tracking-wide flex items-center gap-1.5">
+              <MapPin size={10} />
+              You may now proceed to set up your student account.
+            </p>
           </div>
         )}
 

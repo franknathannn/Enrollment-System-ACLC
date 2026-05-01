@@ -10,20 +10,20 @@ import { AnimatedNumber, AnimatedText } from "../../dashboard/components/primiti
 import { toast } from "sonner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-export const StudentTable = memo(function StudentTable({ 
-  students, 
-  onReturn, 
-  onUnenroll, 
-  onSwitch, 
-  allSections, 
-  onOpenFile, 
-  onViewProfile, 
-  isDarkMode, 
-  exitingRows, 
-  hiddenRows, 
-  handleExit, 
+export const StudentTable = memo(function StudentTable({
+  students,
+  onReturn,
+  onUnenroll,
+  onSwitch,
+  allSections,
+  onOpenFile,
+  onViewProfile,
+  isDarkMode,
+  exitingRows,
+  hiddenRows,
+  handleExit,
   animatingIds,
-  onToggleLock 
+  onToggleLock
 }: any) {
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,7 +34,7 @@ export const StudentTable = memo(function StudentTable({
   }, [students.length]);
 
   const totalPages = Math.ceil(students.length / itemsPerPage);
-  
+
   const paginatedStudents = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return students.slice(startIndex, startIndex + itemsPerPage);
@@ -71,32 +71,32 @@ export const StudentTable = memo(function StudentTable({
           Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, students.length)} of {students.length} Entries
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handlePrev} 
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrev}
             disabled={currentPage === 1}
             className={`text-[9px] uppercase font-black tracking-widest h-8 rounded-full ${isDarkMode ? 'border-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
           >
             Prev
           </Button>
           <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] md:max-w-none no-scrollbar">
-             {Array.from({length: totalPages}, (_, i) => i + 1).map(page => (
-                <Button
-                   key={page}
-                   variant={currentPage === page ? "default" : "ghost"}
-                   size="sm"
-                   onClick={() => setCurrentPage(page)}
-                   className={`h-8 w-8 p-0 rounded-full text-[10px] font-black transition-all ${currentPage === page ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30' : (isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100')}`}
-                >
-                   {page}
-                </Button>
-             ))}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <Button
+                key={page}
+                variant={currentPage === page ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setCurrentPage(page)}
+                className={`h-8 w-8 p-0 rounded-full text-[10px] font-black transition-all ${currentPage === page ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30' : (isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100')}`}
+              >
+                {page}
+              </Button>
+            ))}
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleNext} 
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleNext}
             disabled={currentPage === totalPages}
             className={`text-[9px] uppercase font-black tracking-widest h-8 rounded-full ${isDarkMode ? 'border-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
           >
@@ -121,9 +121,9 @@ export const StudentTable = memo(function StudentTable({
             if (hiddenRows.has(s.id)) return null
             const isAnimatingIn = animatingIds?.has(s.id)
             const isMale = s.gender === 'Male'
-            
+
             return (
-              <div 
+              <div
                 key={s.id}
                 onClick={() => onViewProfile(s)}
                 className={`
@@ -135,138 +135,138 @@ export const StudentTable = memo(function StudentTable({
               >
                 {/* 🌈 Lively Bio-Header */}
                 <div className="p-5 flex items-center gap-5 relative">
-                    {/* Gender Logic Accent Bar */}
-                    <div className={`absolute left-0 top-6 bottom-6 w-1.5 rounded-r-full shadow-[0_0_15px_rgba(var(--accent),0.5)] ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
-                    
-                    {/* Animated Profile Well */}
-                    <div className="relative shrink-0">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type="button" onClick={(e) => { e.stopPropagation(); onViewProfile(s); }} className="cursor-pointer relative p-0 bg-transparent border-none">
-                              <div className={`absolute inset-0 blur-xl opacity-20 ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
-                              <div className={`w-16 h-16 rounded-2xl p-1 border-2 relative z-10 ${isMale ? 'border-blue-500/30' : 'border-pink-500/30'}`}>
-                                  <img 
-                                      src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
-                                      className="w-full h-full object-cover rounded-xl" 
-                                      alt="Student" 
-                                  />
-                              </div>
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
-                              <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
-                                  <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
-                                      <img 
-                                          src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
-                                          alt="Avatar" 
-                                          className="w-full h-full object-cover"
-                                      />
-                                  </div>
-                                  <div className="min-w-0">
-                                      <p className="font-black uppercase text-sm truncate">{s.last_name}, {s.first_name}</p>
-                                      <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {s.lrn}</p>
-                                      <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{s.strand} - {s.student_category || 'Regular'}</Badge>
-                                  </div>
-                              </div>
-                          </TooltipContent>
-                        </Tooltip>
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className={`font-black text-lg uppercase leading-none tracking-tighter truncate ${theme.textMain}`}>
-                        <AnimatedText text={`${s.last_name}, ${s.first_name}`} />
-                      </h3>
-                      <div className="flex items-center gap-2 mt-2">
-                         <Badge className={`text-[8px] font-black uppercase px-2 py-0 border-none rounded-md ${isMale ? 'bg-blue-500/20 text-blue-500' : 'bg-pink-500/20 text-pink-500'}`}>
-                            {s.gender}
-                         </Badge>
-                         <div className="flex items-center gap-1.5 opacity-60">
-                            <span className={`text-[9px] font-mono font-bold tracking-widest ${theme.textSub}`}>LRN:{s.lrn}</span>
-                            <button 
-                               onClick={(e) => handleCopyLRN(e, s.lrn)}
-                               className={`p-1 rounded-md transition-all active:scale-90 ${theme.innerBg}`}
-                            >
-                               <Copy size={10} className={theme.textSub} />
-                            </button>
-                         </div>
+                  {/* Gender Logic Accent Bar */}
+                  <div className={`absolute left-0 top-6 bottom-6 w-1.5 rounded-r-full shadow-[0_0_15px_rgba(var(--accent),0.5)] ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
+
+                  {/* Animated Profile Well */}
+                  <div className="relative shrink-0">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); onViewProfile(s); }} className="cursor-pointer relative p-0 bg-transparent border-none">
+                          <div className={`absolute inset-0 blur-xl opacity-20 ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`} />
+                          <div className={`w-16 h-16 rounded-2xl p-1 border-2 relative z-10 ${isMale ? 'border-blue-500/30' : 'border-pink-500/30'}`}>
+                            <img
+                              src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`}
+                              className="w-full h-full object-cover rounded-xl"
+                              alt="Student"
+                            />
+                          </div>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
+                        <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
+                          <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
+                            <img
+                              src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`}
+                              alt="Avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-black uppercase text-sm truncate">{s.last_name}, {s.first_name}</p>
+                            <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {s.lrn}</p>
+                            <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{s.strand} - {s.student_category || 'Regular'}</Badge>
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`font-black text-lg uppercase leading-none tracking-tighter truncate ${theme.textMain}`}>
+                      <AnimatedText text={`${s.last_name}, ${s.first_name}`} />
+                    </h3>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge className={`text-[8px] font-black uppercase px-2 py-0 border-none rounded-md ${isMale ? 'bg-blue-500/20 text-blue-500' : 'bg-pink-500/20 text-pink-500'}`}>
+                        {s.gender}
+                      </Badge>
+                      <div className="flex items-center gap-1.5 opacity-60">
+                        <span className={`text-[9px] font-mono font-bold tracking-widest ${theme.textSub}`}>LRN:{s.lrn}</span>
+                        <button
+                          onClick={(e) => handleCopyLRN(e, s.lrn)}
+                          className={`p-1 rounded-md transition-all active:scale-90 ${theme.innerBg}`}
+                        >
+                          <Copy size={10} className={theme.textSub} />
+                        </button>
                       </div>
                     </div>
+                  </div>
                 </div>
 
                 {/* 📊 Hardware Data Grid */}
                 <div className="px-5 pb-5 grid grid-cols-2 gap-3">
-                    <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
-                      <Activity size={12} className="text-slate-500 opacity-40" />
-                      <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">Matrix Mode</p>
-                      <p className={`text-[10px] font-black uppercase ${theme.textMain}`}>{s.student_category || "Standard"}</p>
-                    </div>
-                    <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
-                      <Star size={12} className="text-blue-500 opacity-50" />
-                      <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">GWA Index</p>
-                      <p className={`text-[12px] font-black italic text-blue-500`}>
-                        {s.gwa_grade_10 ? <AnimatedNumber value={parseFloat(s.gwa_grade_10)} /> : "0.00"}
-                      </p>
-                    </div>
+                  <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
+                    <Activity size={12} className="text-slate-500 opacity-40" />
+                    <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]"> Section Status</p>
+                    <p className={`text-[10px] font-black uppercase ${theme.textMain}`}>{s.student_category || "Standard"}</p>
+                  </div>
+                  <div className={`p-3 rounded-2xl border flex flex-col items-center gap-1 ${theme.innerBg} ${theme.border}`}>
+                    <Star size={12} className="text-blue-500 opacity-50" />
+                    <p className="text-[7px] font-black uppercase text-slate-500 tracking-[0.2em]">GWA Index</p>
+                    <p className={`text-[12px] font-black italic text-blue-500`}>
+                      {s.gwa_grade_10 ? <AnimatedNumber value={parseFloat(s.gwa_grade_10)} /> : "0.00"}
+                    </p>
+                  </div>
                 </div>
 
                 {/* 🎮 Crystalline Action Dock */}
                 <div className={`p-2 flex items-center gap-2 border-t ${theme.dockBg} ${theme.border}`}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {e.stopPropagation(); onToggleLock(s.id, !s.is_locked)}}
-                          className={`h-12 w-12 p-0 rounded-2xl transition-all transform-gpu active:scale-95 ${s.is_locked ? 'text-red-500 hover:bg-red-500 hover:text-white' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                        >
-                            {s.is_locked ? <Lock size={18} /> : <Unlock size={18} className="dark:text-slate-400" />}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>{s.is_locked ? 'Unlock Student' : 'Lock Student'}</p></TooltipContent>
-                    </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => { e.stopPropagation(); onToggleLock(s.id, !s.is_locked) }}
+                        className={`h-12 w-12 p-0 rounded-2xl transition-all transform-gpu active:scale-95 ${s.is_locked ? 'text-red-500 hover:bg-red-500 hover:text-white' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                      >
+                        {s.is_locked ? <Lock size={18} /> : <Unlock size={18} className="dark:text-slate-400" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>{s.is_locked ? 'Unlock Student' : 'Lock Student'}</p></TooltipContent>
+                  </Tooltip>
 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={(e) => {e.stopPropagation(); handleExit(s.id, () => onReturn(s.id, s.first_name))}} 
-                          className="flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-orange-500 hover:text-white transition-all transform-gpu active:scale-95"
-                        >
-                          <Undo2 size={14} className="mr-2"/> Return
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-orange-900 text-orange-100 border-orange-800"><p>Return to Pending</p></TooltipContent>
-                    </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => { e.stopPropagation(); handleExit(s.id, () => onReturn(s.id, s.first_name)) }}
+                        className="flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-orange-500 hover:text-white transition-all transform-gpu active:scale-95"
+                      >
+                        <Undo2 size={14} className="mr-2" /> Return
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-orange-900 text-orange-100 border-orange-800"><p>Return to Pending</p></TooltipContent>
+                  </Tooltip>
 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div onClick={(e) => e.stopPropagation()} className="flex-1">
-                          <SwitchDialog 
-                            student={s} 
-                            allSections={allSections} 
-                            onSwitch={(id: string, target: string) => handleExit(id, () => onSwitch(id, target))} 
-                            isDarkMode={isDarkMode} 
-                            className="w-full h-12 text-[9px] rounded-2xl bg-transparent border-0 hover:bg-blue-600 hover:text-white text-blue-500 font-black uppercase tracking-widest" 
-                          />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-blue-900 text-blue-100 border-blue-800"><p>Transfer Section</p></TooltipContent>
-                    </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div onClick={(e) => e.stopPropagation()} className="flex-1">
+                        <SwitchDialog
+                          student={s}
+                          allSections={allSections}
+                          onSwitch={(id: string, target: string) => handleExit(id, () => onSwitch(id, target))}
+                          isDarkMode={isDarkMode}
+                          className="w-full h-12 text-[9px] rounded-2xl bg-transparent border-0 hover:bg-blue-600 hover:text-white text-blue-500 font-black uppercase tracking-widest"
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-blue-900 text-blue-100 border-blue-800"><p>Transfer Section</p></TooltipContent>
+                  </Tooltip>
 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={(e) => {e.stopPropagation(); onUnenroll(s)}} 
-                          className="h-12 w-12 p-0 rounded-2xl text-red-500 hover:bg-red-500 hover:text-white transition-all transform-gpu active:scale-95"
-                        >
-                          <UserX size={18} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Unenroll Student</p></TooltipContent>
-                    </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => { e.stopPropagation(); onUnenroll(s) }}
+                        className="h-12 w-12 p-0 rounded-2xl text-red-500 hover:bg-red-500 hover:text-white transition-all transform-gpu active:scale-95"
+                      >
+                        <UserX size={18} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Unenroll Student</p></TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             )
@@ -276,19 +276,19 @@ export const StudentTable = memo(function StudentTable({
       </div>
 
       {/* 🖥️ DESKTOP VIEW (RETAINED AS REQUESTED) */}
-      <div 
-        className="hidden md:block rounded-[40px] border overflow-hidden shadow-2xl transition-all duration-700 isolate bg-clip-padding outline outline-1 outline-transparent" 
-        style={{ 
-          backgroundColor: isDarkMode ? 'rgb(2 6 23)' : '#ffffff', 
-          borderColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(241 245 249)' 
+      <div
+        className="hidden md:block rounded-[40px] border overflow-hidden shadow-2xl transition-all duration-700 isolate bg-clip-padding outline outline-1 outline-transparent"
+        style={{
+          backgroundColor: isDarkMode ? 'rgb(2 6 23)' : '#ffffff',
+          borderColor: isDarkMode ? 'rgb(30 41 59)' : 'rgb(241 245 249)'
         }}
       >
         <Table className="border-separate border-spacing-0">
-        <TableHeader 
-          className="transition-colors duration-500" 
-          style={{ backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.8)' : 'rgb(248 250 252)' }}
-        >
-           <TableRow className="border-none hover:bg-transparent">
+          <TableHeader
+            className="transition-colors duration-500"
+            style={{ backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.8)' : 'rgb(248 250 252)' }}
+          >
+            <TableRow className="border-none hover:bg-transparent">
               <TableHead className="px-10 py-8 font-black uppercase text-[10px] tracking-[0.3em] text-slate-500">
                 Student Identity
               </TableHead>
@@ -301,224 +301,219 @@ export const StudentTable = memo(function StudentTable({
               <TableHead className="text-right px-10 py-8 font-black uppercase text-[10px] tracking-[0.3em] text-slate-500">
                 Actions
               </TableHead>
-           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {students.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={4} className="text-center py-40">
-                <div className="flex flex-col items-center opacity-20">
-                   <Fingerprint size={64} strokeWidth={1} className="mb-4 text-slate-400" />
-                   <p className="font-black uppercase tracking-[0.5em] text-xs">No Records in Current Node</p>
-                </div>
-              </TableCell>
             </TableRow>
-          ) : (
-            paginatedStudents.map((s: any) => {
-              if (hiddenRows.has(s.id)) return null
-              const isAnimatingIn = animatingIds?.has(s.id)
-              const isMale = s.gender === 'Male'
-              
-              return (
-                <TableRow 
-                  key={s.id} 
-                  className={`group transition-all duration-300 border-b hover:z-10 relative will-change-transform border-slate-100 dark:border-slate-800 ${
-                    exitingRows[s.id] ? 'animate-out slide-out-to-right-8 fade-out zoom-out-95 duration-300 pointer-events-none' : ''
-                  } ${isAnimatingIn ? 'animate-in slide-in-from-right fade-in duration-500' : ''}`}
-                  style={exitingRows[s.id] ? { animationFillMode: 'forwards' } : undefined}
-                  onMouseEnter={(e) => {
-                    if (isMale) {
-                      e.currentTarget.style.backgroundColor = isDarkMode ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)'
-                    } else {
-                      e.currentTarget.style.backgroundColor = isDarkMode ? 'rgba(236, 72, 153, 0.15)' : 'rgba(236, 72, 153, 0.08)'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = ''
-                  }}
-                >
-                  <TableCell className="px-10 py-5 relative cursor-pointer overflow-hidden" onClick={() => onViewProfile(s)}>
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 transition-all duration-500 group-hover:w-2 ${
-                      isMale 
-                        ? 'bg-blue-400/30 group-hover:bg-blue-500 group-hover:shadow-[0_0_20px_rgba(59,130,246,0.6)]' 
-                        : 'bg-pink-400/30 group-hover:bg-pink-500 group-hover:shadow-[0_0_20px_rgba(236,72,153,0.6)]'
-                    }`} />
-                    
-                    <div className="flex items-center gap-6 transition-transform duration-500 group-hover:translate-x-3">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button type="button" onClick={(e) => { e.stopPropagation(); onViewProfile(s); }} className={`w-14 h-14 rounded-2xl p-1 border-2 transition-all duration-500 shrink-0 cursor-pointer p-0 ${
-                            isMale 
-                              ? 'border-blue-300/40 group-hover:border-blue-500 group-hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] group-hover:bg-blue-100/30' 
-                              : 'border-pink-300/40 group-hover:border-pink-500 group-hover:shadow-[0_0_25px_rgba(236,72,153,0.6)] group-hover:bg-pink-100/30'
-                          }`}>
-                             <img 
-                                src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
-                                alt="2x2" 
-                                className="w-full h-full object-cover rounded-xl" 
-                             />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
+          </TableHeader>
+          <TableBody>
+            {students.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-40">
+                  <div className="flex flex-col items-center opacity-20">
+                    <Fingerprint size={64} strokeWidth={1} className="mb-4 text-slate-400" />
+                    <p className="font-black uppercase tracking-[0.5em] text-xs">No Records in Current Node</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedStudents.map((s: any) => {
+                if (hiddenRows.has(s.id)) return null
+                const isAnimatingIn = animatingIds?.has(s.id)
+                const isMale = s.gender === 'Male'
+
+                return (
+                  <TableRow
+                    key={s.id}
+                    className={`group transition-all duration-300 border-b hover:z-10 relative will-change-transform border-slate-100 dark:border-slate-800 ${exitingRows[s.id] ? 'animate-out slide-out-to-right-8 fade-out zoom-out-95 duration-300 pointer-events-none' : ''
+                      } ${isAnimatingIn ? 'animate-in slide-in-from-right fade-in duration-500' : ''}`}
+                    style={exitingRows[s.id] ? { animationFillMode: 'forwards' } : undefined}
+                    onMouseEnter={(e) => {
+                      if (isMale) {
+                        e.currentTarget.style.backgroundColor = isDarkMode ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)'
+                      } else {
+                        e.currentTarget.style.backgroundColor = isDarkMode ? 'rgba(236, 72, 153, 0.15)' : 'rgba(236, 72, 153, 0.08)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = ''
+                    }}
+                  >
+                    <TableCell className="px-10 py-5 relative cursor-pointer overflow-hidden" onClick={() => onViewProfile(s)}>
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 transition-all duration-500 group-hover:w-2 ${isMale
+                          ? 'bg-blue-400/30 group-hover:bg-blue-500 group-hover:shadow-[0_0_20px_rgba(59,130,246,0.6)]'
+                          : 'bg-pink-400/30 group-hover:bg-pink-500 group-hover:shadow-[0_0_20px_rgba(236,72,153,0.6)]'
+                        }`} />
+
+                      <div className="flex items-center gap-6 transition-transform duration-500 group-hover:translate-x-3">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" onClick={(e) => { e.stopPropagation(); onViewProfile(s); }} className={`w-14 h-14 rounded-2xl p-1 border-2 transition-all duration-500 shrink-0 cursor-pointer p-0 ${isMale
+                                ? 'border-blue-300/40 group-hover:border-blue-500 group-hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] group-hover:bg-blue-100/30'
+                                : 'border-pink-300/40 group-hover:border-pink-500 group-hover:shadow-[0_0_25px_rgba(236,72,153,0.6)] group-hover:bg-pink-100/30'
+                              }`}>
+                              <img
+                                src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`}
+                                alt="2x2"
+                                className="w-full h-full object-cover rounded-xl"
+                              />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="p-0 bg-transparent border-none shadow-none ml-4">
                             <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl text-white min-w-[250px]">
-                                <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
-                                    <img 
-                                        src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`} 
-                                        alt="Avatar" 
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="font-black uppercase text-sm truncate">{s.last_name}, {s.first_name}</p>
-                                    <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {s.lrn}</p>
-                                    <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{s.strand} - {s.student_category || 'Regular'}</Badge>
-                                </div>
+                              <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-white/10 shrink-0 bg-slate-800">
+                                <img
+                                  src={s.two_by_two_url || s.profile_2x2_url || s.profile_picture || `https://api.dicebear.com/7.x/initials/svg?seed=${s.last_name}`}
+                                  alt="Avatar"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-black uppercase text-sm truncate">{s.last_name}, {s.first_name}</p>
+                                <p className="text-[10px] font-bold text-blue-400 tracking-widest mb-1">LRN: {s.lrn}</p>
+                                <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-300 h-5 px-2">{s.strand} - {s.student_category || 'Regular'}</Badge>
+                              </div>
                             </div>
-                        </TooltipContent>
-                      </Tooltip>
-                      <div>
-                        <div className={`font-black text-lg uppercase leading-none tracking-tight transition-colors duration-500 ${isDarkMode ? 'text-white group-hover:text-blue-400' : 'text-slate-900 group-hover:text-blue-600'}`}>
-                          <AnimatedText text={`${s.last_name}, ${s.first_name}`} /> <span className="text-[10px] opacity-40 font-black italic">{s.middle_name?.[0]}.</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-2">
-                           <Shield size={10} className="text-slate-400" />
-                           <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">LRN:{s.lrn}</p>
-                           <button 
-                             onClick={(e) => handleCopyLRN(e, s.lrn)}
-                             className={`p-1 rounded-md transition-all active:scale-90 shadow-sm ${
-                               isDarkMode 
-                               ? 'bg-slate-800 text-slate-400 hover:text-white' 
-                               : 'bg-slate-100 text-slate-500 hover:text-slate-900'
-                             }`}
-                           >
+                          </TooltipContent>
+                        </Tooltip>
+                        <div>
+                          <div className={`font-black text-lg uppercase leading-none tracking-tight transition-colors duration-500 ${isDarkMode ? 'text-white group-hover:text-blue-400' : 'text-slate-900 group-hover:text-blue-600'}`}>
+                            <AnimatedText text={`${s.last_name}, ${s.first_name}`} /> <span className="text-[10px] opacity-40 font-black italic">{s.middle_name?.[0]}.</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Shield size={10} className="text-slate-400" />
+                            <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">LRN:{s.lrn}</p>
+                            <button
+                              onClick={(e) => handleCopyLRN(e, s.lrn)}
+                              className={`p-1 rounded-md transition-all active:scale-90 shadow-sm ${isDarkMode
+                                  ? 'bg-slate-800 text-slate-400 hover:text-white'
+                                  : 'bg-slate-100 text-slate-500 hover:text-slate-900'
+                                }`}
+                            >
                               <Copy size={10} />
-                           </button>
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell className="text-center">
-                     <Badge variant="outline" className={`font-black text-[9px] uppercase px-4 py-1 rounded-full border shadow-sm transition-all duration-500 ${
-                       s.gender === 'Female' ? 'bg-pink-500/10 text-pink-500 border-pink-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                     }`}>
-                       {s.gender}
-                     </Badge>
-                  </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline" className={`font-black text-[9px] uppercase px-4 py-1 rounded-full border shadow-sm transition-all duration-500 ${s.gender === 'Female' ? 'bg-pink-500/10 text-pink-500 border-pink-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                        }`}>
+                        {s.gender}
+                      </Badge>
+                    </TableCell>
 
-                  <TableCell className="text-center">
-                     <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border transition-colors ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
+                    <TableCell className="text-center">
+                      <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border transition-colors ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                         <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${s.student_category?.includes('ALS') ? 'bg-orange-500' : 'bg-green-500'}`} />
                         <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
                           {s.student_category || "Regular"}
                         </span>
-                     </div>
-                  </TableCell>
+                      </div>
+                    </TableCell>
 
-                  <TableCell className="text-right px-10">
-                    <div className="flex items-center justify-end gap-2">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={(e) => {e.stopPropagation(); onToggleLock(s.id, !s.is_locked)}}
-                            className={`h-9 w-9 p-0 rounded-xl transition-all inline-flex items-center justify-center bg-transparent border-0 ${s.is_locked ? 'text-red-500' : 'text-slate-400'}`}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = s.is_locked ? 'rgb(239 68 68)' : (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgb(15 23 42)')
-                              e.currentTarget.style.color = 'white'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = ''
-                              e.currentTarget.style.color = ''
-                            }}
-                          >
-                            {s.is_locked ? <Lock size={16} /> : <Unlock size={16} />}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>{s.is_locked ? 'Unlock Student' : 'Lock Student'}</p></TooltipContent>
-                      </Tooltip>
+                    <TableCell className="text-right px-10">
+                      <div className="flex items-center justify-end gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onToggleLock(s.id, !s.is_locked) }}
+                              className={`h-9 w-9 p-0 rounded-xl transition-all inline-flex items-center justify-center bg-transparent border-0 ${s.is_locked ? 'text-red-500' : 'text-slate-400'}`}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = s.is_locked ? 'rgb(239 68 68)' : (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgb(15 23 42)')
+                                e.currentTarget.style.color = 'white'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = ''
+                                e.currentTarget.style.color = ''
+                              }}
+                            >
+                              {s.is_locked ? <Lock size={16} /> : <Unlock size={16} />}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>{s.is_locked ? 'Unlock Student' : 'Lock Student'}</p></TooltipContent>
+                        </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={(e) => {e.stopPropagation(); handleExit(s.id, () => onReturn(s.id, s.first_name))}}
-                            className="h-9 px-4 rounded-xl text-orange-500 font-black text-[9px] uppercase tracking-[0.2em] transition-all inline-flex items-center justify-center bg-transparent border-0"
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = 'rgb(249 115 22)'
-                              e.currentTarget.style.color = 'white'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'transparent'
-                              e.currentTarget.style.color = 'rgb(249 115 22)'
-                            }}
-                          >
-                            <Undo2 size={12} className="mr-2"/> Return
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-orange-900 text-orange-100 border-orange-800"><p>Return to Pending</p></TooltipContent>
-                      </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleExit(s.id, () => onReturn(s.id, s.first_name)) }}
+                              className="h-9 px-4 rounded-xl text-orange-500 font-black text-[9px] uppercase tracking-[0.2em] transition-all inline-flex items-center justify-center bg-transparent border-0"
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgb(249 115 22)'
+                                e.currentTarget.style.color = 'white'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent'
+                                e.currentTarget.style.color = 'rgb(249 115 22)'
+                              }}
+                            >
+                              <Undo2 size={12} className="mr-2" /> Return
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-orange-900 text-orange-100 border-orange-800"><p>Return to Pending</p></TooltipContent>
+                        </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <SwitchDialog 
-                              student={s} 
-                              allSections={allSections} 
-                              onSwitch={(id: string, target: string) => handleExit(id, () => onSwitch(id, target))} 
-                              isDarkMode={isDarkMode}
-                            />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-blue-900 text-blue-100 border-blue-800"><p>Transfer Section</p></TooltipContent>
-                      </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <SwitchDialog
+                                student={s}
+                                allSections={allSections}
+                                onSwitch={(id: string, target: string) => handleExit(id, () => onSwitch(id, target))}
+                                isDarkMode={isDarkMode}
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-blue-900 text-blue-100 border-blue-800"><p>Transfer Section</p></TooltipContent>
+                        </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={(e) => {e.stopPropagation(); onViewProfile(s)}}
-                            className="h-9 w-9 p-0 rounded-xl transition-all inline-flex items-center justify-center text-slate-400 bg-transparent border-0"
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = isDarkMode ? 'white' : 'rgb(15 23 42)'
-                              e.currentTarget.style.color = isDarkMode ? 'rgb(15 23 42)' : 'white'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'transparent'
-                              e.currentTarget.style.color = 'rgb(148 163 184)'
-                            }}
-                          >
-                            <Eye size={16}/>
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View Profile</p></TooltipContent>
-                      </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onViewProfile(s) }}
+                              className="h-9 w-9 p-0 rounded-xl transition-all inline-flex items-center justify-center text-slate-400 bg-transparent border-0"
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = isDarkMode ? 'white' : 'rgb(15 23 42)'
+                                e.currentTarget.style.color = isDarkMode ? 'rgb(15 23 42)' : 'white'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent'
+                                e.currentTarget.style.color = 'rgb(148 163 184)'
+                              }}
+                            >
+                              <Eye size={16} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>View Profile</p></TooltipContent>
+                        </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={(e) => {e.stopPropagation(); onUnenroll(s)}}
-                            className="h-9 w-9 p-0 rounded-xl text-red-400 transition-all inline-flex items-center justify-center bg-transparent border-0"
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = 'rgb(239 68 68)'
-                              e.currentTarget.style.color = 'white'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'transparent'
-                              e.currentTarget.style.color = 'rgb(248 113 113)'
-                            }}
-                          >
-                            <UserX size={16}/>
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Unenroll Student</p></TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            })
-          )}
-        </TableBody>
-      </Table>
-      {renderPagination()}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onUnenroll(s) }}
+                              className="h-9 w-9 p-0 rounded-xl text-red-400 transition-all inline-flex items-center justify-center bg-transparent border-0"
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgb(239 68 68)'
+                                e.currentTarget.style.color = 'white'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent'
+                                e.currentTarget.style.color = 'rgb(248 113 113)'
+                              }}
+                            >
+                              <UserX size={16} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Unenroll Student</p></TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            )}
+          </TableBody>
+        </Table>
+        {renderPagination()}
       </div>
     </TooltipProvider>
   )
