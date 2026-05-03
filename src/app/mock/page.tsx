@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import {
@@ -39,12 +39,15 @@ type LogEntry = {
 const BATCH_OPTIONS = [100, 200, 300, 400, 500, 600, 700]
 
 export default function MockPage() {
+  const [mounted, setMounted] = useState(false)
   const [selectedCount, setSelectedCount] = useState(100)
   const [isGenerating,  setIsGenerating]  = useState(false)
   const [isClearing,    setIsClearing]    = useState(false)
   const [logs,          setLogs]          = useState<LogEntry[]>([])
   const [progress,      setProgress]      = useState<{ done: number; total: number } | null>(null)
   const activeSYRef = useRef<string>("")
+
+  useEffect(() => { setMounted(true) }, [])
 
   const log = useCallback((type: LogEntry["type"], msg: string) => {
     setLogs(prev => [{ type, msg, ts: Date.now() }, ...prev].slice(0, 300))
@@ -185,6 +188,8 @@ export default function MockPage() {
   const progressPct = progress
     ? Math.round((progress.done / progress.total) * 100)
     : 0
+
+  if (!mounted) return null
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-mono">

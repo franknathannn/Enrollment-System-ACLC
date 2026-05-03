@@ -12,11 +12,11 @@ import { cn } from "@/lib/utils"
 
 import dynamic from "next/dynamic"
 
-const Step1Identity = dynamic(() => import("@/components/forms/Step1Identity"))
-const Step2Academic = dynamic(() => import("@/components/forms/Step2Academic"))
-const Step3Family = dynamic(() => import("@/components/forms/Step3Family"))
-const Step4Documents = dynamic(() => import("@/components/forms/Step4Documents"))
-const Step5Review = dynamic(() => import("@/components/forms/Step5Review"))
+const Step1Identity = dynamic(() => import("@/components/forms/Step1Identity"), { ssr: false })
+const Step2Academic = dynamic(() => import("@/components/forms/Step2Academic"), { ssr: false })
+const Step3Family = dynamic(() => import("@/components/forms/Step3Family"), { ssr: false })
+const Step4Documents = dynamic(() => import("@/components/forms/Step4Documents"), { ssr: false })
+const Step5Review = dynamic(() => import("@/components/forms/Step5Review"), { ssr: false })
 
 interface Particle { x: number; y: number; vx: number; vy: number; size: number }
 
