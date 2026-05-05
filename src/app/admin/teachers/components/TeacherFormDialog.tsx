@@ -63,9 +63,10 @@ export function TeacherFormDialog({ open, editing, isDarkMode, onSave, onClose }
         .from("avatars").upload(filePath, file, { upsert: true, contentType: file.type })
       if (uploadErr) throw uploadErr
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath)
-      const { error: updateErr } = await supabase.from("teachers").update({ avatar_url: publicUrl }).eq("id", editing.id)
+      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`
+      const { error: updateErr } = await supabase.from("teachers").update({ avatar_url: cacheBustedUrl }).eq("id", editing.id)
       if (updateErr) throw updateErr
-      setAvatarUrl(publicUrl)
+      setAvatarUrl(cacheBustedUrl)
       toast.success("Photo updated!", { id: toastId })
     } catch (err: any) {
       toast.error(err?.message ?? "Upload failed", { id: toastId })
