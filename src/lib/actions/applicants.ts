@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { checkAndSyncSystemCapacity } from "./settings"
 
@@ -274,7 +274,7 @@ export async function updateStudentSection(id: string, sectionId: string) {
 }
 
 export async function deleteApplicant(id: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   await Promise.all([
     supabase.from('activity_logs').delete().eq('student_id', id),
@@ -693,7 +693,7 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
  * 🚀 OPTIMIZED BULK DELETE
  */
 export async function bulkDeleteApplicants(ids: string[]) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const CHUNK = 200
 
   try {
