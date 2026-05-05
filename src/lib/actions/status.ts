@@ -1,9 +1,9 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
 
 export async function checkApplicationStatus(lrn: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const cleanLrn = lrn.trim()
 
   try {

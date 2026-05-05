@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient, createAdminClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { checkAndSyncSystemCapacity } from "./settings"
 
@@ -8,7 +8,7 @@ import { checkAndSyncSystemCapacity } from "./settings"
  * 🔥 NUCLEAR OPTION: REDISTRIBUTE STUDENTS
  */
 export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '11' | '12') {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   try {
     console.log(`🚀 Starting redistribution for ${strand} GL${gradeLevel || 'all'}`)
@@ -212,7 +212,7 @@ export async function redistributeStudents(strand: 'ICT' | 'GAS', gradeLevel?: '
 }
 
 export async function updateSectionCapacity(sectionId: string, newCapacity: number) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: section } = await supabase
     .from('sections')
@@ -235,7 +235,7 @@ export async function updateSectionCapacity(sectionId: string, newCapacity: numb
 }
 
 export async function updateAllSectionCapacities(strand: 'ICT' | 'GAS', newCapacity: number) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { error } = await supabase
     .from('sections')
@@ -250,7 +250,7 @@ export async function updateAllSectionCapacities(strand: 'ICT' | 'GAS', newCapac
 }
 
 export async function updateStudentSection(id: string, sectionId: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: section } = await supabase
     .from('sections')
@@ -300,7 +300,7 @@ export async function deleteApplicant(id: string) {
 }
 
 export async function updateApplicantStatus(id: string, newStatus: string, feedback?: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   let sectionIdToAssign: string | null = null
   let sectionNameToAssign: string = 'Unassigned'
 
@@ -459,7 +459,7 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
  * 🚀 OPTIMIZED BULK UPDATE - Processes students with intelligent section assignment
  */
 export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string, feedback?: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const dbStatus = newStatus === "Accepted" ? "Approved" : newStatus
   const CHUNK = 200 // Supabase .in() safe batch size
 

@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
 /**
@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache"
  * Ensures only ONE record exists per school year using the unique constraint.
  */
 export async function recordYearlySnapshot(year: string, maleCount: number, femaleCount: number) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   try {
     const { data, error } = await supabase
@@ -41,7 +41,7 @@ export async function recordYearlySnapshot(year: string, maleCount: number, fema
  * Retrieves all saved snapshots for the comparison modal.
  */
 export async function getEnrollmentHistory() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   try {
     const { data, error } = await supabase
@@ -61,7 +61,7 @@ export async function getEnrollmentHistory() {
  * Deletes a specific snapshot record from the archives.
  */
 export async function deleteSnapshot(id: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   try {
     const { error } = await supabase

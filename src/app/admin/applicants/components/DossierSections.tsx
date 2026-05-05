@@ -17,8 +17,8 @@ function validateGWA(val: string): string | undefined {
   if (!/^\d{1,3}(\.\d{0,2})?$/.test(str)) return "Format: NN.NN (max 2 decimals)"
   const num = parseFloat(str)
   if (isNaN(num)) return "Invalid GWA"
-  if (num < 65)   return "Min 65.00"
-  if (num > 100)  return "Max 100.00"
+  if (num < 65) return "Min 65.00"
+  if (num > 100) return "Max 100.00"
   return undefined
 }
 
@@ -60,12 +60,12 @@ function FieldError({ msg }: { msg?: string }) {
 }
 
 interface DropdownState {
-  genderOpen: boolean;      setGenderOpen:     (v: boolean) => void
-  strandOpen: boolean;      setStrandOpen:     (v: boolean) => void
-  sectionOpen: boolean;     setSectionOpen:    (v: boolean) => void
-  modalityOpen: boolean;    setModalityOpen:   (v: boolean) => void
-  shiftOpen: boolean;       setShiftOpen:      (v: boolean) => void
-  schoolTypeOpen: boolean;  setSchoolTypeOpen: (v: boolean) => void
+  genderOpen: boolean; setGenderOpen: (v: boolean) => void
+  strandOpen: boolean; setStrandOpen: (v: boolean) => void
+  sectionOpen: boolean; setSectionOpen: (v: boolean) => void
+  modalityOpen: boolean; setModalityOpen: (v: boolean) => void
+  shiftOpen: boolean; setShiftOpen: (v: boolean) => void
+  schoolTypeOpen: boolean; setSchoolTypeOpen: (v: boolean) => void
 }
 
 interface DossierSectionsProps {
@@ -117,7 +117,7 @@ export const DossierSections = memo(function DossierSections({
     [sections, formData.strand, formData.grade_level]
   )
   const canAssignSection = student.status === "Accepted" || student.status === "Approved"
-  const isFaceToFace     = !!formData.preferred_modality
+  const isFaceToFace = !!formData.preferred_modality
 
   return (
     <>
@@ -161,7 +161,7 @@ export const DossierSections = memo(function DossierSections({
               <div key={field} className="space-y-1.5 min-w-0 overflow-hidden">
                 {isEditing ? (
                   <><p className={labelClass}>{field.replace(/_/g, " ")}</p>
-                  <Input value={formData[field] || ""} onChange={(e) => onChange(field, e.target.value)} className={inputClass} /></>
+                    <Input value={formData[field] || ""} onChange={(e) => onChange(field, e.target.value)} className={inputClass} /></>
                 ) : (
                   <InfoBlock
                     label={field.replace(/_/g, " ")}
@@ -194,24 +194,24 @@ export const DossierSections = memo(function DossierSections({
 
             {/* USN Credentials — read-only, managed via Student Accounts */}
             {student.oed_usn && (
-            <div className="sm:col-span-2 min-w-0 overflow-hidden">
-              <div className={`p-5 rounded-[24px] border shadow-inner transition-colors duration-500 min-w-0 overflow-hidden ${isDarkMode ? "bg-blue-900/10 border-blue-900/40" : "bg-blue-50 border-blue-200"}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Laptop size={12} className={isDarkMode ? "text-blue-400" : "text-blue-600"} />
-                  <p className={`text-[9px] font-black uppercase tracking-widest ${isDarkMode ? "text-blue-400" : "text-blue-600"}`}>University Student Number (USN)</p>
+              <div className="sm:col-span-2 min-w-0 overflow-hidden">
+                <div className={`p-5 rounded-[24px] border shadow-inner transition-colors duration-500 min-w-0 overflow-hidden ${isDarkMode ? "bg-blue-900/10 border-blue-900/40" : "bg-blue-50 border-blue-200"}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Laptop size={12} className={isDarkMode ? "text-blue-400" : "text-blue-600"} />
+                    <p className={`text-[9px] font-black uppercase tracking-widest ${isDarkMode ? "text-blue-400" : "text-blue-600"}`}>University Student Number (USN)</p>
+                  </div>
+                  <p className={`text-2xl md:text-3xl font-black font-mono tracking-wider ${isDarkMode ? "text-blue-300" : "text-blue-700"}`}>
+                    {student.oed_usn}
+                  </p>
                 </div>
-                <p className={`text-2xl md:text-3xl font-black font-mono tracking-wider ${isDarkMode ? "text-blue-300" : "text-blue-700"}`}>
-                  {student.oed_usn}
-                </p>
               </div>
-            </div>
             )}
           </div>
         </div>
 
         {/* II. STUDENT HOTLINES */}
         <div className="space-y-8 md:space-y-10 min-w-0">
-          <SectionTitle icon={<Mail size={16} />} title="II. Student Hotlines" isDarkMode={isDarkMode}
+          <SectionTitle icon={<Mail size={16} />} title="II. Student Contact" isDarkMode={isDarkMode}
             colorClass={isDarkMode ? "text-indigo-400" : "text-indigo-600"} />
           <div className="space-y-8 min-w-0">
 
@@ -377,7 +377,7 @@ export const DossierSections = memo(function DossierSections({
 
         {/* IV. ACADEMIC BACKGROUND */}
         <div className="space-y-8 md:space-y-10 min-w-0">
-          <SectionTitle icon={<GraduationCap size={16} />} title="IV. Academic Background" isDarkMode={isDarkMode}
+          <SectionTitle icon={<GraduationCap size={16} />} title="IV. Academic Information" isDarkMode={isDarkMode}
             colorClass={isDarkMode ? "text-orange-400" : "text-orange-600"} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 min-w-0">
 
@@ -386,10 +386,10 @@ export const DossierSections = memo(function DossierSections({
               <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 italic ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>Previous School</p>
               {isEditing
                 ? <SchoolSearchPicker
-                    value={formData.last_school_attended || ""}
-                    onChange={(val) => onChange("last_school_attended", val)}
-                    isDarkMode={isDarkMode}
-                  />
+                  value={formData.last_school_attended || ""}
+                  onChange={(val) => onChange("last_school_attended", val)}
+                  isDarkMode={isDarkMode}
+                />
                 : <p className={`font-black uppercase text-sm md:text-base leading-tight break-words w-full min-w-0 ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>{formData.last_school_attended || "Not Disclosed"}</p>
               }
             </div>
@@ -471,7 +471,7 @@ export const DossierSections = memo(function DossierSections({
 
       {/* ── V. ENROLLMENT PREFERENCES ── */}
       <div className="space-y-8 md:space-y-10 min-w-0">
-        <SectionTitle icon={<Monitor size={16} />} title="V. Enrollment Preferences" isDarkMode={isDarkMode}
+        <SectionTitle icon={<Monitor size={16} />} title="V. Enrollment Preferences & Academic Background " isDarkMode={isDarkMode}
           colorClass={isDarkMode ? "text-cyan-400" : "text-cyan-600"} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-6 min-w-0">
 

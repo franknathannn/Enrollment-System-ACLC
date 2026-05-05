@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { syncSectionCapacities } from "./settings"
 
@@ -10,7 +10,7 @@ import { syncSectionCapacities } from "./settings"
  * Supports grade_level: "11" | "12" (defaults to "11")
  */
 export async function addSection(strand: "ICT" | "GAS", gradeLevel: "11" | "12" = "11") {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // 1. Fetch ALL sections for this strand AND grade level
   const { data: sections } = await supabase
@@ -89,7 +89,7 @@ export async function addSection(strand: "ICT" | "GAS", gradeLevel: "11" | "12" 
  * If B is deleted, C becomes B, D becomes C, and students follow the move.
  */
 export async function deleteAndCollapseSection(sectionId: string, strand: "ICT" | "GAS", gradeLevel?: "11" | "12") {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // 1. Resolve grade level — if not supplied, fetch it from the target section.
   //    This ensures we NEVER mix G11 and G12 during the collapse shift.
@@ -184,7 +184,7 @@ export async function balanceGenderAcrossSections(
   }
 
   // ── Single strand + grade combination ──────────────────────────────────────
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   try {
     console.log(`⚖️ Starting gender balancing for ${strand} Grade ${gradeLevel}`)
@@ -275,7 +275,7 @@ export async function balanceGenderAcrossSections(
  * DELETE SECTION (Old Version - Kept for compatibility if needed elsewhere)
  */
 export async function deleteSection(id: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('sections').delete().eq('id', id)
   if (error) throw new Error(error.message)
   await syncSectionCapacities()

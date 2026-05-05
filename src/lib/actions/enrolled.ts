@@ -1,11 +1,11 @@
 // src/lib/actions/enrolled.ts
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
 export async function getEnrolledStudents() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   
   const { data, error } = await supabase
     .from('students')
@@ -18,7 +18,7 @@ export async function getEnrolledStudents() {
 }
 
 export async function updateStudentInformation(id: string, data: any) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { error } = await supabase
     .from('students')
@@ -32,7 +32,7 @@ export async function updateStudentInformation(id: string, data: any) {
 }
 
 export async function toggleStudentLock(id: string, isLocked: boolean) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { error } = await supabase
     .from('students')

@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
 import { FieldRequirements, DEFAULT_FIELD_REQUIREMENTS } from "./fieldRequirements"
 
 /**
@@ -8,7 +8,7 @@ import { FieldRequirements, DEFAULT_FIELD_REQUIREMENTS } from "./fieldRequiremen
  */
 export async function getFieldRequirementsServer(): Promise<FieldRequirements> {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     
     const { data, error } = await supabase
       .from('system_config')

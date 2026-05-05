@@ -1,11 +1,11 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
 import { unstable_noStore as noStore } from "next/cache"
 
 export async function getDashboardStats() {
   noStore()
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   try {
     // Fetch all required counts in parallel for better performance

@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
 export interface ArchivedStudent {
@@ -67,7 +67,7 @@ const ARCHIVE_SELECT = [
  * Returns distinct school_years that have ANY archived students (all statuses).
  */
 export async function getArchiveYears(): Promise<string[]> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { data, error } = await supabase
     .from("students")
     .select("school_year")
@@ -95,7 +95,7 @@ export async function getArchivedStudents(params: {
   // optional: filter by status if you want to keep a status filter in the UI
   status?: string
 }): Promise<{ students: ArchivedStudent[]; total: number }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { school_year, strand, grade_level, search, page = 1, status } = params
   const PAGE_SIZE = 20
 
@@ -151,7 +151,7 @@ export async function getArchivedStudents(params: {
  * CSV export — includes all statuses now
  */
 export async function exportArchiveCSV(school_year: string): Promise<string> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from("students")
@@ -193,7 +193,7 @@ export async function exportArchiveCSV(school_year: string): Promise<string> {
 export async function unlockGraduatedStudents(): Promise<{
   success: boolean; unlocked: number; error?: string
 }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   try {
     const { data, error: fetchErr } = await supabase
       .from("students")
@@ -235,7 +235,7 @@ export async function unlockGraduatedStudents(): Promise<{
 export async function getGraduateLockState(): Promise<{
   unlockedCount: number; totalGraduated: number
 }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const [{ count: total }, { count: unlocked }] = await Promise.all([
     supabase.from("students").select("id", { count: "exact", head: true })
@@ -252,7 +252,7 @@ export async function getGraduateLockState(): Promise<{
 export async function lockGraduatedStudents(): Promise<{
   success: boolean; locked: number; error?: string
 }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   try {
     // Find all graduated students (GRADUATED grade_level, OR G12 + archived + no section)
     const { data, error: fetchErr } = await supabase

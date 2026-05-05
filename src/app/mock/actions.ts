@@ -1,7 +1,6 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
-import { createClient as createSessionClient } from "@/lib/supabase/server"
 
 const getAdminSupabase = () => {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -10,23 +9,7 @@ const getAdminSupabase = () => {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 }
 
-async function requireAdmin() {
-  // Dev tool — skip auth in development so /mock works without an admin session
-  if (process.env.NODE_ENV === "development") return null
-  try {
-    const supabase = await createSessionClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error("Unauthorized")
-    const role = (user.app_metadata?.role ?? user.user_metadata?.role) as string | undefined
-    if (role === "teacher" || role === "student") throw new Error("Unauthorized")
-    return user
-  } catch {
-    throw new Error("Unauthorized — no valid admin session")
-  }
-}
-
 export async function clearMockData(ids: string[]) {
-  await requireAdmin()
   const supabase = getAdminSupabase()
   
   // 1. Delete references in attendance
