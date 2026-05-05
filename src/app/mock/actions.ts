@@ -13,12 +13,16 @@ const getAdminSupabase = () => {
 async function requireAdmin() {
   // Dev tool — skip auth in development so /mock works without an admin session
   if (process.env.NODE_ENV === "development") return null
-  const supabase = await createSessionClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error("Unauthorized")
-  const role = (user.app_metadata?.role ?? user.user_metadata?.role) as string | undefined
-  if (role === "teacher" || role === "student") throw new Error("Unauthorized")
-  return user
+  try {
+    const supabase = await createSessionClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+    const role = (user.app_metadata?.role ?? user.user_metadata?.role) as string | undefined
+    if (role === "teacher" || role === "student") throw new Error("Unauthorized")
+    return user
+  } catch {
+    throw new Error("Unauthorized — no valid admin session")
+  }
 }
 
 export async function clearMockData(ids: string[]) {

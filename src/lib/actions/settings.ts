@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
 /**
@@ -10,7 +10,7 @@ import { revalidatePath } from "next/cache"
  */
 export async function getEnrollmentStatus() {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     
     const { data: config, error } = await supabase
       .from('system_config')
@@ -70,7 +70,7 @@ export async function getEnrollmentStatus() {
  */
 export async function checkAndSyncSystemCapacity() {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     
     const { data: config, error } = await supabase
       .from('system_config')
@@ -135,7 +135,7 @@ export async function checkAndSyncSystemCapacity() {
  *    mark it as "complete" and move to next section
  */
 export async function syncSectionCapacities() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: config } = await supabase
     .from('system_config')
@@ -339,7 +339,7 @@ export async function updateCapacity(newCapacity: number) {
     throw new Error("Enrollment capacity cannot be lower than 50 students.");
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   
   const { error } = await supabase
     .from('system_config')
@@ -364,7 +364,7 @@ export async function updateCapacity(newCapacity: number) {
  * TOGGLE STATUS (Manual Switch)
  */
 export async function toggleEnrollment(status: boolean) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase
     .from('system_config')
     .update({ is_portal_active: status, updated_at: new Date().toISOString() })
@@ -394,7 +394,7 @@ export async function rolloverToGrade12(): Promise<{
   error?: string
 }> {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     // Get current school year from config
     const { data: config } = await supabase
