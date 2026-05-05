@@ -49,6 +49,7 @@ export function useStudentData() {
             // new fields
             'school_type', 'year_completed_jhs', 'last_school_address',
             'facebook_user', 'facebook_link', 'preferred_modality', 'preferred_shift',
+            'oed_usn',
           ].join(', '))
           .neq('is_archived', true)
           .order('created_at', { ascending: false })

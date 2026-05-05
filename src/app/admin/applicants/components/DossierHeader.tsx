@@ -293,10 +293,17 @@ Address: ${student.address}
           <AnimatedText text={`${formData.first_name} ${formData.last_name}`} />
         </h2>
 
-        {/* LRN pill */}
-        <p className={`mt-3 font-bold uppercase tracking-[0.35em] text-[10px] px-4 py-1.5 rounded-full border transition-all duration-300 ${isDarkMode ? "text-slate-400 bg-white/5 border-white/8" : "text-slate-500 bg-black/5 border-black/8"}`}>
-          LRN · {student.lrn}
-        </p>
+        {/* LRN + USN pills */}
+        <div className="flex flex-col items-center gap-1.5 mt-3">
+          <p className={`font-bold uppercase tracking-[0.35em] text-[10px] px-4 py-1.5 rounded-full border transition-all duration-300 ${isDarkMode ? "text-slate-400 bg-white/5 border-white/8" : "text-slate-500 bg-black/5 border-black/8"}`}>
+            LRN · {student.lrn}
+          </p>
+          {student.oed_usn && (
+            <p className={`font-bold uppercase tracking-[0.35em] text-[10px] px-4 py-1.5 rounded-full border transition-all duration-300 ${isDarkMode ? "text-blue-400 bg-blue-500/10 border-blue-500/25" : "text-blue-600 bg-blue-50 border-blue-200"}`}>
+              USN · {student.oed_usn}
+            </p>
+          )}
+        </div>
 
         {/* Status badge */}
         <div className="mt-3">

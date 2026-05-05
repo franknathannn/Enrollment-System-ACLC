@@ -80,10 +80,9 @@ function StatusContent() {
   const performSearch = async (searchLrn: string, searchName: string, searchId: string) => {
     setLoading(true)
     try {
-      // Pull URL + anon key directly from the already-configured supabase client
-      // so it works on localhost and in production without any extra env wiring.
-      const supabaseUrl  = (supabase as any).supabaseUrl  as string
-      const supabaseKey  = (supabase as any).supabaseKey  as string
+      // Use env vars directly — more reliable than extracting from client internals
+      const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      const supabaseKey  = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
       const res = await fetch(
         `${supabaseUrl}/functions/v1/check-status`,
@@ -129,21 +128,77 @@ function StatusContent() {
     performSearch(lrn, lastName, trackingId)
   }
 
-  const handleFixApplication = () => {
+  const handleFixApplication = async () => {
+    if (!result) return
     const toastId = toast.loading("Restoring your enrollment data…")
-    updateFormData({
-      ...result,
-      id: result!.id,
-      middle_name: result!.middle_name || undefined,
-      gender: result!.gender || undefined,
-      profile_2x2_url: result!.two_by_two_url || undefined,
-      phone: result!.phone || result!.contact_no || undefined,
-    })
-    setStep(1)
-    setTimeout(() => {
-      toast.success("Editor ready.", { id: toastId })
-      router.push("/enroll")
-    }, 800)
+    try {
+      // Fetch ALL columns for this student by ID
+      const { data: full, error } = await supabase
+        .from("students")
+        .select("*")
+        .eq("id", result.id)
+        .single()
+      if (error || !full) throw new Error(error?.message || "Not found")
+
+      updateFormData({
+        id: full.id,
+        first_name: full.first_name || undefined,
+        last_name: full.last_name || undefined,
+        middle_name: full.middle_name || undefined,
+        lrn: full.lrn || undefined,
+        gender: full.gender || undefined,
+        birth_date: full.birth_date || undefined,
+        // Auto-calculate current age from birth date (students may age between enrollment and re-submission)
+        ...(full.birth_date ? (() => {
+          const dob = new Date(full.birth_date + "T00:00:00")
+          const today = new Date()
+          let age = today.getFullYear() - dob.getFullYear()
+          const m = today.getMonth() - dob.getMonth()
+          if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--
+          return { age: String(age) }
+        })() : {}),
+        civil_status: full.civil_status || undefined,
+        nationality: full.nationality || undefined,
+        religion: full.religion || undefined,
+        address: full.address || undefined,
+        email: full.email || undefined,
+        phone: full.phone || full.contact_no || undefined,
+        // Step 2: Academic
+        strand: full.strand || undefined,
+        school_year: full.school_year || undefined,
+        student_category: (full.student_category as any) || undefined,
+        last_school_attended: full.last_school_attended || undefined,
+        last_school_address: full.last_school_address || undefined,
+        gwa_grade_10: full.gwa_grade_10 != null ? String(full.gwa_grade_10) : undefined,
+        year_completed_jhs: full.year_completed_jhs || undefined,
+        school_type: full.school_type || undefined,
+        facebook_user: full.facebook_user || undefined,
+        facebook_link: full.facebook_link || undefined,
+        preferred_modality: full.preferred_modality || undefined,
+        preferred_shift: full.preferred_shift || undefined,
+        // Step 3: Guardian
+        guardian_first_name: full.guardian_first_name || undefined,
+        guardian_middle_name: full.guardian_middle_name || undefined,
+        guardian_last_name: full.guardian_last_name || undefined,
+        guardian_phone: full.guardian_phone || full.guardian_contact || undefined,
+        guardian_email: full.guardian_email || undefined,
+        // Step 4: Documents
+        profile_2x2_url: full.two_by_two_url || full.profile_picture || undefined,
+        birth_certificate_url: full.birth_certificate_url || undefined,
+        form_138_url: full.form_138_url || undefined,
+        good_moral_url: full.good_moral_url || undefined,
+        cor_url: full.cor_url || undefined,
+        af5_url: full.af5_url || undefined,
+        diploma_url: full.diploma_url || undefined,
+      })
+      setStep(1)
+      setTimeout(() => {
+        toast.success("Editor ready.", { id: toastId })
+        router.push("/enroll")
+      }, 800)
+    } catch (err: any) {
+      toast.error("Failed to load application data. " + (err.message || ""), { id: toastId })
+    }
   }
 
   return (

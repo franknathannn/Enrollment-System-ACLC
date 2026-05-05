@@ -12,7 +12,7 @@
 // rateMap for an Upstash Redis call (see commented section at the bottom).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { corsHeaders } from "../_shared/cors.ts"
+import { getCorsHeaders } from "../_shared/cors.ts"
 
 // ── In-memory rate limit store ──────────────────────────────────────────────
 // Key: IP address  →  { count: number; windowStart: ms timestamp }
@@ -47,11 +47,11 @@ function remainingAttempts(ip: string): number {
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
+    return new Response("ok", { headers: getCorsHeaders(req) })
   }
 
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405, headers: corsHeaders })
+    return new Response("Method not allowed", { status: 405, headers: getCorsHeaders(req) })
   }
 
   // Get client IP — Supabase forwards it in x-forwarded-for
@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
       }),
       {
         status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       }
     )
   }
@@ -81,7 +81,7 @@ Deno.serve(async (req: Request) => {
   } catch {
     return new Response(
       JSON.stringify({ error: "Invalid request body." }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 
@@ -90,7 +90,7 @@ Deno.serve(async (req: Request) => {
   if (!lrn || !lastName || !trackingId) {
     return new Response(
       JSON.stringify({ error: "Missing required fields: lrn, lastName, trackingId." }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 
@@ -98,7 +98,7 @@ Deno.serve(async (req: Request) => {
   if (!/^\d{12}$/.test(lrn)) {
     return new Response(
       JSON.stringify({ error: "LRN must be exactly 12 digits." }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 
@@ -124,7 +124,7 @@ Deno.serve(async (req: Request) => {
     // Don't reveal whether it was a DB error or no record — same response either way
     return new Response(
       JSON.stringify({ data: null, remaining: remainingAttempts(ip) }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 
@@ -133,14 +133,14 @@ Deno.serve(async (req: Request) => {
   if (firstSegment.toLowerCase() !== trackingId.toLowerCase()) {
     return new Response(
       JSON.stringify({ data: null, remaining: remainingAttempts(ip) }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 
   // ── Success ─────────────────────────────────────────────────────────────
   return new Response(
     JSON.stringify({ data, remaining: remainingAttempts(ip) }),
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
   )
 })
 

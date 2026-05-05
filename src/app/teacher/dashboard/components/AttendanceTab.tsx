@@ -386,6 +386,9 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
   const [attLoading, setAttLoading] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const scannerActionLockRef = useRef<Set<string>>(new Set())
+  /** Ref-based dedup: tracks student IDs that have been scanned this session
+   *  to prevent duplicate inserts when React hasn't re-rendered yet. */
+  const recentlyScannedRef = useRef<Set<string>>(new Set())
   // Two-layer search: input value updates instantly, debounced value drives the filter
   const [search, setSearch] = useState("")
   const [searchDebounced, setSearchDebounced] = useState("")
@@ -486,7 +489,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
     return () => clearInterval(timer)
   }, [period, scanning, forcedOpen, isScannerLive]) // eslint-disable-line
 
-  useEffect(() => { setForcedOpen(false); setScannerClosed(false) }, [period])
+  useEffect(() => { setForcedOpen(false); setScannerClosed(false); recentlyScannedRef.current.clear() }, [period])
 
   useEffect(() => {
     supabase
@@ -705,9 +708,19 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
       return
     }
 
-    if (attendance[student.id]) {
+    // ── Duplicate guard: check both React state and ref-based dedup set ──
+    const dedupKey = `${student.id}_${period.subject}_${scannerAttendanceDate}`
+    if (attendance[student.id] || recentlyScannedRef.current.has(dedupKey)) {
       const ex = attendance[student.id]
-      toast.info(`${student.first_name} already scanned — ${ex.status} at ${fmtT(ex.time)}`)
+      const statusLabel = ex?.status === "Present" ? "is already Present"
+        : ex?.status === "Late" ? "was already marked Late"
+        : ex?.status === "Excused" ? "is already Excused"
+        : ex?.status === "Absent" ? "was already marked Absent"
+        : "has already been scanned"
+      toast.info(`${student.first_name} ${student.last_name} ${statusLabel}`, {
+        description: ex ? `Scanned at ${fmtT(ex.time)} · ${period.subject}` : `${period.subject}`,
+        duration: 3000,
+      })
       setLastScan({ name: `${student.first_name} ${student.last_name}`, ok: false })
       return
     }
@@ -733,6 +746,8 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
       notes: "QR_SCAN",
     }
 
+    // Mark as recently scanned immediately (before React re-renders) to prevent rapid duplicates
+    recentlyScannedRef.current.add(dedupKey)
     setAttendance(prev => ({ ...prev, [student.id]: rec }))
     setLastScan({ name: `${student.first_name} ${student.last_name}`, ok: true })
     if (beepOn) {

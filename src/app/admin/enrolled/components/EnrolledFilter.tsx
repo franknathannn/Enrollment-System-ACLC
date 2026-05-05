@@ -55,7 +55,7 @@ export const EnrolledFilter = memo(({
     : sectionFilter
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] border p-4 md:p-6 transition-colors duration-500"
+    <div className="relative overflow-visible rounded-[28px] border p-4 md:p-6 transition-colors duration-500"
       style={{
         backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.85)' : '#ffffff',
         borderColor: isDarkMode ? 'rgba(30, 41, 59, 0.6)' : '#e2e8f0',
@@ -109,7 +109,7 @@ export const EnrolledFilter = memo(({
 
           {strandDropdownOpen && (
             <div className={`absolute top-full left-0 mt-2 w-40 rounded-2xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
-              <div className="p-1.5 space-y-1">
+              <div className="p-1.5 space-y-1 max-h-[220px] overflow-y-auto">
                 {['ALL', 'ICT', 'GAS'].map((opt) => (
                   <button
                     key={opt}
@@ -142,7 +142,7 @@ export const EnrolledFilter = memo(({
 
           {sectionDropdownOpen && (
             <div className={`absolute top-full left-0 mt-2 w-48 rounded-2xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
-              <div className="p-1.5 space-y-1">
+              <div className="p-1.5 space-y-1 max-h-[220px] overflow-y-auto">
                 <button
                   onClick={() => { setSectionFilter('ALL'); setSectionDropdownOpen(false); }}
                   className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors text-left ${sectionFilter === 'ALL' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}
@@ -196,7 +196,7 @@ export const EnrolledFilter = memo(({
 
           {categoryDropdownOpen && (
             <div className={`absolute top-full left-0 mt-2 w-48 rounded-2xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
-              <div className="p-1.5 space-y-1">
+              <div className="p-1.5 space-y-1 max-h-[220px] overflow-y-auto">
                 {[
                   { id: 'ALL', label: 'All Categories' },
                   { id: 'JHS', label: 'JHS Graduate' },
@@ -274,7 +274,7 @@ export const EnrolledFilter = memo(({
 
           {sortDropdownOpen && (
             <div className={`absolute top-full right-0 mt-2 w-56 rounded-2xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
-              <div className="p-1.5 space-y-1">
+              <div className="p-1.5 space-y-1 max-h-[220px] overflow-y-auto">
                 {[
                   { id: 'alpha', label: 'Alphabetical (Surname)' },
                   { id: 'date_old', label: 'First To Enroll' },

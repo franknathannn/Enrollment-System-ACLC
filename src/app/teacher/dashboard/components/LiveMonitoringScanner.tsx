@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Camera, CameraOff, ScanLine, AlertTriangle, Clock } from "lucide-react"
+import { Camera, CameraOff, ScanLine } from "lucide-react"
 import { ScheduleRow } from "../types"
-import { toast } from "sonner"
 
 interface Props {
   dm: boolean
@@ -12,16 +11,9 @@ interface Props {
   period: ScheduleRow
 }
 
-const fmtT = (t: string) => {
-  if (!t) return ""
-  const [h, m] = t.slice(0, 5).split(":").map(Number)
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`
-}
-
 export function LiveMonitoringScanner({ dm, onScan, isScannerLive, period }: Props) {
   const [scanning, setScanning] = useState(false)
   const [camErr, setCamErr] = useState<string | null>(null)
-  const [scannerClosed, setScannerClosed] = useState(false)
   const [isFrontCamera, setIsFrontCamera] = useState(false)
   
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -30,11 +22,16 @@ export function LiveMonitoringScanner({ dm, onScan, isScannerLive, period }: Pro
   const lockRef = useRef(false)
   const rafRef = useRef<number>(0)
 
+
+
+  // Keep a ref to the latest onScan so the tick loop never uses a stale closure
+  const onScanRef = useRef(onScan)
+  useEffect(() => { onScanRef.current = onScan }, [onScan])
+
   const textHead = dm ? "text-white" : "text-slate-900"
   const textSub = dm ? "text-slate-400" : "text-slate-500"
 
-  const startCam = async (force = false) => {
-    setScannerClosed(false)
+  const startCam = async () => {
     setCamErr(null)
 
     if (streamRef.current) {
@@ -105,7 +102,7 @@ export function LiveMonitoringScanner({ dm, onScan, isScannerLive, period }: Pro
           
           if (code?.data) {
             lockRef.current = true
-            onScan(code.data).finally(() => {
+            onScanRef.current(code.data).finally(() => {
               setTimeout(() => { lockRef.current = false }, 2000)
             })
           }
@@ -115,20 +112,8 @@ export function LiveMonitoringScanner({ dm, onScan, isScannerLive, period }: Pro
     }, 120) // ~8fps
   }
 
-  useEffect(() => {
-    if (!scanning || !isScannerLive) return
-    const check = () => {
-      const now = new Date()
-      const [eh, em] = period.end_time.slice(0, 5).split(":").map(Number)
-      if (now.getHours() * 60 + now.getMinutes() >= eh * 60 + em) {
-        stopCam()
-        setScannerClosed(true)
-        toast.info(`Scanner closed — ${period.subject} ended`)
-      }
-    }
-    const timer = setInterval(check, 30_000)
-    return () => clearInterval(timer)
-  }, [scanning, isScannerLive, period])
+  // No auto-close timer in Live Monitor — the teacher deliberately opened it
+  // and is actively watching. They can stop the scanner manually.
 
   useEffect(() => () => stopCam(), [])
 
@@ -142,18 +127,14 @@ export function LiveMonitoringScanner({ dm, onScan, isScannerLive, period }: Pro
           <span className={`text-[9px] font-bold ${textHead}`}>Scanner is {scanning ? "Active" : "Off"}</span>
         </div>
         <button 
-          onClick={scanning ? stopCam : () => startCam(scannerClosed)}
+          onClick={scanning ? stopCam : () => startCam()}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all
             ${scanning
               ? "bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20"
-              : scannerClosed
-                ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
-                : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"}`}>
+              : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"}`}>
           {scanning 
             ? <><CameraOff size={12} /> Stop</> 
-            : scannerClosed 
-              ? <><Camera size={12} /> Force Open</> 
-              : <><Camera size={12} /> Start Scanner</>
+            : <><Camera size={12} /> Start Scanner</>
           }
         </button>
       </div>
@@ -167,23 +148,7 @@ export function LiveMonitoringScanner({ dm, onScan, isScannerLive, period }: Pro
           </div>
         )}
         
-        {scannerClosed && !scanning && (
-          <div className="absolute top-4 left-4 right-4 z-10 rounded-xl border p-3 flex items-center justify-between gap-3 bg-amber-500/10 border-amber-500/20 backdrop-blur-md">
-            <div className="flex items-center gap-2">
-              <Clock size={13} className="text-amber-500 shrink-0" />
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-wide text-amber-500">Scanner Auto-Closed</p>
-                <p className={`text-[9px] ${dm ? "text-amber-400/70" : "text-amber-700/70"}`}>
-                  {period.subject} ended at {fmtT(period.end_time)}
-                </p>
-              </div>
-            </div>
-            <button onClick={() => startCam(true)}
-              className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 text-white text-[8px] font-black uppercase tracking-wide hover:bg-amber-600 transition-colors">
-              <Camera size={10} /> Force Open
-            </button>
-          </div>
-        )}
+
 
         <video 
           ref={videoRef} 

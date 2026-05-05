@@ -126,7 +126,7 @@ const DmBubble = memo(({
 
   return (
     <div className={cn("flex gap-2 group animate-in slide-in-from-bottom-2 duration-400",
-      isMe ? "flex-row-reverse" : "flex-row", isOptimistic && "opacity-50")}>
+      isMe ? "flex-row-reverse" : "flex-row", isOptimistic && "opacity-60")}>
 
       {/* Avatar */}
       <div className={cn("w-8 h-8 rounded-2xl flex items-center justify-center shrink-0 self-end mb-1 border-2 overflow-hidden",
@@ -140,7 +140,7 @@ const DmBubble = memo(({
       </div>
 
       <div className={cn("flex flex-col max-w-[78%] min-w-0", isMe ? "items-end" : "items-start")}>
-        <span className={cn("text-[9px] font-bold mb-1 px-1 opacity-70 flex items-center gap-1", dm ? "text-slate-400" : "text-slate-500")}>
+        <span className={cn("text-[9px] font-bold mb-1 px-1 flex items-center gap-1", dm ? "text-slate-400" : "text-slate-500")}>
           {isAdmin
             ? <ShieldCheck size={9} className="text-blue-500 shrink-0" />
             : <GraduationCap size={9} className="text-emerald-500 shrink-0" />
@@ -230,7 +230,7 @@ const DmBubble = memo(({
                   </>
                 )}
               </div>
-              {isMe && msg.content && (
+              {isMe && (msg.content || msg.attachment_url) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className={cn("h-7 w-7 flex items-center justify-center rounded-full transition-all active:scale-90",
@@ -241,11 +241,13 @@ const DmBubble = memo(({
                   <DropdownMenuContent align={isMe ? "end" : "start"}
                     className={cn("rounded-2xl p-2 shadow-2xl min-w-[150px] z-[100]",
                       dm ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200")}>
-                    <DropdownMenuItem onClick={() => onStartEdit(msg)}
-                      className={cn("gap-2.5 text-[11px] font-black uppercase tracking-widest px-3 py-2.5 rounded-xl cursor-pointer",
-                        dm ? "text-slate-200 hover:bg-blue-900/30 hover:text-white" : "text-slate-700 hover:bg-blue-50")}>
-                      <Edit3 size={14} className="text-blue-500" /> Edit Msg
-                    </DropdownMenuItem>
+                    {msg.content && (
+                      <DropdownMenuItem onClick={() => onStartEdit(msg)}
+                        className={cn("gap-2.5 text-[11px] font-black uppercase tracking-widest px-3 py-2.5 rounded-xl cursor-pointer",
+                          dm ? "text-slate-200 hover:bg-blue-900/30 hover:text-white" : "text-slate-700 hover:bg-blue-50")}>
+                        <Edit3 size={14} className="text-blue-500" /> Edit Msg
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={() => onDelete(msg.id)}
                       className="gap-2.5 text-[11px] font-black uppercase tracking-widest text-red-500 hover:!text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 px-3 py-2.5 rounded-xl cursor-pointer">
                       <Trash2 size={14} /> Unsend

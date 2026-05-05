@@ -132,7 +132,7 @@ const GlobalBubble = memo(({
 
   return (
     <div className={cn("flex gap-2 md:gap-3 group animate-in slide-in-from-bottom-2 duration-400 relative",
-      isMe ? "flex-row-reverse" : "flex-row", isOptimistic && "opacity-50")}>
+      isMe ? "flex-row-reverse" : "flex-row", isOptimistic && "opacity-60")}>
 
       {/* Avatar */}
       <div className={cn("w-8 h-8 md:w-9 md:h-9 rounded-2xl flex items-center justify-center shrink-0 self-end mb-1 border-2 overflow-hidden",
@@ -146,7 +146,7 @@ const GlobalBubble = memo(({
       </div>
 
       <div className={cn("flex flex-col max-w-[78%] md:max-w-[65%] min-w-0", isMe ? "items-end" : "items-start")}>
-        <span className={cn("text-[9px] font-bold mb-1 px-1 opacity-70 flex items-center gap-1", isDarkMode ? "text-slate-400" : "text-slate-500")}>
+        <span className={cn("text-[9px] font-bold mb-1 px-1 flex items-center gap-1", isDarkMode ? "text-slate-400" : "text-slate-500")}>
           {isAdmin
             ? <ShieldCheck size={9} className="text-blue-500 shrink-0" />
             : <GraduationCap size={9} className="text-emerald-500 shrink-0" />
@@ -234,7 +234,7 @@ const GlobalBubble = memo(({
                 )}
               </div>
 
-              {isMe && msg.content && (
+              {isMe && (msg.content || msg.attachment_url) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="h-8 w-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90">
@@ -244,11 +244,13 @@ const GlobalBubble = memo(({
                   <DropdownMenuContent align={isMe ? "end" : "start"}
                     className="rounded-2xl p-2 shadow-2xl min-w-[150px] z-[100]"
                     style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface, borderColor: isDarkMode ? "rgba(255,255,255,0.05)" : "rgb(241,245,249)" }}>
-                    <DropdownMenuItem onClick={() => onStartEdit(msg)}
-                      className={cn("gap-2.5 text-[11px] font-black uppercase tracking-widest px-3 py-2.5 rounded-xl cursor-pointer",
-                        isDarkMode ? "text-slate-200 hover:bg-blue-900/30 hover:text-white" : "text-slate-700 hover:bg-blue-50")}>
-                      <Edit3 size={14} className="text-blue-500" /> Edit Msg
-                    </DropdownMenuItem>
+                    {msg.content && (
+                      <DropdownMenuItem onClick={() => onStartEdit(msg)}
+                        className={cn("gap-2.5 text-[11px] font-black uppercase tracking-widest px-3 py-2.5 rounded-xl cursor-pointer",
+                          isDarkMode ? "text-slate-200 hover:bg-blue-900/30 hover:text-white" : "text-slate-700 hover:bg-blue-50")}>
+                        <Edit3 size={14} className="text-blue-500" /> Edit Msg
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={() => onDelete(msg.id)}
                       className="gap-2.5 text-[11px] font-black uppercase tracking-widest text-red-600 hover:!text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 px-3 py-2.5 rounded-xl cursor-pointer">
                       <Trash2 size={14} /> Unsend

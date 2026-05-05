@@ -17,6 +17,7 @@ interface EnrollmentData {
   phone?: string; // Personal student phone
   address?: string;
   religion?: string;
+  nationality?: string;
   civil_status?: string;
 
   // Step 2: Academic
@@ -24,8 +25,15 @@ interface EnrollmentData {
   student_category?: "JHS Graduate" | "ALS Passer"; // Matches Select values
   strand?: string;
   last_school_attended?: string;
+  last_school_address?: string;
   gwa_grade_10?: string;
   school_year?: string; // Fetched from system_config in Step 2
+  year_completed_jhs?: string;
+  school_type?: string;
+  facebook_user?: string;
+  facebook_link?: string;
+  preferred_modality?: string;
+  preferred_shift?: string;
 
   // Step 3: Family (Segmented per database schema)
   guardian_first_name?: string;
@@ -37,6 +45,7 @@ interface EnrollmentData {
 
   // Step 4: Documents (The URLs from Supabase Storage)
   profile_2x2_url?: string; // MANDATORY for identification
+  birth_certificate_url?: string;
   diploma_url?: string;
   af5_url?: string;
   form_138_url?: string;    // JHS

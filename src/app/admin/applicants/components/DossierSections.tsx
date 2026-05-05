@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
   User, Mail, Phone, MapPin, ShieldCheck, GraduationCap, Fingerprint,
-  Check, ChevronDown, Facebook, Monitor, Clock, Calendar, School, AlertTriangle,
+  Check, ChevronDown, Facebook, Monitor, Clock, Calendar, School, AlertTriangle, Laptop,
 } from "lucide-react"
 import { AnimatedNumber } from "../../dashboard/components/primitives"
 import { InfoBlock, FieldRow, DropdownField, SectionTitle, getInputClass, getLabelClass, SchoolSearchPicker } from "./DossierPrimitives"
@@ -191,6 +191,21 @@ export const DossierSections = memo(function DossierSections({
                 value={`${formData.first_name || ""} ${formData.middle_name || ""} ${formData.last_name || ""}`.trim()}
                 isDarkMode={isDarkMode} />
             </div>
+
+            {/* USN Credentials — read-only, managed via Student Accounts */}
+            {student.oed_usn && (
+            <div className="sm:col-span-2 min-w-0 overflow-hidden">
+              <div className={`p-5 rounded-[24px] border shadow-inner transition-colors duration-500 min-w-0 overflow-hidden ${isDarkMode ? "bg-blue-900/10 border-blue-900/40" : "bg-blue-50 border-blue-200"}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Laptop size={12} className={isDarkMode ? "text-blue-400" : "text-blue-600"} />
+                  <p className={`text-[9px] font-black uppercase tracking-widest ${isDarkMode ? "text-blue-400" : "text-blue-600"}`}>University Student Number (USN)</p>
+                </div>
+                <p className={`text-2xl md:text-3xl font-black font-mono tracking-wider ${isDarkMode ? "text-blue-300" : "text-blue-700"}`}>
+                  {student.oed_usn}
+                </p>
+              </div>
+            </div>
+            )}
           </div>
         </div>
 
