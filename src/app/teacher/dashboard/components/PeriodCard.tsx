@@ -2,13 +2,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Users, MapPin, Clock, ChevronDown, ChevronUp, Loader2, CheckCircle2, MinusCircle, User, FileDown, Globe, ExternalLink, Pencil, X, Save } from "lucide-react"
+import { Users, MapPin, Clock, ChevronDown, ChevronUp, Loader2, CheckCircle2, MinusCircle, User, FileDown, Globe, ExternalLink, Pencil, X, Save, CalendarCheck } from "lucide-react"
 import { StudentRow } from "./StudentRow"
 import { ScheduleRow, Student, TeacherSession, COLORS, fmt } from "../types"
 import { supabase } from "@/lib/supabase/teacher-client"
 import { toast } from "sonner"
 import { downloadSectionRecord } from "@/app/admin/sections/api/exportSectionRecord"
 import { exportSimpleMasterlist } from "@/app/admin/sections/api/exportMasterlist"
+import { downloadSf2Attendance } from "../api/exportSf2Attendance"
 import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
 interface PeriodCardProps {
@@ -33,6 +34,10 @@ interface AttendanceRecord {
   subject: string
 }
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unknown error"
+}
+
 function todayStr() { return new Date().toISOString().split("T")[0] }
 function fmtT(t: string) {
   if (!t) return ""
@@ -51,6 +56,7 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
   const [editingLink, setEditingLink] = useState(false)
   const [linkDraft,   setLinkDraft]   = useState(period.gclass_link ?? "")
   const [savingLink,  setSavingLink]  = useState(false)
+  const [sf2Exporting, setSf2Exporting] = useState(false)
 
   const saveLink = async () => {
     setSavingLink(true)
@@ -64,8 +70,8 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
       toast.success("Google Classroom link updated")
       setEditingLink(false)
       onLinkUpdated?.(period.id, trimmed)
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to save link")
+    } catch (e: unknown) {
+      toast.error(errorMessage(e) || "Failed to save link")
     } finally {
       setSavingLink(false)
     }
@@ -104,7 +110,7 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
 
       if (data) {
         const map: Record<string, AttendanceRecord> = {}
-        data.forEach((r: any) => { map[r.student_id] = r })
+        data.forEach((r: AttendanceRecord) => { map[r.student_id] = r })
         setAttendance(map)
       }
     } finally {
@@ -166,10 +172,43 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
         }
         toast.success(`Marked ${newStatus}`)
       }
-    } catch (e: any) {
-      toast.error(e?.message || "Update failed")
+    } catch (e: unknown) {
+      toast.error(errorMessage(e) || "Update failed")
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  const exportSf2 = async () => {
+    if (mine.length === 0) {
+      toast.error("No students available for this section.")
+      return
+    }
+
+    setSf2Exporting(true)
+    try {
+      // Check if this section has Saturday classes
+      const { data: satCheck } = await supabase
+        .from("schedules")
+        .select("id")
+        .eq("section", period.section)
+        .eq("day", "Saturday")
+        .limit(1)
+      const hasSaturday = (satCheck?.length ?? 0) > 0
+
+      await downloadSf2Attendance({
+        sectionName: period.section,
+        schoolYear,
+        teacherName: formatTeacherName(session.full_name, session.gender),
+        hasSaturday,
+        currentMonth: new Date().getMonth(),
+        students: mine,
+        attendance: [], // clean template — names only, no marks
+      })
+    } catch (e: unknown) {
+      toast.error((e instanceof Error ? e.message : null) || "Failed to export SF2.")
+    } finally {
+      setSf2Exporting(false)
     }
   }
 
@@ -279,6 +318,15 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
                 ${dm ? "border-slate-600/50 text-slate-300 hover:bg-slate-700/50" : "border-slate-300 text-slate-600 hover:bg-slate-100"}`}
             >
               <FileDown size={9} /> Grading Sheet
+            </button>
+            <button
+              onClick={exportSf2}
+              disabled={sf2Exporting}
+              title="Export SF2 Daily Attendance"
+              className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl border transition-all duration-200 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed
+                ${dm ? "border-blue-500/30 text-blue-400 hover:bg-blue-500/10" : "border-blue-300 text-blue-600 hover:bg-blue-50"}`}
+            >
+              {sf2Exporting ? <Loader2 size={9} className="animate-spin" /> : <CalendarCheck size={9} />} SF2
             </button>
             <button onClick={() => setOpen(v => !v)} className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl border transition-all duration-200
               ${open

@@ -32,6 +32,7 @@ export interface Student {
   gender: string
   section: string
   strand?: string
+  grade_level?: string | null
   status: string
   profile_picture?: string | null
   two_by_two_url?: string | null
@@ -52,14 +53,14 @@ export const ALL_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
 export type DayName = typeof ALL_DAYS[number]
 
 export const COLORS = [
-  { bg: "bg-blue-500/10",    border: "border-blue-500/20",    text: "text-blue-600 dark:text-blue-400",    dot: "bg-blue-500"    },
-  { bg: "bg-violet-500/10",  border: "border-violet-500/20",  text: "text-violet-600 dark:text-violet-400",  dot: "bg-violet-500"  },
+  { bg: "bg-blue-500/10", border: "border-blue-500/20", text: "text-blue-600 dark:text-blue-400", dot: "bg-blue-500" },
+  { bg: "bg-violet-500/10", border: "border-violet-500/20", text: "text-violet-600 dark:text-violet-400", dot: "bg-violet-500" },
   { bg: "bg-emerald-500/10", border: "border-emerald-500/20", text: "text-emerald-600 dark:text-emerald-400", dot: "bg-emerald-500" },
-  { bg: "bg-amber-500/10",   border: "border-amber-500/20",   text: "text-amber-600 dark:text-amber-400",   dot: "bg-amber-500"   },
-  { bg: "bg-rose-500/10",    border: "border-rose-500/20",    text: "text-rose-600 dark:text-rose-400",    dot: "bg-rose-500"    },
-  { bg: "bg-cyan-500/10",    border: "border-cyan-500/20",    text: "text-cyan-600 dark:text-cyan-400",    dot: "bg-cyan-500"    },
+  { bg: "bg-amber-500/10", border: "border-amber-500/20", text: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500" },
+  { bg: "bg-rose-500/10", border: "border-rose-500/20", text: "text-rose-600 dark:text-rose-400", dot: "bg-rose-500" },
+  { bg: "bg-cyan-500/10", border: "border-cyan-500/20", text: "text-cyan-600 dark:text-cyan-400", dot: "bg-cyan-500" },
   { bg: "bg-fuchsia-500/10", border: "border-fuchsia-500/20", text: "text-fuchsia-600 dark:text-fuchsia-400", dot: "bg-fuchsia-500" },
-  { bg: "bg-teal-500/10",    border: "border-teal-500/20",    text: "text-teal-600 dark:text-teal-400",    dot: "bg-teal-500"    },
+  { bg: "bg-teal-500/10", border: "border-teal-500/20", text: "text-teal-600 dark:text-teal-400", dot: "bg-teal-500" },
 ] as const
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

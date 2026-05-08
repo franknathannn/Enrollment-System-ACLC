@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner"
 import { TeacherSession, ScheduleRow, Student, fmt, todayName, ALL_DAYS } from "../types"
 import { LiveMonitoring } from "./LiveMonitoring"
+import { downloadSf2Attendance } from "../api/exportSf2Attendance"
 
 export type AttStatus = "Present" | "Late" | "Absent" | "Excused"
 
@@ -714,9 +715,9 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
       const ex = attendance[student.id]
       const statusLabel = ex?.status === "Present" ? "is already Present"
         : ex?.status === "Late" ? "was already marked Late"
-        : ex?.status === "Excused" ? "is already Excused"
-        : ex?.status === "Absent" ? "was already marked Absent"
-        : "has already been scanned"
+          : ex?.status === "Excused" ? "is already Excused"
+            : ex?.status === "Absent" ? "was already marked Absent"
+              : "has already been scanned"
       toast.info(`${student.first_name} ${student.last_name} ${statusLabel}`, {
         description: ex ? `Scanned at ${fmtT(ex.time)} · ${period.subject}` : `${period.subject}`,
         duration: 3000,
@@ -910,8 +911,8 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
       try {
         if (p.action === "insert") {
           const { error } = await supabase.from("attendance").insert(p.record)
-          if (!error) { 
-            removeFromQueue(p.key); synced++ 
+          if (!error) {
+            removeFromQueue(p.key); synced++
           } else if (error.code === "23505" || error.message?.toLowerCase().includes("duplicate")) {
             // Fix: If it already exists, update its status instead and clear from queue to prevent an infinite loop.
             await supabase.from("attendance").update({ status: p.record.status })
@@ -965,6 +966,60 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
   }, []) // ← no deps: uses studentsRef so identity never changes
 
   useEffect(() => { if (calSection) loadCalMonth(calSection, calYear, calMonth) }, [calSection, calYear, calMonth, loadCalMonth])
+
+  const handleExportSf2 = useCallback(async () => {
+    if (!calSection) { toast.warning("Select a section first"); return }
+
+    // MAY sheet not yet in template
+    if (calMonth === 4) { toast.warning("MAY sheet is not yet in the SF2 template. Please use JUN\u2013APR only."); return }
+
+    const sectionStudents = students.filter(s => s.section === calSection)
+    if (!sectionStudents.length) { toast.warning("No students found for this section"); return }
+
+    // Grade level from DB (text "11" or "12"), fall back to section name
+    const gradeLevel = sectionStudents[0]?.grade_level
+      ?? (calSection.match(/\b(11|12)\b/)?.[1] ?? "")
+
+    // Saturday: check if this section has any Saturday schedule entry
+    const hasSaturday = schedules.some(
+      s => s.section === calSection && s.day === "Saturday"
+    )
+
+    // Query attendance from JUN of school year through the current calendar month
+    const syStart = parseInt(schoolYear, 10)
+    const fromDate = `${syStart}-06-01`
+    // End date = last day of the currently viewed calendar month
+    const endYear = calMonth >= 5 ? syStart : syStart + 1 // Jun-Dec = startYear, Jan-May = startYear+1
+    const endLastDay = new Date(endYear, calMonth + 1, 0).getDate()
+    const toDate = `${endYear}-${String(calMonth + 1).padStart(2, "0")}-${String(endLastDay).padStart(2, "0")}`
+
+    const stuIds = sectionStudents.map(s => s.id)
+    let allAttendance: { student_id: string; date: string; status: string; subject: string }[] = []
+
+    // Supabase .in() has a limit, so batch if needed
+    const BATCH = 50
+    for (let i = 0; i < stuIds.length; i += BATCH) {
+      const batch = stuIds.slice(i, i + BATCH)
+      const { data } = await supabase
+        .from("attendance")
+        .select("student_id, date, status, subject")
+        .in("student_id", batch)
+        .gte("date", fromDate)
+        .lte("date", toDate)
+      if (data) allAttendance = allAttendance.concat(data)
+    }
+
+    await downloadSf2Attendance({
+      sectionName: calSection,
+      schoolYear,
+      gradeLevel,
+      teacherName: session?.full_name ?? "",
+      hasSaturday,
+      currentMonth: calMonth,
+      students: sectionStudents,
+      attendance: allAttendance,
+    })
+  }, [calSection, calYear, calMonth, students, schoolYear, session, schedules])
 
   useEffect(() => {
     if (!calSection) return
@@ -1292,22 +1347,22 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                 {period.is_online
                   ? <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-wider border
                       ${dm ? "bg-blue-500/10 border-blue-500/20 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600"}`}>
-                      <Globe size={11} /> Online
-                    </span>
+                    <Globe size={11} /> Online
+                  </span>
                   : <button onClick={scanning ? stopCam : () => startCam(scannerClosed)}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all
                           ${scanning
-                          ? "bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20"
-                          : scannerClosed
-                            ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
-                            : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"}`}>
-                      {scanning
-                        ? <><CameraOff size={11} /> Stop</>
+                        ? "bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20"
                         : scannerClosed
-                          ? <><Camera size={11} /> Force Open</>
-                          : <><Camera size={11} /> {jsQRReady ? "Start Scanner" : "Loading..."}</>
-                      }
-                    </button>
+                          ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
+                          : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"}`}>
+                    {scanning
+                      ? <><CameraOff size={11} /> Stop</>
+                      : scannerClosed
+                        ? <><Camera size={11} /> Force Open</>
+                        : <><Camera size={11} /> {jsQRReady ? "Start Scanner" : "Loading..."}</>
+                    }
+                  </button>
                 }
               </div>
             </div>
@@ -1730,6 +1785,15 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                     </>
                   )}
                 </div>
+              )}
+              {calSection && (
+                <button
+                  onClick={handleExportSf2}
+                  title="Export SF2 Attendance Form"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wide border transition-all mr-2
+                    ${dm ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}>
+                  <Download size={10} /> SF2
+                </button>
               )}
               <button onClick={() => { const d = new Date(calYear, calMonth - 1); setCalMonth(d.getMonth()); setCalYear(d.getFullYear()); setSelectedDay(null) }}
                 className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-colors ${dm ? "border-slate-700 hover:bg-slate-700" : "border-slate-200 hover:bg-slate-100"}`}>

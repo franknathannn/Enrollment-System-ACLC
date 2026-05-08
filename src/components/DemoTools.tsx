@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
-import { Settings, X, DatabaseBackup, Zap, Eraser, Loader2, ShieldAlert, Users, Trash2, ArrowUpRight, ArrowDownRight, Calendar, CalendarX2 } from "lucide-react"
+import { Settings, X, DatabaseBackup, Zap, Eraser, Loader2, ShieldAlert, Users, Trash2, ArrowUpRight, ArrowDownRight, Calendar, CalendarX2, CalendarPlus, CalendarMinus } from "lucide-react"
 import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
 import { generateStudent } from "@/lib/mock-utils"
@@ -636,6 +636,112 @@ export function DemoTools() {
     }
   }
 
+  // ── SF2 Mock Attendance Engine ──────────────────────────────────────────────
+
+  const handleSeedJuneAttendance = async () => {
+    setLoading("seed-att")
+    const toastId = toast.loading("Seeding June attendance…")
+    try {
+      // 1. Get school year + schedules + students
+      const [{ data: sysCfg }, { data: schedData }, { data: studData }] = await Promise.all([
+        supabase.from("system_config").select("school_year").single(),
+        supabase.from("schedules").select("section, subject, day, start_time"),
+        supabase.from("students").select("id, lrn, first_name, last_name, section, strand"),
+      ])
+
+      const schoolYear = sysCfg?.school_year || "2025-2026"
+      const schedules = schedData || []
+      const students = studData || []
+
+      if (!schedules.length || !students.length) {
+        toast.error("Need schedules and students in DB first.", { id: toastId })
+        return
+      }
+
+      // 2. Pick 3 weekdays in June of the school-year start
+      const syStart = parseInt(schoolYear, 10)
+      const juneDays: { date: string; dayName: string }[] = []
+      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+      for (let d = 1; d <= 30; d++) {
+        const dt = new Date(syStart, 5, d) // month 5 = June
+        const dow = dt.getDay()
+        if (dow >= 1 && dow <= 5) { // Mon-Fri only
+          const mm = String(dt.getMonth() + 1).padStart(2, "0")
+          const dd = String(dt.getDate()).padStart(2, "0")
+          juneDays.push({ date: `${syStart}-${mm}-${dd}`, dayName: dayNames[dow] })
+        }
+      }
+
+      // 3. Build attendance records
+      const rows: any[] = []
+      const statuses: ("Present" | "Late" | "Absent")[] = ["Present", "Present", "Present", "Present", "Late", "Absent"]
+
+      for (const { date, dayName } of juneDays) {
+        // Find all schedules for this day-of-week
+        const daySchedules = schedules.filter((s: any) => s.day === dayName)
+
+        for (const sched of daySchedules) {
+          // Find students in this section
+          const sectionStudents = students.filter((s: any) => s.section === sched.section)
+
+          for (const stu of sectionStudents) {
+            const status = statuses[Math.floor(Math.random() * statuses.length)]
+            rows.push({
+              student_id: stu.id,
+              lrn: stu.lrn,
+              student_name: `${stu.last_name}, ${stu.first_name}`,
+              section: stu.section,
+              strand: stu.strand || "",
+              subject: sched.subject,
+              date,
+              time: sched.start_time?.slice(0, 8) || "08:00:00",
+              status,
+              school_year: schoolYear,
+              notes: "SF2_MOCK",
+            })
+          }
+        }
+      }
+
+      if (rows.length === 0) {
+        toast.info("No matching schedule+student combos found for June.", { id: toastId })
+        return
+      }
+
+      // 4. Insert in batches
+      for (let i = 0; i < rows.length; i += 500) {
+        const { error } = await supabase.from("attendance").insert(rows.slice(i, i + 500))
+        if (error) throw error
+      }
+
+      toast.success(`Seeded ${rows.length} attendance records for ${juneDays.map(d => d.date).join(", ")}`, { id: toastId })
+    } catch (e: any) {
+      toast.error(`Seed error: ${e.message}`, { id: toastId })
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  const handleClearMockAttendance = async () => {
+    if (!confirm("Delete all SF2_MOCK attendance records?")) return
+    setLoading("clear-mock-att")
+    try {
+      let total = 0
+      while (true) {
+        const { data, error } = await supabase.from("attendance").delete().eq("notes", "SF2_MOCK").select("id").limit(500)
+        if (error) throw error
+        if (!data || data.length === 0) break
+        total += data.length
+      }
+      if (total > 0) toast.success(`Cleared ${total} mock attendance records.`)
+      else toast.info("No mock attendance records found.")
+    } catch (e: any) {
+      toast.error(`Clear error: ${e.message}`)
+    } finally {
+      setLoading(null)
+    }
+  }
+
   // ── Purgative Actions ────────────────────────────────────────────────────────
   const wipeAttendance = async (scope: "today" | "all") => {
     if (!confirm(`Are you sure you want to securely wipe ${scope} attendance logs?`)) return
@@ -906,9 +1012,30 @@ export function DemoTools() {
                     </div>
                   </div>
 
+                  {/* SF2 Mock Attendance */}
+                  <div className="space-y-2.5">
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">4. SF2 Demo</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={handleSeedJuneAttendance}
+                        disabled={loading !== null}
+                        className="bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 rounded-xl px-4 py-2.5 text-[10px] font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        {loading === "seed-att" ? <Loader2 size={12} className="animate-spin" /> : <><CalendarPlus size={12} /> Seed June</>}
+                      </button>
+                      <button
+                        onClick={handleClearMockAttendance}
+                        disabled={loading !== null}
+                        className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 rounded-xl px-4 py-2.5 text-[10px] font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        {loading === "clear-mock-att" ? <Loader2 size={12} className="animate-spin" /> : <><CalendarMinus size={12} /> Clear Mock</>}
+                      </button>
+                    </div>
+                  </div>
+
                   {/* DB Wipe */}
                   <div className="space-y-2.5">
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">4. Data Purge</span>
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">5. Data Purge</span>
                     <button
                       onClick={() => wipeAttendance("today")}
                       disabled={loading !== null}
@@ -920,7 +1047,7 @@ export function DemoTools() {
 
                   {/* Snapshots */}
                   <div className="space-y-2.5">
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">5. State Restoration</span>
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">6. State Restoration</span>
                     <button
                       onClick={createSnapshot}
                       disabled={loading !== null}
@@ -1051,6 +1178,29 @@ export function DemoTools() {
                       className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1"
                     >
                       {loading === "unfill-schedules" ? <Loader2 size={10} className="animate-spin" /> : <CalendarX2 size={10} />} Unfill
+                    </button>
+                  </div>
+                </div>
+
+                <div className="w-px h-8 bg-slate-800 shrink-0"></div>
+
+                {/* SF2 Demo */}
+                <div className="flex flex-col gap-1.5 items-start">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">SF2 Demo</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSeedJuneAttendance}
+                      disabled={loading !== null}
+                      className="bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1"
+                    >
+                      {loading === "seed-att" ? <Loader2 size={10} className="animate-spin" /> : <CalendarPlus size={10} />} Seed
+                    </button>
+                    <button
+                      onClick={handleClearMockAttendance}
+                      disabled={loading !== null}
+                      className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1"
+                    >
+                      {loading === "clear-mock-att" ? <Loader2 size={10} className="animate-spin" /> : <CalendarMinus size={10} />} Clear
                     </button>
                   </div>
                 </div>

@@ -23,7 +23,7 @@ export async function downloadSectionRecord(sectionName: string, students: any[]
     // 1. Fill Header Data
     sheet.cell("G4").value("NCR");
     sheet.cell("O4").value("CITY DIVISION OF MANILA");
-    sheet.cell("G5").value("ACLC COMPUTER LEARNING CENTER");
+    sheet.cell("G5").value("ACLC NORTHBAY CAMPUS");
     sheet.cell("X5").value("401144");
     sheet.cell("K7").value(sectionName ? sectionName.toUpperCase() : "UNKNOWN");
     sheet.cell("AG5").value(schoolYear || "");
@@ -33,14 +33,14 @@ export async function downloadSectionRecord(sectionName: string, students: any[]
     }
 
     // 2. Sort Students
-    const sorted = Array.isArray(students) 
-      ? [...students].sort((a, b) => a.last_name.localeCompare(b.last_name)) 
+    const sorted = Array.isArray(students)
+      ? [...students].sort((a, b) => a.last_name.localeCompare(b.last_name))
       : [];
-    
+
     const males = sorted.filter(s => s.gender === 'Male');
     const females = sorted.filter(s => s.gender === 'Female');
 
-    const format = (s: any) => 
+    const format = (s: any) =>
       `${s.last_name.toUpperCase()}, ${s.first_name.toUpperCase()} ${s.middle_name ? s.middle_name.charAt(0) + '.' : ''}`;
 
     // 3. Inject Names
@@ -51,8 +51,8 @@ export async function downloadSectionRecord(sectionName: string, students: any[]
     // Excel's internal engine will handle the update once the user opens the file.
 
     const outBuffer = await workbook.outputAsync();
-    const blob = new Blob([outBuffer], { 
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+    const blob = new Blob([outBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     });
 
     const url = window.URL.createObjectURL(blob);
@@ -61,7 +61,7 @@ export async function downloadSectionRecord(sectionName: string, students: any[]
     a.download = `Class_Record_${sectionName}.xlsx`;
     document.body.appendChild(a);
     a.click();
-    
+
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
 
