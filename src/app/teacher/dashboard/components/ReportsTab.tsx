@@ -61,7 +61,7 @@ interface TriageStudent {
   totalAbsences: number
 }
 
-type RiskStatus = "Monitoring" | "Safe" | "Warning" | "At Risk" | "Failed Threshold"
+type RiskStatus = "Monitoring" | "Safe" | "Warning" | "At Risk" | "Failed"
 
 interface RiskClassification {
   status: RiskStatus
@@ -72,41 +72,26 @@ interface RiskClassification {
 }
 
 function classifyAttendanceRisk(
-  absences: number,
-  late: number,
-  excused: number,
-  scheduledDays: number,
-  totalExpectedDays: number
+  pct: number,
+  scheduledDays: number
 ): RiskClassification {
-  const effectiveAbsences = absences + Math.floor(late / 3)
-  const cap = Math.floor(totalExpectedDays * 0.2)
-  const absencesRemaining = cap - effectiveAbsences
-
   if (scheduledDays < 20) {
-    return { status: "Monitoring", projectedTotal: 0, absencesRemaining, isAtRisk: false, effectiveAbsences }
+    return { status: "Monitoring", projectedTotal: 0, absencesRemaining: 0, isAtRisk: false, effectiveAbsences: 0 }
   }
-
-  const absenceRate = effectiveAbsences / scheduledDays
-  const projectedTotal = Math.round(absenceRate * totalExpectedDays)
 
   let status: RiskStatus
   let isAtRisk = false
 
-  const warningThreshold = Math.ceil(cap * 0.8)
-
-  if (effectiveAbsences >= cap) {
-    status = "Failed Threshold"
+  if (pct < 50) {
+    status = "Failed"
     isAtRisk = true
-  } else if (projectedTotal > cap) {
-    status = "At Risk"
-    isAtRisk = true
-  } else if (projectedTotal >= warningThreshold) {
+  } else if (pct < 75) {
     status = "Warning"
   } else {
     status = "Safe"
   }
 
-  return { status, projectedTotal, absencesRemaining, isAtRisk, effectiveAbsences }
+  return { status, projectedTotal: 0, absencesRemaining: 0, isAtRisk, effectiveAbsences: 0 }
 }
 
 // --- SUB-COMPONENT: Circular Progress Ring ---
@@ -148,12 +133,12 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [activeSection, setActiveSection] = useState<string>("ALL")
   const [subjectFocus, setSubjectFocus] = useState<Record<string, string | null>>({})
-  const [rosterSearch, setRosterSearch] = useState("")
+  const [listSearch, setListSearch] = useState("")
   const [printSubject, setPrintSubject] = useState<{ section: string; subject: string } | null | undefined>(undefined)
   const [selectedProfile, setSelectedProfile] = useState<any>(null)
 
   const toggleSubjectFocus = (section: string, subject: string) => {
-    setRosterSearch("")
+    setListSearch("")
     setSubjectFocus(prev => ({ ...prev, [section]: prev[section] === subject ? null : subject }))
   }
   const printRef = useRef<HTMLDivElement>(null)
@@ -268,9 +253,9 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
     return students.map(student => {
       const recs = attData.filter(r => r.student_id === student.id)
       const subjects = [...new Set(recs.map(r => r.subject))]
-      const RISK_ORDER: Record<string, number> = { "Failed Threshold": 4, "At Risk": 3, "Warning": 2, "Safe": 1, "Monitoring": 0 }
+      const RISK_ORDER: Record<string, number> = { "Failed": 4, "At Risk": 3, "Warning": 2, "Safe": 1, "Monitoring": 0 }
 
-      let worstClassification = classifyAttendanceRisk(0, 0, 0, 0, 0)
+      let worstClassification = classifyAttendanceRisk(100, 0)
       const flaggedSubjects: Record<string, number> = {}
 
       subjects.forEach(subj => {
@@ -280,9 +265,12 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
         const subjExcused = subjRecs.filter(r => r.status === "Excused").length
         const subjDistinctDates = [...new Set(subjRecs.map(r => r.date))].length
 
-        const subjClassification = classifyAttendanceRisk(subjAbsent, subjLate, subjExcused, subjDistinctDates, subjDistinctDates)
+        const subjTotal = subjDistinctDates
+        const subjPresent = subjRecs.filter(r => r.status === "Present" || r.status === "Late").length
+        const subjPct = subjTotal > 0 ? Math.round((subjPresent / subjTotal) * 100) : 0
+        const subjClassification = classifyAttendanceRisk(subjPct, subjDistinctDates)
 
-        if (subjClassification.status === "Warning" || subjClassification.status === "At Risk" || subjClassification.status === "Failed Threshold") {
+        if (subjClassification.status === "Warning" || subjClassification.status === "At Risk" || subjClassification.status === "Failed") {
           flaggedSubjects[subj] = subjAbsent
         }
 
@@ -553,7 +541,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
             }
 
             const pct = total > 0 ? Math.round(((present + late) / total) * 100) : 0
-            const classification = classifyAttendanceRisk(absent, late, excused, scheduledDays, totalExpectedDays)
+            const classification = classifyAttendanceRisk(pct, scheduledDays)
 
             return { student, present, late, absent, excused, total, pct, cuttingCount, classification }
           }).sort((a, b) => b.absent - a.absent)
@@ -564,7 +552,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
               {/* Page header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #d1d5db", paddingBottom: "14px", marginBottom: "20px" }}>
                 <div>
-                  <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>ACLC NORTHBAY College — S.Y. {schoolYear}</p>
+                  <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>ACLC NORTHBAY CAMPUS — S.Y. {schoolYear}</p>
                   <h1 style={{ fontSize: "22px", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>Attendance Report</h1>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -598,8 +586,8 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                 </div>
               )}
 
-              {/* Roster table */}
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: "#374151", marginBottom: "8px", textTransform: "uppercase" }}>Student Roster</p>
+              {/* List table */}
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: "#374151", marginBottom: "8px", textTransform: "uppercase" }}>Student List</p>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                 <thead>
                   <tr style={{ borderBottom: "2px solid #111827" }}>
@@ -617,7 +605,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                     let statusColor = "#16a34a"; // green for Safe
                     let dotColor: string | null = null;
 
-                    if (status === "Failed Threshold") {
+                    if (status === "Failed") {
                       rowBg = "#fff1f2";
                       statusColor = "#dc2626";
                       dotColor = "#dc2626";
@@ -634,7 +622,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                     }
 
                     // We also keep the orange flag for cutting if it's there
-                    const nameColor = (status === "Failed Threshold" || status === "At Risk" || hasCutting) ? (hasCutting && status !== "Failed Threshold" ? "#ea580c" : "#dc2626") : "#111827";
+                    const nameColor = (status === "Failed" || status === "At Risk" || hasCutting) ? (hasCutting && status !== "Failed" ? "#ea580c" : "#dc2626") : "#111827";
 
                     return (
                       <tr key={student.id} style={{ backgroundColor: rowBg, borderBottom: "1px solid #f3f4f6" }}>
@@ -672,16 +660,16 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                       </tr>
                     </thead>
                     <tbody>
-                      {flaggedStudents.map(({ student, classification, pct, cuttingCount }) => {
-                        const { status, effectiveAbsences, absencesRemaining } = classification;
+                      {flaggedStudents.map(({ student, classification, pct, cuttingCount, absent }) => {
+                        const { status } = classification;
                         const hasCutting = cuttingCount > 0;
                         return (
                           <tr key={student.id} style={{ borderBottom: "1px solid #fee2e2" }}>
                             <td style={{ padding: "5px 8px", fontWeight: 600, color: "#991b1b" }}>{student.last_name}, {student.first_name}</td>
-                            <td style={{ padding: "5px 8px", color: "#dc2626", fontWeight: 700 }}>{effectiveAbsences}</td>
+                            <td style={{ padding: "5px 8px", color: "#dc2626", fontWeight: 700 }}>{absent}</td>
                             <td style={{ padding: "5px 8px", color: "#dc2626", fontWeight: 700 }}>{pct}%</td>
                             <td style={{ padding: "5px 8px", fontSize: "9px", color: "#9ca3af" }}>
-                              <span style={{ fontWeight: 700, color: status === "Failed Threshold" ? "#dc2626" : "#ea580c" }}>{status}</span> — {absencesRemaining > 0 ? `${absencesRemaining} more leads to Failure.` : "Absent cap exceeded."} {hasCutting ? `(${cuttingCount} cutting incident(s))` : ""}
+                              <span style={{ fontWeight: 700, color: status === "Failed" ? "#dc2626" : "#ea580c" }}>{status}</span> — {(status === "Failed" || status === "Warning") ? "Failed to reach 75%." : ""} {hasCutting ? `(${cuttingCount} cutting incident(s))` : ""}
                             </td>
                           </tr>
                         )
@@ -697,7 +685,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
             {/* Full report header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #d1d5db", paddingBottom: "14px", marginBottom: "20px" }}>
               <div>
-                <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>ACLC NORTHBAY College — S.Y. {schoolYear}</p>
+                <p style={{ fontSize: "10px", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: "4px" }}>ACLC NORTHBAY CAMPUS — S.Y. {schoolYear}</p>
                 <h1 style={{ fontSize: "22px", fontWeight: 900, margin: 0, letterSpacing: "-0.02em" }}>Attendance Report</h1>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -783,7 +771,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
               for (const sec of filteredReports) {
                 const fs = subjectFocus[sec.section]
                 if (fs) return `PDF: ${sec.section} · ${fs}`
-                if (expanded.has(sec.section)) return `PDF: ${sec.section} Roster`
+                if (expanded.has(sec.section)) return `PDF: ${sec.section} List`
               }
               return "Download PDF"
             })()}
@@ -984,7 +972,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                     ))}
                   </div>
 
-                  {/* --- STUDENT ROSTER (shown when a subject is focused OR as Global fallback) --- */}
+                  {/* --- STUDENT LIST (shown when a subject is focused OR as Global fallback) --- */}
                   {(subjectFocus[report.section] || !subjectFocus[report.section]) && (() => {
                     const focusedSubject = subjectFocus[report.section]
                     const isGlobal = !focusedSubject
@@ -1028,12 +1016,12 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                       }
 
                       const pct = total > 0 ? Math.round(((present + late) / total) * 100) : 0
-                      const classification = classifyAttendanceRisk(absent, late, excused, scheduledDays, totalExpectedDays)
+                      const classification = classifyAttendanceRisk(pct, scheduledDays)
 
                       return { student, present, late, absent, excused, total, pct, cuttingCount, classification }
                     }).sort((a, b) => b.absent - a.absent)
 
-                    const q = rosterSearch.trim().toLowerCase()
+                    const q = listSearch.trim().toLowerCase()
                     const visibleStats = q
                       ? allStudentStats.filter(s =>
                         `${s.student.last_name} ${s.student.first_name}`.toLowerCase().includes(q) ||
@@ -1046,9 +1034,9 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                     const StatusBadge = ({ classification, pct }: { classification: RiskClassification; pct: number }) => {
                       const { status } = classification;
 
-                      if (status === "Failed Threshold") return (
+                      if (status === "Failed") return (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 text-[7px] font-black uppercase tracking-widest border border-red-500/15 whitespace-nowrap animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.4)]">
-                          <AlertCircle size={7} /> Failed Threshold
+                          <AlertCircle size={7} /> Failed
                         </span>
                       )
                       if (status === "At Risk") return (
@@ -1091,8 +1079,8 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                               <svg className={`absolute left-2.5 w-3 h-3 ${sub}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
                               <input
                                 type="text"
-                                value={rosterSearch}
-                                onChange={e => setRosterSearch(e.target.value)}
+                                value={listSearch}
+                                onChange={e => setListSearch(e.target.value)}
                                 placeholder="Name or LRN…"
                                 className={`pl-7 pr-3 py-2 text-[10px] font-bold bg-transparent outline-none w-36 placeholder:opacity-40 ${head}`}
                               />
@@ -1124,7 +1112,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                                 let dotClass = "";
                                 let nameClass = head;
 
-                                if (status === "Failed Threshold") {
+                                if (status === "Failed") {
                                   rowBgClass = dm ? "bg-red-900/10 hover:bg-red-900/15" : "bg-red-50/40 hover:bg-red-100/40";
                                   dotClass = "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)] animate-pulse";
                                   nameClass = "text-red-500 font-black";
@@ -1141,7 +1129,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                                 }
 
                                 // Override nameColor to show orange if cutting risk applies but not failed threshold
-                                if (hasCutting && status !== "Failed Threshold") {
+                                if (hasCutting && status !== "Failed") {
                                   nameClass = "text-orange-500 font-black";
                                 }
 
@@ -1233,8 +1221,8 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
 
           <div className={`divide-y max-h-[420px] overflow-y-auto fancy-scroll ${divideB}`}>
             {filteredTriage.map(({ student, worstClassification, flaggedSubjects, totalAbsences }, idx) => {
-              const statusColor = worstClassification.status === "Failed Threshold" ? "text-red-500" : worstClassification.status === "At Risk" ? "text-orange-500" : "text-amber-500"
-              const statusBg = worstClassification.status === "Failed Threshold" ? "bg-red-500/10 border-red-500/15" : worstClassification.status === "At Risk" ? "bg-orange-500/10 border-orange-500/15" : "bg-amber-500/10 border-amber-500/15"
+              const statusColor = worstClassification.status === "Failed" ? "text-red-500" : worstClassification.status === "At Risk" ? "text-orange-500" : "text-amber-500"
+              const statusBg = worstClassification.status === "Failed" ? "bg-red-500/10 border-red-500/15" : worstClassification.status === "At Risk" ? "bg-orange-500/10 border-orange-500/15" : "bg-amber-500/10 border-amber-500/15"
               return (
                 <div key={student.id} className={`px-6 md:px-8 py-5 flex items-center gap-5 transition-colors group ${dm ? "hover:bg-rose-500/5" : "hover:bg-rose-50/50"} animate-in fade-in duration-500`} style={{ animationDelay: `${idx * 50}ms` }}>
                   <div className={`w-12 h-12 rounded-2xl border overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-500 ${dm ? "bg-slate-800/40 border-slate-800/60" : "bg-white border-slate-200 shadow-sm"}`}>

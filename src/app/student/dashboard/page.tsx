@@ -385,16 +385,16 @@ function DashboardContent() {
     if (!student) return
     const toastId = toast.loading("Preparing Registration Form...")
     try {
-      const JSZip     = (await import("jszip")).default
+      const JSZip = (await import("jszip")).default
       const fileSaver = await import("file-saver")
-      const saveAs    = fileSaver.saveAs || (fileSaver as any).default
+      const saveAs = fileSaver.saveAs || (fileSaver as any).default
 
       const response = await fetch("/REGISTRATION - GAS & ICT.docx")
       if (!response.ok) throw new Error("Template not found in /public folder")
 
       const content = await response.arrayBuffer()
-      const zip     = await JSZip.loadAsync(content)
-      let docXml    = await zip.file("word/document.xml")?.async("string")
+      const zip = await JSZip.loadAsync(content)
+      let docXml = await zip.file("word/document.xml")?.async("string")
       if (!docXml) throw new Error("Invalid .docx: missing document.xml")
 
       if (student.grade_level === "12") docXml = docXml.replaceAll("Grade 11", "Grade 12")
@@ -405,13 +405,13 @@ function DashboardContent() {
 
       const expandPara = (xml: string, pStart: number, innerXml: string) => {
         const tagEnd = xml.indexOf(">", pStart)
-        const isSC   = xml[tagEnd - 1] === "/"
+        const isSC = xml[tagEnd - 1] === "/"
         if (isSC) {
           return xml.slice(0, pStart) + xml.slice(pStart, tagEnd - 1) + ">" + innerXml + "</w:p>" + xml.slice(tagEnd + 1)
         }
-        const pEnd    = xml.indexOf("</w:p>", pStart) + 6
-        const para    = xml.slice(pStart, pEnd)
-        const pPr     = para.match(/<w:pPr[\s\S]*?<\/w:pPr>/)?.[0] ?? ""
+        const pEnd = xml.indexOf("</w:p>", pStart) + 6
+        const para = xml.slice(pStart, pEnd)
+        const pPr = para.match(/<w:pPr[\s\S]*?<\/w:pPr>/)?.[0] ?? ""
         const openTag = para.match(/^<w:p\b[^>]*>/)?.[0] ?? "<w:p>"
         return xml.slice(0, pStart) + openTag + pPr + innerXml + "</w:p>" + xml.slice(pEnd)
       }
@@ -422,7 +422,7 @@ function DashboardContent() {
         if (mi === -1) return xml
         const wspEnd = xml.indexOf("</wps:wsp>", mi)
         let tx = xml.indexOf("<w:txbxContent>", mi); if (wspEnd !== -1 && tx > wspEnd) tx = -1
-        let bp = xml.indexOf("<wps:bodyPr",     mi); if (wspEnd !== -1 && bp > wspEnd) bp = -1
+        let bp = xml.indexOf("<wps:bodyPr", mi); if (wspEnd !== -1 && bp > wspEnd) bp = -1
         const run = `<w:r><w:t xml:space="preserve">${text}</w:t></w:r>`
         if (tx !== -1 && (bp === -1 || tx < bp)) {
           const ps = xml.indexOf("<w:p", tx); if (ps === -1 || (wspEnd !== -1 && ps > wspEnd)) return xml
@@ -437,8 +437,8 @@ function DashboardContent() {
         if (mi === -1) return xml
         const wspEnd = xml.indexOf("</wps:wsp>", mi)
         let tx = xml.indexOf("<w:txbxContent>", mi); if (wspEnd !== -1 && tx > wspEnd) tx = -1
-        let bp = xml.indexOf("<wps:bodyPr",     mi); if (wspEnd !== -1 && bp > wspEnd) bp = -1
-        const cr  = `<w:r><w:rPr><w:b/><w:sz w:val="18"/></w:rPr><w:t>\u2713</w:t></w:r>`
+        let bp = xml.indexOf("<wps:bodyPr", mi); if (wspEnd !== -1 && bp > wspEnd) bp = -1
+        const cr = `<w:r><w:rPr><w:b/><w:sz w:val="18"/></w:rPr><w:t>\u2713</w:t></w:r>`
         const ppr = `<w:pPr><w:jc w:val="center"/></w:pPr>`
         if (tx !== -1 && (bp === -1 || tx < bp)) {
           const ps = xml.indexOf("<w:p", tx); if (ps === -1 || (wspEnd !== -1 && ps > wspEnd)) return xml
@@ -452,28 +452,28 @@ function DashboardContent() {
       const fullGuardian = [student.guardian_first_name, student.guardian_last_name].filter(Boolean).join(" ")
       const fullName = [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(" ")
 
-      const isALS    = student.student_category?.toLowerCase().includes("als")
-      const isJHS    = !isALS
+      const isALS = student.student_category?.toLowerCase().includes("als")
+      const isJHS = !isALS
       const isPublic = !student.school_type || student.school_type.toLowerCase().includes("public")
 
       const fields: [string, string][] = [
-        ["Rectangle 10",  x(student.first_name  || "")],
-        ["Rectangle 13",  x(student.middle_name || "")],
-        ["Rectangle 12",  x(student.last_name   || "")],
-        ["Rectangle 14",  x(student.address     || "")],
-        ["Rectangle 16",  x(fullGuardian)],
-        ["Rectangle 45",  x(student.lrn         || "")],
-        ["Rectangle 23",  x(today)],
-        ["Rectangle 47",  x(student.nationality || student.citizenship || "Filipino")],
-        ["Rectangle 24",  x(student.birth_date  || "")],
-        ["Rectangle 50",  x(String(student.age  || ""))],
-        ["Rectangle 25",  x(student.phone       || student.contact_no || "")],
-        ["Rectangle 26",  x(student.guardian_phone || "")],
-        ["Rectangle 53",  x(student.email       || "")],
-        ["Rectangle 9",   x(student.facebook_user || student.fb_account || student.facebook || "")],
-        ["Rectangle 54",  x(student.last_school_attended || "")],
-        ["Rectangle 55",  x(student.last_school_address  || student.school_address || "")],
-        ["Rectangle 28",  x(fullName)],
+        ["Rectangle 10", x(student.first_name || "")],
+        ["Rectangle 13", x(student.middle_name || "")],
+        ["Rectangle 12", x(student.last_name || "")],
+        ["Rectangle 14", x(student.address || "")],
+        ["Rectangle 16", x(fullGuardian)],
+        ["Rectangle 45", x(student.lrn || "")],
+        ["Rectangle 23", x(today)],
+        ["Rectangle 47", x(student.nationality || student.citizenship || "Filipino")],
+        ["Rectangle 24", x(student.birth_date || "")],
+        ["Rectangle 50", x(String(student.age || ""))],
+        ["Rectangle 25", x(student.phone || student.contact_no || "")],
+        ["Rectangle 26", x(student.guardian_phone || "")],
+        ["Rectangle 53", x(student.email || "")],
+        ["Rectangle 9", x(student.facebook_user || student.fb_account || student.facebook || "")],
+        ["Rectangle 54", x(student.last_school_attended || "")],
+        ["Rectangle 55", x(student.last_school_address || student.school_address || "")],
+        ["Rectangle 28", x(fullName)],
         ["Rectangle 229", isJHS ? x(student.year_completed_jhs || "") : ""],
       ]
 
@@ -489,9 +489,9 @@ function DashboardContent() {
       docXml = checkRect(docXml, student.strand?.toUpperCase() === "GAS" ? "Rectangle 4" : "Rectangle 5")
 
       if (student.preferred_modality === "Face to Face") docXml = checkRect(docXml, "Rectangle 8")
-      else if (student.preferred_modality === "Online")  docXml = checkRect(docXml, "Rectangle 6")
+      else if (student.preferred_modality === "Online") docXml = checkRect(docXml, "Rectangle 6")
 
-      if (student.preferred_shift === "AM")      docXml = checkRect(docXml, "Rectangle 11")
+      if (student.preferred_shift === "AM") docXml = checkRect(docXml, "Rectangle 11")
       else if (student.preferred_shift === "PM") docXml = checkRect(docXml, "Rectangle 7")
 
       zip.file("word/document.xml", docXml)
@@ -561,8 +561,8 @@ function DashboardContent() {
               <button
                 onClick={() => setViewMode("list")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === "list"
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : dm ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-700"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : dm ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-700"
                   }`}
               >
                 <List size={11} /> Day View
@@ -575,8 +575,8 @@ function DashboardContent() {
                   }
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === "grid"
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : dm ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-700"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : dm ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-700"
                   }`}
               >
                 <LayoutGrid size={11} /> Weekly Grid
@@ -588,10 +588,10 @@ function DashboardContent() {
                 onClick={downloadScheduleGrid}
                 disabled={downloadingGrid}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95 disabled:opacity-50 ${downloadingGrid
-                    ? "border-green-500/30 bg-green-500/10 text-green-400"
-                    : dm
-                      ? "border-white/10 bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/[0.06]"
-                      : "border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                  ? "border-green-500/30 bg-green-500/10 text-green-400"
+                  : dm
+                    ? "border-white/10 bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/[0.06]"
+                    : "border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:border-slate-300"
                   }`}
               >
                 {downloadingGrid ? <><CheckCircle2 size={11} /> Saved!</> : <><Download size={11} /> Download</>}
@@ -653,7 +653,7 @@ function DashboardContent() {
             <div className="flex items-center gap-3">
               <div className={`w-9 h-9 rounded-xl border overflow-hidden flex items-center justify-center shrink-0 shadow-sm ${dm ? "bg-slate-800 border-slate-700/80" : "bg-white border-slate-200"}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo-aclc.png" alt="AMA ACLC" className="w-full h-full object-contain" />
+                <img src="/logo-aclc.png" alt="ACLC" className="w-full h-full object-contain" />
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] bg-gradient-to-r from-blue-500 to-blue-400 bg-clip-text text-transparent">Student Portal</p>
@@ -684,23 +684,22 @@ function DashboardContent() {
           {/* Profile Card */}
           <div className={`rounded-2xl md:rounded-3xl border overflow-hidden relative ${dm ? "bg-slate-900/60 border-slate-700/50" : "bg-white border-slate-200"}`}>
             <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-violet-500 to-blue-400" />
-            
+
             {/* Absolute Form Download Button */}
             <div className="absolute top-5 right-5 md:top-6 md:right-6 z-10">
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button 
-                      onClick={handleDownloadForm} 
-                      className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full border transition-all ${
-                        dm ? "bg-slate-800 border-slate-700 text-slate-400 hover:text-white shadow-sm" : "bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 shadow-sm"
-                      }`}
+                    <button
+                      onClick={handleDownloadForm}
+                      className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full border transition-all ${dm ? "bg-slate-800 border-slate-700 text-slate-400 hover:text-white shadow-sm" : "bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 shadow-sm"
+                        }`}
                     >
                       <FileDown size={14} className="md:w-4 md:h-4" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
-                     <p className="text-[10px] font-bold uppercase tracking-widest">Download Registration Form</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest">Download Registration Form</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -1090,8 +1089,8 @@ function StudentAnnouncements({ studentGrade, dm }: { studentGrade: string, dm: 
     <div className="space-y-4 fade-in pb-12">
       {currentAnnouncements.map((ann) => (
         <div key={ann.id} className={`p-6 md:p-8 rounded-[32px] border ${ann.is_pinned
-            ? (dm ? "bg-blue-900/10 border-blue-900/50" : "bg-blue-50 border-blue-200")
-            : (dm ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200")
+          ? (dm ? "bg-blue-900/10 border-blue-900/50" : "bg-blue-50 border-blue-200")
+          : (dm ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200")
           } shadow-sm relative overflow-hidden group`}>
           {ann.is_pinned && <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full shrink-0 ${dm ? "bg-blue-500/20" : "bg-blue-500/10"}`} />}
 

@@ -500,10 +500,10 @@ export default function EnrollmentPage() {
         checkStatus()
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, () => {
-        checkStatus() 
+        checkStatus()
       })
       .subscribe()
-      
+
     const interval = setInterval(checkStatus, 60_000)
     return () => {
       clearInterval(interval)
@@ -829,7 +829,7 @@ export default function EnrollmentPage() {
                   <span className={cn(
                     "font-black text-xl uppercase italic leading-none tracking-tighter",
                     isDark ? "text-white" : "text-slate-900"
-                  )}>AMA ACLC Northbay</span>
+                  )}> ACLC Northbay</span>
                   <p className={cn(
                     "text-[9px] font-bold uppercase tracking-[0.4em] mt-1.5",
                     isDark ? "text-blue-400" : "text-blue-600"

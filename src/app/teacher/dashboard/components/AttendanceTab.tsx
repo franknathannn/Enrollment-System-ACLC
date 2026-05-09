@@ -226,7 +226,7 @@ function QRViewerModal({ student, onClose }: { student: Student; onClose: () => 
               onError={e => { (e.target as HTMLImageElement).style.display = "none" }} />
           </div>
           <div className="relative">
-            <p className="text-white text-[12px] font-black uppercase tracking-[0.18em] leading-none">AMA ACLC</p>
+            <p className="text-white text-[12px] font-black uppercase tracking-[0.18em] leading-none">ACLC</p>
             <p className="text-blue-200 text-[8px] font-bold uppercase tracking-[0.2em] mt-0.5 opacity-80 leading-none">Northbay</p>
           </div>
         </div>
@@ -1018,8 +1018,9 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
       currentMonth: calMonth,
       students: sectionStudents,
       attendance: allAttendance,
+      calendarEvents: calendarEvents,
     })
-  }, [calSection, calYear, calMonth, students, schoolYear, session, schedules])
+  }, [calSection, calYear, calMonth, students, schoolYear, session, schedules, calendarEvents])
 
   useEffect(() => {
     if (!calSection) return
@@ -1875,12 +1876,14 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                     const isHoliday = dayCalEvents.some(e => e.event_type === "holiday")
                     const isSuspended = dayCalEvents.some(e => e.event_type === "suspension")
                     const isSpecial = isHoliday || isSuspended
-                    const calEventLabel = isHoliday ? "HOLIDAY" : isSuspended ? "SUSPENDED" : null
+                    const otherEvent = dayCalEvents.find(e => ["event", "meeting", "exam"].includes(e.event_type))
+
+                    const calEventLabel = isHoliday ? "HOLIDAY" : isSuspended ? "SUSPENDED" : otherEvent ? otherEvent.event_type.toUpperCase() : null
                     const firstEventTitle = dayCalEvents[0]?.title
 
                     const isOpenable = !isFuture && !isSpecial && dayClasses.length > 0
                     const showClassChips = !hasData && isOpenable && !isSpecial
-                    const canClickDay = !isSpecial && (isOpenable || hasData || dateStr === selectedDay)
+                    const canClickDay = !isSpecial && (isOpenable || hasData || dateStr === selectedDay || !!otherEvent)
 
                     const cellClass = isSpecial
                       ? (dm
@@ -1892,9 +1895,11 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                           : pct >= 0.5
                             ? (dm ? "bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 cursor-pointer" : "bg-amber-100 hover:bg-amber-200 text-amber-700 cursor-pointer")
                             : (dm ? "bg-red-500/20 hover:bg-red-500/30 text-red-400 cursor-pointer" : "bg-red-100 hover:bg-red-200 text-red-700 cursor-pointer")
-                        : isOpenable
-                          ? (dm ? "bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 cursor-pointer" : "bg-slate-100 hover:bg-slate-200 text-slate-500 cursor-pointer")
-                          : (dm ? "text-slate-700 cursor-default" : "text-slate-300 cursor-default")
+                        : otherEvent
+                          ? (dm ? "bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 cursor-pointer" : "bg-purple-100 hover:bg-purple-200 text-purple-700 cursor-pointer")
+                          : isOpenable
+                            ? (dm ? "bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 cursor-pointer" : "bg-slate-100 hover:bg-slate-200 text-slate-500 cursor-pointer")
+                            : (dm ? "text-slate-700 cursor-default" : "text-slate-300 cursor-default")
 
                     // Sorted subject entries for dots + tooltip
                     const subjEntries = Object.entries(bySubjectAdjusted).sort(([a], [b]) => a.localeCompare(b))
@@ -1921,9 +1926,11 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                         >
                           <span style={{ fontSize: 15, fontWeight: 900, lineHeight: 1 }}>{day}</span>
 
-                          {isSpecial && (
+                          {(isSpecial || otherEvent) && (
                             <span className={`text-[5px] font-black leading-tight text-center px-0.5 truncate max-w-full
-                              ${isHoliday ? (dm ? "text-red-400" : "text-red-600") : (dm ? "text-orange-400" : "text-orange-600")}`}>
+                              ${isHoliday ? (dm ? "text-red-400" : "text-red-600") :
+                                isSuspended ? (dm ? "text-orange-400" : "text-orange-600") :
+                                  (dm ? "text-purple-400" : "text-purple-600")}`}>
                               {calEventLabel}
                             </span>
                           )}
@@ -2023,6 +2030,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                     { color: dm ? "bg-green-500/20" : "bg-green-100", label: "≥80% present" },
                     { color: dm ? "bg-amber-500/20" : "bg-amber-100", label: "50–79%" },
                     { color: dm ? "bg-red-500/20" : "bg-red-100", label: "<50% / Absent" },
+                    { color: dm ? "bg-purple-500/20" : "bg-purple-100", label: "Event/Exam/Meeting" },
                     { color: dm ? "bg-red-500/20 border border-red-500/40" : "bg-red-100 border border-red-300", label: "Holiday" },
                     { color: dm ? "bg-orange-500/20 border border-orange-500/40" : "bg-orange-100 border border-orange-300", label: "Suspended" },
                   ].map(l => (

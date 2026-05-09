@@ -78,7 +78,7 @@ function PreviewModal({
               onError={e => { (e.target as HTMLImageElement).style.display = "none" }} />
           </div>
           <div className="relative">
-            <p className="text-white text-[12px] font-black uppercase tracking-[0.18em] leading-none">AMA ACLC</p>
+            <p className="text-white text-[12px] font-black uppercase tracking-[0.18em] leading-none">ACLC</p>
             <p className="text-blue-200 text-[8px] font-bold uppercase tracking-[0.2em] mt-0.5 opacity-80 leading-none">Northbay</p>
           </div>
         </div>
@@ -187,26 +187,26 @@ export function StudentQRCard({ studentId, studentName, lrn, section, dm = true 
   }, [studentId, lrn, section, studentName])
 
   // ── Theme tokens ────────────────────────────────────────────────────────────
-  const outerBg     = dm ? "rgba(10,15,30,0.7)"               : "#ffffff"
-  const outerBorder = dm ? "1px solid rgba(30,58,110,0.5)"    : "1px solid rgba(30,100,200,0.12)"
-  const cardBg      = dm ? "#0a0f1e"                           : "#f8fafc"
-  const cardBorder  = dm ? "1px solid #1e3a6e"                : "1px solid #e2e8f0"
-  const qrBoxBg     = dm ? "#0a0f1e"                          : "#ffffff"
-  const nameTxt     = dm ? "text-slate-100"                   : "text-slate-800"
-  const lrnTxt      = dm ? "text-slate-500"                   : "text-slate-500"
-  const hintTxt     = dm ? "text-slate-700"                   : "text-slate-400"
-  const instrBg     = dm ? "rgba(255,255,255,0.02)"           : "rgba(0,0,0,0.025)"
+  const outerBg = dm ? "rgba(10,15,30,0.7)" : "#ffffff"
+  const outerBorder = dm ? "1px solid rgba(30,58,110,0.5)" : "1px solid rgba(30,100,200,0.12)"
+  const cardBg = dm ? "#0a0f1e" : "#f8fafc"
+  const cardBorder = dm ? "1px solid #1e3a6e" : "1px solid #e2e8f0"
+  const qrBoxBg = dm ? "#0a0f1e" : "#ffffff"
+  const nameTxt = dm ? "text-slate-100" : "text-slate-800"
+  const lrnTxt = dm ? "text-slate-500" : "text-slate-500"
+  const hintTxt = dm ? "text-slate-700" : "text-slate-400"
+  const instrBg = dm ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.025)"
   const instrBorder = dm ? "1px solid rgba(255,255,255,0.04)" : "1px solid rgba(0,0,0,0.06)"
-  const instrNum    = dm ? "text-slate-600"                   : "text-slate-400"
-  const instrTxt    = dm ? "text-slate-500"                   : "text-slate-500"
-  const privacyTxt  = dm ? "text-slate-700"                   : "text-slate-400"
-  const pillBg      = dm ? "rgba(56,189,248,0.1)"             : "rgba(2,132,199,0.08)"
-  const pillBorder  = dm ? "rgba(56,189,248,0.25)"            : "rgba(2,132,199,0.2)"
-  const pillColor   = dm ? "#38bdf8"                          : "#0284c7"
-  const spinColor   = dm ? "#38bdf8"                          : "#2563eb"
-  const previewBg   = dm ? "rgba(56,189,248,0.08)"           : "rgba(2,132,199,0.06)"
-  const previewBorder = dm ? "rgba(56,189,248,0.2)"          : "rgba(2,132,199,0.18)"
-  const previewColor  = dm ? "#38bdf8"                        : "#0369a1"
+  const instrNum = dm ? "text-slate-600" : "text-slate-400"
+  const instrTxt = dm ? "text-slate-500" : "text-slate-500"
+  const privacyTxt = dm ? "text-slate-700" : "text-slate-400"
+  const pillBg = dm ? "rgba(56,189,248,0.1)" : "rgba(2,132,199,0.08)"
+  const pillBorder = dm ? "rgba(56,189,248,0.25)" : "rgba(2,132,199,0.2)"
+  const pillColor = dm ? "#38bdf8" : "#0284c7"
+  const spinColor = dm ? "#38bdf8" : "#2563eb"
+  const previewBg = dm ? "rgba(56,189,248,0.08)" : "rgba(2,132,199,0.06)"
+  const previewBorder = dm ? "rgba(56,189,248,0.2)" : "rgba(2,132,199,0.18)"
+  const previewColor = dm ? "#38bdf8" : "#0369a1"
 
   return (
     <>
@@ -247,7 +247,7 @@ export function StudentQRCard({ studentId, studentName, lrn, section, dm = true 
                   onError={e => { (e.target as HTMLImageElement).style.display = "none" }} />
               </div>
               <div className="relative flex-1">
-                <p className="text-white text-[12px] font-black uppercase tracking-[0.18em] leading-none">AMA ACLC</p>
+                <p className="text-white text-[12px] font-black uppercase tracking-[0.18em] leading-none">ACLC</p>
                 <p className="text-blue-300 text-[8px] font-bold uppercase tracking-[0.22em] mt-0.5 opacity-80 leading-none">Northbay</p>
               </div>
               <div className="relative text-right">

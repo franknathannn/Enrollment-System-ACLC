@@ -17,7 +17,7 @@ export function DashboardNav({ dm, online, onToggleDark, onLogout }: DashboardNa
     <nav className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <div className={`w-9 h-9 rounded-xl border overflow-hidden flex items-center justify-center shrink-0 shadow-sm ${dm ? "bg-slate-800 border-slate-700/80" : "bg-white border-slate-200"}`}>
-          <img src="/logo-aclc.png" alt="AMA ACLC" className="w-full h-full object-contain" />
+          <img src="/logo-aclc.png" alt="ACLC" className="w-full h-full object-contain" />
         </div>
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.25em] bg-gradient-to-r from-blue-500 to-blue-400 bg-clip-text text-transparent">Teacher Portal</p>

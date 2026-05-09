@@ -105,7 +105,7 @@ serve(async (req: Request) => {
         '<div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);text-align:center;padding:2px;box-sizing:border-box;"><img src="' + logoUrl + '" alt="ACLC" style="width:100%;height:100%;object-fit:contain;border-radius:6px;" /></div>',
         '</td>',
         '<td valign="middle">',
-        '<p style="margin:0;color:#fff;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;line-height:1.1;">AMA ACLC</p>',
+        '<p style="margin:0;color:#fff;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;line-height:1.1;">ACLC</p>',
         '<p style="margin:2px 0 0;color:#bfdbfe;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:2px;line-height:1.1;opacity:0.9;">Northbay College</p>',
         '</td>',
         '<td align="right" valign="bottom">',

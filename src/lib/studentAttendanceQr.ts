@@ -5,32 +5,32 @@
 
 export const STUDENT_ATTENDANCE_QR_THEMES = {
   dark: {
-    bg:         "#0a0f1e",
-    card:       "#0d1426",
-    border:     "#1e3a6e",
-    qrDark:     "#e2e8f0",
-    qrLight:    "#0a0f1e",
-    textPri:    "#f1f5f9",
-    textSec:    "#475569",
+    bg: "#0a0f1e",
+    card: "#0d1426",
+    border: "#1e3a6e",
+    qrDark: "#e2e8f0",
+    qrLight: "#0a0f1e",
+    textPri: "#f1f5f9",
+    textSec: "#475569",
     textAccent: "#38bdf8",
-    badge:      "#0c2340",
-    badgeText:  "#38bdf8",
-    strip0:     "#1a3a7a",
-    strip1:     "#0c1a3e",
+    badge: "#0c2340",
+    badgeText: "#38bdf8",
+    strip0: "#1a3a7a",
+    strip1: "#0c1a3e",
   },
   light: {
-    bg:         "#f0f4ff",
-    card:       "#ffffff",
-    border:     "#c7d7f8",
-    qrDark:     "#0a0f1e",
-    qrLight:    "#ffffff",
-    textPri:    "#0f172a",
-    textSec:    "#64748b",
+    bg: "#f0f4ff",
+    card: "#ffffff",
+    border: "#c7d7f8",
+    qrDark: "#0a0f1e",
+    qrLight: "#ffffff",
+    textPri: "#0f172a",
+    textSec: "#64748b",
     textAccent: "#1d4ed8",
-    badge:      "#dbeafe",
-    badgeText:  "#1d4ed8",
-    strip0:     "#1d4ed8",
-    strip1:     "#1e40af",
+    badge: "#dbeafe",
+    badgeText: "#1d4ed8",
+    strip0: "#1d4ed8",
+    strip1: "#1e40af",
   },
 } as const
 
@@ -137,7 +137,7 @@ export function buildStudentAttendanceQrDownloadCanvas(
       ctx.textAlign = "left"
       ctx.fillStyle = "#ffffff"
       ctx.font = `900 20px "Arial Black", Arial, sans-serif`
-      ctx.fillText("AMA ACLC", LX + 36, LY - 4)
+      ctx.fillText("ACLC", LX + 36, LY - 4)
       ctx.fillStyle = "rgba(186,220,255,0.8)"
       ctx.font = `700 10px Arial, sans-serif`
       ctx.letterSpacing = "3px"

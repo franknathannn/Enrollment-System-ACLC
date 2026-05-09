@@ -84,6 +84,21 @@ export default function SettingsPage() {
   useEffect(() => { configIdRef.current = config.id }, [config.id])
 
   // Full reload from DB — used on initial mount and when students change
+
+  const logActivity = useCallback(async (details: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return;
+      await supabase.from('activity_logs').insert([{
+        admin_id: user.id,
+        admin_name: user.user_metadata?.username || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Authorized Admin',
+        action_type: 'UPDATED',
+        student_name: 'N/A',
+        details
+      }]);
+    } catch (e) { console.error("Log failed", e) }
+  }, []);
   const loadSettings = useCallback(async () => {
     try {
       // Use maybeSingle() to avoid crashing if table is empty or RLS blocks it
@@ -263,7 +278,7 @@ export default function SettingsPage() {
         throw new Error("Mode update was not persisted to database.")
       }
       configIdRef.current = updatedRow.id
-      toast.success(`Control mode set to ${newMode.toUpperCase()}. Portal state unchanged.`)
+      toast.success(`Control mode set to ${newMode.toUpperCase()}. Portal state unchanged.`); await logActivity(`Control mode set to ${newMode.toUpperCase()}. Portal state unchanged.`);
     } catch (_err) {
       setConfig(prev => ({ ...prev, controlMode: prevMode })); // Revert
       toast.error("Control mode update failed to persist. Check database policy/trigger.")
@@ -300,7 +315,7 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      toast.success(`Override: Portal ${checked ? 'OPEN' : 'CLOSED'}`)
+      toast.success(`Override: Portal ${checked ? 'OPEN' : 'CLOSED'}`); await logActivity(`Override: Portal ${checked ? 'OPEN' : 'CLOSED'}`);
     } catch (_err) {
       setConfig(prev => ({ ...prev, isOpen: prevOpen, isPreEnrollment: prevPreEnrollment })); // Revert
       toast.error("Manual Override Command Failed.")
@@ -321,7 +336,7 @@ export default function SettingsPage() {
         .eq('id', config.id)
 
       if (error) throw error
-      toast.success(`Pre-Enrollment Mode ${checked ? 'ENABLED' : 'DISABLED'}`)
+      toast.success(`Pre-Enrollment Mode ${checked ? 'ENABLED' : 'DISABLED'}`); await logActivity(`Pre-Enrollment Mode ${checked ? 'ENABLED' : 'DISABLED'}`);
     } catch (err) {
       setConfig(state => ({ ...state, isPreEnrollment: prev }))
       toast.error("Failed to update Pre-Enrollment mode")
@@ -340,7 +355,7 @@ export default function SettingsPage() {
         .update({ grade12_enabled: checked })
         .eq('id', config.id)
       if (error) throw error
-      toast.success(`Grade 12 enrollment ${checked ? 'ENABLED' : 'DISABLED'}`)
+      toast.success(`Grade 12 enrollment ${checked ? 'ENABLED' : 'DISABLED'}`); await logActivity(`Grade 12 enrollment ${checked ? 'ENABLED' : 'DISABLED'}`);
     } catch {
       setConfig(p => ({ ...p, grade12Enabled: prev }))
       toast.error("Failed to update Grade 12 setting")
@@ -360,7 +375,7 @@ export default function SettingsPage() {
         }).eq('id', config.id)
         if (error) throw error
         setConfig(prev => ({ ...prev, isOpen: false }))
-        toast.warning("Guardian Critical: Limit reached. Portal shutdown complete.")
+        toast.warning("Guardian Critical: Limit reached. Portal shutdown complete."); await logActivity("Guardian Critical: Limit reached. Portal shutdown complete.");
       } else {
         toast.info(`Integrity verified. ${currentCap - currentAccepted} slots available.`)
       }
@@ -456,7 +471,7 @@ export default function SettingsPage() {
 
       await updateCapacity(numericCapacity)
       setConfig(prev => ({ ...prev, isOpen: calculatedStatus }))
-      toast.success("Configuration Committed Successfully")
+      toast.success("Configuration Committed Successfully"); await logActivity("Configuration Committed Successfully");
     } catch (err: unknown) {
       console.error(err)
       toast.error("Schema Mismatch. Please refresh browser and try again.")
@@ -509,7 +524,7 @@ export default function SettingsPage() {
 
       if (error) throw error
       setConfig(prev => ({ ...prev, isOpen: calculatedStatus }))
-      toast.success("Enrollment Changes committed.")
+      toast.success("Enrollment Changes committed."); await logActivity("Enrollment Changes committed.");
     } catch (err: unknown) {
       console.error(err)
       toast.error("Commit failed. Please try again.")
@@ -548,7 +563,7 @@ export default function SettingsPage() {
           }).eq('id', config.id)
           if (error) throw error
           setConfig(prev => ({ ...prev, isOpen: false }))
-          toast.warning("Auto-Trigger: Capacity limit reached. Portal automatically closed.")
+          toast.warning("Auto-Trigger: Capacity limit reached. Portal automatically closed."); await logActivity("Auto-Trigger: Capacity limit reached. Portal automatically closed.");
         } catch (_err) {
           console.error("Auto Guardian Execution Failed.")
         } finally {
@@ -580,7 +595,7 @@ export default function SettingsPage() {
 
             if (error) throw error
             setConfig(prev => ({ ...prev, isOpen: true }))
-            toast.success("Auto-Trigger: Slot freed up! Portal automatically re-opened.")
+            toast.success("Auto-Trigger: Slot freed up! Portal automatically re-opened."); await logActivity("Auto-Trigger: Slot freed up! Portal automatically re-opened.");
           }
         } catch (_err) {
           console.error("Auto Guardian Re-open Failed.")
@@ -596,7 +611,7 @@ export default function SettingsPage() {
     setIsSyncing(true)
     await forceSyncCapacities()
     setIsSyncing(false)
-    toast.success("Recalibrated Successfully.")
+    toast.success("Recalibrated Successfully."); await logActivity("Recalibrated Successfully.");
   }
 
   return (
@@ -682,7 +697,7 @@ export default function SettingsPage() {
                 try {
                   const { error } = await supabase.from('system_config').update({ notify_parents_status: v }).eq('id', config.id)
                   if (error) throw error
-                  toast.success(`Enrollment Status notifications ${v ? 'ENABLED' : 'DISABLED'}`)
+                  toast.success(`Enrollment Status notifications ${v ? 'ENABLED' : 'DISABLED'}`); await logActivity(`Enrollment Status notifications ${v ? 'ENABLED' : 'DISABLED'}`);
                 } catch {
                   setConfig(p => ({ ...p, notifyParentsStatus: prev }))
                   toast.error("Failed to update notification setting")
@@ -695,7 +710,7 @@ export default function SettingsPage() {
                 try {
                   const { error } = await supabase.from('system_config').update({ notify_parents_attendance: v }).eq('id', config.id)
                   if (error) throw error
-                  toast.success(`Attendance Arrival notifications ${v ? 'ENABLED' : 'DISABLED'}`)
+                  toast.success(`Attendance Arrival notifications ${v ? 'ENABLED' : 'DISABLED'}`); await logActivity(`Attendance Arrival notifications ${v ? 'ENABLED' : 'DISABLED'}`);
                 } catch {
                   setConfig(p => ({ ...p, notifyParentsAttendance: prev }))
                   toast.error("Failed to update notification setting")
@@ -708,7 +723,7 @@ export default function SettingsPage() {
                 try {
                   const { error } = await supabase.from('system_config').update({ notify_parents_summary: v }).eq('id', config.id)
                   if (error) throw error
-                  toast.success(`Daily Summary notifications ${v ? 'ENABLED' : 'DISABLED'}`)
+                  toast.success(`Daily Summary notifications ${v ? 'ENABLED' : 'DISABLED'}`); await logActivity(`Daily Summary notifications ${v ? 'ENABLED' : 'DISABLED'}`);
                 } catch {
                   setConfig(p => ({ ...p, notifyParentsSummary: prev }))
                   toast.error("Failed to update notification setting")
@@ -727,7 +742,7 @@ export default function SettingsPage() {
                 try {
                   const { error } = await supabase.from('system_config').update({ allow_student_edit: v }).eq('id', config.id)
                   if (error) throw error
-                  toast.success(`Student self-edit ${v ? 'ENABLED' : 'DISABLED'}`)
+                  toast.success(`Student self-edit ${v ? 'ENABLED' : 'DISABLED'}`); await logActivity(`Student self-edit ${v ? 'ENABLED' : 'DISABLED'}`);
                 } catch {
                   setConfig(p => ({ ...p, allowStudentEdit: prev }))
                   toast.error("Failed to update student edit setting")
@@ -766,7 +781,7 @@ export default function SettingsPage() {
                 try {
                   const { error } = await supabase.from('system_config').update({ close_portal_when_full: v }).eq('id', config.id)
                   if (error) throw error
-                  toast.success(`Auto-close portal ${v ? 'ENABLED' : 'DISABLED'}`)
+                  toast.success(`Auto-close portal ${v ? 'ENABLED' : 'DISABLED'}`); await logActivity(`Auto-close portal ${v ? 'ENABLED' : 'DISABLED'}`);
                 } catch {
                   setConfig(p => ({ ...p, closePortalWhenFull: prev }))
                   toast.error("Failed to update auto-close setting")
@@ -779,7 +794,7 @@ export default function SettingsPage() {
                 try {
                   const { error } = await supabase.from('system_config').update({ slot_display_mode: v }).eq('id', config.id)
                   if (error) throw error
-                  toast.success(`Slot display mode updated to ${v.toUpperCase()}`)
+                  toast.success(`Slot display mode updated to ${v.toUpperCase()}`); await logActivity(`Slot display mode updated to ${v.toUpperCase()}`);
                 } catch {
                   setConfig(p => ({ ...p, slotDisplayMode: prev }))
                   toast.error("Failed to update slot display mode")

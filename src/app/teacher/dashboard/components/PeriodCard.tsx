@@ -196,6 +196,11 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
         .limit(1)
       const hasSaturday = (satCheck?.length ?? 0) > 0
 
+      const { data: calEvents } = await supabase
+        .from("school_calendar_events")
+        .select("event_date, title, event_type")
+        .eq("school_year", schoolYear)
+
       await downloadSf2Attendance({
         sectionName: period.section,
         schoolYear,
@@ -204,6 +209,7 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
         currentMonth: new Date().getMonth(),
         students: mine,
         attendance: [], // clean template — names only, no marks
+        calendarEvents: calEvents || [],
       })
     } catch (e: unknown) {
       toast.error((e instanceof Error ? e.message : null) || "Failed to export SF2.")

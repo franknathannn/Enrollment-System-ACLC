@@ -86,6 +86,11 @@ interface ExportBody {
     currentMonth?: number; // 0-indexed JS month (0=Jan..11=Dec)
     students: StudentInput[];
     attendance?: AttendanceInput[];
+    calendarEvents?: {
+        event_date: string;
+        title: string;
+        event_type: string;
+    }[];
 }
 
 // ─── XML Helpers ─────────────────────────────────────────────────────────────
@@ -135,6 +140,37 @@ function setCell(xml: string, ref: string, value: string): string {
         }
         return `<c r="${ref}"${cleanAttrs} t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
     });
+}
+
+/**
+ * Replace a cell that might already have content (like dummy data in the Holidays sheet).
+ * It handles both self-closing <c ... /> and open-close <c ...>...</c>.
+ */
+function setCellOverride(xml: string, ref: string, value: string): string {
+    const emptyPattern = new RegExp(`<c r="${ref}"((?:\\s+[^>]*?)?)\\s*/>`, "g");
+    const fullPattern = new RegExp(`<c r="${ref}"((?:\\s+[^>]*?)?)>[\\s\\S]*?</c>`, "g");
+
+    let result = xml;
+    let replaced = false;
+
+    // Try empty pattern first (self-closing tag)
+    result = result.replace(emptyPattern, (_, attrs) => {
+        replaced = true;
+        const cleanAttrs = attrs.replace(/\s+t="[^"]*"/g, "");
+        if (!value) return `<c r="${ref}"${cleanAttrs}/>`;
+        return `<c r="${ref}"${cleanAttrs} t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
+    });
+
+    if (!replaced) {
+        // Try full pattern (tag with content)
+        result = result.replace(fullPattern, (_, attrs) => {
+            const cleanAttrs = attrs.replace(/\s+t="[^"]*"/g, "");
+            if (!value) return `<c r="${ref}"${cleanAttrs}/>`;
+            return `<c r="${ref}"${cleanAttrs} t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
+        });
+    }
+
+    return result;
 }
 
 /**
@@ -366,6 +402,49 @@ export async function POST(req: NextRequest) {
             if (!file) continue;
             const xml = await file.async("string");
             zip.file(filePath, toggleSaturday(xml, hideSat));
+        }
+
+        // 5.5 ── Fill Holidays sheet (sheet2) with calendar events ─────────────────
+        const calendarEvents = body.calendarEvents || [];
+        // Only include holiday and suspension events
+        const validEvents = calendarEvents.filter(e => 
+            e.event_type === "holiday" || e.event_type === "suspension"
+        );
+        
+        if (validEvents.length > 0) {
+            const holidaysFile = zip.file("xl/worksheets/sheet2.xml");
+            if (holidaysFile) {
+                let hXml = await holidaysFile.async("string");
+                const hUpdates: Record<string, string> = {};
+                
+                // Keep track of the row to write to. Rows 33-55 are available (6-32 have existing holidays).
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                
+                let rowIndex = 33;
+                for (const ev of validEvents) {
+                    if (rowIndex > 55) break; // Template only has 50 slots
+                    
+                    const parts = ev.event_date.split("-");
+                    if (parts.length < 3) continue;
+                    
+                    const mName = monthNames[parseInt(parts[1], 10) - 1];
+                    const dayNum = parseInt(parts[2], 10);
+                    
+                    // Column B = Month name, Column C = Day number, Column D = Title
+                    hUpdates[`B${rowIndex}`] = String(mName);
+                    hUpdates[`C${rowIndex}`] = String(dayNum);
+                    hUpdates[`D${rowIndex}`] = String(ev.title);
+                    
+                    rowIndex++;
+                }
+                
+                // Apply to Holidays sheet using setCellOverride
+                for (const [ref, value] of Object.entries(hUpdates)) {
+                    hXml = setCellOverride(hXml, ref, value);
+                }
+                
+                zip.file("xl/worksheets/sheet2.xml", hXml);
+            }
         }
 
         // 6 ── Fill attendance marks into SF2 monthly sheets ──────────────────

@@ -81,15 +81,14 @@ export async function downloadSf2Attendance({
         const blob = await res.blob()
         const url = URL.createObjectURL(blob)
         const a = document.createElement("a")
-        const nextYear = parseInt(schoolYear, 10) + 1
         a.href = url
-        a.download = `SF2_${cleanFileName(sectionName)}_SY${schoolYear}-${nextYear}.xlsx`
+        a.download = `SF2_${cleanFileName(sectionName)}_SY${schoolYear}.xlsx`
         document.body.appendChild(a)
         a.click()
         URL.revokeObjectURL(url)
         document.body.removeChild(a)
 
-        toast.success(`SF2 downloaded — ${sectionName} SY ${schoolYear}-${nextYear}`, { id: toastId })
+        toast.success(`SF2 downloaded — ${sectionName} SY ${schoolYear}`, { id: toastId })
     } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error"
         console.error("[SF2 Export]", err)

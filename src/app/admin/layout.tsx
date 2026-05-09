@@ -497,7 +497,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
             </span>
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 italic">AMA ACLC - NORTHBAY CAMPUS</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 italic">ACLC - NORTHBAY CAMPUS</p>
           </div>
 
           <Sheet>
