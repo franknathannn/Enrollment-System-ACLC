@@ -74,7 +74,7 @@ export const ApplicantsHeader = memo(({
         {/* RIGHT — Search + actions */}
         <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto flex-wrap justify-start md:justify-end">
 
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -88,7 +88,7 @@ export const ApplicantsHeader = memo(({
               <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Refresh Data</p></TooltipContent>
             </Tooltip>
 
-            <div className="relative flex-1 min-w-[220px] md:min-w-[280px] group">
+            <div className="relative flex-1 min-w-[140px] sm:min-w-[220px] md:min-w-[280px] group">
               <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 z-10 transition-colors ${isDarkMode ? 'text-slate-500 group-focus-within:text-blue-400' : 'text-slate-400 group-focus-within:text-blue-500'}`} />
               <Input
                 placeholder="Search name, LRN, tracking ID…"

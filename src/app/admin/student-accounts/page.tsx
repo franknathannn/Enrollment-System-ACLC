@@ -553,7 +553,7 @@ export default function StudentAccountsPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 justify-between sm:justify-end shrink-0 pl-16 sm:pl-0">
+                        <div className="flex items-center gap-2 justify-end sm:justify-end shrink-0 pl-0 sm:pl-0 flex-wrap w-full sm:w-auto mt-2 sm:mt-0">
                           <button
                             title="OED Credentials"
                             onClick={() => handleOedModalOpen(student)}

@@ -454,14 +454,14 @@ export function QuarterlyUpdatesAdminTab({
 
               {/* Req info + progress */}
               <div className="px-5 sm:px-6 py-6 sm:py-7">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-3">
+                  <div className="flex-1 w-full min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className={`text-base font-black uppercase tracking-tight ${H}`}>{req.title}</p>
                       {!req.is_required && <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 ${dm ? "bg-slate-700 text-slate-400" : "bg-slate-100 text-slate-500"}`}>Optional</span>}
                       {allDone && <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 shrink-0">Complete</span>}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold text-rose-400">
+                    <div className="flex items-center flex-wrap gap-x-1.5 gap-y-1 mt-1.5 text-[10px] font-bold text-rose-400">
                       {isPastDl ? <AlertTriangle size={10} className="shrink-0" /> : <Clock size={10} className="shrink-0" />}
                       {isPastDl ? "Deadline passed · " : "Due · "}
                       {dl.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -469,7 +469,7 @@ export function QuarterlyUpdatesAdminTab({
                       {dl.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button type="button"
                       onClick={() => { setEditingReq({ ...req, deadline: req.deadline ? isoToLocalInput(req.deadline) : "" }); setView("edit") }}
                       className={`h-8 px-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all border ${dm ? "border-slate-700 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10" : "border-slate-200 text-slate-400 hover:text-amber-500 hover:bg-amber-50"}`}>

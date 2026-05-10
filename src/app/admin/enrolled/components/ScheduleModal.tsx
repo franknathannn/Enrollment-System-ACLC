@@ -218,7 +218,7 @@ export function ScheduleModal({ isOpen, onClose, student, isDarkMode }: Props) {
             ) : (
               <div className="sched-body-pad" style={{ padding:"16px 16px 24px" }}>
                 <div className="ss" style={{ overflowX:"auto" }}>
-                  <div style={{ minWidth:500 }}>
+                  <div style={{ minWidth:720 }}>
 
                     {/* Day header row */}
                     <div style={{ display:"grid", gridTemplateColumns:"64px repeat(6,1fr)",
