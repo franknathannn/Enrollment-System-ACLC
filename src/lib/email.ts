@@ -1,7 +1,7 @@
 export async function sendEnrollmentEmail(record: any) {
   const isApproved = record.status === 'Approved';
-  const logoUrl = "https://enrollment-system-aclc.vercel.app/logo-aclc.png";
-  const statusLink = "https://enrollment-system-aclc.vercel.app/status";
+  const logoUrl = "https://sms-aclc-northbay.vercel.app/logo-aclc.png";
+  const statusLink = "https://sms-aclc-northbay.vercel.app/status";
 
   // Format the feedback for HTML
   const formattedReason = (record.registrar_feedback || 'Incomplete or Invalid Requirements.')

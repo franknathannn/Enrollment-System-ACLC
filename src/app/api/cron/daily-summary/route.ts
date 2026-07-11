@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const cronSecret = process.env.CRON_SECRET;
     const authHeader = request.headers.get('authorization');
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const supabase = createAdminClient();
@@ -154,7 +154,7 @@ export async function GET(request: Request) {
         `;
       }
 
-      const logoUrl = "https://enrollment-system-aclc.vercel.app/logo-aclc.png";
+      const logoUrl = "https://sms-aclc-northbay.vercel.app/logo-aclc.png";
       const trackingId = student.id.split('-')[0].toUpperCase();
       const pronoun = student.gender?.toLowerCase() === 'female' ? 'daughter' : 'son';
       const htmlContent = `
@@ -177,7 +177,7 @@ export async function GET(request: Request) {
 
             <div style="margin-top: 30px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
               <p style="margin: 0 0 12px; font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 1.5px;">Student Portal Access</p>
-              <p style="margin: 0 0 12px; font-size: 13px; color: #64748b;">You may check your ${pronoun}'s enrollment status and schedule using the following credentials at <a href="https://enrollment-system-aclc.vercel.app/status" style="color: #1d4ed8; font-weight: 700;">enrollment-system-aclc.vercel.app/status</a>:</p>
+              <p style="margin: 0 0 12px; font-size: 13px; color: #64748b;">You may check your ${pronoun}'s enrollment status and schedule using the following credentials at <a href="https://sms-aclc-northbay.vercel.app/status" style="color: #1d4ed8; font-weight: 700;">sms-aclc-northbay.vercel.app/status</a>:</p>
               <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
                 <tr style="border-bottom: 1px solid #e2e8f0;">
                   <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Surname</td>
@@ -232,12 +232,12 @@ export async function GET(request: Request) {
 
     if (emailPromises.length > 0) {
       const results = await Promise.allSettled(emailPromises);
-      
+
       for (const result of results) {
         if (result.status === 'fulfilled') {
           const { studentId, response } = result.value;
           const data = await response.json().catch(() => null) || await response.text().catch(() => null);
-          
+
           if (!response.ok) {
             console.error("Brevo API Error:", response.status, data);
             brevoErrors.push({ status: response.status, data });

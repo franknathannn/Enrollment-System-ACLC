@@ -18,7 +18,7 @@ serve(async (req: Request) => {
 
     const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
     const SENDER_EMAIL = Deno.env.get('SENDER_EMAIL');
-    const BASE_URL = Deno.env.get('NEXT_PUBLIC_BASE_URL') || 'https://enrollment-system-aclc.vercel.app';
+    const BASE_URL = Deno.env.get('NEXT_PUBLIC_BASE_URL') || 'https://sms-aclc-northbay.vercel.app';
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

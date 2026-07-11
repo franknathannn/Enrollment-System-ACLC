@@ -551,7 +551,7 @@ Used to coordinate tasks, share updates, distribute workload, and communicate be
 Git & GitHub
 Used for version control, allowing the researchers to track changes in the codebase, collaborate on code efficiently, and maintain a history of all modifications made to the system.
 Vercel
-Used as the cloud deployment platform to host the web application, providing continuous deployment from the GitHub repository and making the system accessible via the internet at https://enrollment-system-aclc.vercel.app/.
+Used as the cloud deployment platform to host the web application, providing continuous deployment from the GitHub repository and making the system accessible via the internet at https://sms-aclc-northbay.vercel.app/.
 Supabase
 Used as the cloud database backend (PostgreSQL), providing authentication services, real-time subscriptions, file storage for uploaded documents, and Row Level Security policies.
 Requirements Analysis

@@ -114,7 +114,8 @@ function StatusContent() {
         sessionStorage.setItem("matrix_search_name", searchName)
         sessionStorage.setItem("matrix_search_id",   searchId)
       }
-    } catch {
+    } catch (err) {
+      console.error("Status check failed:", err)
       setResult(null)
       toast.error("Could not reach the server. Please try again.")
     } finally {
