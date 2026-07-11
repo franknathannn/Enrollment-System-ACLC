@@ -198,35 +198,32 @@ export default function Step4Documents() {
 
 
 
-      <div className="space-y-6 sm:space-y-8 pb-[140px] min-[480px]:pb-[160px]">
+      <div className="space-y-8 sm:space-y-10">
 
         {/* HEADER */}
         <div className={cn(
-          "rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border flex items-center gap-4 sm:gap-6 shadow-2xl relative overflow-hidden",
-          isDark ? "bg-blue-600/10 border-white/10 text-white" : "bg-white/95 border-blue-100 text-slate-900"
+          "rounded-md p-5 sm:p-6 border flex items-center gap-4 sm:gap-6 shadow-sm relative overflow-hidden",
+          isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
         )}>
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-blue-400 to-red-500" />
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl sm:rounded-[24px] flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform duration-500">
-            <FileText className="text-white w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_2px_10px_rgba(255,255,255,0.4)]" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-200 dark:bg-slate-800 rounded-md flex items-center justify-center shrink-0 border border-slate-350 dark:border-slate-700">
+            <FileText className="text-slate-750 dark:text-slate-300 w-6 h-6 sm:w-7 sm:h-7" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded-md bg-blue-600/20 text-blue-400 text-[8px] font-black uppercase tracking-[0.2em] border border-blue-500/20">Step 04</span>
-              <div className="h-px w-8 bg-blue-500/20" />
-              <Sparkles size={10} className="text-blue-400 animate-pulse" />
+              <span className="px-2 py-0.5 rounded bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[8px] font-bold uppercase tracking-widest border border-slate-350 dark:border-slate-700">Step 04</span>
             </div>
             <h2 className={cn(
-              "text-lg sm:text-2xl md:text-3xl font-black tracking-tighter uppercase italic leading-none",
+              "text-lg sm:text-2xl font-serif font-bold tracking-normal leading-none",
               isDark ? "text-white" : "text-slate-900"
-            )}>Digital <span className="text-blue-600">Documents</span></h2>
+            )}>Digital Documents</h2>
           </div>
         </div>
 
-        <div className={cn("p-5 sm:p-6 rounded-[32px] border flex items-center gap-4 relative overflow-hidden", isDark ? "bg-blue-900/40 border-blue-500/20" : "bg-blue-50 border-blue-100")}>
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />
-          <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 shrink-0" />
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] leading-relaxed text-slate-500">
-            Authenticated channels active. Upload <span className="text-blue-500">Clear Images</span> of your requirements. max 5mb per payload.
+        <div className={cn("p-5 sm:p-6 rounded-md border flex items-center gap-4 relative overflow-hidden", isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100/55 border-slate-200")}>
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600" />
+          <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-slate-500 shrink-0" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] leading-relaxed text-slate-600">
+            Authenticated channels active. Upload <span className="text-blue-600">Clear Images</span> of your requirements. Max 5mb per payload.
           </p>
         </div>
 
@@ -249,30 +246,23 @@ export default function Step4Documents() {
         </div>
       </div>
 
-      {/* STICKY/FIXED BOTTOM BAR */}
-      <div className={cn(
-        "fixed md:sticky bottom-0 z-50 left-0 right-0 pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-6 md:px-8 lg:px-12 mt-6 flex flex-col gap-3 md:-mx-8 lg:-mx-12",
-        "backdrop-blur-xl md:backdrop-blur-none border-t md:border-t-0",
-        isDark ? "bg-[#0d1433]/80 md:bg-transparent border-white/10" : "bg-white/80 md:bg-transparent border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none"
-      )}>
+      {/* SUBMIT BUTTON */}
+      <div className="mt-10 flex flex-col gap-3">
         <Button onClick={handleFinalizeStep}
             className={cn(
-              "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
-              "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-              "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
-              "active:scale-[0.98]",
-              "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
+              "w-full min-h-[52px] md:h-16 rounded-md",
+              "bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-all",
+              "active:scale-98",
+              "flex items-center justify-center gap-4 group touch-manipulation border border-transparent shadow-sm"
             )}
           >
-            <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
-              Finalize Application
-            </span>
-            <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
-              <ChevronRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
+            <span>Finalize Application</span>
+            <div className="w-8 h-8 bg-white/10 rounded-md flex items-center justify-center shrink-0">
+              <ChevronRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </Button>
           <button type="button" onClick={() => setStep(3)}
-            className="spring-back-btn min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 py-3 touch-manipulation active:scale-[0.98]">
+            className="min-h-[44px] w-full rounded-md t-text-muted font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 hover:text-blue-500 py-3 transition-colors active:scale-98">
             <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
           </button>
       </div>

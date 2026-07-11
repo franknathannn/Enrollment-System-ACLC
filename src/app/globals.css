@@ -1,12 +1,18 @@
 @import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
 
 @plugin "tailwindcss-animate";
+@plugin "@tailwindcss/typography";
 
 @theme {
   /* AMA Brand Colors */
   --color-brand-blue: #003399;
   --color-brand-red: #ED1C24;
   --color-brand-yellow: #FFD200;
+
+  /* Fonts */
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-secondary: var(--font-secondary), "Georgia", serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);

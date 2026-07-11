@@ -12,4 +12,7 @@ jobs:
       - name: Trigger Daily Summary
         run: |
           curl -f -X GET "https://enrollment-system-aclc.vercel.app/api/cron/daily-summary" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" || true
+            
+      - name: Keepalive Workflow
+        uses: gautamkrishnar/keepalive-workflow@v1

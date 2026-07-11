@@ -25,18 +25,23 @@ export async function middleware(request: NextRequest) {
   try {
     // Rate limit login page requests
     if (LOGIN_PATHS.includes(request.nextUrl.pathname)) {
-      const rl = getRatelimit()
-      if (rl) {
-        const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim()
-          ?? request.headers.get('x-real-ip')
-          ?? 'anonymous'
-        const { success } = await rl.limit(`login:${ip}`)
-        if (!success) {
-          return new NextResponse(
-            '<html><body style="font-family:sans-serif;text-align:center;padding:4rem"><h2>Too Many Attempts</h2><p>Please wait a moment before trying again.</p></body></html>',
-            { status: 429, headers: { 'Content-Type': 'text/html' } }
-          )
+      try {
+        const rl = getRatelimit()
+        if (rl) {
+          const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim()
+            ?? request.headers.get('x-real-ip')
+            ?? 'anonymous'
+          const { success } = await rl.limit(`login:${ip}`)
+          if (!success) {
+            return new NextResponse(
+              '<html><body style="font-family:sans-serif;text-align:center;padding:4rem"><h2>Too Many Attempts</h2><p>Please wait a moment before trying again.</p></body></html>',
+              { status: 429, headers: { 'Content-Type': 'text/html' } }
+            )
+          }
         }
+      } catch (rlError) {
+        // Safely fail-open if rate limiting service is unreachable
+        console.warn("Ratelimiter unreachable, skipping rate limit checks:", (rlError as Error).message)
       }
     }
 

@@ -1,16 +1,18 @@
 // app/teacher/dashboard/components/StudentDetailTab.tsx
 "use client"
 
-import { X, User } from "lucide-react"
+import { X, User, FileText } from "lucide-react"
 import { Student, getStudentPhotoUrl } from "../types"
+import Link from "next/link"
 
 interface StudentDetailTabProps {
   student: Student | null
   dm: boolean
+  sectionId?: string | null
   onClose: () => void
 }
 
-export function StudentDetailTab({ student, dm, onClose }: StudentDetailTabProps) {
+export function StudentDetailTab({ student, dm, sectionId, onClose }: StudentDetailTabProps) {
   if (!student) return null
 
   const photoUrl = getStudentPhotoUrl(student)
@@ -103,6 +105,19 @@ export function StudentDetailTab({ student, dm, onClose }: StudentDetailTabProps
             <p className="text-[8px] font-black uppercase tracking-widest mb-1 opacity-70">Status</p>
             <p className="text-sm font-black">{student.status || "—"}</p>
           </div>
+          {sectionId && (
+            <Link
+              href={`/teacher/dashboard/gradebook/${sectionId}`}
+              className="col-span-3 flex items-center justify-center gap-2 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg py-3 px-4 mt-1 transition-all active:scale-[0.98]"
+              style={{
+                background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                boxShadow: "0 4px 12px rgba(59,130,246,0.25)"
+              }}
+            >
+              <FileText size={12} />
+              Open Section Gradebook
+            </Link>
+          )}
         </div>
       </div>
     </div>

@@ -13,6 +13,7 @@ interface ScheduleGridProps {
   sectionName: string
   onEdit: (row: ScheduleRow) => void
   onDelete: (id: string, label: string) => void
+  readOnly?: boolean
 }
 
 export const SUBJECT_COLORS = [
@@ -37,6 +38,7 @@ export const ScheduleGrid = memo(function ScheduleGrid({
   sectionName,
   onEdit,
   onDelete,
+  readOnly = false,
 }: ScheduleGridProps) {
   const accent    = isICT ? "text-blue-400"  : "text-orange-400"
   const accentBg  = isICT ? "bg-blue-500"    : "bg-orange-500"
@@ -148,16 +150,18 @@ export const ScheduleGrid = memo(function ScheduleGrid({
                           : s.room && <span className="ml-2 opacity-60">{s.room}</span>}
                       </p>
                     </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <button onClick={() => onEdit(s)}
-                        className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-slate-100 text-slate-500"}`}>
-                        <Pencil size={12} />
-                      </button>
-                      <button onClick={() => onDelete(s.id, s.subject)}
-                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-500 hover:text-white transition-colors">
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
+                    {!readOnly && (
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button onClick={() => onEdit(s)}
+                          className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-slate-100 text-slate-500"}`}>
+                          <Pencil size={12} />
+                        </button>
+                        <button onClick={() => onDelete(s.id, s.subject)}
+                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-500 hover:text-white transition-colors">
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -297,31 +301,32 @@ export const ScheduleGrid = memo(function ScheduleGrid({
                                    {s.is_online
                                      ? <p className={`text-[7.5px] flex items-center gap-0.5 text-blue-400 font-bold`}><Globe size={7} /> Online</p>
                                      : s.room && <p className={`text-[7.5px] truncate ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>{s.room}</p>}
-                                </div>
-
-                                <div data-actions
-                                  style={{ opacity: 0, transition: "opacity 0.15s" }}
-                                  className="absolute top-1.5 right-1.5 flex gap-1">
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button onClick={() => onEdit(s)}
-                                        className={`p-1.5 rounded-[10px] transition-colors border shadow-sm
-                                          ${isDarkMode ? "bg-slate-900/60 hover:bg-slate-800 border-slate-700/50 text-slate-300" 
-                                                       : "bg-white/80 hover:bg-white border-slate-200/50 text-slate-600"}`}>
-                                        <Pencil size={11} />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Edit</p></TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button onClick={() => onDelete(s.id, s.subject)}
-                                        className="p-1.5 rounded-[10px] bg-red-500 hover:bg-red-600 text-white shadow-sm border border-black/5 transition-colors">
-                                        <Trash2 size={11} />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Delete</p></TooltipContent>
-                                  </Tooltip>
+                                   {!readOnly && (
+                                     <div data-actions
+                                       style={{ opacity: 0, transition: "opacity 0.15s" }}
+                                       className="absolute top-1.5 right-1.5 flex gap-1">
+                                       <Tooltip>
+                                         <TooltipTrigger asChild>
+                                           <button onClick={() => onEdit(s)}
+                                             className={`p-1.5 rounded-[10px] transition-colors border shadow-sm
+                                               ${isDarkMode ? "bg-slate-900/60 hover:bg-slate-800 border-slate-700/50 text-slate-300" 
+                                                            : "bg-white/80 hover:bg-white border-slate-200/50 text-slate-600"}`}>
+                                             <Pencil size={11} />
+                                           </button>
+                                         </TooltipTrigger>
+                                         <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Edit</p></TooltipContent>
+                                       </Tooltip>
+                                       <Tooltip>
+                                         <TooltipTrigger asChild>
+                                           <button onClick={() => onDelete(s.id, s.subject)}
+                                             className="p-1.5 rounded-[10px] bg-red-500 hover:bg-red-600 text-white shadow-sm border border-black/5 transition-colors">
+                                             <Trash2 size={11} />
+                                           </button>
+                                         </TooltipTrigger>
+                                         <TooltipContent className="bg-red-950 text-red-200 border-red-900"><p>Delete</p></TooltipContent>
+                                       </Tooltip>
+                                     </div>
+                                   )}
                                 </div>
                            </div>
                          )

@@ -61,8 +61,9 @@ export function TurnstileWidget({ onVerify, onExpire, theme = "auto" }: Props) {
       if (widgetId.current !== undefined && window.turnstile) {
         window.turnstile.remove(widgetId.current)
       }
+      rendered.current = false
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [theme]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={ref} />
 }

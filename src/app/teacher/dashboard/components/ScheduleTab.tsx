@@ -17,9 +17,11 @@ interface ScheduleTabProps {
   onLinkUpdated?: (scheduleId: string, link: string | null) => void
   session: TeacherSession
   schoolYear: string
+  allowTeacherGrading: boolean
+  sectionMap: Record<string, any>
 }
 
-export function ScheduleTab({ schedules, students, studLoad, colorMap, dm, onStudentClick, onLinkUpdated, session, schoolYear }: ScheduleTabProps) {
+export function ScheduleTab({ schedules, students, studLoad, colorMap, dm, onStudentClick, onLinkUpdated, session, schoolYear, allowTeacherGrading, sectionMap }: ScheduleTabProps) {
   // Smart initial day: find the next day that has scheduled classes, starting from today
   const getSmartDay = (): DayName => {
     const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]

@@ -19,7 +19,6 @@ interface ScheduleToolbarProps {
   loading: boolean
   onAddEntry: () => void
   onAutoSchedule: () => void
-  onImportClick: () => void
   onRefresh: () => void
   onClearAll: () => void
   onManageTeachers: () => void
@@ -27,69 +26,13 @@ interface ScheduleToolbarProps {
 
 export const ScheduleToolbar = memo(function ScheduleToolbar({
   sectionName, adviserName, schedules, isICT, isDarkMode, loading,
-  onAddEntry, onAutoSchedule, onImportClick, onRefresh, onClearAll, onManageTeachers,
+  onAddEntry, onAutoSchedule, onRefresh, onClearAll, onManageTeachers,
 }: ScheduleToolbarProps) {
   const accent = isICT ? "text-blue-400" : "text-orange-400"
   const accentBtn = isICT ? "bg-blue-600 hover:bg-blue-500 text-white" : "bg-orange-600 hover:bg-orange-500 text-white"
   const wizardBtn = isICT
     ? "bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-500"
     : "bg-orange-500/10 border border-orange-500/30 text-orange-400 hover:bg-orange-500 hover:text-white hover:border-orange-500"
-
-  const handleTemplate = async () => {
-    const wb = new ExcelJS.Workbook()
-
-    // 1. Guide Sheet
-    const guide = wb.addWorksheet("Guide")
-    guide.columns = [{ width: 5 }, { width: 80 }]
-    guide.addRow([])
-    const titleRow = guide.addRow(["", "SCHEDULE IMPORT TEMPLATE GUIDE"])
-    titleRow.font = { bold: true, size: 16, color: { argb: "FFFFFFFF" } }
-    titleRow.height = 30
-    titleRow.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FF0F172A" } }
-    titleRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' }
-
-    guide.addRow([])
-    guide.addRow(["", "Instructions for importing schedules:"])
-    const instRow = guide.lastRow
-    if (instRow) {
-      instRow.font = { bold: true, size: 12 }
-    }
-    guide.addRow(["", "1. Switch to the 'Schedule Data' tab to insert your records."])
-    guide.addRow(["", "2. Do NOT change the header row names (row 1)."])
-    guide.addRow(["", "3. Keep time in 24-Hour format (e.g., 07:30, 13:00)."])
-    guide.addRow(["", "4. Allowed days: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday."])
-    guide.addRow(["", "5. teacher, room, and notes are completely optional."])
-
-    // 2. Data Sheet
-    const ws = wb.addWorksheet("Schedule Data")
-    ws.columns = [
-      { header: "section", key: "section", width: 20 },
-      { header: "subject", key: "subject", width: 30 },
-      { header: "day", key: "day", width: 15 },
-      { header: "start_time", key: "start_time", width: 15 },
-      { header: "end_time", key: "end_time", width: 15 },
-      { header: "school_year", key: "school_year", width: 15 },
-      { header: "teacher", key: "teacher", width: 25 },
-      { header: "room", key: "room", width: 15 },
-      { header: "notes", key: "notes", width: 30 },
-    ]
-
-    const headerRow = ws.getRow(1)
-    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } }
-    headerRow.eachCell(cell => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isICT ? "FF2563EB" : "FFD97706" } }
-      cell.alignment = { vertical: 'middle', horizontal: 'center' }
-    })
-
-    ws.addRow({
-      section: sectionName, subject: "Oral Communication", day: "Monday",
-      start_time: "07:30", end_time: "08:30", school_year: "2025-2026",
-      teacher: "J. Cruz", room: "ROOM 201", notes: "Sample only, delete me"
-    })
-
-    const buf = await wb.xlsx.writeBuffer()
-    saveAs(new Blob([buf]), `Template_${sectionName}.xlsx`)
-  }
 
   const handleExport = async () => {
     if (!schedules.length) return
@@ -333,15 +276,6 @@ export const ScheduleToolbar = memo(function ScheduleToolbar({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <button onClick={handleTemplate} className={ghostBtn}>
-              <FileSpreadsheet size={13} /> Template
-            </button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Download blank XLSX template</p></TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
             <button onClick={handleImageCapture} disabled={!schedules.length}
               className={`${ghostBtn} disabled:opacity-30 disabled:cursor-not-allowed`}>
               <ImageIcon size={13} /> Snippet
@@ -358,15 +292,6 @@ export const ScheduleToolbar = memo(function ScheduleToolbar({
             </button>
           </TooltipTrigger>
           <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Export schedule as XLSX</p></TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button onClick={onImportClick} className={ghostBtn}>
-              <Upload size={13} /> Import
-            </button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Import schedule from XLSX</p></TooltipContent>
         </Tooltip>
 
         {schedules.length > 0 && (

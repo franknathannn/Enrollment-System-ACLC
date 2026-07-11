@@ -107,7 +107,7 @@ export const DeleteManagementDialog = memo(function DeleteManagementDialog({ sec
           <TabsContent value="sections" className="p-6 mt-0">
             <div className="max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
               {sections.length === 0 ? (
-                <div className="py-20 text-center opacity-40 italic text-sm">No active matrices detected in hub.</div>
+                <div className="py-20 text-center opacity-40 italic text-sm">No active Sections detected in SMS.</div>
               ) : (
                 <Accordion type="multiple" defaultValue={Object.keys(groupedSections)} className="space-y-4">
                   {Object.entries(groupedSections).map(([key, group]: any) => (

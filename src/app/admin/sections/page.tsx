@@ -1,6 +1,6 @@
 "use client"
 
-import { Loader2, Cpu, BookOpen } from "lucide-react"
+import { Loader2, Cpu, BookOpen, Atom, BarChart3 } from "lucide-react"
 import { SectionGroup } from "./components/SectionGroup"
 import { ProcessingOverlay } from "./components/ProcessingOverlay"
 import { RealtimeStatusIndicator } from "./components/RealtimeStatusIndicator"
@@ -19,10 +19,11 @@ export default function SectionsPage() {
   const {
     config, isDarkMode, sections, teachers, loading, isProcessing, selectedSectionName, setSelectedSectionName,
     searchTerm, setSearchTerm, debouncedSearch, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter, sectionSelection,
-    confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, ictExpanded, setIctExpanded,
-    gasExpanded, setGasExpanded, exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
+    confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, 
+    availableStrands, expandedStrands, setExpandedStrands, groupedSections, strandLoads,
+    exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
     viewingFile, rotation, setRotation, unenrollOpen, setUnenrollOpen, activeUnenrollStudent, profileOpen, setProfileOpen,
-    activeProfile, realtimeStatus, lastUpdate, ictSections, gasSections, ictLoad, gasLoad, currentSection, activeStudents,
+    activeProfile, realtimeStatus, lastUpdate, currentSection, activeStudents,
     currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
     handleConfirmUnenroll, handleSwitch, exportSectionCSV, exportSectionList, exportGlobalMasterlist, fetchSections, handleToggleLock, updateStudentProfile,
@@ -112,30 +113,66 @@ export default function SectionsPage() {
             isProcessing={isProcessing}
             config={config}
             allSchedules={allSchedules}
+            availableStrands={availableStrands}
           />
           
-          {['ICT', 'GAS'].map(strand => (strandFilter === 'ALL' || strandFilter === strand) && (
-            <SectionGroup 
-              key={strand} 
-              title={strand === 'ICT' ? "Information Technology" : "General Academics"}
-              mobileTitle={strand === 'ICT' ? "ICT Program" : "GAS Program"}
-              icon={strand === 'ICT' ? <Cpu/> : <BookOpen/>} 
-              color={strand === 'ICT' ? 'blue' : 'orange'} 
-              sections={(strand === 'ICT' ? ictSections : gasSections).filter((s: any) => 
-                gradeLevelFilter === 'ALL' || s.grade_level === gradeLevelFilter
-              )} 
-              load={strand === 'ICT' ? ictLoad : gasLoad} 
-              onSelect={setSelectedSectionName} 
-              onDelete={handleDeleteSection} 
-              isExpanded={strand === 'ICT' ? ictExpanded : gasExpanded} 
-              onToggle={strand === 'ICT' ? () => setIctExpanded(!ictExpanded) : () => setGasExpanded(!gasExpanded)}
-              selection={sectionSelection}
-              onToggleSelect={toggleSelection}
-              onSelectAll={handleSelectAll}
-              isDarkMode={isDarkMode}
-              config={config}
-            />
-          ))}
+          {availableStrands.map(strand => {
+            if (strandFilter !== 'ALL' && strandFilter !== strand) return null
+            
+            const titleMap: any = {
+              'ICT': { t: 'Information Technology', mt: 'ICT Program' },
+              'GAS': { t: 'General Academics', mt: 'GAS Program' },
+              'STEM': { t: 'Science, Technology, Engineering, Math', mt: 'STEM Program' },
+              'HUMSS': { t: 'Humanities & Social Sciences', mt: 'HUMSS Program' },
+              'ABM': { t: 'Accountancy, Business & Management', mt: 'ABM Program' },
+              'TechPro': { t: 'Technical-Professional', mt: 'TechPro Program' },
+              'Academic Track': { t: 'Academic Track', mt: 'Academic Program' }
+            }
+            
+            const info = titleMap[strand] || { t: strand, mt: strand }
+            let color = 'orange'
+            let icon = <BookOpen/>
+            
+            if (strand === 'ICT' || strand === 'TechPro') {
+              color = 'blue'
+              icon = <Cpu/>
+            } else if (strand === 'STEM') {
+              color = 'emerald'
+              icon = <Atom/>
+            } else if (strand === 'HUMSS') {
+              color = 'amber'
+              icon = <BookOpen/>
+            } else if (strand === 'ABM') {
+              color = 'yellow'
+              icon = <BarChart3/>
+            } else if (strand === 'GAS') {
+              color = 'orange'
+              icon = <BookOpen/>
+            }
+            
+            return (
+              <SectionGroup 
+                key={strand} 
+                title={info.t}
+                mobileTitle={info.mt}
+                icon={icon} 
+                color={color} 
+                sections={(groupedSections[strand] || []).filter((s: any) => 
+                  gradeLevelFilter === 'ALL' || s.grade_level === gradeLevelFilter
+                )} 
+                load={strandLoads[strand] || { percent: 0, totalCapacity: 0, totalEnrolled: 0 }} 
+                onSelect={setSelectedSectionName} 
+                onDelete={handleDeleteSection} 
+                isExpanded={expandedStrands[strand] !== false} 
+                onToggle={() => setExpandedStrands((prev: any) => ({ ...prev, [strand]: prev[strand] === false }))}
+                selection={sectionSelection}
+                onToggleSelect={toggleSelection}
+                onSelectAll={handleSelectAll}
+                isDarkMode={isDarkMode}
+                config={config}
+              />
+            )
+          })}
         </>
       )}
 

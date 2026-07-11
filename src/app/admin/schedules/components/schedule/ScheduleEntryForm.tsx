@@ -1,11 +1,11 @@
 // sections/components/schedule/ScheduleEntryForm.tsx
 
 import { memo, useState, useEffect, useRef, useMemo } from "react"
-import { X, Save, Clock, ChevronDown, Search, User, MapPin, Globe, Link } from "lucide-react"
+import { X, Save, Clock, ChevronDown, Search, User, MapPin, Globe, Link, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DAYS } from "./types"
 import type { ScheduleRow } from "./types"
-import { useRooms } from "../../hooks/useRooms"
+import { useRooms } from "../../../sections/hooks/useRooms"
 
 export interface TeacherOption {
   id:         string
@@ -20,6 +20,7 @@ interface ScheduleEntryFormProps {
   isDarkMode:  boolean
   editing:     ScheduleRow | null
   teachers:    TeacherOption[]
+  subjects:    { id: string; name: string; code: string }[]
   schedules:   ScheduleRow[]
   onSave:      (data: Omit<ScheduleRow, "id" | "created_at"> & { teacher_id?: string | null }) => Promise<void>
   onCancel:    () => void
@@ -295,6 +296,79 @@ function TeacherSelect({ value, teachers, onChange, isDarkMode, isICT, error }: 
   )
 }
 
+// ── SubjectSelect — searchable ───────────────────────────────────────────────
+function SubjectSelect({ value, subjects, onChange, isDarkMode, isICT, error }: {
+  value: string; subjects: { id: string; name: string; code: string }[]; onChange: (v: string) => void
+  isDarkMode: boolean; isICT: boolean; error?: string
+}) {
+  const [open, setOpen]   = useState(false)
+  const [query, setQuery] = useState("")
+  const ref               = useRef<HTMLDivElement>(null)
+  const selected          = subjects.find(s => s.name === value)
+  const filtered          = query.trim()
+    ? subjects.filter(s => s.name.toLowerCase().includes(query.toLowerCase()) || s.code.toLowerCase().includes(query.toLowerCase()))
+    : subjects
+
+  const accentRing   = isICT ? "ring-blue-500/40 border-blue-500"   : "ring-orange-500/40 border-orange-500"
+  const accentActive = isICT ? "bg-blue-600 text-white"              : "bg-orange-600 text-white"
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setQuery("") }
+    }
+    document.addEventListener("mousedown", h)
+    return () => document.removeEventListener("mousedown", h)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => { setOpen(v => !v); setQuery("") }}
+        className={`w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all cursor-pointer select-none
+          ${isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}
+          ${open ? `ring-2 ${accentRing}` : ""}
+          ${error ? "border-red-500/60" : ""}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <BookOpen size={13} className={value ? (isICT ? "text-blue-400" : "text-orange-400") : (isDarkMode ? "text-slate-500" : "text-slate-400")} />
+          <span className={value ? (isDarkMode ? "text-white" : "text-slate-900") : (isDarkMode ? "text-slate-500" : "text-slate-400")}>
+            {value ? (selected ? `${selected.name} (${selected.code})` : value) : "— Select a subject —"}
+          </span>
+        </div>
+        <ChevronDown size={14} className={`flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""} ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+      </button>
+
+      {open && (
+        <div className={`absolute z-[100] mt-2 w-full rounded-2xl border shadow-2xl overflow-hidden
+          ${isDarkMode ? "bg-slate-800 border-slate-700 shadow-black/60" : "bg-white border-slate-200 shadow-slate-200/80"}`}>
+          <div className={`px-3 py-2.5 border-b ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50"}`}>
+            <div className="relative">
+              <Search size={12} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+              <input autoFocus type="text" value={query} onChange={e => setQuery(e.target.value)}
+                placeholder="Search subject by name or code…"
+                className={`w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium outline-none border
+                  ${isDarkMode ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500" : "bg-white border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+            </div>
+          </div>
+          <div className="max-h-52 overflow-y-auto py-1" style={{ scrollbarWidth: "none" }}>
+            {filtered.length === 0 && (
+              <div className={`px-3 py-6 text-center text-xs ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>No subjects found</div>
+            )}
+            {filtered.map(s => (
+              <button key={s.id} type="button"
+                onClick={() => { onChange(s.name); setOpen(false); setQuery("") }}
+                className={`w-full text-left px-3 py-2.5 transition-colors
+                  ${s.name === value ? accentActive : isDarkMode ? "text-white hover:bg-slate-700/50" : "text-slate-900 hover:bg-slate-50"}`}>
+                <span className="text-sm font-medium">{s.name}</span>
+                <span className={`text-[10px] ml-2 font-bold ${s.name === value ? "text-white/80" : "text-slate-400"}`}>({s.code})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {error && <p className="text-[9px] text-red-400 mt-1 font-bold">{error}</p>}
+    </div>
+  )
+}
+
 // ── RoomSelect — searchable ───────────────────────────────────────────────────
 function RoomSelect({ value, onChange, isDarkMode, isICT, error }: {
   value: string; onChange: (v: string) => void; isDarkMode: boolean; isICT: boolean; error?: string
@@ -401,8 +475,8 @@ const EMPTY = {
 }
 
 export const ScheduleEntryForm = memo(function ScheduleEntryForm({
-  sectionName, schoolYear, isICT, isDarkMode, editing, teachers, schedules, onSave, onCancel,
-}: ScheduleEntryFormProps) {
+  sectionName, schoolYear, isICT, isDarkMode, editing, teachers, subjects, schedules, onSave, onCancel,
+}: ScheduleEntryFormProps & { subjects: { id: string; name: string; code: string }[] }) {
   const [form, setForm]     = useState({ ...EMPTY })
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -522,10 +596,14 @@ export const ScheduleEntryForm = memo(function ScheduleEntryForm({
             )}
             Subject *
           </label>
-          <input className={`${inputClass} ${errors.subject ? "border-red-500/60" : ""} ${form.subject.trim() ? `ring-1 ${subjColor.ring}` : ""}`}
-            placeholder="e.g. Oral Communication"
-            value={form.subject} onChange={e => set("subject", e.target.value)} />
-          {errors.subject && <p className="text-[9px] text-red-400 mt-1 font-bold">{errors.subject}</p>}
+          <SubjectSelect
+            value={form.subject}
+            subjects={subjects}
+            onChange={v => set("subject", v)}
+            isDarkMode={isDarkMode}
+            isICT={isICT}
+            error={errors.subject}
+          />
         </div>
 
         {/* Day — pill picker */}

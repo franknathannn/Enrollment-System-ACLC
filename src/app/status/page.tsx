@@ -207,7 +207,7 @@ function StatusContent() {
       {/* Back link */}
       <div className="flex justify-start">
         <Link href="/">
-          <Button variant="ghost" className="rounded-xl font-black uppercase text-[10px] tracking-[0.2em] text-slate-500 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 transition-all group">
+          <Button variant="ghost" className={`rounded-xl font-black uppercase text-[10px] tracking-[0.2em] text-slate-500 border border-transparent transition-all group ${isDarkMode ? "hover:text-white hover:bg-white/10 hover:border-white/10" : "hover:text-slate-900 hover:bg-slate-200/50 hover:border-slate-300"}`}>
             <ArrowLeft className="mr-2 w-4 h-4 group-hover:-translate-x-0.5 transition-transform" /> Go Back to Homepage
           </Button>
         </Link>
@@ -221,8 +221,7 @@ function StatusContent() {
           }`}
           variant="outline"
         >
-          {isDarkMode ? <Sun className="mr-2 w-4 h-4" /> : <Moon className="mr-2 w-4 h-4" />}
-          {isDarkMode ? "Light" : "Dark"}
+          {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </Button>
       </div>
 

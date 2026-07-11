@@ -675,27 +675,24 @@ export default function Step1Identity() {
 
 
 
-      <div className="space-y-6 sm:space-y-8 pb-[140px] min-[480px]:pb-[160px]">
+      <div className="space-y-8 sm:space-y-10">
 
         {/* HEADER */}
         <div className={cn(
-          "rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border flex items-center gap-4 sm:gap-6 shadow-2xl relative overflow-hidden",
-          isDark ? "bg-blue-600/10 border-white/10 text-white" : "bg-white/95 border-blue-100 text-slate-900"
+          "rounded-md p-5 sm:p-6 border flex items-center gap-4 sm:gap-6 shadow-sm relative overflow-hidden",
+          isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
         )}>
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-blue-400 to-red-500" />
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl sm:rounded-[24px] flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform duration-500">
-            <User className="text-white w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_2px_10px_rgba(255,255,255,0.4)]" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-200 dark:bg-slate-800 rounded-md flex items-center justify-center shrink-0 border border-slate-350 dark:border-slate-700">
+            <User className="text-slate-750 dark:text-slate-300 w-6 h-6 sm:w-7 sm:h-7" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded-md bg-blue-600/20 text-blue-400 text-[8px] font-black uppercase tracking-[0.2em] border border-blue-500/20">Step 01</span>
-              <div className="h-px w-8 bg-blue-500/20" />
-              <Sparkles size={10} className="text-blue-400 animate-pulse" />
+              <span className="px-2 py-0.5 rounded bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[8px] font-bold uppercase tracking-widest border border-slate-350 dark:border-slate-700">Step 01</span>
             </div>
             <h2 className={cn(
-              "text-lg sm:text-2xl md:text-3xl font-black tracking-tighter uppercase italic leading-none",
+              "text-lg sm:text-2xl font-serif font-bold tracking-normal leading-none",
               isDark ? "text-white" : "text-slate-900"
-            )}>Personal <span className="text-blue-600">Identity</span></h2>
+            )}>Personal Identity</h2>
           </div>
         </div>
 
@@ -747,12 +744,12 @@ export default function Step1Identity() {
         </div>
 
         {/* GENDER */}
-        <div className="space-y-4" id="gender_container">
-          <Label className="text-slate-500 font-black text-[10px] uppercase tracking-[0.3em] ml-2 block">
+        <div className="space-y-3" id="gender_container">
+          <Label className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em] ml-2 block">
             Gender Selection {isFieldRequired("gender") && <span className="text-red-500">*</span>}
           </Label>
           <input type="hidden" {...register("gender", { required: isFieldRequired("gender") ? "Required" : false })} />
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+          <div className="flex flex-col sm:flex-row gap-4">
             {(["Male", "Female"] as const).map(g => {
               const active = selectedGender === g
               const isFemale = g === "Female"
@@ -763,38 +760,28 @@ export default function Step1Identity() {
                   onClick={() => { setValue("gender", g); updateFormData({ gender: g }) }}
                   disabled={!isFieldEditable("gender")}
                   className={cn(
-                    "flex-1 flex items-center justify-between px-8 py-7 rounded-[32px] border-2",
-                    "transition-all duration-300 transform",
-                    "active:scale-95 relative overflow-hidden lg:hover:-translate-y-1",
+                    "flex-1 flex items-center justify-between px-6 py-4 rounded-md border-2",
+                    "transition-all duration-150 active:scale-98 relative overflow-hidden",
                     active
                       ? isFemale
-                        ? "border-red-500/50 bg-red-950/20 text-white shadow-[0_0_30px_rgba(239,68,68,0.15)]"
-                        : "border-blue-500/50 bg-blue-900/20 text-white shadow-[0_0_30px_rgba(59,130,246,0.2)]"
-                      : cn("text-slate-500", isDark ? "bg-white/5 border-white/5 lg:hover:border-white/10" : "bg-white border-slate-200 lg:hover:border-blue-400/30"),
+                        ? "border-red-500 bg-red-50/50 dark:bg-red-950/20 text-red-700 dark:text-red-300"
+                        : "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300"
+                      : cn("text-slate-500", isDark ? "bg-white/5 border-white/5 hover:border-white/10" : "bg-white border-slate-200 hover:border-slate-350"),
                     !isFieldEditable("gender") && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  <div className="flex items-center gap-5">
+                  <div className="flex items-center gap-4">
                     <div className={cn(
-                      "w-6 h-6 rounded-full border-2 flex items-center justify-center",
-                      "transition-all duration-300",
+                      "w-4 h-4 rounded-full border flex items-center justify-center",
                       active
-                        ? isFemale ? "border-red-400 bg-red-400/20" : "border-blue-400 bg-blue-400/20"
-                        : "border-slate-700"
+                        ? isFemale ? "border-red-500" : "border-blue-500"
+                        : "border-slate-500"
                     )}>
-                      {active && <div className={cn("w-2.5 h-2.5 rounded-full animate-pulse", isFemale ? "bg-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)]" : "bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.8)]")} />}
+                      {active && <div className={cn("w-2 h-2 rounded-full", isFemale ? "bg-red-500" : "bg-blue-500")} />}
                     </div>
-                    <span className="font-black uppercase text-xs tracking-[0.25em]">{g}</span>
+                    <span className="font-bold uppercase text-xs tracking-wider">{g}</span>
                   </div>
-                  <User size={24} className={cn("transition-colors duration-300", active ? isFemale ? "text-red-400" : "text-blue-400" : "text-slate-800")} />
-
-                  {/* Visual Impact Flare */}
-                  {active && (
-                    <div className={cn(
-                      "absolute -right-4 -bottom-4 w-24 h-24 blur-3xl opacity-20 animate-pulse",
-                      isFemale ? "bg-red-600" : "bg-blue-600"
-                    )} />
-                  )}
+                  <User size={18} className={cn(active ? (isFemale ? "text-red-550" : "text-blue-550") : "text-slate-400")} />
                 </button>
               )
             })}
@@ -936,31 +923,24 @@ export default function Step1Identity() {
 
       </div>
 
-      {/* STICKY/FIXED SUBMIT */}
-      <div className={cn(
-        "fixed md:sticky bottom-0 z-50 left-0 right-0 pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-6 md:px-8 lg:px-12 mt-6 flex flex-col gap-3 md:-mx-8 lg:-mx-12",
-        "backdrop-blur-xl md:backdrop-blur-none border-t md:border-t-0",
-        isDark ? "bg-[#0d1433]/80 md:bg-transparent border-white/10" : "bg-white/80 md:bg-transparent border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none"
-      )}>
+      {/* SUBMIT BUTTON */}
+      <div className="mt-10 flex flex-col gap-3">
         <Button
           type="submit"
           className={cn(
-            "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
-            "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-            "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
-            "active:scale-[0.98]",
-            "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
+            "w-full min-h-[52px] md:h-16 rounded-md",
+            "bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-all",
+            "active:scale-98",
+            "flex items-center justify-center gap-4 group touch-manipulation border border-transparent shadow-sm"
           )}
         >
           {checking ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
-              Proceed
-            </span>
+            <span>Proceed</span>
           )}
-          <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
-            <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
+          <div className="w-8 h-8 bg-white/10 rounded-md flex items-center justify-center shrink-0">
+            <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
           </div>
         </Button>
       </div>

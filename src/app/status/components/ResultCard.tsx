@@ -96,15 +96,15 @@ export function ResultCard({ result, onFixApplication, isDarkMode }: Props) {
               <div className="relative">
                 <span className="absolute inset-0 rounded-full bg-green-400/20 animate-ping" style={{ animationDuration: "2.5s" }} />
                 <div className="relative w-16 h-16 rounded-full bg-green-500/15 border-2 border-green-500/40 flex items-center justify-center shadow-[0_0_30px_rgba(34,197,94,0.25)]">
-                  <GraduationCap className="w-8 h-8 text-green-400" />
+                  <GraduationCap className={cn("w-8 h-8", isDarkMode ? "text-green-400" : "text-green-600")} />
                 </div>
               </div>
             </div>
 
             <div className="relative space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-green-300/60">Enrollment Status</p>
-              <p className="text-2xl font-black text-green-400 uppercase tracking-wider">Approved</p>
-              <p className="text-[10px] text-green-300/50 font-semibold tracking-wide">
+              <p className={cn("text-[10px] font-black uppercase tracking-[0.4em]", isDarkMode ? "text-green-300/60" : "text-green-700/70")}>Enrollment Status</p>
+              <p className={cn("text-2xl font-black uppercase tracking-wider", isDarkMode ? "text-green-400" : "text-green-600")}>Approved</p>
+              <p className={cn("text-[10px] font-semibold tracking-wide", isDarkMode ? "text-green-300/50" : "text-green-800/80")}>
                 Congratulations! Your enrollment has been confirmed.
               </p>
             </div>
@@ -118,14 +118,14 @@ export function ResultCard({ result, onFixApplication, isDarkMode }: Props) {
               <div className="relative">
                 <span className="absolute inset-0 rounded-full bg-amber-400/20 animate-pulse" />
                 <div className="relative w-16 h-16 rounded-full bg-amber-500/15 border-2 border-amber-500/40 flex items-center justify-center">
-                  <Clock className="w-8 h-8 text-amber-400" />
+                  <Clock className={cn("w-8 h-8", isDarkMode ? "text-amber-400" : "text-amber-600")} />
                 </div>
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-amber-300/60">Enrollment Status</p>
-              <p className="text-2xl font-black text-amber-400 uppercase tracking-wider">Pending Review</p>
-              <p className="text-[10px] text-amber-300/50 font-semibold tracking-wide">
+              <p className={cn("text-[10px] font-black uppercase tracking-[0.4em]", isDarkMode ? "text-amber-300/60" : "text-amber-700/70")}>Enrollment Status</p>
+              <p className={cn("text-2xl font-black uppercase tracking-wider", isDarkMode ? "text-amber-400" : "text-amber-600")}>Pending Review</p>
+              <p className={cn("text-[10px] font-semibold tracking-wide", isDarkMode ? "text-amber-300/50" : "text-amber-800/80")}>
                 Your application is being reviewed by the registrar.
               </p>
             </div>
@@ -137,13 +137,13 @@ export function ResultCard({ result, onFixApplication, isDarkMode }: Props) {
           <div className="relative overflow-hidden rounded-[28px] border border-red-500/20 bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent p-6 text-center space-y-3">
             <div className="relative flex justify-center mb-2">
               <div className="relative w-16 h-16 rounded-full bg-red-500/15 border-2 border-red-500/40 flex items-center justify-center">
-                <ShieldAlert className="w-8 h-8 text-red-400" />
+                <ShieldAlert className={cn("w-8 h-8", isDarkMode ? "text-red-400" : "text-red-600")} />
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-red-300/60">Enrollment Status</p>
-              <p className="text-2xl font-black text-red-400 uppercase tracking-wider">Not Accepted</p>
-              <p className="text-[10px] text-red-300/50 font-semibold tracking-wide">
+              <p className={cn("text-[10px] font-black uppercase tracking-[0.4em]", isDarkMode ? "text-red-300/60" : "text-red-700/70")}>Enrollment Status</p>
+              <p className={cn("text-2xl font-black uppercase tracking-wider", isDarkMode ? "text-red-400" : "text-red-600")}>Not Accepted</p>
+              <p className={cn("text-[10px] font-semibold tracking-wide", isDarkMode ? "text-red-300/50" : "text-red-800/80")}>
                 Your application was not approved.
               </p>
             </div>

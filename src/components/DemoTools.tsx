@@ -7,8 +7,8 @@ import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
 import { generateStudent } from "@/lib/mock-utils"
 import { clearMockData } from "@/app/mock/actions"
-import { generateSchedule, type SubjectInput, type RepetitionMode } from "@/app/admin/sections/components/schedule/autoScheduler"
-import type { ScheduleRow } from "@/app/admin/sections/components/schedule/types"
+import { generateSchedule, type SubjectInput, type RepetitionMode } from "@/app/admin/schedules/components/schedule/autoScheduler"
+import type { ScheduleRow } from "@/app/admin/schedules/components/schedule/types"
 
 const SYSTEM_PASSWORD = process.env.NEXT_PUBLIC_DEMO_TOOLS_PASSWORD ?? ""
 

@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { StudentTable } from "./StudentTable"
-import { ScheduleTab } from "./schedule/ScheduleTab"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ScheduleTab } from "../../schedules/components/schedule/ScheduleTab"
 import { AdviserPicker } from "./AsyncTeacherSelect"
 import { Shield } from "lucide-react"
 import { formatTeacherName } from "@/lib/utils/formatTeacherName"
@@ -42,7 +41,6 @@ export const SectionDetailView = memo(function SectionDetailView({
   handleExit,
   animatingIds,
   onToggleLock,
-  allSchedules,
   teachers = [],
   onChangeAdviser,
 }: any) {
@@ -282,12 +280,11 @@ export const SectionDetailView = memo(function SectionDetailView({
               Female <span className="text-[9px] md:text-[11px] font-mono opacity-40">[{fCount}]</span>
             </TabsTrigger>
 
-            {/* ── NEW: Schedule tab ── */}
             <div className={dividerClass} />
 
+            {/* Schedule */}
             <TabsTrigger value="schedule" className={triggerClass}>
-              <span className="md:hidden">Sched</span>
-              <span className="hidden md:inline">Schedule</span>
+              Schedule
             </TabsTrigger>
           </TabsList>
         </div>
@@ -341,20 +338,23 @@ export const SectionDetailView = memo(function SectionDetailView({
           </TabsContent>
         ))}
 
-        {/* ── NEW: Schedule tab content ── */}
         <TabsContent
           value="schedule"
-          className="outline-none focus:ring-0 focus-visible:ring-0 mt-0 animate-in fade-in zoom-in-95 slide-in-from-bottom-10 duration-700 ease-out w-full"
+          className="outline-none focus:ring-0 focus-visible:ring-0 mt-0 animate-in fade-in zoom-in-95 slide-in-from-bottom-10 duration-700 ease-out flex justify-center w-full"
         >
-          <ScheduleTab
-            sectionName={sectionName}
-            isICT={isICT}
-            isDarkMode={isDarkMode}
-            schoolYear={config?.school_year ?? "2025-2026"}
-            students={activeStudents}
-            allSchedules={allSchedules ?? []}
-            adviserName={prefixedAdviserName}
-          />
+          <div className="w-full max-w-[100vw] px-2 md:px-4">
+            <div className="rounded-3xl border border-slate-200/60 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/50 backdrop-blur-sm p-4 sm:p-6 shadow-sm">
+              <ScheduleTab
+                sectionName={sectionName}
+                isICT={isICT}
+                isDarkMode={isDarkMode}
+                schoolYear={config?.school_year || "2025-2026"}
+                students={activeStudents}
+                allSchedules={allSchedules}
+                readOnly={true}
+              />
+            </div>
+          </div>
         </TabsContent>
 
       </Tabs>

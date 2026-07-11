@@ -18,7 +18,7 @@ import {
   type SubjectInput, type AutoScheduleConfig,
   type AutoScheduleResult, type ConflictItem, type RepetitionMode,
 } from "./autoScheduler"
-import { useRooms } from "../../hooks/useRooms"
+import { useRooms } from "../../../sections/hooks/useRooms"
 import type { ScheduleRow } from "./types"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -30,6 +30,7 @@ interface AutoScheduleWizardProps {
   students:          { preferred_shift?: string | null }[]
   existingSchedules: ScheduleRow[]
   teachers:          TeacherOption[]
+  dbSubjects:        { id: string; name: string; code: string }[]
   onConfirm:         (rows: Omit<ScheduleRow, "id" | "created_at">[]) => Promise<void>
   onCancel:          () => void
 }
@@ -490,7 +491,7 @@ function WizardTeacherSelect({ value, teachers, onChange, isDarkMode, isICT, err
 
 // ── Subject Card (replaces table row — mobile-friendly) ───────────────────────
 function SubjectCard({
-  subj, idx, count, isDarkMode, isICT, teachers, onChange, onRemove, roomNames
+  subj, idx, count, isDarkMode, isICT, teachers, onChange, onRemove, roomNames, dbSubjects
 }: {
   subj: SubjectInput & { teacher_id?: string }
   idx: number; count: number; isDarkMode: boolean; isICT: boolean
@@ -498,6 +499,7 @@ function SubjectCard({
   onChange: (id: string, key: string, val: any) => void
   onRemove: (id: string) => void
   roomNames: string[]
+  dbSubjects: { id: string; name: string; code: string }[]
 }) {
   const accentColor = isICT ? (isDarkMode ? "text-blue-400" : "text-blue-600") : (isDarkMode ? "text-amber-400" : "text-amber-600")
   const borderColor = isICT
@@ -536,14 +538,14 @@ function SubjectCard({
       {/* Subject name — full width */}
       <div className="mb-4">
         <FieldLabel isDarkMode={isDarkMode}>Subject Name *</FieldLabel>
-        <input
+        <SearchableSelect
           value={subj.subject}
-          onChange={e => onChange(subj.id, "subject", e.target.value)}
-          placeholder="e.g. Oral Communication"
-          className={`w-full rounded-xl border px-3 py-2.5 text-sm font-medium outline-none transition-all
-            ${isDarkMode
-              ? "bg-slate-800 border-slate-700 text-white placeholder-slate-600 focus:border-blue-500/60"
-              : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-400"}`}
+          options={[...new Set(dbSubjects.map(s => s.name))]}
+          placeholder="Pick subject…"
+          isDarkMode={isDarkMode}
+          isICT={isICT}
+          onChange={v => onChange(subj.id, "subject", v)}
+          emptyLabel="— Select subject —"
         />
       </div>
 
@@ -714,7 +716,7 @@ const LUNCH_END_OPTS    = ["12:00","12:30","13:00","13:30","14:00"].map(t => ({ 
 // ── Main Wizard ───────────────────────────────────────────────────────────────
 export const AutoScheduleWizard = memo(function AutoScheduleWizard({
   sectionName, schoolYear, isICT, isDarkMode,
-  students, existingSchedules, teachers, onConfirm, onCancel,
+  students, existingSchedules, teachers, dbSubjects, onConfirm, onCancel,
 }: AutoScheduleWizardProps) {
 
   const majorityShift = getMajorityShift(students)
@@ -946,6 +948,7 @@ export const AutoScheduleWizard = memo(function AutoScheduleWizard({
                     subj={s as any} idx={i} count={subjects.length}
                     isDarkMode={isDarkMode} isICT={isICT}
                     teachers={teachers} roomNames={roomNames}
+                    dbSubjects={dbSubjects}
                     onChange={updateSubject} onRemove={removeSubject}
                   />
                 ))}

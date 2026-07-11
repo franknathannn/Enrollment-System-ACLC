@@ -37,10 +37,6 @@ import { SCHOOLS_SORTED } from "@/lib/data/philippineSchools"
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC DATA
 // ─────────────────────────────────────────────────────────────────────────────
-const STRAND_OPTIONS = [
-  { value: "ICT", label: "Information and Communication Technology (ICT)" },
-  { value: "GAS", label: "General Academics (GAS)" },
-]
 
 const SCHOOL_YEAR_REGEX = /^\d{4}-\d{4}$/
 const NOT_LISTED = "School Not Listed / Not Found"
@@ -545,6 +541,7 @@ export default function Step2Academic() {
   const [fetchingYear, setFetchingYear] = useState(true)
   const [checking, setChecking] = useState(false)
   const [grade12Enabled, setGrade12Enabled] = useState(true)
+  const [availableStrands, setAvailableStrands] = useState<string[]>([])
 
   const {
     register, handleSubmit, setValue, watch, control, getValues,
@@ -576,6 +573,22 @@ export default function Step2Academic() {
   const selectedShift = watch("preferred_shift")
   const selectedSchoolType = watch("school_type")
   const selectedGradeLevel = watch("grade_level")
+
+  const options = useMemo(() => {
+    const labelMap: Record<string, string> = {
+      "ICT": "Information and Communication Technology (ICT)",
+      "GAS": "General Academics (GAS)",
+      "STEM": "Science, Technology, Engineering, and Mathematics (STEM)",
+      "HUMSS": "Humanities and Social Sciences (HUMSS)",
+      "ABM": "Accountancy, Business, and Management (ABM)",
+      "TechPro": "TechPro (Technical-Vocational Track)",
+      "Academic Track": "Academic Track",
+    }
+    return availableStrands.map(strand => ({
+      value: strand,
+      label: labelMap[strand] || strand
+    }))
+  }, [availableStrands])
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => window.scrollTo(0, 0))
@@ -609,8 +622,55 @@ export default function Step2Academic() {
         // column may not exist yet — default stays true
       }
     }
+    async function fetchStrandsConfig() {
+      try {
+        const { data: settings } = await supabase.from("system_settings").select("setting_key, value_text")
+        if (settings) {
+          const acIdSetting = settings.find(s => s.setting_key === "active_curriculum_id")
+          const avStrandsSetting = settings.find(s => s.setting_key === "available_strands")
+          
+          let parsedStrands: string[] = []
+          if (avStrandsSetting?.value_text) {
+            try {
+              parsedStrands = JSON.parse(avStrandsSetting.value_text)
+            } catch (e) {
+              console.error(e)
+            }
+          }
+          
+          let baseStrands = ["ICT", "GAS", "STEM", "HUMSS", "ABM"]
+          if (acIdSetting?.value_text) {
+            const { data: curr } = await supabase
+              .from("curricula")
+              .select("name")
+              .eq("id", acIdSetting.value_text)
+              .maybeSingle()
+              
+            if (curr?.name) {
+              const nameLower = curr.name.toLowerCase()
+              if (nameLower.includes("k-12") || nameLower.includes("k12")) {
+                baseStrands = ["Academic Track", "TechPro"]
+              }
+            }
+          }
+          
+          let finalStrands = baseStrands
+          if (parsedStrands && parsedStrands.length > 0) {
+            finalStrands = baseStrands.filter(s => parsedStrands.includes(s))
+          }
+          
+          setAvailableStrands(finalStrands.length > 0 ? finalStrands : baseStrands)
+        } else {
+          setAvailableStrands(["ICT", "GAS", "STEM", "HUMSS", "ABM"])
+        }
+      } catch (err) {
+        console.error("Failed to fetch strands:", err)
+        setAvailableStrands(["ICT", "GAS", "STEM", "HUMSS", "ABM"])
+      }
+    }
     fetchActiveYear()
     fetchGrade12Setting()
+    fetchStrandsConfig()
   }, [setValue])
 
   const onSubmit = useCallback(async (data: any) => {
@@ -677,27 +737,24 @@ export default function Step2Academic() {
 
 
 
-      <div className="space-y-6 md:space-y-8 pb-[140px] min-[480px]:pb-[160px]">
+      <div className="space-y-8 md:space-y-10">
 
         {/* HEADER */}
         <div className={cn(
-          "rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border flex items-center gap-4 sm:gap-6 shadow-2xl relative overflow-hidden",
-          isDark ? "bg-blue-600/10 border-white/10 text-white" : "bg-white/95 border-blue-100 text-slate-900"
+          "rounded-md p-5 sm:p-6 border flex items-center gap-4 sm:gap-6 shadow-sm relative overflow-hidden",
+          isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
         )}>
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-blue-400 to-red-500" />
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl sm:rounded-[24px] flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform duration-500">
-            <GraduationCap className="text-white w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_2px_10px_rgba(255,255,255,0.4)]" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-200 dark:bg-slate-800 rounded-md flex items-center justify-center shrink-0 border border-slate-350 dark:border-slate-700">
+            <GraduationCap className="text-slate-750 dark:text-slate-300 w-6 h-6 sm:w-7 sm:h-7" />
           </div>
-          <div className="min-w-0 pb-1">
+          <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded-md bg-blue-600/20 text-blue-400 text-[8px] font-black uppercase tracking-[0.2em] border border-blue-500/20">Step 02</span>
-              <div className="h-px w-8 bg-blue-500/20" />
-              <Sparkles size={10} className="text-blue-400 animate-pulse" />
+              <span className="px-2 py-0.5 rounded bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[8px] font-bold uppercase tracking-widest border border-slate-350 dark:border-slate-700">Step 02</span>
             </div>
             <h2 className={cn(
-              "text-lg sm:text-2xl md:text-3xl font-black tracking-tighter uppercase italic leading-tight",
+              "text-lg sm:text-2xl font-serif font-bold tracking-normal leading-none",
               isDark ? "text-white" : "text-slate-900"
-            )}>Academic <span className="text-blue-600">Background</span></h2>
+            )}>Academic Background</h2>
           </div>
         </div>
 
@@ -847,18 +904,34 @@ export default function Step2Academic() {
           <Label className={cn("font-bold text-[10px] uppercase tracking-[0.3em] ml-2", errors.strand ? "text-red-500" : "t-text-muted")}>
             Strand Preference {isFieldRequired("strand") && <span className="text-red-500">*</span>}
           </Label>
-          <input type="hidden" {...register("strand", { required: isFieldRequired("strand") ? "Required" : false })} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {STRAND_OPTIONS.map(opt => (
-              <CheckCard
-                key={opt.value}
-                label={opt.value}
-                sublabel={opt.label.replace(`(${opt.value})`, "").trim()}
-                checked={selectedStrand === opt.value}
-                onClick={() => { setValue("strand", opt.value, { shouldValidate: true }); updateFormData({ strand: opt.value }) }}
-                disabled={!isFieldEditable("strand")}
-              />
-            ))}
+          <div className="relative">
+            <select
+              {...register("strand", { required: isFieldRequired("strand") ? "Required" : false })}
+              disabled={!isFieldEditable("strand") || options.length === 0}
+              onChange={e => {
+                setValue("strand", e.target.value, { shouldValidate: true })
+                updateFormData({ strand: e.target.value })
+              }}
+              value={selectedStrand}
+              className={cn(
+                "w-full min-h-[44px] h-11 md:h-12 rounded-xl border-2 px-4 appearance-none cursor-pointer pr-10",
+                "font-medium outline-none text-xs md:text-sm",
+                "transition-all duration-300 t-input",
+                selectedStrand ? "filled border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.1)]" : "lg:hover:border-blue-500/20",
+                errors.strand ? "error shadow-[0_0_20px_rgba(239,68,68,0.1)]" : "focus:border-blue-500/50 focus:shadow-[0_0_20px_rgba(59,130,246,0.15)]",
+                (!isFieldEditable("strand") || options.length === 0) && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <option value="" disabled hidden>Select Strand Preference</option>
+              {options.map(opt => (
+                <option key={opt.value} value={opt.value} className={isDark ? "bg-[#0f1117] text-white" : "bg-white text-slate-900"}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 font-bold text-[10px]">
+              ▼
+            </div>
           </div>
           {errors.strand && (
             <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest flex items-center gap-1 ml-2">
@@ -1058,39 +1131,32 @@ export default function Step2Academic() {
 
       </div>
 
-      {/* STICKY/FIXED BOTTOM BAR */}
-      <div className={cn(
-        "fixed md:sticky bottom-0 z-50 left-0 right-0 pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-6 md:px-8 lg:px-12 mt-6 flex flex-col gap-3 md:-mx-8 lg:-mx-12",
-        "backdrop-blur-xl md:backdrop-blur-none border-t md:border-t-0",
-        isDark ? "bg-[#0d1433]/80 md:bg-transparent border-white/10" : "bg-white/80 md:bg-transparent border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none"
-      )}>
+      {/* SUBMIT BUTTON */}
+      <div className="mt-10 flex flex-col gap-3">
         <Button
           type="submit"
           disabled={fetchingYear || checking}
           className={cn(
-            "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
-            "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-            "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
-            "active:scale-[0.98]",
-            "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600"
+            "w-full min-h-[52px] md:h-16 rounded-md",
+            "bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-all",
+            "active:scale-98",
+            "flex items-center justify-center gap-4 group touch-manipulation border border-transparent shadow-sm"
           )}
         >
           {checking ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
-              Proceed
-            </span>
+            <span>Proceed</span>
           )}
-          <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
-            <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
+          <div className="w-8 h-8 bg-white/10 rounded-md flex items-center justify-center shrink-0">
+            <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
           </div>
         </Button>
         <button type="button" onClick={() => {
           updateFormData(getValues() as any)
           setStep(1)
         }}
-          className="spring-back-btn min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 py-3 touch-manipulation active:scale-[0.98]">
+          className="min-h-[44px] w-full rounded-md t-text-muted font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 hover:text-blue-500 py-3 transition-colors active:scale-98">
           <ChevronLeft className="w-4 h-4 shrink-0" /> Go Back
         </button>
       </div>

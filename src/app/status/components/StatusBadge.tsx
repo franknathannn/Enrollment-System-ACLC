@@ -3,10 +3,10 @@
 import { cn } from "@/lib/utils"
 
 const STYLES: Record<string, { badge: string; dot: string }> = {
-  Pending:  { badge: "bg-amber-900/30 text-amber-400 border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.25)]", dot: "bg-amber-400" },
-  Accepted: { badge: "bg-green-900/30 text-green-400 border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.25)]",  dot: "bg-green-400" },
-  Approved: { badge: "bg-green-900/30 text-green-400 border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.25)]",  dot: "bg-green-400" },
-  Rejected: { badge: "bg-red-900/30 text-red-500 border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.25)]",        dot: "bg-red-500" },
+  Pending:  { badge: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.15)] dark:shadow-[0_0_20px_rgba(245,158,11,0.25)]", dot: "bg-amber-500 dark:bg-amber-400" },
+  Accepted: { badge: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.15)] dark:shadow-[0_0_20px_rgba(34,197,94,0.25)]",  dot: "bg-green-600 dark:bg-green-400" },
+  Approved: { badge: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.15)] dark:shadow-[0_0_20px_rgba(34,197,94,0.25)]",  dot: "bg-green-600 dark:bg-green-400" },
+  Rejected: { badge: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-500 border-red-200 dark:border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.15)] dark:shadow-[0_0_20px_rgba(239,68,68,0.25)]",        dot: "bg-red-600 dark:bg-red-500" },
 }
 
 export function StatusBadge({ status }: { status: string }) {

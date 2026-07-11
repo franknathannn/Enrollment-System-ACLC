@@ -11,4 +11,7 @@ jobs:
           curl -s -o /dev/null -X GET \
             "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/system_config?limit=1" \
             -H "apikey: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}"
+            -H "Authorization: Bearer ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" || true
+            
+      - name: Keepalive Workflow
+        uses: gautamkrishnar/keepalive-workflow@v1

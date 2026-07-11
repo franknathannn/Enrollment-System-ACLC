@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useTheme } from "@/hooks/useTheme"
+import { encryptPasswordAction, decryptPasswordAction } from "@/app/actions/oedActions"
 
 type StudentUser = {
   id: string
@@ -225,16 +226,22 @@ export default function StudentAccountsPage() {
     setIsNotifierUpdating(false)
   }
 
-  const handleOedModalOpen = (student: StudentUser) => {
+  const handleOedModalOpen = async (student: StudentUser) => {
     setSelectedStudent(student)
     setOedUsn(student.oed_usn || "")
-    setOedPwd(student.oed_password || "")
+    const decryptedPwd = student.oed_password ? await decryptPasswordAction(student.oed_password) : ""
+    setOedPwd(decryptedPwd)
     setShowOedPwd(false)
     setOpenOedModal(true)
   }
 
   const triggerOedAutoSave = async () => {
-    if (selectedStudent && (oedUsn !== selectedStudent.oed_usn || oedPwd !== selectedStudent.oed_password)) {
+    if (!selectedStudent) return
+
+    // Decrypt the original stored password to compare if the edited password actually changed
+    const originalDecryptedPwd = selectedStudent.oed_password ? await decryptPasswordAction(selectedStudent.oed_password) : ""
+    
+    if (oedUsn !== selectedStudent.oed_usn || oedPwd !== originalDecryptedPwd) {
 
       // Duplication Validation
       if (oedUsn.trim() !== "") {
@@ -246,11 +253,12 @@ export default function StudentAccountsPage() {
       }
 
       setIsOedSaving(true)
-      const { error } = await supabase.from("students").update({ oed_usn: oedUsn, oed_password: oedPwd }).eq("id", selectedStudent.id)
+      const encryptedPwd = oedPwd ? await encryptPasswordAction(oedPwd) : ""
+      const { error } = await supabase.from("students").update({ oed_usn: oedUsn, oed_password: encryptedPwd }).eq("id", selectedStudent.id)
       if (error) {
         toast.error("Failed to auto-save OED Credentials: " + error.message)
       } else {
-        setStudents(prev => prev.map(s => s.id === selectedStudent.id ? { ...s, oed_usn: oedUsn, oed_password: oedPwd } : s))
+        setStudents(prev => prev.map(s => s.id === selectedStudent.id ? { ...s, oed_usn: oedUsn, oed_password: encryptedPwd } : s))
       }
       setIsOedSaving(false)
     }

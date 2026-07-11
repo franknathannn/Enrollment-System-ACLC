@@ -23,6 +23,7 @@ import { SettingsActions } from "./components/SettingsActions"
 import { EnrollmentFormControl } from "./components/EnrollmentFormControl"
 import { GradeOperationsPanel } from "./components/GradeOperationsPanel"
 import { StudentEditControl } from "./components/StudentEditControl"
+import { LiveDashboardControl } from "./components/LiveDashboardControl"
 
 type ConfigState = {
   id: string
@@ -683,6 +684,8 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+
+            <LiveDashboardControl isDarkMode={isDarkMode} />
 
             <ParentNotificationControl
               isDarkMode={isDarkMode}

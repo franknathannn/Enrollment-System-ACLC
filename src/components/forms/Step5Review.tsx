@@ -193,27 +193,24 @@ export default function Step5Review() {
 
 
 
-      <div className="space-y-6 sm:space-y-8 pb-[140px] min-[480px]:pb-[160px]">
+      <div className="space-y-8 sm:space-y-10">
 
         {/* HEADER */}
         <div className={cn(
-          "rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border flex items-center gap-4 sm:gap-6 shadow-2xl relative overflow-hidden",
-          isDark ? "bg-blue-600/10 border-white/10 text-white" : "bg-white/95 border-blue-100 text-slate-900"
+          "rounded-md p-5 sm:p-6 border flex items-center gap-4 sm:gap-6 shadow-sm relative overflow-hidden",
+          isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
         )}>
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-blue-400 to-red-500" />
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl sm:rounded-[24px] flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform duration-500">
-            <BadgeCheck className="text-white w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_2px_10px_rgba(255,255,255,0.4)]" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-200 dark:bg-slate-800 rounded-md flex items-center justify-center shrink-0 border border-slate-350 dark:border-slate-700">
+            <BadgeCheck className="text-slate-750 dark:text-slate-300 w-6 h-6 sm:w-7 sm:h-7" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded-md bg-blue-600/20 text-blue-400 text-[8px] font-black uppercase tracking-[0.2em] border border-blue-500/20">Step 05</span>
-              <div className="h-px w-8 bg-blue-500/20" />
-              <Sparkles size={10} className="text-blue-400 animate-pulse" />
+              <span className="px-2 py-0.5 rounded bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[8px] font-bold uppercase tracking-widest border border-slate-350 dark:border-slate-700">Step 05</span>
             </div>
             <h2 className={cn(
-              "text-lg sm:text-2xl md:text-3xl font-black tracking-tighter uppercase italic leading-none",
+              "text-lg sm:text-2xl font-serif font-bold tracking-normal leading-none",
               isDark ? "text-white" : "text-slate-900"
-            )}>Final <span className="text-blue-600">Review</span></h2>
+            )}>Final Review</h2>
           </div>
         </div>
 
@@ -302,41 +299,37 @@ export default function Step5Review() {
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Confirm your identity session</p>
             </div>
           </div>
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-2 py-1 transform scale-[0.85] sm:scale-100">
-            <TurnstileWidget key={turnstileKey} onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme="light" />
+          <div className={cn(
+            "rounded-md border shadow-sm px-2 py-1 transform scale-[0.85] sm:scale-100",
+            isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-100"
+          )}>
+            <TurnstileWidget key={turnstileKey} onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme={isDark ? "dark" : "light"} />
           </div>
         </div>
       </div>
 
-      {/* STICKY/FIXED BOTTOM BAR */}
-      <div className={cn(
-        "fixed md:sticky bottom-0 z-50 left-0 right-0 pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] px-6 md:px-8 lg:px-12 mt-6 flex flex-col gap-3 md:-mx-8 lg:-mx-12",
-        "backdrop-blur-xl md:backdrop-blur-none border-t md:border-t-0",
-        isDark ? "bg-[#0d1433]/80 md:bg-transparent border-white/10" : "bg-white/80 md:bg-transparent border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none"
-      )}>
+      {/* SUBMIT BUTTON */}
+      <div className="mt-10 flex flex-col gap-3">
         <Button onClick={handleFinalSubmit} disabled={loading}
             className={cn(
-              "w-full min-h-[52px] md:h-16 rounded-[28px] spring-btn-blue",
-              "bg-blue-600 lg:hover:bg-white lg:hover:text-blue-600 text-white",
-              "shadow-[0_20px_50px_rgba(59,130,246,0.3)]",
-              "active:scale-[0.98]",
-              "flex items-center justify-center gap-4 group touch-manipulation border-2 border-transparent lg:hover:border-blue-600",
+              "w-full min-h-[52px] md:h-16 rounded-md",
+              "bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-all",
+              "active:scale-98",
+              "flex items-center justify-center gap-4 group touch-manipulation border border-transparent shadow-sm",
               "disabled:opacity-50 disabled:pointer-events-none"
             )}
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <span className="font-black uppercase text-[10px] sm:text-xs tracking-[0.4em]">
-                Submit Enrollment
-              </span>
+              <span>Submit Enrollment</span>
             )}
-            <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center lg:group-hover:bg-blue-600 shrink-0 transition-all duration-500">
-              <ArrowRight size={20} className="lg:group-hover:translate-x-1 transition-transform" />
+            <div className="w-8 h-8 bg-white/10 rounded-md flex items-center justify-center shrink-0">
+              <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </Button>
           <button type="button" onClick={() => setStep(4)}
-            className="spring-back-btn min-h-[44px] w-full rounded-xl t-text-muted font-black uppercase text-[9px] sm:text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 lg:hover:text-blue-400 py-3 touch-manipulation active:scale-[0.98]">
+            className="min-h-[44px] w-full rounded-md t-text-muted font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 hover:text-blue-500 py-3 transition-colors active:scale-98">
             <ChevronLeft className="w-4 h-4 shrink-0" /> Edit Documents
           </button>
       </div>
@@ -381,21 +374,20 @@ export default function Step5Review() {
 function ReviewSection({ icon, title, details, isDark }: any) {
   return (
     <Card className={cn(
-      "p-6 sm:p-8 rounded-[40px] border w-full overflow-hidden group relative spring-hover-blue",
-      isDark ? "border-white/5 bg-white/[0.02] lg:hover:bg-white/[0.04]" : "border-slate-100 bg-white shadow-xl"
+      "p-6 sm:p-8 rounded-md border w-full overflow-hidden relative shadow-sm",
+      isDark ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"
     )}>
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/40 via-blue-500/10 to-transparent" />
-      <div className="flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 rounded-[18px] bg-blue-600/10 flex items-center justify-center text-blue-500 border border-blue-500/20 group-hover:scale-110 transition-transform duration-500">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-10 h-10 rounded bg-slate-100 dark:bg-slate-850 flex items-center justify-center text-slate-500 border border-slate-200 dark:border-slate-800">
           {icon}
         </div>
-        <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] italic">{title}</p>
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{title}</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
         {details.filter((d: any) => d.value !== null).map((d: any, i: number) => (
-          <div key={i} className={cn("space-y-1 group/item transition-all", d.fullWidth ? 'sm:col-span-2' : '')}>
-            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest opacity-60 group-hover/item:text-blue-400 transition-colors">{d.label}</p>
-            <p className={cn("text-xs font-black uppercase leading-relaxed break-words tracking-tight", isDark ? "text-white" : "text-slate-900")}>
+          <div key={i} className={cn("space-y-1", d.fullWidth ? 'sm:col-span-2' : '')}>
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{d.label}</p>
+            <p className={cn("text-xs font-bold uppercase leading-relaxed break-words tracking-tight", isDark ? "text-white" : "text-slate-900")}>
               {d.value || "—"}
             </p>
           </div>
@@ -411,26 +403,26 @@ function DocThumbnail({ label, url, isDark }: { label: string; url: string | nul
     <Dialog>
       <DialogTrigger asChild>
         <div className={cn(
-          "group relative aspect-video rounded-[32px] overflow-hidden border-2 cursor-pointer shadow-xl spring-doc-thumb",
-          isDark ? "bg-slate-950 border-white/5" : "bg-white border-slate-100"
+          "group relative aspect-video rounded-md overflow-hidden border cursor-pointer shadow-sm",
+          isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
         )}>
-          <img src={url} className="w-full h-full object-cover opacity-60 lg:group-hover:opacity-100 transition-all duration-700 lg:group-hover:scale-110" alt={label} loading="lazy" />
-          <div className="absolute inset-0 bg-blue-600/20 opacity-0 lg:group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-2xl scale-0 group-hover:scale-100 transition-transform duration-500">
-              <Maximize2 className="text-blue-600 w-5 h-5" />
+          <img src={url} className="w-full h-full object-cover opacity-60 lg:group-hover:opacity-100 transition-all duration-300 lg:group-hover:scale-105" alt={label} loading="lazy" />
+          <div className="absolute inset-0 bg-slate-900/40 opacity-0 lg:group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-md bg-white flex items-center justify-center shadow-md scale-90 group-hover:scale-100 transition-transform duration-350">
+              <Maximize2 className="text-slate-700 w-4 h-4" />
             </div>
           </div>
-          <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-            <p className="text-[8px] font-black text-white uppercase tracking-widest text-center truncate">{label}</p>
+          <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+            <p className="text-[8px] font-bold text-white uppercase tracking-wider text-center truncate">{label}</p>
           </div>
         </div>
       </DialogTrigger>
-      <DialogContent className={cn("w-[95vw] max-w-4xl p-0 overflow-hidden rounded-[48px] border-none shadow-[0_0_100px_rgba(59,130,246,0.3)]", isDark ? "bg-slate-950/90 text-white" : "bg-white text-slate-900")}>
-        <div className="p-4 sm:p-8">
-          <div className="flex justify-between items-center mb-6">
-            <DialogTitle className="font-black uppercase tracking-[0.3em] text-blue-500 text-sm italic">{label}</DialogTitle>
+      <DialogContent className={cn("w-[95vw] max-w-4xl p-0 overflow-hidden rounded-md border-none shadow-lg", isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900")}>
+        <div className="p-4 sm:p-6">
+          <div className="flex justify-between items-center mb-4">
+            <DialogTitle className="font-bold uppercase tracking-wider text-slate-500 text-xs">{label}</DialogTitle>
           </div>
-          <div className="relative overflow-hidden rounded-[40px] border-4 border-white/10 shadow-2xl bg-slate-900">
+          <div className="relative overflow-hidden rounded-md border border-slate-200 dark:border-slate-800 bg-slate-900">
             <img src={url} className="w-full max-h-[70dvh] object-contain" alt="Preview" loading="lazy" />
           </div>
         </div>

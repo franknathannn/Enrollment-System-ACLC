@@ -5,7 +5,7 @@ import {
   GraduationCap, LayoutDashboard, Users, Settings,
   LogOut, BookOpen, User as UserIcon, Loader2,
   Camera, MessageSquare, ChevronLeft, ChevronRight, Menu, Activity, Sun, Moon, UserCheck, ChartColumnBig,
-  CalendarRange, Archive, BarChart2
+  CalendarRange, Archive, BarChart2, Globe, LayoutTemplate, Megaphone
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -153,10 +153,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     {
       label: "Academic",
       items: [
-        { href: "/admin/sections", icon: <BookOpen size={18} />, label: "Sections" },
+        { href: "/admin/curriculum", icon: <BookOpen size={18} />, label: "Curriculum" },
+        { href: "/admin/sections", icon: <Users size={18} />, label: "Sections" },
         { href: "/admin/teachers", icon: <GraduationCap size={18} />, label: "Teachers" },
         { href: "/admin/schedules", icon: <CalendarRange size={18} />, label: "Schedules" },
         { href: "/admin/quarterly-updates", icon: <BarChart2 size={18} />, label: "Quarterly Update" },
+        { href: "/admin/lms", icon: <Settings size={18} />, label: "LMS" },
       ],
     },
     {
@@ -166,6 +168,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { href: "/admin/archive", icon: <Archive size={18} />, label: "Archive" },
         { href: "/admin/activity_logs", icon: <Activity size={18} />, label: "Activity Logs" },
         { href: "/admin/communication", icon: <MessageSquare size={18} />, label: "Messenger" },
+      ],
+    },
+    {
+      label: "Website Content",
+      items: [
+        { href: "/admin/website/announcements", icon: <Megaphone size={18} />, label: "Announcements" },
+        { href: "/admin/website/programs", icon: <LayoutTemplate size={18} />, label: "Programs" },
+        { href: "/admin/website/research", icon: <BookOpen size={18} />, label: "Research" },
+        { href: "/admin/website/site-info", icon: <Globe size={18} />, label: "Site Info" },
       ],
     },
   ];

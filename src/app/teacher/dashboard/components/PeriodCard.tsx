@@ -11,6 +11,7 @@ import { downloadSectionRecord } from "@/app/admin/sections/api/exportSectionRec
 import { exportSimpleMasterlist } from "@/app/admin/sections/api/exportMasterlist"
 import { downloadSf2Attendance } from "../api/exportSf2Attendance"
 import { formatTeacherName } from "@/lib/utils/formatTeacherName"
+import { useRouter } from "next/navigation"
 
 interface PeriodCardProps {
   period: ScheduleRow
@@ -46,6 +47,7 @@ function fmtT(t: string) {
 }
 
 export function PeriodCard({ period, idx, color, students, loading: studLoad, dm, onStudentClick, session, schoolYear, onLinkUpdated }: PeriodCardProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(() => {
     if (typeof window !== "undefined")
       return sessionStorage.getItem(`teacher_period_open_${period.id}`) === "true"
@@ -83,7 +85,16 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({})
   const [attLoading, setAttLoading] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [sectionObj, setSectionObj] = useState<any>(null)
   const mine = students.filter(s => s.section === period.section)
+
+  useEffect(() => {
+    const fetchSection = async () => {
+      const { data } = await supabase.from("sections").select("id").eq("section_name", period.section).single()
+      if (data) setSectionObj(data)
+    }
+    fetchSection()
+  }, [period.section])
 
   const dur = (() => {
     const [sh, sm] = period.start_time.slice(0, 5).split(":").map(Number)
@@ -310,6 +321,14 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
           {/* Stacked on mobile, row on desktop */}
           <div className="flex flex-col md:flex-row items-end md:items-center gap-1">
             <button
+              onClick={() => router.push(`/teacher/dashboard/gradebook/${sectionObj?.id}`)}
+              disabled={!sectionObj}
+              className={`h-7 px-3 text-[9px] font-black uppercase tracking-wider rounded-xl border transition-all duration-200 active:scale-95 disabled:opacity-50
+                ${dm ? "bg-blue-600/10 border-blue-600/30 text-blue-400 hover:bg-blue-600/20" : "bg-blue-600/5 border-blue-200 text-blue-600 hover:bg-blue-50"}`}
+            >
+              Gradebook
+            </button>
+            <button
               onClick={() => exportSimpleMasterlist(period.section, mine, formatTeacherName(session.full_name, session.gender))}
               title="Export Masterlist"
               className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl border transition-all duration-200 active:scale-95
@@ -323,7 +342,7 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
               className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl border transition-all duration-200 active:scale-95
                 ${dm ? "border-slate-600/50 text-slate-300 hover:bg-slate-700/50" : "border-slate-300 text-slate-600 hover:bg-slate-100"}`}
             >
-              <FileDown size={9} /> Grading Sheet
+              <FileDown size={9} /> Sheet
             </button>
             <button
               onClick={exportSf2}
@@ -429,3 +448,4 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
     </div>
   )
 }
+

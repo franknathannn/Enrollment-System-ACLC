@@ -20,8 +20,8 @@ export function useSections() {
   const [selectedSectionName, setSelectedSectionName] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [strandFilter, setStrandFilter] = useState<"ALL" | "ICT" | "GAS">(() => {
-    if (typeof window !== "undefined") return (localStorage.getItem("sections_strand_filter") as any) || "ALL"
+  const [strandFilter, setStrandFilter] = useState<string>(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("sections_strand_filter") || "ALL"
     return "ALL"
   })
   const [gradeLevelFilter, setGradeLevelFilter] = useState<"ALL" | "11" | "12">(() => {
@@ -30,11 +30,11 @@ export function useSections() {
   })
   
   const [sectionSelection, setSectionSelection] = useState<Set<string>>(new Set())
-  const [confirmAdd, setConfirmAdd] = useState<{isOpen: boolean, strand: "ICT" | "GAS" | null, gradeLevel: "11" | "12"}>({isOpen: false, strand: null, gradeLevel: "11"})
+  const [confirmAdd, setConfirmAdd] = useState<{isOpen: boolean, strand: string | null, gradeLevel: "11" | "12"}>({isOpen: false, strand: null, gradeLevel: "11"})
   const [confirmDeleteSelect, setConfirmDeleteSelect] = useState(false)
 
-  const [ictExpanded, setIctExpanded] = useState(true)
-  const [gasExpanded, setGasExpanded] = useState(true)
+  const [expandedStrands, setExpandedStrands] = useState<Record<string, boolean>>({})
+  const [availableStrands, setAvailableStrands] = useState<string[]>([])
 
   const [exitingRows, setExitingRows] = useState<Record<string, boolean>>({})
   const [hiddenRows, setHiddenRows] = useState<Set<string>>(new Set())
@@ -58,11 +58,12 @@ export function useSections() {
   const [lastUpdate, setLastUpdate] = useState<string>('')
 
   useEffect(() => {
-    const savedIct = localStorage.getItem("section_ict_expanded")
-    const savedGas = localStorage.getItem("section_gas_expanded")
-    if (savedIct !== null) setIctExpanded(savedIct === "true")
-    if (savedGas !== null) setGasExpanded(savedGas === "true")
-
+    const saved = localStorage.getItem("section_expanded_strands")
+    if (saved) {
+      try {
+        setExpandedStrands(JSON.parse(saved))
+      } catch (e) {}
+    }
     const savedScroll = sessionStorage.getItem("sections_scroll_pos")
     if (savedScroll) {
       setTimeout(() => window.scrollTo({ top: parseInt(savedScroll), behavior: 'instant' }), 100)
@@ -75,8 +76,7 @@ export function useSections() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  useEffect(() => { localStorage.setItem("section_ict_expanded", ictExpanded.toString()) }, [ictExpanded])
-  useEffect(() => { localStorage.setItem("section_gas_expanded", gasExpanded.toString()) }, [gasExpanded])
+  useEffect(() => { localStorage.setItem("section_expanded_strands", JSON.stringify(expandedStrands)) }, [expandedStrands])
 
   useEffect(() => {
     localStorage.setItem("sections_strand_filter", strandFilter)
@@ -145,15 +145,27 @@ export function useSections() {
       if (error) throw error
       setSections(data || [])
 
-      // CRITICAL FIX: fetch ALL schedules across ALL sections so the
-      // auto-scheduler wizard has cross-section room/teacher data.
-      // Without this allSchedules is always [] and ICT 11-B lands on
-      // the same slot as ICT 11-A.
-      const { data: schedData } = await supabase.from('schedules').select('*')
-      setAllSchedules(schedData || [])
-
-      const { data: tData } = await supabase.from('teachers').select('id, full_name, email, is_active, created_at, gender').order('full_name', { ascending: true }).limit(5)
+      // CRITICAL FIX: fetch ALL schedules across ALL sections and map room/teacher names.
+      const [{ data: schedData }, { data: tData }] = await Promise.all([
+        supabase.from('schedules').select('*, rooms(name)').order('start_time'),
+        supabase.from('teachers').select('id, full_name, email, is_active, created_at, gender').order('full_name', { ascending: true })
+      ])
+      const mappedSchedules = (schedData ?? []).map((r: any) => ({
+        ...r,
+        room: r.rooms?.name || r.room,
+        teacher: (tData ?? []).find((t: any) => t.id === r.teacher_id)?.full_name || r.teacher || null
+      }))
+      setAllSchedules(mappedSchedules)
       setTeachers(tData || [])
+
+      const { data: sData } = await supabase.from('system_settings').select('*').eq('setting_key', 'available_strands')
+      if (sData && sData.length > 0 && sData[0].value_text) {
+        try {
+          setAvailableStrands(JSON.parse(sData[0].value_text))
+        } catch(e) {}
+      } else {
+        setAvailableStrands(['ICT', 'GAS'])
+      }
     } catch (err: any) {
       const errMsg = err?.message || err?.code || JSON.stringify(err) || String(err);
       if (errMsg.includes('Failed to fetch')) {
@@ -194,11 +206,34 @@ export function useSections() {
         else if (status === 'TIMED_OUT') { setRealtimeStatus('⏱️ Timeout'); setTimeout(() => fetchSections(true), 2000) }
         else { setRealtimeStatus(`⚠️ `) }
       })
-    return () => { supabase.removeChannel(channel) }
+      
+    // Broadcast listener for instant cross-tab LMS settings updates (Supabase)
+    const broadcastChannel = supabase.channel('lms_settings_broadcast')
+      .on('broadcast', { event: 'settings_update' }, (payload) => {
+        setRealtimeStatus(`⚙️ Settings Updated`)
+        setLastUpdate(new Date().toLocaleTimeString())
+        fetchConfig()
+        fetchSections(true)
+      })
+      .subscribe()
+      
+    // Storage listener for instant cross-tab LMS settings updates (Native Web API - Zero Latency)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'force_sections_refresh') {
+        setRealtimeStatus(`⚙️ Syncing Settings`)
+        setLastUpdate(new Date().toLocaleTimeString())
+        fetchConfig()
+        fetchSections(true)
+      }
+    }
+    window.addEventListener('storage', handleStorageChange)
+      
+    return () => { 
+      supabase.removeChannel(channel)
+      supabase.removeChannel(broadcastChannel)
+      window.removeEventListener('storage', handleStorageChange)
+    }
   }, [fetchConfig, fetchSections])
-
-  const ictSections = useMemo(() => sections.filter(s => s.strand === 'ICT'), [sections])
-  const gasSections = useMemo(() => sections.filter(s => s.strand === 'GAS'), [sections])
 
   const calculateStrandLoad = useCallback((strandSections: any[]) => {
     const totalCapacity = strandSections.reduce((acc, s) => acc + (s.capacity || 40), 0)
@@ -209,8 +244,21 @@ export function useSections() {
     return { totalCapacity, totalEnrolled, percent: totalCapacity > 0 ? (totalEnrolled / totalCapacity) * 100 : 0 }
   }, [])
 
-  const ictLoad = useMemo(() => calculateStrandLoad(ictSections), [ictSections, calculateStrandLoad])
-  const gasLoad = useMemo(() => calculateStrandLoad(gasSections), [gasSections, calculateStrandLoad])
+  const groupedSections = useMemo(() => {
+    const groups: Record<string, any[]> = {}
+    availableStrands.forEach(strand => {
+      groups[strand] = sections.filter(s => s.strand === strand)
+    })
+    return groups
+  }, [sections, availableStrands])
+
+  const strandLoads = useMemo(() => {
+    const loads: Record<string, any> = {}
+    availableStrands.forEach(strand => {
+      loads[strand] = calculateStrandLoad(groupedSections[strand] || [])
+    })
+    return loads
+  }, [groupedSections, availableStrands, calculateStrandLoad])
 
   const currentSection = useMemo(() => sections.find(s => s.section_name === selectedSectionName), [sections, selectedSectionName])
   const activeStudents = useMemo(() => currentSection?.students ? currentSection.students.filter((s: any) => s.status === 'Accepted' || s.status === 'Approved') : [], [currentSection?.students])
@@ -286,7 +334,7 @@ export function useSections() {
 
   const handleViewProfile = useCallback((student: any) => { setActiveProfile(student); setProfileOpen(true) }, [])
   const handleUnenroll = useCallback((student: any) => { setActiveUnenrollStudent(student); setUnenrollOpen(true) }, [])
-  const initiateAdd = useCallback((strand: "ICT" | "GAS") => { 
+  const initiateAdd = useCallback((strand: string) => { 
     setConfirmAdd({ isOpen: true, strand, gradeLevel: gradeLevelFilter === "ALL" ? "11" : gradeLevelFilter })
   }, [gradeLevelFilter])
   const toggleSelection = useCallback((id: string) => { setSectionSelection(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next }) }, [])
@@ -333,7 +381,7 @@ export function useSections() {
     } catch (e) { toast.error("Bulk delete failed"); fetchSections() }
   }, [sectionSelection, sections, fetchSections])
 
-  const handleDeleteSection = useCallback(async (id: string, name: string, strand: "ICT" | "GAS", gradeLevel?: "11" | "12") => {
+  const handleDeleteSection = useCallback(async (id: string, name: string, strand: string, gradeLevel?: "11" | "12") => {
     if (!confirm(`WARNING: Deleting ${name} shifts matrix sequence. Proceed?`)) return
     
     // Optimistic update
@@ -348,7 +396,7 @@ export function useSections() {
     } catch (err: any) { toast.error(err.message); fetchSections() }
   }, [fetchSections])
 
-  const handleBalance = useCallback(async (strand: "ICT" | "GAS" | "ALL") => {
+  const handleBalance = useCallback(async (strand: string) => {
     const gradeLabel = gradeLevelFilter === "ALL" ? "All Grades" : `Grade ${gradeLevelFilter}`
     const toastId = toast.loading(`Balancing ${strand} ${gradeLabel} sections...`);
     try {
@@ -460,26 +508,24 @@ export function useSections() {
     exportSimpleMasterlist(`${sectionName} MASTERLIST`, students, adviserName)
   }, [])
 
-  const exportGlobalMasterlist = useCallback((strand: "GAS" | "ICT" | "BOTH") => {
+  const exportGlobalMasterlist = useCallback((strand: string) => {
     const allStudents: any[] = []
     
-    if (strand === "ICT" || strand === "BOTH") {
-      ictSections.forEach(sec => {
+    if (strand === "ALL") {
+      sections.forEach(sec => {
+        const active = (sec.students || []).filter((s: any) => s.status === "Accepted" || s.status === "Approved")
+        allStudents.push(...active)
+      })
+    } else {
+      sections.filter(s => s.strand === strand).forEach(sec => {
         const active = (sec.students || []).filter((s: any) => s.status === "Accepted" || s.status === "Approved")
         allStudents.push(...active)
       })
     }
     
-    if (strand === "GAS" || strand === "BOTH") {
-      gasSections.forEach(sec => {
-        const active = (sec.students || []).filter((s: any) => s.status === "Accepted" || s.status === "Approved")
-        allStudents.push(...active)
-      })
-    }
-    
-    const title = strand === "BOTH" ? "ICT & GAS MASTERLIST" : `${strand} MASTERLIST`
+    const title = strand === "ALL" ? "ALL STRANDS MASTERLIST" : `${strand} MASTERLIST`
     exportSimpleMasterlist(title, allStudents)
-  }, [ictSections, gasSections])
+  }, [sections])
   
   const handleToggleLock = useCallback(async (id: string, isLocked: boolean) => {
     try {
@@ -622,10 +668,11 @@ export function useSections() {
   return {
     config, isDarkMode, sections, teachers, allSchedules, loading, isProcessing, selectedSectionName, setSelectedSectionName,
     searchTerm, setSearchTerm, debouncedSearch, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter, sectionSelection,
-    confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, ictExpanded, setIctExpanded,
-    gasExpanded, setGasExpanded, exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
+    confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, 
+    availableStrands, expandedStrands, setExpandedStrands, groupedSections, strandLoads,
+    exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
     viewingFile, rotation, setRotation, unenrollOpen, setUnenrollOpen, activeUnenrollStudent, profileOpen, setProfileOpen,
-    activeProfile, realtimeStatus, lastUpdate, ictSections, gasSections, ictLoad, gasLoad, currentSection, activeStudents,
+    activeProfile, realtimeStatus, lastUpdate, currentSection, activeStudents,
     currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
     handleConfirmUnenroll, handleSwitch, exportSectionCSV, exportSectionList, exportGlobalMasterlist, fetchSections, handleToggleLock, updateStudentProfile,

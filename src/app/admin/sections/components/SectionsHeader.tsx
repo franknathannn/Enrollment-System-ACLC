@@ -5,36 +5,37 @@ import { ThemedCard } from "@/components/ThemedCard"
 import { ThemedText } from "@/components/ThemedText"
 import { FilterButton } from "./FilterButton"
 import { Button } from "@/components/ui/button"
-import { Trash, Plus, Layers, Cpu, BookOpen, Scale, BarChart3, X, GraduationCap, Info, FileDown, ChevronDown } from "lucide-react"
+import { Trash, Plus, Layers, Cpu, BookOpen, Scale, BarChart3, X, GraduationCap, Info, FileDown, ChevronDown, Search, Filter, Users, LayoutGrid, CheckSquare, Square, RefreshCcw, Trash2, ShieldAlert, FileText, CalendarRange, Atom } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { DeleteManagementDialog } from "./DeleteManagementDialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { BulkScheduleManagerDialog } from "./schedule/BulkScheduleManagerDialog"
+import { BulkScheduleManagerDialog } from "../../schedules/components/schedule/BulkScheduleManagerDialog"
 
 interface SectionsHeaderProps {
   isDarkMode: boolean
-  strandFilter: "ALL" | "ICT" | "GAS"
-  setStrandFilter: (filter: "ALL" | "ICT" | "GAS") => void
+  strandFilter: string
+  setStrandFilter: (filter: string) => void
   gradeLevelFilter: "ALL" | "11" | "12"
   setGradeLevelFilter: (filter: "ALL" | "11" | "12") => void
+  availableStrands?: string[]
   sectionSelection: Set<string>
   setConfirmDeleteSelect: (open: boolean) => void
   sections: any[]
-  handleDeleteSection: (id: string, name: string, strand: "ICT" | "GAS") => void
+  handleDeleteSection: (id: string, name: string, strand: string) => void
   handleClearAllStudents: () => void
-  initiateAdd: (strand: "ICT" | "GAS") => void
-  onBalance: (strand: "ICT" | "GAS" | "ALL") => void
+  initiateAdd: (strand: string) => void
+  onBalance: (strand: string) => void
   isProcessing: boolean
   config: any
   allSchedules: any[]
-  onExportGlobal: (strand: "GAS" | "ICT" | "BOTH") => void
+  onExportGlobal: (strand: string) => void
 }
 
 
 // ── Section Statistics Popover ────────────────────────────────────────────────
-function SectionStatsPopover({ sections, isDarkMode }: { sections: any[]; isDarkMode: boolean }) {
+function SectionStatsPopover({ sections, isDarkMode, availableStrands = ['ICT', 'GAS'] }: { sections: any[]; isDarkMode: boolean, availableStrands?: string[] }) {
   const [open, setOpen] = useState(false)
   const [panelPos, setPanelPos] = useState({ top: 0, left: 0 })
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -58,22 +59,29 @@ function SectionStatsPopover({ sections, isDarkMode }: { sections: any[]; isDark
   }, [open])
 
   const stats = (() => {
-    const ict11 = sections.filter(s => s.strand === "ICT" && s.grade_level === "11")
-    const ict12 = sections.filter(s => s.strand === "ICT" && s.grade_level === "12")
-    const gas11 = sections.filter(s => s.strand === "GAS" && s.grade_level === "11")
-    const gas12 = sections.filter(s => s.strand === "GAS" && s.grade_level === "12")
-
     const countStudents = (secs: any[]) =>
       secs.reduce((acc, s) => acc + (s.students?.filter((st: any) => st.status === "Accepted" || st.status === "Approved").length || 0), 0)
     const countCap = (secs: any[]) =>
       secs.reduce((acc, s) => acc + (s.capacity || 40), 0)
 
-    const rows = [
-      { label: "ICT — Grade 11", color: "blue", sections: ict11, students: countStudents(ict11), cap: countCap(ict11) },
-      { label: "ICT — Grade 12", color: "violet", sections: ict12, students: countStudents(ict12), cap: countCap(ict12) },
-      { label: "GAS — Grade 11", color: "orange", sections: gas11, students: countStudents(gas11), cap: countCap(gas11) },
-      { label: "GAS — Grade 12", color: "rose", sections: gas12, students: countStudents(gas12), cap: countCap(gas12) },
-    ]
+    const rows: any[] = []
+    const colors = ["blue", "violet", "orange", "rose", "emerald", "amber", "pink", "indigo", "cyan"]
+    let colorIdx = 0
+    
+    availableStrands.forEach(strand => {
+      const s11 = sections.filter(s => s.strand === strand && s.grade_level === "11")
+      const s12 = sections.filter(s => s.strand === strand && s.grade_level === "12")
+      
+      if (s11.length > 0) {
+        rows.push({ label: `${strand} — Grade 11`, color: colors[colorIdx % colors.length], sections: s11, students: countStudents(s11), cap: countCap(s11) })
+        colorIdx++
+      }
+      
+      if (s12.length > 0) {
+        rows.push({ label: `${strand} — Grade 12`, color: colors[colorIdx % colors.length], sections: s12, students: countStudents(s12), cap: countCap(s12) })
+        colorIdx++
+      }
+    })
 
     const totalSecs = sections.length
     const totalStudents = rows.reduce((a, r) => a + r.students, 0)
@@ -87,6 +95,11 @@ function SectionStatsPopover({ sections, isDarkMode }: { sections: any[]; isDark
     violet: { bg: isDarkMode ? "bg-violet-950/40" : "bg-violet-50", text: isDarkMode ? "text-violet-300" : "text-violet-700", bar: "bg-violet-500", badge: isDarkMode ? "bg-violet-900/60 text-violet-300" : "bg-violet-100 text-violet-700" },
     orange: { bg: isDarkMode ? "bg-orange-950/40" : "bg-orange-50", text: isDarkMode ? "text-orange-300" : "text-orange-700", bar: "bg-orange-500", badge: isDarkMode ? "bg-orange-900/60 text-orange-300" : "bg-orange-100 text-orange-700" },
     rose: { bg: isDarkMode ? "bg-rose-950/40" : "bg-rose-50", text: isDarkMode ? "text-rose-300" : "text-rose-700", bar: "bg-rose-500", badge: isDarkMode ? "bg-rose-900/60 text-rose-300" : "bg-rose-100 text-rose-700" },
+    emerald: { bg: isDarkMode ? "bg-emerald-950/40" : "bg-emerald-50", text: isDarkMode ? "text-emerald-300" : "text-emerald-700", bar: "bg-emerald-500", badge: isDarkMode ? "bg-emerald-900/60 text-emerald-300" : "bg-emerald-100 text-emerald-700" },
+    amber: { bg: isDarkMode ? "bg-amber-950/40" : "bg-amber-50", text: isDarkMode ? "text-amber-300" : "text-amber-700", bar: "bg-amber-500", badge: isDarkMode ? "bg-amber-900/60 text-amber-300" : "bg-amber-100 text-amber-700" },
+    pink: { bg: isDarkMode ? "bg-pink-950/40" : "bg-pink-50", text: isDarkMode ? "text-pink-300" : "text-pink-700", bar: "bg-pink-500", badge: isDarkMode ? "bg-pink-900/60 text-pink-300" : "bg-pink-100 text-pink-700" },
+    indigo: { bg: isDarkMode ? "bg-indigo-950/40" : "bg-indigo-50", text: isDarkMode ? "text-indigo-300" : "text-indigo-700", bar: "bg-indigo-500", badge: isDarkMode ? "bg-indigo-900/60 text-indigo-300" : "bg-indigo-100 text-indigo-700" },
+    cyan: { bg: isDarkMode ? "bg-cyan-950/40" : "bg-cyan-50", text: isDarkMode ? "text-cyan-300" : "text-cyan-700", bar: "bg-cyan-500", badge: isDarkMode ? "bg-cyan-900/60 text-cyan-300" : "bg-cyan-100 text-cyan-700" },
   }
 
   return (
@@ -213,7 +226,7 @@ export const SectionsHeader = memo(({
   isDarkMode, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter,
   sectionSelection, setConfirmDeleteSelect,
   sections, handleDeleteSection, handleClearAllStudents, initiateAdd, onBalance, isProcessing,
-  config, allSchedules, onExportGlobal
+  config, allSchedules, onExportGlobal, availableStrands = ['ICT', 'GAS']
 }: SectionsHeaderProps) => {
 
   const [scheduleManagerOpen, setScheduleManagerOpen] = useState(false)
@@ -226,6 +239,14 @@ export const SectionsHeader = memo(({
     filterBorder: isDarkMode ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 1)'
   };
 
+  const availableGrades = useMemo(() => {
+    const grades = new Set<string>()
+    sections.forEach(s => {
+      if (s.grade_level) grades.add(s.grade_level)
+    })
+    return ["ALL", ...Array.from(grades).sort()] as const
+  }, [sections])
+
   return (
     <ThemedCard
       className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 p-6 md:p-10 rounded-[32px] md:rounded-[48px] backdrop-blur-3xl shadow-none border transition-all duration-700 bg-clip-padding outline outline-1 outline-transparent isolate"
@@ -235,66 +256,93 @@ export const SectionsHeader = memo(({
       }}
     >
       {/* 🏙️ TITLE CLUSTER + STATS POPOVER */}
-      <SectionStatsPopover sections={sections} isDarkMode={isDarkMode} />
+      <SectionStatsPopover sections={sections} isDarkMode={isDarkMode} availableStrands={availableStrands} />
 
       {/* 📊 PERSISTENT FILTER DOCK (Fitted & Minimized) */}
       <div className="flex flex-col gap-2 w-full sm:w-auto">
-        {/* Strand Filter */}
-        <div
-          className="flex p-1.5 rounded-[22px] border shadow-inner transition-all duration-500 bg-clip-padding isolate transform-gpu w-full sm:w-auto justify-center sm:justify-start"
-          style={{
-            backgroundColor: theme.filterBg,
-            borderColor: theme.filterBorder
-          }}
-        >
-          <FilterButton
-            label="All"
-            active={strandFilter === 'ALL'}
-            onClick={() => setStrandFilter('ALL')}
-            icon={<Layers size={14} />}
-            type="ALL"
-            isDarkMode={isDarkMode}
-          />
-          <FilterButton
-            label="ICT"
-            active={strandFilter === 'ICT'}
-            onClick={() => setStrandFilter('ICT')}
-            icon={<Cpu size={14} />}
-            type="ICT"
-            isDarkMode={isDarkMode}
-          />
-          <FilterButton
-            label="GAS"
-            active={strandFilter === 'GAS'}
-            onClick={() => setStrandFilter('GAS')}
-            icon={<BookOpen size={14} />}
-            type="GAS"
-            isDarkMode={isDarkMode}
-          />
-        </div>
-        {/* Grade Level Filter */}
-        <div
-          className="flex p-1.5 rounded-[22px] border shadow-inner transition-all duration-500 bg-clip-padding isolate transform-gpu w-full sm:w-auto justify-center sm:justify-start"
-          style={{
-            backgroundColor: theme.filterBg,
-            borderColor: theme.filterBorder
-          }}
-        >
-          {(["ALL", "11", "12"] as const).map((gl) => (
-            <button
-              key={gl}
-              onClick={() => setGradeLevelFilter(gl)}
-              className={`px-4 py-2 rounded-[18px] text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${gradeLevelFilter === gl
-                ? "bg-blue-600 text-white shadow-md"
-                : isDarkMode ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-800"
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Strand Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className={`h-11 px-5 rounded-[22px] font-black uppercase text-[10px] tracking-widest flex items-center gap-2 transition-all shadow-sm ${
+                  isDarkMode 
+                    ? "bg-slate-900/50 border-slate-700/50 text-slate-200 hover:bg-slate-800" 
+                    : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
                 }`}
-            >
-              {gl === "ALL" ? "All Grades" : `Grade ${gl}`}
-            </button>
-          ))}
+              >
+                {strandFilter === 'ALL' ? <Layers size={14} className="text-slate-400" /> : 
+                  (strandFilter === 'ICT' || strandFilter === 'TechPro') ? <Cpu size={14} className="text-blue-500" /> : 
+                  strandFilter === 'STEM' ? <Atom size={14} className="text-emerald-500" /> :
+                  strandFilter === 'ABM' ? <BarChart3 size={14} className="text-yellow-500" /> :
+                  strandFilter === 'HUMSS' ? <BookOpen size={14} className="text-amber-500" /> :
+                  <BookOpen size={14} className="text-orange-500" />
+                }
+                <span>{strandFilter === 'ALL' ? 'ALL STRANDS' : strandFilter}</span>
+                <ChevronDown size={14} className="opacity-50 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className={`min-w-[200px] w-auto font-black uppercase tracking-widest text-[10px] ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-700'}`}>
+              <DropdownMenuItem onClick={() => setStrandFilter('ALL')} className="flex items-center gap-3 cursor-pointer py-2.5 px-3 whitespace-nowrap focus:bg-slate-100 dark:focus:bg-slate-800">
+                <Layers size={14} className="text-slate-400 shrink-0" />
+                ALL STRANDS
+                {strandFilter === 'ALL' && <CheckSquare size={14} className="ml-auto opacity-50 shrink-0" />}
+              </DropdownMenuItem>
+              {availableStrands.map(strand => {
+                let icon = <BookOpen size={14} className="text-orange-500 shrink-0" />
+                if (strand === 'ICT' || strand === 'TechPro') icon = <Cpu size={14} className="text-blue-500 shrink-0" />
+                if (strand === 'STEM') icon = <Atom size={14} className="text-emerald-500 shrink-0" />
+                if (strand === 'ABM') icon = <BarChart3 size={14} className="text-yellow-500 shrink-0" />
+                if (strand === 'HUMSS') icon = <BookOpen size={14} className="text-amber-500 shrink-0" />
+                
+                return (
+                  <DropdownMenuItem 
+                    key={strand}
+                    onClick={() => setStrandFilter(strand)} 
+                    className="flex items-center gap-3 cursor-pointer py-2.5 px-3 whitespace-nowrap focus:bg-slate-100 dark:focus:bg-slate-800"
+                  >
+                    {icon}
+                    {strand}
+                    {strandFilter === strand && <CheckSquare size={14} className="ml-auto opacity-50 shrink-0" />}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Grade Level Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className={`h-11 px-5 rounded-[22px] font-black uppercase text-[10px] tracking-widest flex items-center gap-2 transition-all shadow-sm ${
+                  isDarkMode 
+                    ? "bg-slate-900/50 border-slate-700/50 text-slate-200 hover:bg-slate-800" 
+                    : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <GraduationCap size={14} className="text-purple-500" />
+                <span>{gradeLevelFilter === 'ALL' ? 'ALL GRADES' : `GRADE ${gradeLevelFilter}`}</span>
+                <ChevronDown size={14} className="opacity-50 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className={`min-w-[160px] w-auto font-black uppercase tracking-widest text-[10px] ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-700'}`}>
+              {availableGrades.map((gl) => (
+                <DropdownMenuItem
+                  key={gl}
+                  onClick={() => setGradeLevelFilter(gl as any)}
+                  className="flex items-center gap-3 cursor-pointer py-2.5 px-3 whitespace-nowrap focus:bg-slate-100 dark:focus:bg-slate-800"
+                >
+                  <GraduationCap size={14} className={`${gl === "11" ? "text-pink-500" : gl === "12" ? "text-indigo-500" : "text-purple-500"} shrink-0`} />
+                  {gl === "ALL" ? "ALL GRADES" : `GRADE ${gl}`}
+                  {gradeLevelFilter === gl && <CheckSquare size={14} className="ml-auto opacity-50 shrink-0" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
-
       {/* 🎮 COMMAND ACTIONS */}
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
         {sectionSelection.size > 0 && (
@@ -391,9 +439,10 @@ export const SectionsHeader = memo(({
             <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Export Full List</p></TooltipContent>
           </Tooltip>
           <DropdownMenuContent align="end" className={`w-52 font-black uppercase tracking-widest text-[9px] ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}>
-            <DropdownMenuItem onClick={() => onExportGlobal("GAS")} className="cursor-pointer py-3 focus:bg-emerald-600 focus:text-white">GAS MASTERLIST</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onExportGlobal("ICT")} className="cursor-pointer py-3 focus:bg-emerald-600 focus:text-white">ICT MASTERLIST</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onExportGlobal("BOTH")} className="cursor-pointer py-3 focus:bg-emerald-600 focus:text-white">BOTH ICT & GAS MASTERLIST</DropdownMenuItem>
+            {availableStrands.map(strand => (
+              <DropdownMenuItem key={strand} onClick={() => onExportGlobal(strand)} className="cursor-pointer py-3 focus:bg-emerald-600 focus:text-white">{strand} MASTERLIST</DropdownMenuItem>
+            ))}
+            <DropdownMenuItem onClick={() => onExportGlobal("ALL")} className="cursor-pointer py-3 focus:bg-emerald-600 focus:text-white">ALL STRANDS MASTERLIST</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

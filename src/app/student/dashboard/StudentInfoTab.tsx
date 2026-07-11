@@ -8,6 +8,7 @@ import {
   Pencil, X, Check
 } from "lucide-react"
 import { toast } from "sonner"
+import { decryptPasswordAction } from "@/app/actions/oedActions"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface StudentFullInfo {
@@ -146,10 +147,23 @@ export function StudentInfoTab({ student, dm, onStudentUpdate }: Props) {
 
   // The "live" student data (updated after saves)
   const [liveStudent, setLiveStudent] = useState<StudentFullInfo>(student)
+  const [decryptedOedPwd, setDecryptedOedPwd] = useState<string>("")
 
   useEffect(() => {
     setLiveStudent(student)
   }, [student])
+
+  useEffect(() => {
+    const decryptPwd = async () => {
+      if (liveStudent.oed_password) {
+        const decrypted = await decryptPasswordAction(liveStudent.oed_password)
+        setDecryptedOedPwd(decrypted)
+      } else {
+        setDecryptedOedPwd("")
+      }
+    }
+    decryptPwd()
+  }, [liveStudent.oed_password])
 
   useEffect(() => {
     const checkConfig = async () => {
@@ -428,9 +442,9 @@ export function StudentInfoTab({ student, dm, onStudentUpdate }: Props) {
                  <div className="flex items-center justify-between">
                    <p className={`text-[7px] font-bold uppercase tracking-widest ${dm ? "text-blue-400" : "text-blue-700"}`}>OED Password</p>
                    <div className="flex items-center gap-1.5">
-                     {s.oed_password && (
+                     {decryptedOedPwd && (
                        <button
-                         onClick={() => { navigator.clipboard.writeText(s.oed_password!); toast.success("Password copied to clipboard", { duration: 1500 }) }}
+                         onClick={() => { navigator.clipboard.writeText(decryptedOedPwd); toast.success("Password copied to clipboard", { duration: 1500 }) }}
                          className={`p-0.5 rounded-md transition-colors ${dm ? "text-blue-400 hover:bg-blue-500/20" : "text-blue-600 hover:bg-blue-200"}`}
                        >
                          <Copy size={11} />
@@ -442,7 +456,7 @@ export function StudentInfoTab({ student, dm, onStudentUpdate }: Props) {
                    </div>
                  </div>
                  <div className={`px-4 py-2.5 rounded-xl font-mono text-sm font-bold tracking-widest shadow-inner relative flex items-center ${dm ? "bg-slate-950 border border-blue-900/50 text-blue-100" : "bg-white border border-blue-200 text-slate-800"}`}>
-                   {s.oed_password ? (showOedPwd ? s.oed_password : "••••••••••••") : "NOT YET ASSIGNED"}
+                   {decryptedOedPwd ? (showOedPwd ? decryptedOedPwd : "••••••••••••") : "NOT YET ASSIGNED"}
                  </div>
                </div>
             </div>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react"
 import { Search, MapPin, Users, MonitorPlay, Clock, CheckCircle2, AlertCircle, Settings2, User } from "lucide-react"
 import { ScheduleRow } from "./types"
 import { useRooms } from "../../sections/hooks/useRooms"
-import { formatAMPM } from "../../sections/components/schedule/autoScheduler"
+import { formatAMPM } from "./schedule/autoScheduler"
 import { RoomManagerModal } from "./RoomManagerModal"
 import { supabase } from "@/lib/supabase/admin-client"
 
@@ -115,6 +115,9 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
   const [search, setSearch] = useState("")
   const [selectedDay, setSelectedDay] = useState(getCurrentDay())
   const [isManageModalOpen, setIsManageModalOpen] = useState(false)
+  const [isPlannerMode, setIsPlannerMode] = useState(false)
+  const [plannerStart, setPlannerStart] = useState("08:00")
+  const [plannerEnd, setPlannerEnd] = useState("09:00")
   
   // Update current time every minute
   const [currentMins, setCurrentMins] = useState(getCurrentTimeMins())
@@ -130,8 +133,11 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
     return schedules.filter(s => s.school_year === schoolYear && s.day === selectedDay)
   }, [schedules, schoolYear, selectedDay])
 
-  // Map each room to its schedules and compute live status
+  // Map each room to its schedules and compute live status or planned status
   const roomStatuses = useMemo(() => {
+    const pStartMins = parseTime(plannerStart)
+    const pEndMins = parseTime(plannerEnd)
+
     return roomsList.map(room => {
       const roomScheds = daySchedules.filter(s => 
         (s.room_id && s.room_id === room.id) || (!s.room_id && s.room === room.name)
@@ -141,24 +147,32 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
       let nextClass = null
       let isOccupied = false
 
-      for (const sched of roomScheds) {
-        const start = parseTime(sched.start_time)
-        const end = parseTime(sched.end_time)
-        
-        if (isToday && currentMins >= start && currentMins < end) {
-          currentClass = sched
-          isOccupied = true
-        } else if (start >= currentMins && !nextClass) {
-          nextClass = sched
+      if (isPlannerMode) {
+        // Planner mode: check if any class overlaps with the planned meeting time range
+        for (const sched of roomScheds) {
+          const start = parseTime(sched.start_time)
+          const end = parseTime(sched.end_time)
+          
+          // Overlap condition: start of one is before end of other, and end of one is after start of other
+          if (pStartMins < end && pEndMins > start) {
+            currentClass = sched // The conflicting class
+            isOccupied = true
+          }
+        }
+      } else {
+        // Live mode: check against current local time
+        for (const sched of roomScheds) {
+          const start = parseTime(sched.start_time)
+          const end = parseTime(sched.end_time)
+          
+          if (isToday && currentMins >= start && currentMins < end) {
+            currentClass = sched
+            isOccupied = true
+          } else if (start >= currentMins && !nextClass) {
+            nextClass = sched
+          }
         }
       }
-
-      // If it's not today and it's past the last class, we might just want to show the first class of that day as "next" 
-      // if currentMins > all classes. But to be consistent with "at this time", we'll just say no more classes.
-      // However, if the user picks tomorrow and it's 8PM now, they see "no more classes".
-      // Let's modify: if it's NOT today, we just show the first class of the day if it hasn't happened yet relative to time,
-      // OR if we want to show the whole day's overview, let's keep the time-relative check.
-      // But if there's no current class and no next class after currentMins, it just shows empty.
 
       return {
         room,
@@ -168,7 +182,7 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
         isOccupied
       }
     })
-  }, [roomsList, daySchedules, currentMins])
+  }, [roomsList, daySchedules, currentMins, isPlannerMode, plannerStart, plannerEnd, isToday])
 
   const filteredRooms = roomStatuses.filter(r => 
     r.room.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -207,13 +221,21 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
           <div className="absolute bottom-0 right-0 bg-red-500/5 w-24 h-24 rounded-tl-full blur-2xl pointer-events-none"></div>
           <div className="flex flex-col gap-4">
             <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 shadow-inner relative">
-              <div className="w-2 h-2 rounded-full bg-red-500 absolute top-0 right-0 -mt-0.5 -mr-0.5 animate-ping"></div>
-              <div className="w-2 h-2 rounded-full bg-red-500 absolute top-0 right-0 -mt-0.5 -mr-0.5"></div>
+              {(!isPlannerMode || occupiedCount > 0) && (
+                <>
+                  <div className="w-2 h-2 rounded-full bg-red-500 absolute top-0 right-0 -mt-0.5 -mr-0.5 animate-ping"></div>
+                  <div className="w-2 h-2 rounded-full bg-red-500 absolute top-0 right-0 -mt-0.5 -mr-0.5"></div>
+                </>
+              )}
               <AlertCircle size={18} />
             </div>
             <div>
               <p className={`text-4xl font-black ${text} mb-1 tracking-tight`}>{occupiedCount}</p>
-              <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${muted}`}>Occupied at exactly {formatAMPM(`${Math.floor(currentMins / 60)}:${String(currentMins % 60).padStart(2, "0")}`)}</h3>
+              <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${muted}`}>
+                {isPlannerMode 
+                  ? `Occupied (${formatAMPM(plannerStart)} – ${formatAMPM(plannerEnd)})`
+                  : `Occupied at exactly ${formatAMPM(`${Math.floor(currentMins / 60)}:${String(currentMins % 60).padStart(2, "0")}`)}`}
+              </h3>
             </div>
           </div>
         </div>
@@ -227,10 +249,57 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
             </div>
             <div>
               <p className={`text-4xl font-black ${text} mb-1 tracking-tight`}>{availableCount}</p>
-              <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${muted}`}>Available to Use Now</h3>
+              <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${muted}`}>
+                {isPlannerMode ? "Available for selected slot" : "Available to Use Now"}
+              </h3>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Mode Switcher Header */}
+      <div className={`p-3 rounded-3xl border-2 flex flex-wrap items-center justify-between gap-4 shadow-sm ${surface}`}>
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-black/5 dark:bg-black/20 w-fit shrink-0">
+          <button
+            onClick={() => setIsPlannerMode(false)}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all
+              ${!isPlannerMode 
+                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" 
+                : isDarkMode ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-900"}`}
+          >
+            Live Tracking
+          </button>
+          <button
+            onClick={() => setIsPlannerMode(true)}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all
+              ${isPlannerMode 
+                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" 
+                : isDarkMode ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-900"}`}
+          >
+            Meeting Planner
+          </button>
+        </div>
+
+        {isPlannerMode && (
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className={`text-[10px] font-black uppercase tracking-widest ${muted}`}>Plan Slot:</span>
+            <input 
+              type="time" 
+              value={plannerStart}
+              onChange={e => setPlannerStart(e.target.value)}
+              className={`rounded-xl border px-3 py-1.5 text-xs font-bold outline-none transition-all
+                ${isDarkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200 text-slate-900"}`}
+            />
+            <span className={`text-[10px] font-black uppercase tracking-widest ${muted}`}>to</span>
+            <input 
+              type="time" 
+              value={plannerEnd}
+              onChange={e => setPlannerEnd(e.target.value)}
+              className={`rounded-xl border px-3 py-1.5 text-xs font-bold outline-none transition-all
+                ${isDarkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200 text-slate-900"}`}
+            />
+          </div>
+        )}
       </div>
 
       {/* Controls */}
@@ -244,7 +313,7 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
               className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap
                 ${selectedDay === day 
                   ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" 
-                  : isDarkMode ? "text-slate-400 hover:text-white hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
+                  : isDarkMode ? "text-slate-400 hover:text-white hover:bg-slate-850" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
             >
               {day} {day === getCurrentDay() && <span className="ml-1 opacity-70">(Today)</span>}
             </button>
@@ -309,7 +378,7 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
                       <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isOccupied ? "bg-red-500" : "bg-emerald-500"}`}></span>
                       <span className={`relative inline-flex rounded-full h-2 w-2 ${isOccupied ? "bg-red-500" : "bg-emerald-500"}`}></span>
                     </div>
-                    {isOccupied ? "Occupied" : "Available"}
+                    {isOccupied ? (isPlannerMode ? "Booked" : "Occupied") : "Available"}
                   </div>
                 </div>
                 
@@ -323,8 +392,10 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
                 {isOccupied && currentClass ? (
                   <div className="mb-5 bg-black/5 dark:bg-black/20 p-4 rounded-2xl border border-black/5 dark:border-white/5">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className={`w-1.5 h-6 rounded-full ${isDarkMode ? "bg-red-500" : "bg-red-500"}`}></div>
-                      <p className={`text-[10px] font-black uppercase tracking-widest opacity-80 ${isDarkMode?"text-red-400":"text-red-600"}`}>Current Class</p>
+                      <div className={`w-1.5 h-6 rounded-full bg-red-500`}></div>
+                      <p className={`text-[10px] font-black uppercase tracking-widest opacity-80 ${isDarkMode?"text-red-400":"text-red-600"}`}>
+                        {isPlannerMode ? "Conflict Class" : "Current Class"}
+                      </p>
                     </div>
                     <div className="space-y-2 pl-3">
                       <p className={`text-base font-bold ${text} truncate leading-tight`}>{currentClass.subject}</p>
@@ -344,24 +415,28 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
                           <span className={muted}>{formatAMPM(currentClass.start_time)} – {formatAMPM(currentClass.end_time)}</span>
                         </div>
                       </div>
-                      <LiveClassAttendance 
-                        schedule={currentClass} 
-                        date={getLocalDateStr()} 
-                        isDarkMode={isDarkMode}
-                        text={text}
-                        muted={muted}
-                      />
+                      {!isPlannerMode && isToday && (
+                        <LiveClassAttendance 
+                          schedule={currentClass} 
+                          date={getLocalDateStr()} 
+                          isDarkMode={isDarkMode}
+                          text={text}
+                          muted={muted}
+                        />
+                      )}
                     </div>
                   </div>
                 ) : (
                   <div className={`mb-5 py-8 flex flex-col items-center justify-center text-center opacity-60 ${muted} rounded-2xl bg-black/5 dark:bg-black/20 border border-black/5 dark:border-white/5`}>
                     <CheckCircle2 size={28} className="mb-3 opacity-40 text-emerald-500" />
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Room is currently empty</p>
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      {isPlannerMode ? "Available for selected slot" : "Room is currently empty"}
+                    </p>
                   </div>
                 )}
 
-                {/* Coming up next */}
-                {nextClass && (
+                {/* Coming up next (Only shown in Live tracking mode) */}
+                {!isPlannerMode && nextClass && (
                   <div className={`pt-4 mt-auto border-t-2 border-dashed ${isDarkMode ? "border-slate-700/50" : "border-slate-200"}`}>
                     <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-2 pl-1 ${muted}`}>Up Next</p>
                     <div className={`p-3 rounded-xl flex items-start justify-between gap-3 ${isDarkMode ? "bg-slate-800/80" : "bg-slate-100/80"}`}>
@@ -383,11 +458,24 @@ export function RoomMonitoringTab({ schedules, isDarkMode, schoolYear }: RoomMon
                     </div>
                   </div>
                 )}
-                {!nextClass && schedules.length > 0 && !isOccupied && (
+                {!isPlannerMode && !nextClass && schedules.length > 0 && !isOccupied && (
                   <div className={`pt-4 mt-auto border-t-2 border-dashed text-xs font-medium italic ${isDarkMode ? "border-slate-700/50" : "border-slate-200"} ${muted}`}>
                     <div className="flex items-center gap-2">
                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400 opacity-50"></div>
                        No more classes scheduled for the rest of {selectedDay}.
+                    </div>
+                  </div>
+                )}
+                {isPlannerMode && schedules.length > 0 && (
+                  <div className={`pt-4 mt-auto border-t-2 border-dashed text-[10px] font-bold ${isDarkMode ? "border-slate-700/50" : "border-slate-200"} ${muted}`}>
+                    <p className="uppercase tracking-wider mb-2 font-black">All Schedules on {selectedDay}:</p>
+                    <div className="max-h-24 overflow-y-auto space-y-1 pr-1" style={{ scrollbarWidth: "none" }}>
+                      {schedules.map(s => (
+                        <div key={s.id} className="flex justify-between items-center bg-black/5 dark:bg-black/20 px-2 py-1 rounded">
+                          <span className="truncate max-w-[120px]">{s.subject} ({s.section})</span>
+                          <span className="font-mono text-[9px] shrink-0">{formatAMPM(s.start_time)} - {formatAMPM(s.end_time)}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

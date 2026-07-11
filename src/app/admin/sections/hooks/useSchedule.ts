@@ -3,8 +3,8 @@
 import { useState, useCallback, useEffect } from "react"
 import { supabase } from "@/lib/supabase/admin-client"
 import { toast } from "sonner"
-import type { ScheduleRow, ScheduleImportRow } from "../components/schedule/types"
-import { validateSlot, checkConflicts } from "../components/schedule/autoScheduler"
+import type { ScheduleRow, ScheduleImportRow } from "../../schedules/components/schedule/types"
+import { validateSlot, checkConflicts } from "../../schedules/components/schedule/autoScheduler"
 
 interface UseScheduleOptions {
   sectionName: string | null

@@ -1831,7 +1831,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                 </div>
 
                 <div className="grid grid-cols-7 gap-0.5 sm:gap-1 overflow-visible">
-                  {Array.from({ length: firstDayOfWeek }).map((_, i) => <div key={`empty-${i}`} />)}
+                  {Array.from({ length: firstDayOfWeek }).map((_, i) => <div key={`empty-${i}`} className="w-full aspect-square" />)}
                   {Array.from({ length: daysInMonth }).map((_, i) => {
                     const day = i + 1
                     const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`

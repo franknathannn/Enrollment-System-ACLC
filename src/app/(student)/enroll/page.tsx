@@ -5,7 +5,7 @@ import { useEnrollmentStore } from "@/store/useEnrollmentStore"
 import { useThemeStore } from "@/store/useThemeStore"
 import { supabase } from "@/lib/supabase/client"
 import { motion, useScroll, useSpring } from "framer-motion"
-import { Loader2, Lock, Timer, ArrowLeft, Users, ShieldCheck, Sun, Moon } from "lucide-react"
+import { Loader2, Lock, Calendar, ArrowLeft, Users, ShieldCheck, Sun, Moon } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -181,63 +181,64 @@ function LiveNodeSidebar({ currentStep, isDark, formData }: any) {
   ]
 
   return (
-    <div className="hidden xl:flex flex-col w-[280px] pr-8 relative border-r border-blue-500/5">
-      <div className="sticky top-32 space-y-12">
+    <div className="hidden xl:flex flex-col w-[280px] pr-8 relative border-r border-slate-200 dark:border-slate-800">
+      <div className="sticky top-20 space-y-10">
         <div className="flex items-center gap-3 pl-4">
-          <div className={cn("w-2 h-2 rounded-full animate-pulse", isDark ? "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" : "bg-blue-600")} />
-          <p className={cn("text-[10px] font-black uppercase tracking-[0.4em]", isDark ? "text-slate-500" : "text-slate-400")}>
-            <DecryptText text="Enrollment Process" />
+          <div className={cn("w-1.5 h-1.5 rounded-full", isDark ? "bg-blue-500" : "bg-blue-600")} />
+          <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isDark ? "text-slate-400" : "text-slate-500")}>
+            Enrollment Process
           </p>
         </div>
 
-        <div className="relative space-y-1 ml-4">
+        <div className="relative space-y-2 ml-4">
           {steps.map(step => {
             const isActive = step.id === currentStep;
             const isDone = step.id < currentStep;
             return (
-              <div key={step.id} className="group relative">
+              <div key={step.id} className="relative">
                 <div className={cn(
-                  "relative pl-10 py-5 rounded-2xl border transition-all duration-500",
-                  isActive ? (isDark ? "bg-white/[0.03] border-blue-500/30 translate-x-2" : "bg-blue-50 border-blue-200 translate-x-2")
+                  "relative pl-10 py-4 rounded-md border transition-all duration-300",
+                  isActive ? (isDark ? "bg-slate-900 border-slate-800" : "bg-slate-50 border-slate-250")
                     : "bg-transparent border-transparent"
                 )}>
                   {/* Node Line Connector */}
                   {step.id < 5 && (
                     <div className={cn(
                       "absolute left-[13px] top-10 w-[1px] h-12",
-                      isDone ? "bg-blue-500" : (isDark ? "bg-white/5" : "bg-slate-200")
+                      isDone ? "bg-blue-500" : (isDark ? "bg-slate-800" : "bg-slate-200")
                     )} />
                   )}
 
                   {/* Node Point */}
                   <div className={cn(
-                    "absolute left-[9px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-all duration-500 z-10",
-                    isActive ? "bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,1)] scale-[1.3]"
-                      : isDone ? (isDark ? "bg-blue-400" : "bg-blue-600")
-                        : (isDark ? "bg-slate-800" : "bg-slate-300")
+                    "absolute left-[9px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-all duration-300 z-10",
+                    isActive ? "bg-blue-600 scale-[1.2]"
+                      : isDone ? "bg-blue-500"
+                        : (isDark ? "bg-slate-800" : "bg-slate-350")
                   )} />
 
                   <div className="space-y-1">
                     <div className="flex items-center justify-between pr-4">
                       <p className={cn(
-                        "text-[10px] font-black uppercase tracking-widest transition-colors",
-                        isActive ? (isDark ? "text-white" : "text-slate-900") : (isDark ? "text-slate-500" : "text-slate-400")
+                        "text-[10px] font-bold uppercase tracking-wider transition-colors",
+                        isActive ? (isDark ? "text-white" : "text-slate-900") : "text-slate-400"
                       )}>
                         {step.label}
                       </p>
                       {isActive && (
-                        <span className={cn("text-[8px] font-black tracking-widest px-2 py-0.5 rounded-md", isDark ? "bg-blue-500/20 text-blue-300" : "bg-blue-600 text-white")}>
+                        <span className={cn("text-[8px] font-bold tracking-wider px-2 py-0.5 rounded", isDark ? "bg-blue-950 text-blue-400 border border-blue-900" : "bg-blue-550 text-white")}>
                           0{step.id}
                         </span>
                       )}
                     </div>
-                    <p className={cn(
-                      "text-[9px] font-bold transition-all duration-500",
-                      isActive ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2",
-                      isDark ? "text-blue-400" : "text-blue-600"
-                    )}>
-                      {step.desc}
-                    </p>
+                    {isActive && (
+                      <p className={cn(
+                        "text-[9px] font-medium transition-all duration-300",
+                        isDark ? "text-blue-400" : "text-blue-600"
+                      )}>
+                        {step.desc}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -327,10 +328,10 @@ function ContextSidebar({ currentStep, isDark, formData }: any) {
   }
 
   return (
-    <div className="hidden xl:flex flex-col w-[280px] pl-8 relative border-l border-blue-500/5">
-      <div className="sticky top-32 space-y-12">
-        <p className={cn("text-[10px] font-black uppercase tracking-[0.4em] text-right pr-4", isDark ? "text-slate-500" : "text-slate-400")}>
-          <DecryptText text="GUIDE UPON SUBMISSION" />
+    <div className="hidden xl:flex flex-col w-[320px] pl-8 relative border-l border-slate-200 dark:border-slate-800">
+      <div className="sticky top-20 space-y-10">
+        <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em] text-right pr-4", isDark ? "text-slate-400" : "text-slate-500")}>
+          Submission Guide
         </p>
         <div className="px-4">
           {content}
@@ -358,7 +359,6 @@ export default function EnrollmentPage() {
   } | null>(null)
 
   const [loading, setLoading] = useState(true)
-  const [timeLeft, setTimeLeft] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const { scrollYProgress } = useScroll()
@@ -511,26 +511,19 @@ export default function EnrollmentPage() {
     }
   }, [checkStatus])
 
-  // ── Countdown timer ────────────────────────────────────────────────────────
+  // ── Enrollment Period Expiry Check ─────────────────────────────────────────
   useEffect(() => {
     if (!systemStatus?.closingTime || !systemStatus.isOpen || systemStatus.controlMode === "manual") {
-      setTimeLeft(null); return
+      return
     }
-    const tick = () => {
+    const checkExpiry = () => {
       const diff = new Date(systemStatus.closingTime!).getTime() - Date.now()
       if (diff <= 0) {
         setSystemStatus(prev => prev ? { ...prev, isOpen: false, reason: "date" } : null)
-        setTimeLeft(null)
-        clearInterval(timer)
-      } else {
-        const h = Math.floor(diff / 3_600_000)
-        const m = Math.floor((diff % 3_600_000) / 60_000)
-        const s = Math.floor((diff % 60_000) / 1_000)
-        setTimeLeft(`${h}h ${m}m ${s}s`)
       }
     }
-    tick() // run immediately so there's no 1s blank flash
-    const timer = setInterval(tick, 1000)
+    checkExpiry()
+    const timer = setInterval(checkExpiry, 30000)
     return () => clearInterval(timer)
   }, [systemStatus?.closingTime, systemStatus?.isOpen, systemStatus?.controlMode])
 
@@ -699,27 +692,15 @@ export default function EnrollmentPage() {
         />
       </div>
 
-      {/* Global Background Logo */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 flex items-center justify-center">
-        <div className={cn(
-          "w-[clamp(280px,80vw,500px)] aspect-square transition-opacity duration-1000",
-          isDark ? "opacity-10 brightness-150" : "opacity-20"
-        )} style={{ transform: 'translateZ(0)' }}>
-          <img src="/logo-aclc.png" alt="" className="w-full h-full object-contain" />
-        </div>
-      </div>
+
 
       {!systemStatus?.isOpen ? (
         /* ── CLOSED STATE ── */
         <div className="max-w-md mx-auto mt-32 space-y-10 relative z-10 text-center">
-          <div className="relative group mx-auto w-24 h-24">
+          <div className="relative mx-auto w-24 h-24">
             <div className={cn(
-              "absolute inset-0 blur-xl rounded-full animate-pulse",
-              isDark ? "bg-blue-600/20" : "bg-blue-400/30"
-            )} />
-            <div className={cn(
-              "relative w-full h-full border rounded-[32px] flex items-center justify-center",
-              isDark ? "bg-slate-900 border-white/10" : "bg-white border-slate-200 shadow-md"
+              "relative w-full h-full border rounded-md flex items-center justify-center",
+              isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"
             )}>
               {systemStatus?.reason === "capacity"
                 ? <Users size={40} className="text-amber-500" />
@@ -727,25 +708,25 @@ export default function EnrollmentPage() {
             </div>
           </div>
           <h1 className={cn(
-            "text-4xl font-black uppercase tracking-tighter italic",
+            "text-3xl font-serif font-bold uppercase tracking-tight",
             isDark ? "text-white" : "text-slate-900"
           )}>
             {systemStatus?.reason === "date"
               ? "Portal is Officially Closed"
               : systemStatus?.reason === "capacity"
-                ? "PORTAL AUTOMATICALLY CLOSED AND SAYS IT IN THE SETTINGS"
+                ? "PORTAL AUTOMATICALLY CLOSED"
                 : "Portal Encrypted"}
           </h1>
           <div className="space-y-4">
             <Button disabled className={cn(
-              "w-full h-16 rounded-2xl font-black uppercase tracking-widest border opacity-50 cursor-not-allowed",
-              isDark ? "bg-slate-800 text-slate-500 border-white/10" : "bg-slate-100 text-slate-400 border-slate-200"
+              "w-full h-16 rounded-md font-bold uppercase tracking-widest border opacity-50 cursor-not-allowed",
+              isDark ? "bg-slate-800 text-slate-500 border-slate-700" : "bg-slate-150 text-slate-400 border-slate-200"
             )}>
               <Lock className="mr-2" size={18} /> APPLICATION CLOSED
             </Button>
             <Link href="/">
               <Button variant="ghost" className={cn(
-                "w-full rounded-xl font-bold uppercase text-xs tracking-widest",
+                "w-full rounded-md font-bold uppercase text-xs tracking-widest",
                 isDark ? "text-slate-500 hover:text-white hover:bg-white/5" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
               )}>Return to Hub</Button>
             </Link>
@@ -753,31 +734,36 @@ export default function EnrollmentPage() {
         </div>
       ) : (
         /* ── OPEN STATE ── */
-        <div className="flex-1 relative z-10 w-full xl:max-w-[1400px] xl:mx-auto xl:grid xl:grid-cols-[1fr_2.5fr_1fr] xl:gap-8 pt-2 md:pt-4">
+        <div className="flex-1 relative z-10 w-full max-w-[1600px] mx-auto xl:grid xl:grid-cols-[280px_1fr_320px] xl:gap-0 pt-2 md:pt-4">
 
           <LiveNodeSidebar currentStep={currentStep} isDark={isDark} formData={formData} />
 
-          <div className="max-w-2xl mx-auto space-y-8 relative z-10 w-full xl:flex xl:flex-col">
+          <div className="w-full xl:px-8 space-y-8 relative z-10 xl:flex xl:flex-col">
 
             {/* Top nav */}
             <div className="flex items-center justify-between">
               <Link href="/">
                 <Button variant="ghost" className={cn(
-                  "rounded-xl font-black uppercase text-[9px] tracking-[0.2em] group",
+                  "rounded-md font-bold uppercase text-[9px] tracking-[0.2em] group",
                   isDark ? "text-slate-500 hover:text-white hover:bg-white/5" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                 )}>
                   <ArrowLeft className="mr-2 group-hover:-translate-x-0.5 transition-transform" size={14} /> Go Back
                 </Button>
               </Link>
               <div className="flex items-center gap-3">
-                {timeLeft && (
+                {systemStatus?.closingTime && systemStatus.isOpen && systemStatus.controlMode !== "manual" && (
                   <div className={cn(
-                    "border px-5 py-2.5 rounded-full flex items-center gap-3 backdrop-blur-md",
-                    isDark ? "bg-slate-900/50 border-white/5" : "bg-white border-slate-200 shadow-sm"
+                    "border px-4 py-2 rounded-md flex items-center gap-2.5 backdrop-blur-md text-[10px] font-bold uppercase tracking-wider",
+                    isDark ? "bg-slate-900/80 border-slate-800 text-slate-400" : "bg-slate-50 border-slate-200 text-slate-650 shadow-sm"
                   )}>
-                    <Timer size={14} className="text-blue-400 animate-pulse" />
-                    <span className={cn("font-mono font-black text-xs", isDark ? "text-blue-400" : "text-blue-600")}>
-                      {timeLeft}
+                    <Calendar size={13} className="text-slate-500" />
+                    <span>Enrollment Closes:</span>
+                    <span className={cn("font-bold text-xs text-blue-600 dark:text-blue-400")}>
+                      {new Date(systemStatus.closingTime).toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
                     </span>
                   </div>
                 )}
@@ -787,7 +773,7 @@ export default function EnrollmentPage() {
                   onClick={toggleTheme}
                   aria-label="Toggle theme"
                   className={cn(
-                    "relative w-10 h-10 rounded-2xl flex items-center justify-center border overflow-hidden",
+                    "relative w-10 h-10 rounded-md flex items-center justify-center border overflow-hidden",
                     "transition-[background-color,border-color] duration-200",
                     isDark
                       ? "bg-slate-800/80 border-white/10 hover:bg-yellow-400/10 hover:border-yellow-400/30"
@@ -812,36 +798,32 @@ export default function EnrollmentPage() {
 
             {/* Branding */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-5 group">
-                <div className="relative flex items-center justify-center p-1.5">
-                  <div className={cn(
-                    "absolute inset-0 rounded-full blur-xl animate-pulse",
-                    isDark ? "bg-blue-600/30" : "bg-blue-400/30"
-                  )} />
+              <div className="flex items-center gap-4 group">
+                <div className="relative flex items-center justify-center p-1">
                   <img
                     src="/logo-aclc.png"
                     alt="Logo"
                     loading="eager"
-                    className="relative w-14 h-14 object-contain drop-shadow-[0_0_12px_rgba(59,130,246,0.6)]"
+                    className="relative w-12 h-12 object-contain"
                   />
                 </div>
                 <div>
                   <span className={cn(
-                    "font-black text-xl uppercase italic leading-none tracking-tighter",
+                    "font-serif text-lg font-bold tracking-tight block",
                     isDark ? "text-white" : "text-slate-900"
-                  )}> ACLC Northbay</span>
+                  )}>ACLC Northbay</span>
                   <p className={cn(
-                    "text-[9px] font-bold uppercase tracking-[0.4em] mt-1.5",
+                    "text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5",
                     isDark ? "text-blue-400" : "text-blue-600"
-                  )}>Enrollment System</p>
+                  )}>Northbay Campus • Enrollment</p>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl font-black text-[10px] text-white uppercase tracking-widest shadow-lg shadow-blue-500/20">
+              <div className="flex flex-col items-end gap-1.5">
+                <div className="px-3 py-1 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded font-bold text-[10px] uppercase tracking-wider">
                   Step 0{currentStep}
                 </div>
                 <span className={cn(
-                  "text-[8px] font-black uppercase tracking-[0.3em]",
+                  "text-[8px] font-bold uppercase tracking-[0.2em]",
                   isDark ? "text-slate-500" : "text-slate-400"
                 )}>{progressPercentage}% Complete</span>
               </div>
@@ -849,27 +831,35 @@ export default function EnrollmentPage() {
 
             {/* Progress bar */}
             <div className={cn(
-              "w-full h-1.5 rounded-full overflow-hidden border",
+              "w-full h-1.5 rounded overflow-hidden border",
               isDark ? "bg-white/5 border-white/5" : "bg-slate-200 border-slate-200"
             )}>
               <div
-                className="h-full bg-gradient-to-r from-blue-700 via-blue-400 to-cyan-300 shimmer-bar transition-[width] duration-700 ease-out"
+                className="h-full bg-blue-600 transition-[width] duration-700 ease-out"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
 
             {/* Form container */}
             <div className={cn(
-              "p-6 sm:p-8 md:p-12 rounded-[56px] border relative overflow-hidden transition-colors duration-500 xl:flex-1",
+              "p-6 sm:p-8 md:p-12 rounded-xl border relative overflow-hidden transition-colors duration-500 shadow-sm h-auto",
               isDark
-                ? "bg-[#0d1433]/90 border-white/10 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.9)]"
-                : "bg-white/95 border-blue-50 shadow-[0_20px_60px_rgba(99,102,241,0.08)]"
+                ? "bg-slate-900 border-slate-800"
+                : "bg-slate-50/50 border-slate-200"
             )} style={{ transform: 'translateZ(0)' }}>
-              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400" />
-              <ShieldCheck size={200} className={cn(
-                "absolute -bottom-20 -right-20 -rotate-12 pointer-events-none",
-                isDark ? "text-white/[0.02]" : "text-blue-500/[0.04]"
-              )} />
+              {/* Centered Watermark Background Layer inside the Form container */}
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-0 overflow-hidden">
+                <div className="w-36 h-36 transition-opacity duration-1000">
+                  <img
+                    src="/logo-aclc.png"
+                    alt=""
+                    className={cn(
+                      "w-full h-full object-contain filter grayscale",
+                      isDark ? "opacity-[0.025] invert brightness-200" : "opacity-[0.035]"
+                    )}
+                  />
+                </div>
+              </div>
               <div key={currentStep} className="relative z-10 animate-fade-slide">
                 {currentStepContent}
               </div>
@@ -879,15 +869,36 @@ export default function EnrollmentPage() {
             <div className="flex justify-center gap-4 py-4">
               {[1, 2, 3, 4, 5].map(s => (
                 <div key={s} className={cn(
-                  "h-1.5 rounded-full transition-[width,background-color] duration-500",
+                  "h-1.5 rounded transition-[width,background-color] duration-500",
                   s === currentStep
-                    ? "w-12 bg-gradient-to-r from-blue-500 to-indigo-500 shadow-[0_0_14px_rgba(99,130,246,0.8)]"
+                    ? "w-10 bg-blue-600 shadow-sm"
                     : s < currentStep
-                      ? isDark ? "w-3 bg-blue-900" : "w-3 bg-blue-300"
-                      : isDark ? "w-2 bg-white/10" : "w-2 bg-slate-300"
+                      ? isDark ? "w-3 bg-blue-900" : "w-3 bg-blue-400"
+                      : isDark ? "w-2 bg-slate-800" : "w-2 bg-slate-300"
                 )} />
               ))}
             </div>
+
+            {/* Institutional Footer */}
+            <footer className={cn(
+              "mt-8 pt-8 pb-4 border-t text-center space-y-3 text-[10px] font-medium tracking-wide uppercase xl:-mx-8 xl:px-8",
+              isDark ? "border-slate-800 text-slate-500" : "border-slate-200 text-slate-400"
+            )}>
+              <p className="font-serif normal-case text-xs font-semibold">
+                © {new Date().getFullYear()} ACLC College Northbay Campus. All rights reserved.
+              </p>
+              <p>
+                Need help? Contact the Registrar's Office at{" "}
+                <span className={cn("font-semibold", isDark ? "text-slate-400" : "text-slate-600")}>
+                  registrar@aclc-northbay.edu
+                </span>
+              </p>
+              <div className="flex justify-center gap-4 text-[9px]">
+                <a href="#" className="hover:underline">Terms of Service</a>
+                <span>•</span>
+                <a href="#" className="hover:underline">Privacy Policy</a>
+              </div>
+            </footer>
 
           </div>
 

@@ -9,7 +9,7 @@ import { syncSectionCapacities } from "./settings"
  * Automatically determines the next letter (e.g., E -> F)
  * Supports grade_level: "11" | "12" (defaults to "11")
  */
-export async function addSection(strand: "ICT" | "GAS", gradeLevel: "11" | "12" = "11") {
+export async function addSection(strand: string, gradeLevel: "11" | "12" = "11") {
   const supabase = createAdminClient()
 
   // 1. Fetch ALL sections for this strand AND grade level
@@ -88,7 +88,7 @@ export async function addSection(strand: "ICT" | "GAS", gradeLevel: "11" | "12" 
  * DELETE & COLLAPSE (Sequential Shift Logic)
  * If B is deleted, C becomes B, D becomes C, and students follow the move.
  */
-export async function deleteAndCollapseSection(sectionId: string, strand: "ICT" | "GAS", gradeLevel?: "11" | "12") {
+export async function deleteAndCollapseSection(sectionId: string, strand: string, gradeLevel?: "11" | "12") {
   const supabase = createAdminClient()
 
   // 1. Resolve grade level — if not supplied, fetch it from the target section.
@@ -157,11 +157,11 @@ export async function deleteAndCollapseSection(sectionId: string, strand: "ICT" 
  * Grade 11 and Grade 12 students are NEVER mixed — each combination is
  * balanced independently.
  *
- * strand:     'ICT' | 'GAS' | 'ALL'
+ * strand:     string | 'ALL'
  * gradeLevel: '11'  | '12'  | 'ALL' (default)
  */
 export async function balanceGenderAcrossSections(
-  strand: 'ICT' | 'GAS' | 'ALL',
+  strand: string | "ALL",
   gradeLevel: '11' | '12' | 'ALL' = 'ALL'
 ) {
   // Expand ALL → individual combinations and recurse
