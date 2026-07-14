@@ -206,7 +206,7 @@ const MobileApplicantRow = memo(({
         {student.status === 'Pending' && (
           <>
             <Button
-              onClick={(e) => { e.stopPropagation(); handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted')); }}
+              onClick={(e) => { e.stopPropagation(); handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted'); }}
               variant="ghost"
               size="sm"
               disabled={isStrandFull || isSystemLocked}
@@ -415,7 +415,7 @@ const DesktopApplicantRow = memo(({
           {student.status === 'Pending' && (
             <>
               <Tooltip><TooltipTrigger asChild>
-                <Button onClick={() => handleExit(student.id, () => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted'))} variant="ghost" disabled={isStrandFull || isSystemLocked} className={`h-9 px-2 md:px-3 rounded-xl font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap ${isStrandFull || isSystemLocked ? 'text-slate-300 cursor-not-allowed' : 'text-green-600'}`} onMouseEnter={(e) => { if (!isStrandFull && !isSystemLocked) { e.currentTarget.style.backgroundColor = 'rgb(22 163 74)'; e.currentTarget.style.color = 'white'; } }} onMouseLeave={(e) => { if (!isStrandFull && !isSystemLocked) { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = 'rgb(22 163 74)'; } }}><span className="hidden sm:inline">{isSystemLocked ? 'LOCKED' : isStrandFull ? 'FULL' : 'Approve'}</span><span className="sm:hidden">{isStrandFull || isSystemLocked ? 'X' : '✓'}</span></Button>
+                <Button onClick={() => handleStatusChange(student.id, `${student.first_name} ${student.last_name}`, 'Accepted')} variant="ghost" disabled={isStrandFull || isSystemLocked} className={`h-9 px-2 md:px-3 rounded-xl font-black text-[9px] uppercase tracking-widest transition-colors shrink-0 whitespace-nowrap ${isStrandFull || isSystemLocked ? 'text-slate-300 cursor-not-allowed' : 'text-green-600'}`} onMouseEnter={(e) => { if (!isStrandFull && !isSystemLocked) { e.currentTarget.style.backgroundColor = 'rgb(22 163 74)'; e.currentTarget.style.color = 'white'; } }} onMouseLeave={(e) => { if (!isStrandFull && !isSystemLocked) { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = 'rgb(22 163 74)'; } }}><span className="hidden sm:inline">{isSystemLocked ? 'LOCKED' : isStrandFull ? 'FULL' : 'Approve'}</span><span className="sm:hidden">{isStrandFull || isSystemLocked ? 'X' : '✓'}</span></Button>
               </TooltipTrigger><TooltipContent className="bg-green-900 text-green-100 border-green-800"><p>Approve Application</p></TooltipContent></Tooltip>
               <Tooltip><TooltipTrigger asChild>
                 <Button

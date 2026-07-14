@@ -9,7 +9,7 @@ import { syncSectionCapacities } from "./settings"
  * Automatically determines the next letter (e.g., E -> F)
  * Supports grade_level: "11" | "12" (defaults to "11")
  */
-export async function addSection(strand: string, gradeLevel: "11" | "12" = "11") {
+export async function addSection(strand: string, gradeLevel: "11" | "12" = "11", capacity: number = 40) {
   const supabase = createAdminClient()
 
   // 1. Fetch ALL sections for this strand AND grade level
@@ -70,7 +70,7 @@ export async function addSection(strand: string, gradeLevel: "11" | "12" = "11")
       section_name: newName,
       strand: strand,
       grade_level: gradeLevel,
-      capacity: 0
+      capacity: capacity
     }])
     .select()
     .single()
@@ -78,7 +78,7 @@ export async function addSection(strand: string, gradeLevel: "11" | "12" = "11")
   if (error) throw new Error(error.message)
 
   // 4. Sync capacities
-  await syncSectionCapacities()
+
 
   revalidatePath("/admin/sections")
   return { success: true, data }
@@ -91,8 +91,6 @@ export async function addSection(strand: string, gradeLevel: "11" | "12" = "11")
 export async function deleteAndCollapseSection(sectionId: string, strand: string, gradeLevel?: "11" | "12") {
   const supabase = createAdminClient()
 
-  // 1. Resolve grade level — if not supplied, fetch it from the target section.
-  //    This ensures we NEVER mix G11 and G12 during the collapse shift.
   let resolvedGradeLevel = gradeLevel
   if (!resolvedGradeLevel) {
     const { data: targetSection } = await supabase
@@ -103,7 +101,6 @@ export async function deleteAndCollapseSection(sectionId: string, strand: string
     resolvedGradeLevel = (targetSection?.grade_level as "11" | "12") || "11"
   }
 
-  // Get ONLY sections matching this strand + grade level
   const { data: allSections } = await supabase
     .from('sections')
     .select('id, section_name, grade_level')
@@ -116,38 +113,122 @@ export async function deleteAndCollapseSection(sectionId: string, strand: string
   const targetIndex = allSections.findIndex(s => s.id === sectionId)
   if (targetIndex === -1) return
 
-  // 2. Handle the "Shift": Move students from subsequent sections up
-  // Example: If deleting B, move students from C -> B, D -> C...
-  for (let i = targetIndex; i < allSections.length - 1; i++) {
-    const currentSectionId = allSections[i].id
-    const nextSectionId = allSections[i + 1].id
+  // 1. Unassign all students from the target section
+  await supabase
+    .from('students')
+    .update({
+      section_id: null,
+      section: null
+    })
+    .eq('section_id', sectionId)
 
-    // Move students from the NEXT section into the CURRENT section ID
-    const { error: moveError } = await supabase
-      .from('students')
-      .update({
-        section_id: currentSectionId,
-        section: allSections[i].section_name
-      })
-      .eq('section_id', nextSectionId)
-
-    if (moveError) console.error(`Error shifting students to ${allSections[i].section_name}:`, moveError.message)
-  }
-
-  // 3. Delete the LAST section in the list (since it's now empty after the shift)
-  const lastSection = allSections[allSections.length - 1]
+  // 2. Delete the target section
   const { error: deleteError } = await supabase
     .from('sections')
     .delete()
-    .eq('id', lastSection.id)
+    .eq('id', sectionId)
 
   if (deleteError) throw new Error(deleteError.message)
 
-  // 4. Final Sync: Recalculate capacities for the new total count
-  await syncSectionCapacities()
+  // 3. Rename the remaining sections to close the gap (e.g. C becomes B)
+  let nextCharCode = 'A'.charCodeAt(0) + targetIndex // The expected character for the gap
+  for (let i = targetIndex + 1; i < allSections.length; i++) {
+    const nextChar = String.fromCharCode(nextCharCode)
+    const newName = `${strand}${resolvedGradeLevel}-${nextChar}`
+    
+    await supabase
+      .from('sections')
+      .update({ section_name: newName })
+      .eq('id', allSections[i].id)
+
+    // Update students in this section to have the correct new section name
+    await supabase
+      .from('students')
+      .update({ section: newName })
+      .eq('section_id', allSections[i].id)
+      
+    nextCharCode++
+  }
+
+
 
   revalidatePath("/admin/sections")
   revalidatePath("/admin/dashboard")
+  return { success: true }
+}
+
+export async function updateSectionCapacity(sectionId: string, newCapacity: number) {
+  const supabase = createAdminClient()
+
+  const { data: targetSection } = await supabase
+    .from('sections')
+    .select('*, students!students_section_id_fkey(id)')
+    .eq('id', sectionId)
+    .single()
+    
+  if (!targetSection) throw new Error("Section not found")
+
+  // Update capacity
+  await supabase
+    .from('sections')
+    .update({ capacity: newCapacity })
+    .eq('id', sectionId)
+
+  // Auto-scaling: If students exceed new capacity, move them to a new section
+  const activeStudents = targetSection.students || []
+  if (activeStudents.length > newCapacity) {
+    const overflowCount = activeStudents.length - newCapacity
+    const studentsToMove = activeStudents.slice(-overflowCount) // take the last ones
+        // Fetch all existing sections for this strand/grade to check for available space
+      const { data: siblingSections } = await supabase
+        .from('sections')
+        .select('*, students!students_section_id_fkey(id)')
+        .eq('strand', targetSection.strand)
+        .eq('grade_level', targetSection.grade_level)
+        .neq('id', targetSection.id)
+        .order('section_name', { ascending: true })
+
+      const siblings = siblingSections || []
+
+      for (const student of studentsToMove) {
+        let placed = false;
+        
+        // Try to place in an existing section first
+        for (const sibling of siblings) {
+          const currentEnrolled = sibling.students?.length || 0;
+          if (currentEnrolled < sibling.capacity) {
+            await supabase
+              .from('students')
+              .update({ section_id: sibling.id, section: sibling.section_name })
+              .eq('id', student.id);
+            
+            sibling.students = sibling.students || [];
+            sibling.students.push({ id: student.id }); // update local tracking
+            placed = true;
+            break;
+          }
+        }
+        
+        // If all existing sections are full, ONLY then create a new section
+        if (!placed) {
+          const addRes = await addSection(targetSection.strand, targetSection.grade_level as "11" | "12");
+          const newSection = addRes.data;
+          
+          await supabase
+            .from('students')
+            .update({ section_id: newSection.id, section: newSection.section_name })
+            .eq('id', student.id);
+            
+          // Add this newly created section to our siblings list so the next overflow student might use it!
+          siblings.push({
+             ...newSection,
+             students: [{ id: student.id }]
+          });
+        }
+      }
+  }
+
+  revalidatePath("/admin/sections")
   return { success: true }
 }
 
@@ -278,7 +359,7 @@ export async function deleteSection(id: string) {
   const supabase = createAdminClient()
   const { error } = await supabase.from('sections').delete().eq('id', id)
   if (error) throw new Error(error.message)
-  await syncSectionCapacities()
+
   revalidatePath("/admin/sections")
   return { success: true }
 }

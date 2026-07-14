@@ -51,6 +51,8 @@ interface EnrollmentData {
   form_138_url?: string;    // JHS
   cor_url?: string;         // ALS
   good_moral_url?: string;  // JHS
+  has_voucher_cert?: "yes" | "no" | "pending"; // New logic for Private/ALS
+  voucher_cert_url?: string;  // New logic for Private/ALS
 }
 
 interface EnrollmentState {
@@ -80,6 +82,8 @@ export const useEnrollmentStore = create<EnrollmentState>()(
         form_138_url: "",
         cor_url: "",
         good_moral_url: "",
+        has_voucher_cert: "no",
+        voucher_cert_url: "",
         address: "",
         religion: "",
         age: "",

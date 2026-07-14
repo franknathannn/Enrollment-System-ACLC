@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react"
 import { supabase } from "@/lib/supabase/admin-client"
-import { addSection, deleteAndCollapseSection, balanceGenderAcrossSections } from "@/lib/actions/sections"
+import { addSection, deleteAndCollapseSection, balanceGenderAcrossSections, updateSectionCapacity } from "@/lib/actions/sections"
 import { updateApplicantStatus, deleteApplicant, updateStudentSection } from "@/lib/actions/applicants"
 import { toast } from "sonner"
 import { useTheme } from "@/hooks/useTheme"
@@ -30,8 +30,9 @@ export function useSections() {
   })
   
   const [sectionSelection, setSectionSelection] = useState<Set<string>>(new Set())
-  const [confirmAdd, setConfirmAdd] = useState<{isOpen: boolean, strand: string | null, gradeLevel: "11" | "12"}>({isOpen: false, strand: null, gradeLevel: "11"})
+  const [confirmAdd, setConfirmAdd] = useState<{isOpen: boolean, strand: string | null, gradeLevel: "11" | "12", capacity?: number}>({isOpen: false, strand: null, gradeLevel: "11", capacity: 40})
   const [confirmDeleteSelect, setConfirmDeleteSelect] = useState(false)
+  const [isAddSectionOpen, setIsAddSectionOpen] = useState(false)
 
   const [expandedStrands, setExpandedStrands] = useState<Record<string, boolean>>({})
   const [availableStrands, setAvailableStrands] = useState<string[]>([])
@@ -200,6 +201,12 @@ export function useSections() {
         setLastUpdate(new Date().toLocaleTimeString())
         fetchSections(true)
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, (payload) => {
+        setRealtimeStatus(`⚙️ Config ${payload.eventType}`)
+        setLastUpdate(new Date().toLocaleTimeString())
+        fetchConfig()
+        fetchSections(true)
+      })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') { setRealtimeStatus('🟢 Live'); setLastUpdate(new Date().toLocaleTimeString()) }
         else if (status === 'CHANNEL_ERROR') { setRealtimeStatus('🔴 Error'); setTimeout(() => fetchSections(true), 2000) }
@@ -334,8 +341,8 @@ export function useSections() {
 
   const handleViewProfile = useCallback((student: any) => { setActiveProfile(student); setProfileOpen(true) }, [])
   const handleUnenroll = useCallback((student: any) => { setActiveUnenrollStudent(student); setUnenrollOpen(true) }, [])
-  const initiateAdd = useCallback((strand: string) => { 
-    setConfirmAdd({ isOpen: true, strand, gradeLevel: gradeLevelFilter === "ALL" ? "11" : gradeLevelFilter })
+  const initiateAdd = useCallback((strand: string, capacity: number = 30) => { 
+    setConfirmAdd({ isOpen: true, strand, gradeLevel: gradeLevelFilter === "ALL" ? "11" : gradeLevelFilter, capacity })
   }, [gradeLevelFilter])
   const toggleSelection = useCallback((id: string) => { setSectionSelection(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next }) }, [])
   const handleSelectAll = useCallback((ids: string[]) => { setSectionSelection(prev => { const next = new Set(prev); const allSelected = ids.every(id => prev.has(id)); if (allSelected) ids.forEach(id => next.delete(id)); else ids.forEach(id => next.add(id)); return next }) }, [])
@@ -344,7 +351,7 @@ export function useSections() {
     if (!confirmAdd.strand) return
     setIsProcessing(true)
     try {
-      const result = await addSection(confirmAdd.strand, confirmAdd.gradeLevel || "11")
+      const result = await addSection(confirmAdd.strand, confirmAdd.gradeLevel || "11", confirmAdd.capacity || 30)
       toast.success(`Generated ${result.data.section_name}`)
       
       // Optimistic update
@@ -359,10 +366,10 @@ export function useSections() {
       const { data: { session } } = await supabase.auth.getSession(); const user = session?.user;
       supabase.from('activity_logs').insert([{ admin_id: user?.id, admin_name: user?.user_metadata?.username || 'Admin', action_type: 'APPROVED', student_name: 'N/A', details: `Created new ${confirmAdd.strand} section: ${result.data.section_name}` }]).then()
       
-      setConfirmAdd({ isOpen: false, strand: null, gradeLevel: "11" }); 
+      setConfirmAdd({ isOpen: false, strand: null, gradeLevel: "11", capacity: 40 }); 
       fetchSections(true)
     } catch (err: any) { toast.error(err.message) } finally { setIsProcessing(false) }
-  }, [confirmAdd.strand, confirmAdd.gradeLevel, fetchSections])
+  }, [confirmAdd.strand, confirmAdd.gradeLevel, confirmAdd.capacity, fetchSections])
 
   const executeBulkDelete = useCallback(async () => {
     setConfirmDeleteSelect(false);
@@ -382,7 +389,6 @@ export function useSections() {
   }, [sectionSelection, sections, fetchSections])
 
   const handleDeleteSection = useCallback(async (id: string, name: string, strand: string, gradeLevel?: "11" | "12") => {
-    if (!confirm(`WARNING: Deleting ${name} shifts matrix sequence. Proceed?`)) return
     
     // Optimistic update
     setSections(prev => prev.filter(s => s.id !== id))
@@ -394,6 +400,18 @@ export function useSections() {
       toast.success(`Matrix Sequence Updated.`); 
       fetchSections(true)
     } catch (err: any) { toast.error(err.message); fetchSections() }
+  }, [fetchSections])
+
+  const handleUpdateCapacity = useCallback(async (sectionId: string, newCapacity: number) => {
+    const toastId = toast.loading(`Updating capacity to ${newCapacity}...`);
+    try {
+      await updateSectionCapacity(sectionId, newCapacity)
+      toast.success(`Capacity updated.`, { id: toastId })
+      fetchSections(true)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update capacity", { id: toastId })
+      fetchSections()
+    }
   }, [fetchSections])
 
   const handleBalance = useCallback(async (strand: string) => {
@@ -508,22 +526,25 @@ export function useSections() {
     exportSimpleMasterlist(`${sectionName} MASTERLIST`, students, adviserName)
   }, [])
 
-  const exportGlobalMasterlist = useCallback((strand: string) => {
+  const exportGlobalMasterlist = useCallback((strand: string, gradeLevel: string = "ALL") => {
     const allStudents: any[] = []
     
-    if (strand === "ALL") {
-      sections.forEach(sec => {
+    sections.forEach(sec => {
+      const strandMatches = strand === "ALL" || sec.strand === strand
+      const gradeMatches = gradeLevel === "ALL" || sec.grade_level === gradeLevel
+      
+      if (strandMatches && gradeMatches) {
         const active = (sec.students || []).filter((s: any) => s.status === "Accepted" || s.status === "Approved")
         allStudents.push(...active)
-      })
-    } else {
-      sections.filter(s => s.strand === strand).forEach(sec => {
-        const active = (sec.students || []).filter((s: any) => s.status === "Accepted" || s.status === "Approved")
-        allStudents.push(...active)
-      })
-    }
+      }
+    })
     
-    const title = strand === "ALL" ? "ALL STRANDS MASTERLIST" : `${strand} MASTERLIST`
+    let title = ""
+    if (strand === "ALL" && gradeLevel === "ALL") title = "ALL STRANDS MASTERLIST"
+    else if (strand === "ALL") title = `ALL STRANDS GRADE ${gradeLevel} MASTERLIST`
+    else if (gradeLevel === "ALL") title = `${strand} MASTERLIST`
+    else title = `${strand} GRADE ${gradeLevel} MASTERLIST`
+    
     exportSimpleMasterlist(title, allStudents)
   }, [sections])
   
@@ -593,7 +614,34 @@ export function useSections() {
                 cleanUpdates.g11_section_id = cur.section_id || null
               }
             }
-            // Clear current section first — they're changing grade
+            // Auto-create matching Grade 12 sections if they do not exist
+            if (newGrade === '12') {
+              const { data: g11Secs } = await supabase
+                .from('sections')
+                .select('section_name, strand, capacity')
+                .eq('grade_level', '11')
+
+              if (g11Secs && g11Secs.length > 0) {
+                for (const g11Sec of g11Secs) {
+                  const g12Name = g11Sec.section_name.replace('11', '12')
+                  
+                  const { count } = await supabase
+                    .from('sections')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('section_name', g12Name)
+
+                  if (count === 0) {
+                    await supabase.from('sections').insert([{
+                      section_name: g12Name,
+                      strand: g11Sec.strand,
+                      grade_level: '12',
+                      capacity: g11Sec.capacity
+                    }])
+                  }
+                }
+              }
+            }
+
             cleanUpdates.section_id = null
             cleanUpdates.section    = 'Unassigned'
 
@@ -668,7 +716,7 @@ export function useSections() {
   return {
     config, isDarkMode, sections, teachers, allSchedules, loading, isProcessing, selectedSectionName, setSelectedSectionName,
     searchTerm, setSearchTerm, debouncedSearch, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter, sectionSelection,
-    confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, 
+    confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, isAddSectionOpen, setIsAddSectionOpen, 
     availableStrands, expandedStrands, setExpandedStrands, groupedSections, strandLoads,
     exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
     viewingFile, rotation, setRotation, unenrollOpen, setUnenrollOpen, activeUnenrollStudent, profileOpen, setProfileOpen,
@@ -676,6 +724,6 @@ export function useSections() {
     currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
     handleConfirmUnenroll, handleSwitch, exportSectionCSV, exportSectionList, exportGlobalMasterlist, fetchSections, handleToggleLock, updateStudentProfile,
-    navigateDocument, canNavigatePrev, canNavigateNext, handleAdviserChange
+    navigateDocument, canNavigatePrev, canNavigateNext, handleAdviserChange, handleUpdateCapacity
   }
 }

@@ -54,6 +54,23 @@ export default function AdminDashboard() {
     })
   }
 
+  const [revenueYear, setRevenueYear] = useState<string>("")
+  useEffect(() => {
+    if (config?.school_year && !revenueYear) {
+      setRevenueYear(config.school_year)
+    }
+  }, [config?.school_year, revenueYear])
+
+  const availableYears = useMemo(() => {
+    const current = config?.school_year || "2026-2027"
+    const parts = current.split("-").map(Number)
+    if (parts.length === 2) {
+      const prev = `${parts[0] - 1}-${parts[1] - 1}`
+      return [current, prev]
+    }
+    return [current]
+  }, [config?.school_year])
+
 
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -65,7 +82,7 @@ export default function AdminDashboard() {
       fetchTimeoutRef.current = setTimeout(async () => {
         try {
           const [studentsRes, configRes, sectionsRes, historyRes] = await Promise.all([
-            supabase.from('students').select('id,first_name,last_name,gender,strand,section,status,student_category,gwa_grade_10,two_by_two_url,created_at,preferred_shift,last_school_attended,grade_level,is_archived').order('created_at', { ascending: false }),
+            supabase.from('students').select('id,first_name,last_name,gender,strand,section,status,student_category,gwa_grade_10,two_by_two_url,created_at,preferred_shift,last_school_attended,grade_level,is_archived,school_type,school_year').order('created_at', { ascending: false }),
             supabase.from('system_config').select('*').maybeSingle(),
             supabase.from('sections').select('capacity'),
             supabase.from('enrollment_history').select('*').order('school_year', { ascending: false })
@@ -236,13 +253,18 @@ export default function AdminDashboard() {
   }, [students]) // Note: NO includeG12 dependency — always absolute
 
   const comparison = useMemo(() => {
-    if (history.length === 0) return { diff: 0, status: 'baseline', percent: '0', prevYear: '' };
+    // Filter history to exclude future school years relative to the currently active school year
+    const validHistory = config?.school_year
+      ? history.filter((item: any) => item.school_year <= config.school_year)
+      : history;
 
-    let baselineSnapshot = history[0];
+    if (validHistory.length === 0) return { diff: 0, status: 'baseline', percent: '0', prevYear: '' };
+
+    let baselineSnapshot = validHistory[0];
     // If the latest snapshot is the current year, compare against the previous year instead
     if (config?.school_year && baselineSnapshot.school_year === config.school_year) {
-      if (history.length > 1) {
-        baselineSnapshot = history[1];
+      if (validHistory.length > 1) {
+        baselineSnapshot = validHistory[1];
       } else {
         return { diff: 0, status: 'baseline', percent: '0', prevYear: baselineSnapshot.school_year };
       }
@@ -261,37 +283,107 @@ export default function AdminDashboard() {
 
   const revenueMatrix = useMemo(() => {
     const dynamicVoucher = config?.voucher_value ?? 0;
-    const qualifiedStudents = students.filter(s =>
-      (s.status === 'Accepted' || s.status === 'Approved') &&
-      (s.student_category?.toLowerCase().includes("jhs") || s.student_category === "Standard")
-    );
-    const qualifiedICT = qualifiedStudents.filter(s => s.strand === 'ICT').length;
-    const qualifiedGAS = qualifiedStudents.filter(s => s.strand === 'GAS').length;
-    const currentRevenue = qualifiedStudents.length * dynamicVoucher;
+    const selectedYear = revenueYear || config?.school_year || "2026-2027";
+    const parts = selectedYear.split("-").map(Number);
+    const prevYear = parts.length === 2 ? `${parts[0] - 1}-${parts[1] - 1}` : "";
+
+    const getStudentRevenue = (student: any, baseVoucher: number) => {
+      const category = student.student_category?.toLowerCase() || "";
+      const schoolType = student.school_type?.toLowerCase() || "";
+
+      if (category.includes("als") || category.includes("passer")) {
+        return baseVoucher;
+      }
+      if (category.includes("transferee")) {
+        return baseVoucher;
+      }
+      if (schoolType.includes("private")) {
+        return baseVoucher * 0.8;
+      }
+      return baseVoucher;
+    };
+
+    const qualifiedStudents = students.filter(s => {
+      const isAccepted = s.status === 'Accepted' || s.status === 'Approved';
+      if (!isAccepted) return false;
+
+      if (includeG12) {
+        // G11 who enrolled this year OR G12 who enrolled last year
+        const isG11ThisYear = s.school_year === selectedYear;
+        const isG12ThisYear = s.grade_level === '12' && s.school_year === prevYear;
+        return isG11ThisYear || isG12ThisYear;
+      } else {
+        // G11 only enrolled this year
+        return s.school_year === selectedYear && s.grade_level !== '12';
+      }
+    });
+
+    let currentRevenue = 0;
+    let qualifiedICTRevenue = 0;
+    let qualifiedGASRevenue = 0;
+    let qualifiedICTCount = 0;
+    let qualifiedGASCount = 0;
+
+    qualifiedStudents.forEach(s => {
+      const amt = getStudentRevenue(s, dynamicVoucher);
+      currentRevenue += amt;
+      if (s.strand === 'ICT') {
+        qualifiedICTRevenue += amt;
+        qualifiedICTCount++;
+      } else if (s.strand === 'GAS') {
+        qualifiedGASRevenue += amt;
+        qualifiedGASCount++;
+      }
+    });
+
     const totalPotential = system.capacity * dynamicVoucher;
     const fundingProgress = totalPotential > 0 ? (currentRevenue / totalPotential) * 100 : 0;
-    return { currentRevenue, totalPotential, fundingProgress, qualifiedICT, qualifiedGAS, voucherLabel: dynamicVoucher };
-  }, [students, system.capacity, config?.voucher_value]);
+
+    return { 
+      currentRevenue, 
+      totalPotential, 
+      fundingProgress, 
+      qualifiedICT: qualifiedICTCount, 
+      qualifiedGAS: qualifiedGASCount,
+      qualifiedICTRevenue,
+      qualifiedGASRevenue,
+      voucherLabel: dynamicVoucher 
+    };
+  }, [students, system.capacity, config?.voucher_value, includeG12, revenueYear, config?.school_year]);
 
   const trendData = useMemo(() => {
-    const last30Days = Array.from({ length: 30 }, (_, i) => {
-      const date = subDays(new Date(), i);
+    const startDate = config?.enrollment_start ? new Date(config.enrollment_start) : subDays(new Date(), 29);
+    const endDate = new Date();
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+    const daysToShow = Math.min(Math.max(diffDays, 1), 60);
+
+    const dataPoints = Array.from({ length: daysToShow }, (_, i) => {
+      const date = subDays(endDate, i);
       return { date: format(date, 'MMM dd'), fullDate: date, count: 0 };
     }).reverse();
 
     students.forEach(student => {
       const studentDate = parseISO(student.created_at);
-      const match = last30Days.find(d => isSameDay(d.fullDate, studentDate));
+      const match = dataPoints.find(d => isSameDay(d.fullDate, studentDate));
       if (match) match.count += 1;
     });
 
-    return last30Days;
-  }, [students]);
+    return dataPoints;
+  }, [students, config?.enrollment_start]);
 
   const prediction = useMemo(() => {
     const totalNewStudents = trendData.reduce((acc, curr) => acc + curr.count, 0);
-    const dailyVelocity = totalNewStudents / 30;
-    const remainingSlots = system.capacity - stats.totalAccepted;
+    let elapsedDays = 30;
+    if (config?.enrollment_start) {
+      const start = new Date(config.enrollment_start);
+      const diffTime = Math.abs(new Date().getTime() - start.getTime());
+      elapsedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+    } else {
+      elapsedDays = trendData.length || 30;
+    }
+    const dailyVelocity = totalNewStudents / elapsedDays;
+    const remainingSlots = (config?.capacity || system.capacity) - stats.totalAccepted;
 
     if (dailyVelocity <= 0 || remainingSlots <= 0) {
       return { days: 0, speed: dailyVelocity.toFixed(2) };
@@ -302,7 +394,7 @@ export default function AdminDashboard() {
       days: daysRemaining,
       speed: dailyVelocity.toFixed(2)
     };
-  }, [trendData, system.capacity, stats.totalAccepted]);
+  }, [trendData, system.capacity, stats.totalAccepted, config?.enrollment_start, config?.capacity]);
 
   // Enrollment Spike Analysis
   const spikeAnalysis = useMemo(() => {
@@ -356,6 +448,10 @@ export default function AdminDashboard() {
 
     students
       .filter(s => s.status === 'Approved' || s.status === 'Accepted')
+      .filter(s => {
+        if (includeG12) return true;
+        return s.grade_level !== '12';
+      })
       .forEach(s => {
         const school = s.last_school_attended?.trim().toUpperCase();
         if (school) {
@@ -368,7 +464,7 @@ export default function AdminDashboard() {
       // Sort by count DESC, then alphabetically ASC on ties
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
       .slice(0, 10);
-  }, [students]);
+  }, [students, includeG12]);
 
   const pieData = useMemo(() => [
     { name: 'ICT Division', value: stats.ictAccepted, color: isDarkMode ? '#60a5fa' : '#2563eb' },
@@ -549,7 +645,7 @@ export default function AdminDashboard() {
 
         <SpikeAnalyticsSection spikeAnalysis={spikeAnalysis} stats={stats} system={system} isDarkMode={isDarkMode} />
 
-        <RevenueSection revenueMatrix={revenueMatrix} prediction={prediction} comparison={comparison} isDarkMode={isDarkMode} />
+
 
         <CapacitySection capacityPercentage={capacityPercentage} stats={stats} system={system} topJHSLeaders={topJHSLeaders} pieData={pieData} isDarkMode={isDarkMode} />
       </div>

@@ -299,7 +299,7 @@ export async function deleteApplicant(id: string) {
   return { success: true }
 }
 
-export async function updateApplicantStatus(id: string, newStatus: string, feedback?: string) {
+export async function updateApplicantStatus(id: string, newStatus: string, feedback?: string, extra?: { student_category?: string; shs_vms_registered?: boolean; voucher_status?: string; is_payee?: boolean }) {
   const supabase = createAdminClient()
   let sectionIdToAssign: string | null = null
   let sectionNameToAssign: string = 'Unassigned'
@@ -307,6 +307,20 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
   const dbStatus = newStatus === "Accepted" ? "Approved" : newStatus
 
   if (dbStatus === "Approved") {
+    // If a new category was provided, update it before section assignment
+    if (extra?.student_category) {
+      await supabase.from('students').update({ student_category: extra.student_category }).eq('id', id)
+    }
+    if (extra?.shs_vms_registered !== undefined) {
+      await supabase.from('students').update({ shs_vms_registered: extra.shs_vms_registered }).eq('id', id)
+    }
+    if (extra?.voucher_status) {
+      await supabase.from('students').update({ voucher_status: extra.voucher_status }).eq('id', id)
+    }
+    if (extra?.is_payee !== undefined) {
+      await supabase.from('students').update({ is_payee: extra.is_payee }).eq('id', id)
+    }
+
     const { data: student } = await supabase
       .from('students')
       .select('strand, gender, grade_level')
@@ -315,6 +329,35 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
 
     if (student) {
       const studentGradeLevel = student.grade_level || "11"
+
+      // Auto-create matching Grade 12 sections if they do not exist
+      if (studentGradeLevel === "12") {
+        const { data: g11Secs } = await supabase
+          .from('sections')
+          .select('section_name, strand, capacity')
+          .eq('grade_level', '11')
+
+        if (g11Secs && g11Secs.length > 0) {
+          for (const g11Sec of g11Secs) {
+            const g12Name = g11Sec.section_name.replace('11', '12')
+            
+            const { count } = await supabase
+              .from('sections')
+              .select('*', { count: 'exact', head: true })
+              .eq('section_name', g12Name)
+
+            if (count === 0) {
+              await supabase.from('sections').insert([{
+                section_name: g12Name,
+                strand: g11Sec.strand,
+                grade_level: '12',
+                capacity: g11Sec.capacity
+              }])
+            }
+          }
+        }
+      }
+
       // 1. Fetch sections and ALL students in this strand AND grade level in parallel
       const [sectionsRes, studentsRes] = await Promise.all([
         supabase

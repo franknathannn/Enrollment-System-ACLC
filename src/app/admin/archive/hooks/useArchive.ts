@@ -54,6 +54,7 @@ export function useArchive() {
   }, [selectedYear, strand, gradeLevel, search, page])
 
   // ── Load years directly from browser client ──────────────────────────────
+  // Only fetch years where graduated students exist
   const fetchYears = useCallback(async () => {
     setYearsLoading(true)
     try {
@@ -62,6 +63,7 @@ export function useArchive() {
         .select("school_year")
         .eq("is_archived", true)
         .or("mock.is.null,mock.eq.false")
+        .or("grade_level.eq.GRADUATED,graduate_lock.eq.true,and(grade_level.eq.12,section_id.is.null)")
         .order("school_year", { ascending: false })
 
       if (data) {
@@ -96,9 +98,9 @@ export function useArchive() {
         if (gradeLevel === "11") {
           query = query.or("grade_level.eq.11,grade_level.is.null") as any
         } else if (gradeLevel === "GRADUATED") {
-          query = query.eq("grade_level", "12").is("section_id", null) as any
+          query = query.eq("grade_level", "GRADUATED") as any
         } else {
-          query = query.eq("grade_level", gradeLevel).not("section_id", "is", null) as any
+          query = query.eq("grade_level", "12") as any
         }
       }
       if (search) {

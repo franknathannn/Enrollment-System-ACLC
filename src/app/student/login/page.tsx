@@ -80,8 +80,15 @@ function LoginContent() {
 
     setLoading(true)
 
+    // Safety net: if login takes longer than 15s, unblock the UI
+    const loginTimeout = setTimeout(() => {
+      setLoading(false)
+      toast.error("Login is taking too long. Please check your connection and try again.")
+    }, 15000)
+
     const isHuman = await verifyTurnstile(turnstileToken)
     if (!isHuman) {
+      clearTimeout(loginTimeout)
       toast.error("Security check failed. Please refresh and try again.")
       setLoading(false)
       return
@@ -90,6 +97,7 @@ function LoginContent() {
     const { email } = await resolveTrackingPrefix(prefix)
 
     if (!email) {
+      clearTimeout(loginTimeout)
       toast.error("No enrolled student found with that username.")
       setTurnstileToken(null)
       setTurnstileKey(k => k + 1)
@@ -97,9 +105,10 @@ function LoginContent() {
       return
     }
 
-    const { error } = await studentSupabase.auth.signInWithPassword({ email, password })
+    const { data: signInData, error } = await studentSupabase.auth.signInWithPassword({ email, password })
 
     if (error) {
+      clearTimeout(loginTimeout)
       toast.error("Incorrect username or password.")
       setTurnstileToken(null)
       setTurnstileKey(k => k + 1)
@@ -107,21 +116,26 @@ function LoginContent() {
       return
     }
 
-    const { data: student } = await studentSupabase.from("students").select("status, account_status").eq("id", (await studentSupabase.auth.getUser()).data.user?.id).single()
-    if (student?.account_status === "Deactivated") {
-      await studentSupabase.auth.signOut()
-      toast.error("Deactivated Account, Contact Admin.")
-      setLoading(false)
-      return
-    }
+    // Use the user from signInWithPassword directly — no extra getUser() calls
+    const userId = signInData.user?.id
 
-    const userId = (await studentSupabase.auth.getUser()).data.user?.id
     if (userId) {
-      await studentSupabase.from("students").update({
+      const { data: student } = await studentSupabase.from("students").select("status, account_status").eq("id", userId).single()
+      if (student?.account_status === "Deactivated") {
+        clearTimeout(loginTimeout)
+        await studentSupabase.auth.signOut()
+        toast.error("Deactivated Account, Contact Admin.")
+        setLoading(false)
+        return
+      }
+
+      // Fire-and-forget: update last_login without blocking navigation
+      studentSupabase.from("students").update({
         last_login_at: new Date().toISOString()
-      }).eq("id", userId)
+      }).eq("id", userId).then(() => {})
     }
 
+    clearTimeout(loginTimeout)
     router.replace("/student/dashboard")
   }
 
@@ -240,7 +254,7 @@ function LoginContent() {
 
                 <div className="flex justify-center my-4">
                   <div className={cn("rounded-2xl border shadow-sm px-3 py-2", isDarkMode ? "bg-slate-900/50 border-white/10" : "bg-white border-slate-100")}>
-                    <TurnstileWidget key={`${turnstileKey}-${isDarkMode ? 'dark' : 'light'}`} onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme={isDarkMode ? "dark" : "light"} />
+                    <TurnstileWidget key={`${turnstileKey}-${isDarkMode ? 'dark' : 'light'}`} onVerify={setTurnstileToken} onExpire={() => { setTurnstileToken(null); setTurnstileKey(k => k + 1) }} theme={isDarkMode ? "dark" : "light"} />
                   </div>
                 </div>
 

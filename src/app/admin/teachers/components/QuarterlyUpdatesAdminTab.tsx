@@ -104,15 +104,15 @@ export function QuarterlyUpdatesAdminTab({
 
   const handleCreateReq = async () => {
     if (!newReq.title || !newReq.deadline) return toast.error("Title and Deadline are required")
-    if (requirements.length >= MAX_REQS) return toast.error(`Maximum ${MAX_REQS} requirements per semester.`)
+    if (requirements.length >= MAX_REQS) return toast.error(`Maximum of ${MAX_REQS} deliverables permitted per term.`)
     const deadlineDate = new Date(newReq.deadline)
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(0, 0, 0, 0)
-    if (deadlineDate < tomorrow) return toast.error("Deadline must be at least tomorrow.")
+    if (deadlineDate < tomorrow) return toast.error("Deadline must be scheduled at a future date.")
     setCreating(true)
     const { error } = await supabase.from("quarterly_requirements").insert([{ ...newReq, deadline: deadlineDate.toISOString(), school_year: schoolYear, semester }])
     if (error) { toast.error(error.message) }
     else {
-      toast.success("Requirement created!")
+      toast.success("Academic deliverable published!")
       setView("list")
       setNewReq({ title: "", description: "", deadline: "", is_required: true })
       fetchData()
@@ -124,7 +124,7 @@ export function QuarterlyUpdatesAdminTab({
     if (!editingReq || !editingReq.title || !editingReq.deadline) return toast.error("Title and Deadline are required")
     const deadlineDate = new Date(editingReq.deadline)
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(0, 0, 0, 0)
-    if (deadlineDate < tomorrow) return toast.error("Deadline must be at least tomorrow.")
+    if (deadlineDate < tomorrow) return toast.error("Deadline must be scheduled at a future date.")
     setCreating(true)
     const { error } = await supabase.from("quarterly_requirements").update({
       title: editingReq.title,
@@ -134,7 +134,7 @@ export function QuarterlyUpdatesAdminTab({
     }).eq("id", editingReq.id)
     if (error) { toast.error(error.message) }
     else {
-      toast.success("Requirement updated!")
+      toast.success("Academic deliverable updated!")
       setEditingReq(null)
       setView("list")
       fetchData()
@@ -145,13 +145,12 @@ export function QuarterlyUpdatesAdminTab({
   const handleDeleteReq = async () => {
     if (!deleteReqId) return
     setDeleting(true)
-    const toastId = toast.loading("Deleting requirement…")
-    // Delete all submissions for this requirement first
+    const toastId = toast.loading("Archiving deliverable configuration…")
     await supabase.from("quarterly_submissions").delete().eq("requirement_id", deleteReqId)
     const { error } = await supabase.from("quarterly_requirements").delete().eq("id", deleteReqId)
     if (error) { toast.error("Failed: " + error.message, { id: toastId }) }
     else {
-      toast.success("Requirement deleted.", { id: toastId })
+      toast.success("Deliverable archived successfully.", { id: toastId })
       setDeleteReqId(null)
       fetchData()
     }
@@ -160,43 +159,43 @@ export function QuarterlyUpdatesAdminTab({
 
   const handleResetSubmission = async (submId: string, teacherId: string, reqTitle: string) => {
     setProcessing(submId)
-    const toastId = toast.loading("Resetting submission…")
+    const toastId = toast.loading("Reopening submission portal…")
     const { error } = await supabase.from("quarterly_submissions").delete().eq("id", submId)
     if (error) { toast.error("Failed: " + error.message, { id: toastId }) }
     else {
       const { data: ud } = await supabase.auth.getUser()
       await supabase.from("teacher_announcements").insert([{
-        title: "Quarterly Update Reset",
-        body: `Your submission for "${reqTitle}" has been reset by an admin. Please resubmit.`,
+        title: "Academic Submission Reopened",
+        body: `Your submission for "${reqTitle}" has been set back to active status by the Academic Registrar. Please submit the revised documentation.`,
         target: teacherId,
         is_pinned: false,
         author_id: ud.user?.id,
       }])
-      toast.success("Submission reset.", { id: toastId })
+      toast.success("Submission portal reopened.", { id: toastId })
       await fetchAllSubmissions(requirements.map(r => r.id))
     }
     setProcessing(null)
   }
 
   const handleUpdateStatus = async (submId: string, status: string, teacherId: string, reqTitle: string) => {
-    if (status === "Invalidated" && !feedbackMsg.trim()) return toast.error("Please provide feedback.")
+    if (status === "Invalidated" && !feedbackMsg.trim()) return toast.error("Please provide revision feedback.")
     setProcessing(submId)
-    const toastId = toast.loading(`Marking as ${status}…`)
+    const toastId = toast.loading(`Processing status update (${status === "Accepted" ? "Approved" : "Returned"})…`)
     const { error } = await supabase.from("quarterly_submissions").update({
       status,
-      admin_feedback: status === "Invalidated" ? feedbackMsg : "Looks great, thank you!",
+      admin_feedback: status === "Invalidated" ? feedbackMsg : "Validated & Approved by Academic Registrar",
       updated_at: new Date().toISOString(),
     }).eq("id", submId)
 
     if (error) { toast.error("Failed: " + error.message, { id: toastId }) }
     else {
-      const title = status === "Accepted" ? "Quarterly Update Accepted" : "Quarterly Update Needs Revision"
+      const title = status === "Accepted" ? "Quarterly Submission Approved" : "Submission Returned for Revision"
       const body  = status === "Accepted"
-        ? `Your submission for "${reqTitle}" has been accepted.`
-        : `Your submission for "${reqTitle}" requires revision. Admin says: "${feedbackMsg}"`
+        ? `Your submission for "${reqTitle}" has been formally validated and approved by the Registrar.`
+        : `Your submission for "${reqTitle}" requires further revision. Notes from Registrar: "${feedbackMsg}"`
       const { data: ud } = await supabase.auth.getUser()
       await supabase.from("teacher_announcements").insert([{ title, body, target: teacherId, is_pinned: false, author_id: ud.user?.id }])
-      toast.success(`Submission ${status}`, { id: toastId })
+      toast.success(status === "Accepted" ? "Submission Approved" : "Returned for Revision", { id: toastId })
       await fetchAllSubmissions(requirements.map(r => r.id))
       setActiveFeedbackId(null)
       setFeedbackMsg("")
@@ -227,35 +226,34 @@ export function QuarterlyUpdatesAdminTab({
           <div className="w-5 h-5 rounded-full bg-blue-500/20 animate-pulse" />
         </div>
       </div>
-      <p className={`text-[9px] font-black uppercase tracking-[0.3em] animate-pulse ${S}`}>Loading…</p>
+      <p className={`text-[9px] font-black uppercase tracking-[0.3em] animate-pulse ${S}`}>Loading Console…</p>
     </div>
   )
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
 
-      {/* ── Hero Header ────────────────────────────────────────────────────── */}
+      {/* ── Hero Header ── */}
       <div className="relative rounded-[32px] overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 p-6 sm:p-8 shadow-lg shadow-blue-500/20">
         <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col sm:flex-row gap-5 sm:items-center justify-between">
           <div className="flex-1 min-w-0">
             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-200 mb-1">
-              {schoolYear} · Admin Panel
+              {schoolYear} · Registrar Administration
             </p>
             <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white leading-none">
-              Quarterly Updates
+              Academic Deliverables Console
             </h2>
             <p className="text-[10px] font-bold uppercase tracking-widest text-blue-200/80 mt-1">
-              Track &amp; manage teacher submissions
+              Monitor and validate academic staff submissions
             </p>
 
-            {/* Global progress bar — mobile only */}
             {totalExpected > 0 && (
               <div className="mt-4 space-y-1.5 sm:hidden">
                 <div className="flex items-center justify-between">
                   <span className="text-[9px] font-black uppercase tracking-widest text-white/70">
-                    Overall Progress
+                    Compliance Index
                   </span>
                   <span className="text-[9px] font-black text-white">
                     {totalSubmitted}/{totalExpected}
@@ -271,7 +269,6 @@ export function QuarterlyUpdatesAdminTab({
             )}
           </div>
 
-          {/* Controls */}
           <div className="flex flex-col sm:items-end gap-3 shrink-0 w-full sm:w-auto">
             <select
               value={semester}
@@ -290,7 +287,7 @@ export function QuarterlyUpdatesAdminTab({
                 className="h-11 px-5 rounded-2xl bg-white text-blue-700 font-black uppercase tracking-widest text-[10px] hover:bg-blue-50 active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-black/10 w-full sm:w-auto"
               >
                 <Plus size={13} />
-                New Requirement
+                Publish Deliverable
                 <span className="ml-1 opacity-60">({requirements.length}/{MAX_REQS})</span>
               </button>
             ) : (
@@ -306,7 +303,7 @@ export function QuarterlyUpdatesAdminTab({
         </div>
       </div>
 
-      {/* ── Create / Edit Form ──────────────────────────────────────────────── */}
+      {/* ── Create / Edit Form ── */}
       {(view === "create" || view === "edit") && (
         <div className={`rounded-[28px] border p-6 sm:p-7 animate-in slide-in-from-top-4 duration-300 ${BG} ${BD}`}>
           <div className="flex items-center gap-3 mb-6">
@@ -314,18 +311,18 @@ export function QuarterlyUpdatesAdminTab({
               {view === "edit" ? <Edit2 size={16} className="text-amber-500" /> : <Sparkles size={16} className="text-blue-500" />}
             </div>
             <div>
-              <p className={`text-xs font-black uppercase tracking-[0.2em] ${H}`}>{view === "edit" ? "Edit Requirement" : "Assign New Requirement"}</p>
-              <p className={`text-[9px] font-bold mt-0.5 ${S}`}>{view === "edit" ? "Changes apply immediately to all teachers" : "Will be visible to all teachers immediately"}</p>
+              <p className={`text-xs font-black uppercase tracking-[0.2em] ${H}`}>{view === "edit" ? "Update Deliverable Configuration" : "Publish New Academic Deliverable"}</p>
+              <p className={`text-[9px] font-bold mt-0.5 ${S}`}>{view === "edit" ? "Updates will be broadcast to all relevant faculty accounts" : "Newly published deliverables will sync to all active faculty portals"}</p>
             </div>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5 sm:col-span-2">
-              <label className={`text-[9px] font-black uppercase tracking-[0.2em] ${S}`}>Requirement Title</label>
+              <label className={`text-[9px] font-black uppercase tracking-[0.2em] ${S}`}>Deliverable Title</label>
               <input
                 value={view === "edit" ? editingReq?.title ?? "" : newReq.title}
                 onChange={e => view === "edit" ? setEditingReq((p: any) => ({ ...p, title: e.target.value })) : setNewReq({ ...newReq, title: e.target.value })}
-                placeholder="e.g. Q1 Grading Sheet"
+                placeholder="e.g. SF9 Report Card Pack"
                 className={`w-full h-12 px-4 rounded-[16px] text-sm font-bold border-2 outline-none transition-colors focus:border-blue-500 ${
                   dm ? "bg-slate-800 border-slate-700 text-white placeholder-slate-600" : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
                 }`}
@@ -333,7 +330,7 @@ export function QuarterlyUpdatesAdminTab({
             </div>
 
             <div className="space-y-1.5">
-              <label className={`text-[9px] font-black uppercase tracking-[0.2em] ${S}`}>Deadline</label>
+              <label className={`text-[9px] font-black uppercase tracking-[0.2em] ${S}`}>Deadline Schedule</label>
               <input
                 type="datetime-local"
                 value={view === "edit" ? editingReq?.deadline ?? "" : newReq.deadline}
@@ -357,7 +354,7 @@ export function QuarterlyUpdatesAdminTab({
                 >
                   <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${(view === "edit" ? editingReq?.is_required : newReq.is_required) ? "translate-x-5" : "translate-x-0"}`} />
                 </div>
-                <span className={`text-sm font-bold ${H}`}>Mandatory</span>
+                <span className={`text-sm font-bold ${H}`}>Compulsory Submission</span>
               </label>
             </div>
           </div>
@@ -372,25 +369,25 @@ export function QuarterlyUpdatesAdminTab({
                 : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 shadow-blue-500/25"
             }`}
           >
-            {creating ? <Loader2 size={16} className="animate-spin" /> : view === "edit" ? <><Edit2 size={14} /> Save Changes</> : <><Plus size={14} /> Create Assignment</>}
+            {creating ? <Loader2 size={16} className="animate-spin" /> : view === "edit" ? <><Edit2 size={14} /> Update Configuration</> : <><Plus size={14} /> Publish Deliverable</>}
           </button>
         </div>
       )}
 
-      {/* ── Empty State ──────────────────────────────────────────────────────── */}
+      {/* ── Empty State ── */}
       {view === "list" && requirements.length === 0 && (
         <div className={`py-16 flex flex-col items-center gap-4 rounded-[28px] border-2 border-dashed ${dm ? "border-slate-700 bg-slate-800/20" : "border-slate-200 bg-slate-50/50"}`}>
-          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center ${dm ? "bg-slate-800" : "bg-slate-100"}`}>
+          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 ${dm ? "bg-slate-800" : "bg-slate-100"}`}>
             <FileSpreadsheet size={28} className={`opacity-40 ${S}`} />
           </div>
           <div className="text-center">
-            <p className={`text-sm font-black uppercase tracking-widest ${H}`}>No Requirements Yet</p>
-            <p className={`text-xs mt-1 ${S}`}>Create a requirement above to get started with {semester}.</p>
+            <p className={`text-sm font-black uppercase tracking-widest ${H}`}>Registry Directory Empty</p>
+            <p className={`text-xs mt-1 ${S}`}>No academic deliverables have been published for this term.</p>
           </div>
         </div>
       )}
 
-      {/* ── Requirement Tabs + Detail ─────────────────────────────────────────── */}
+      {/* ── Tabbed View ── */}
       {view === "list" && requirements.length > 0 && (() => {
         const req = requirements.find(r => r.id === selectedReqId)
         const reqSubmissions = req ? (allSubmissions[req.id] || []) : []
@@ -417,7 +414,6 @@ export function QuarterlyUpdatesAdminTab({
         return (
         <div className={`rounded-2xl border ${BD} ${dm ? "bg-slate-900/40" : "bg-slate-50/60"} p-4 sm:p-5 space-y-4`}>
 
-          {/* ── Tab Bar ── */}
           <div className="flex flex-wrap gap-2">
             {requirements.map((r, idx) => {
               const rSubms = allSubmissions[r.id] || []
@@ -448,22 +444,21 @@ export function QuarterlyUpdatesAdminTab({
             })}
           </div>
 
-          {/* ── Detail Panel ── */}
           {req && (
             <div className={`rounded-2xl border border-l-[3px] overflow-hidden transition-all ${BD} ${activeColor.accent} ${dm ? "bg-slate-800/60 shadow-lg shadow-black/20" : "bg-white shadow-md shadow-slate-200/80"}`}>
 
-              {/* Req info + progress */}
               <div className="px-5 sm:px-6 py-6 sm:py-7">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-3">
                   <div className="flex-1 w-full min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className={`text-base font-black uppercase tracking-tight ${H}`}>{req.title}</p>
-                      {!req.is_required && <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 ${dm ? "bg-slate-700 text-slate-400" : "bg-slate-100 text-slate-500"}`}>Optional</span>}
-                      {allDone && <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 shrink-0">Complete</span>}
+                      {!req.is_required && <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 ${dm ? "bg-slate-700 text-slate-400" : "bg-slate-100 text-slate-500"}`}>Optional Submission</span>}
+                      {req.is_required && <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 shrink-0`}>Compulsory</span>}
+                      {allDone && <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 shrink-0">100% Compliance</span>}
                     </div>
                     <div className="flex items-center flex-wrap gap-x-1.5 gap-y-1 mt-1.5 text-[10px] font-bold text-rose-400">
                       {isPastDl ? <AlertTriangle size={10} className="shrink-0" /> : <Clock size={10} className="shrink-0" />}
-                      {isPastDl ? "Deadline passed · " : "Due · "}
+                      {isPastDl ? "Deadline Expired · " : "Submission Period Active · "}
                       {dl.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       {" · "}
                       {dl.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
@@ -477,15 +472,14 @@ export function QuarterlyUpdatesAdminTab({
                     </button>
                     <button type="button" onClick={() => setDeleteReqId(req.id)}
                       className={`h-8 px-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all border ${dm ? "border-slate-700 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10" : "border-slate-200 text-slate-400 hover:text-rose-500 hover:bg-rose-50"}`}>
-                      <Trash2 size={12} /> Delete
+                      <Trash2 size={12} /> Archive
                     </button>
                   </div>
                 </div>
 
-                {/* Progress bar */}
                 <div className="mt-4 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${S}`}>{submittedTeachers.length} of {teachers.length} submitted</span>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${S}`}>Compliance: {submittedTeachers.length} of {teachers.length} validated</span>
                     <span className={`text-[10px] font-black ${allDone ? "text-emerald-500" : H}`}>{pct}%</span>
                   </div>
                   <div className={`h-2 rounded-full overflow-hidden ${dm ? "bg-slate-700" : "bg-slate-100"}`}>
@@ -494,13 +488,13 @@ export function QuarterlyUpdatesAdminTab({
                 </div>
               </div>
 
-              {/* Submitted section */}
+              {/* Submitted Faculty submissions */}
               <div className={`border-t ${dm ? "border-slate-700/50" : "border-slate-100"}`}>
                 <button type="button" onClick={() => setSubmCollapsed(p => !p)}
                   className={`w-full px-5 sm:px-6 py-3 flex items-center justify-between gap-2 transition-colors ${dm ? "hover:bg-white/[0.03]" : "hover:bg-slate-50/60"}`}>
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-md bg-emerald-500/15 flex items-center justify-center shrink-0"><CheckCircle size={11} className="text-emerald-500" /></div>
-                    <span className={`text-[9px] font-black uppercase tracking-widest ${H}`}>Submitted</span>
+                    <span className={`text-[9px] font-black uppercase tracking-widest ${H}`}>Validated &amp; Active Submissions</span>
                     <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${submittedTeachers.length > 0 ? "bg-emerald-500/10 text-emerald-500" : dm ? "bg-slate-700 text-slate-500" : "bg-slate-100 text-slate-500"}`}>{submittedTeachers.length}</span>
                   </div>
                   {submCollapsed ? <ChevronDown size={13} className={S} /> : <ChevronUp size={13} className={S} />}
@@ -511,19 +505,21 @@ export function QuarterlyUpdatesAdminTab({
                     {submittedTeachers.length === 0 ? (
                       <div className={`px-5 sm:px-6 py-4 sm:py-5 flex items-center gap-2 ${S}`}>
                         <FileSpreadsheet size={13} className="opacity-50" />
-                        <p className="text-[9px] sm:text-[10px] font-bold">No submissions yet.</p>
+                        <p className="text-[9px] sm:text-[10px] font-bold">No documentation submitted yet.</p>
                       </div>
                     ) : submittedTeachers.map(teacher => {
                       const subm = reqSubmissions.find(s => s.teacher_id === teacher.id && s.status !== "Invalidated")
                       if (!subm) return null
                       const isLate = new Date(subm.created_at) > dl
+                      const formattedStatus = subm.status === 'Accepted' ? 'Validated & Approved'
+                                            : subm.status === 'Invalidated' ? 'Returned for Revision'
+                                            : 'Awaiting Verification'
                       return (
                         <div key={teacher.id} className={`px-4 sm:px-6 py-3.5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${dm ? "hover:bg-white/[0.02]" : "hover:bg-slate-50/60"}`}>
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="relative shrink-0">
                               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700">
                                 {teacher.avatar_url
-                                  // eslint-disable-next-line @next/next/no-img-element
                                   ? <img src={teacher.avatar_url} className="w-full h-full object-cover" alt="" />
                                   : <div className="w-full h-full flex items-center justify-center"><Users size={14} className={S} /></div>
                                 }
@@ -533,8 +529,8 @@ export function QuarterlyUpdatesAdminTab({
                             <div className="min-w-0">
                               <p className={`text-xs sm:text-sm font-bold truncate ${H}`}>{teacher.full_name}</p>
                               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                <span className={`text-[8px] sm:text-[9px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded-md ${subm.status === "Accepted" ? "bg-emerald-500/10 text-emerald-500" : "bg-blue-500/10 text-blue-500"}`}>{subm.status}</span>
-                                <span className={`text-[8px] sm:text-[9px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded-md ${isLate ? "bg-rose-500/10 text-rose-400" : "bg-emerald-500/10 text-emerald-500"}`}>{isLate ? "Late" : "On-Time"}</span>
+                                <span className={`text-[8px] sm:text-[9px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded-md ${subm.status === "Accepted" ? "bg-emerald-500/10 text-emerald-500" : "bg-blue-500/10 text-blue-500"}`}>{formattedStatus}</span>
+                                <span className={`text-[8px] sm:text-[9px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded-md ${isLate ? "bg-rose-500/10 text-rose-400" : "bg-emerald-500/10 text-emerald-500"}`}>{isLate ? "Late Submission" : "On-Time Submission"}</span>
                               </div>
                             </div>
                           </div>
@@ -542,24 +538,24 @@ export function QuarterlyUpdatesAdminTab({
                             {subm.submission_url && (
                               <a href={subm.submission_url} target="_blank" rel="noopener noreferrer"
                                 className={`h-8 sm:h-9 px-3 sm:px-4 text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 rounded-xl border transition-all hover:scale-[1.03] active:scale-[0.97] ${dm ? "border-slate-700 text-blue-400 hover:bg-slate-800" : "border-slate-200 text-blue-600 hover:bg-blue-50"}`}>
-                                <FileSpreadsheet size={11} /> View
+                                <FileSpreadsheet size={11} /> Open File
                               </a>
                             )}
                             {subm.status === "Pending" && activeFeedbackId !== subm.id && (
                               <div className="flex gap-1.5">
                                 <button type="button" onClick={() => setActiveFeedbackId(subm.id)}
-                                  className="h-8 sm:h-9 px-3 sm:px-4 font-black text-[9px] sm:text-[10px] uppercase tracking-widest rounded-xl text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 transition-all hover:scale-[1.03] active:scale-[0.97]">
-                                  Invalidate
+                                  className="h-8 sm:h-9 px-3 sm:px-4 font-black text-[9px] sm:text-[10px] uppercase tracking-widest rounded-xl text-rose-505 bg-rose-500/10 hover:bg-rose-500/20 transition-all hover:scale-[1.03] active:scale-[0.97]">
+                                  Request Revision
                                 </button>
                                 <button type="button" onClick={() => handleUpdateStatus(subm.id, "Accepted", subm.teacher_id, req.title)} disabled={processing === subm.id}
                                   className="h-8 sm:h-9 px-3 sm:px-4 font-black text-[9px] sm:text-[10px] uppercase tracking-widest rounded-xl text-white bg-emerald-500 hover:bg-emerald-600 shadow-sm shadow-emerald-500/25 transition-all hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50">
-                                  {processing === subm.id ? <Loader2 size={11} className="animate-spin" /> : "Accept"}
+                                  {processing === subm.id ? <Loader2 size={11} className="animate-spin" /> : "Approve"}
                                 </button>
                               </div>
                             )}
                             {subm.status === "Pending" && activeFeedbackId === subm.id && (
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <input value={feedbackMsg} onChange={e => setFeedbackMsg(e.target.value)} placeholder="Reason for invalidation…"
+                                <input value={feedbackMsg} onChange={e => setFeedbackMsg(e.target.value)} placeholder="Provide revision notes…"
                                   className={`h-8 sm:h-9 px-3 text-xs sm:text-sm rounded-xl outline-none border-2 transition-colors focus:border-rose-500 min-w-0 w-40 sm:w-52 ${dm ? "bg-slate-900 border-slate-700 text-white placeholder-slate-600" : "bg-white border-slate-200 text-slate-900 placeholder-slate-400"}`} />
                                 <button type="button" onClick={() => setActiveFeedbackId(null)}
                                   className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-colors ${dm ? "hover:bg-slate-700 text-slate-400" : "hover:bg-slate-100 text-slate-500"}`}>
@@ -579,7 +575,7 @@ export function QuarterlyUpdatesAdminTab({
                             )}
                             <button type="button" onClick={() => handleResetSubmission(subm.id, subm.teacher_id, req.title)} disabled={processing === subm.id}
                               className={`h-8 sm:h-9 px-3 sm:px-4 text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 rounded-xl border transition-all hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50 ${dm ? "border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white" : "border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`}>
-                              {processing === subm.id ? <Loader2 size={11} className="animate-spin" /> : <><RotateCcw size={11} /> Reset</>}
+                              {processing === subm.id ? <Loader2 size={11} className="animate-spin" /> : <><RotateCcw size={11} /> Reopen</>}
                             </button>
                           </div>
                         </div>
@@ -589,13 +585,13 @@ export function QuarterlyUpdatesAdminTab({
                 )}
               </div>
 
-              {/* Not Yet Submitted section */}
+              {/* Awaiting submission faculty list */}
               <div className={`border-t ${dm ? "border-slate-700/50" : "border-slate-100"}`}>
                 <button type="button" onClick={() => setMissCollapsed(p => !p)}
                   className={`w-full px-5 sm:px-6 py-3 flex items-center justify-between gap-2 transition-colors ${dm ? "hover:bg-white/[0.03]" : "hover:bg-slate-50/60"}`}>
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-md bg-amber-500/15 flex items-center justify-center shrink-0"><AlertTriangle size={11} className="text-amber-500" /></div>
-                    <span className={`text-[9px] font-black uppercase tracking-widest ${H}`}>Not Yet Submitted</span>
+                    <span className={`text-[9px] font-black uppercase tracking-widest ${H}`}>Pending Faculty Submissions</span>
                     <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${missingTeachers.length > 0 ? "bg-amber-500/10 text-amber-500" : dm ? "bg-slate-700 text-slate-500" : "bg-slate-100 text-slate-500"}`}>{missingTeachers.length}</span>
                   </div>
                   {missCollapsed ? <ChevronDown size={13} className={S} /> : <ChevronUp size={13} className={S} />}
@@ -606,13 +602,12 @@ export function QuarterlyUpdatesAdminTab({
                     {missingTeachers.length === 0 ? (
                       <div className="px-5 sm:px-6 py-4 sm:py-5 flex items-center gap-2">
                         <CheckCircle size={13} className="text-emerald-500 shrink-0" />
-                        <p className="text-[9px] sm:text-[10px] font-black text-emerald-500">All teachers have submitted!</p>
+                        <p className="text-[9px] sm:text-[10px] font-black text-emerald-500">Compliance target achieved: All active faculty submitted.</p>
                       </div>
                     ) : missingTeachers.map(teacher => (
                       <div key={teacher.id} className={`px-4 sm:px-6 py-3.5 sm:py-4 flex items-center gap-3 transition-colors ${dm ? "hover:bg-white/[0.02]" : "hover:bg-slate-50/60"}`}>
                         <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 shrink-0">
                           {teacher.avatar_url
-                            // eslint-disable-next-line @next/next/no-img-element
                             ? <img src={teacher.avatar_url} className="w-full h-full object-cover" alt="" />
                             : <div className="w-full h-full flex items-center justify-center"><Users size={14} className={S} /></div>
                           }
@@ -620,7 +615,7 @@ export function QuarterlyUpdatesAdminTab({
                         <div className="min-w-0">
                           <p className={`text-xs sm:text-sm font-bold truncate ${H}`}>{teacher.full_name}</p>
                           <span className={`text-[8px] sm:text-[9px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded-md mt-0.5 inline-block ${isPastDl && req.is_required ? "bg-rose-500/10 text-rose-400" : dm ? "bg-slate-700/80 text-slate-500" : "bg-slate-100 text-slate-500"}`}>
-                            {isPastDl && req.is_required ? "Overdue" : "Waiting for Submission"}
+                            {isPastDl && req.is_required ? "Past Due Deliverable" : "Awaiting Upload"}
                           </span>
                         </div>
                       </div>
@@ -634,41 +629,6 @@ export function QuarterlyUpdatesAdminTab({
         </div>
         )
       })()}
-
-
-      {/* ── Delete Confirmation Modal ─────────────────────────────────────────── */}
-      {deleteReqId && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className={`w-full max-w-sm rounded-[28px] p-6 shadow-2xl border ${dm ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-rose-500/10 flex items-center justify-center shrink-0">
-                <Trash2 size={18} className="text-rose-500" />
-              </div>
-              <div>
-                <p className={`text-sm font-black uppercase tracking-tight ${H}`}>Delete Requirement?</p>
-                <p className={`text-[9px] font-bold mt-0.5 ${S}`}>This also deletes all teacher submissions for it.</p>
-              </div>
-            </div>
-            <div className="flex gap-2 mt-6">
-              <button
-                type="button"
-                onClick={() => setDeleteReqId(null)}
-                className={`flex-1 h-11 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-colors ${dm ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-100 hover:bg-slate-200 text-slate-600"}`}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteReq}
-                disabled={deleting}
-                className="flex-1 h-11 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-rose-500 hover:bg-rose-600 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20"
-              >
-                {deleting ? <Loader2 size={14} className="animate-spin" /> : <><Trash2 size={13} /> Delete</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   )

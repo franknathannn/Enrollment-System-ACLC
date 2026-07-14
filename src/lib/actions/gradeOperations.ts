@@ -291,6 +291,32 @@ export async function increaseGradeLevel(): Promise<{
 
     if (g11Err) throw g11Err
 
+    // Auto-create matching Grade 12 sections if they do not exist
+    const { data: g11Secs } = await supabase
+      .from('sections')
+      .select('section_name, strand, capacity')
+      .eq('grade_level', '11')
+
+    if (g11Secs && g11Secs.length > 0) {
+      for (const g11Sec of g11Secs) {
+        const g12Name = g11Sec.section_name.replace('11', '12')
+        
+        const { count } = await supabase
+          .from('sections')
+          .select('*', { count: 'exact', head: true })
+          .eq('section_name', g12Name)
+
+        if (count === 0) {
+          await supabase.from('sections').insert([{
+            section_name: g12Name,
+            strand: g11Sec.strand,
+            grade_level: '12',
+            capacity: g11Sec.capacity
+          }])
+        }
+      }
+    }
+
     const toPromote: typeof g11Students = []
     const toOverAge: string[] = []
 
@@ -483,6 +509,32 @@ export async function advanceSchoolYear(): Promise<{
       .or("mock.is.null,mock.eq.false")
 
     if (g11Err) throw g11Err
+
+    // Auto-create matching Grade 12 sections if they do not exist
+    const { data: g11Secs } = await supabase
+      .from('sections')
+      .select('section_name, strand, capacity')
+      .eq('grade_level', '11')
+
+    if (g11Secs && g11Secs.length > 0) {
+      for (const g11Sec of g11Secs) {
+        const g12Name = g11Sec.section_name.replace('11', '12')
+        
+        const { count } = await supabase
+          .from('sections')
+          .select('*', { count: 'exact', head: true })
+          .eq('section_name', g12Name)
+
+        if (count === 0) {
+          await supabase.from('sections').insert([{
+            section_name: g12Name,
+            strand: g11Sec.strand,
+            grade_level: '12',
+            capacity: g11Sec.capacity
+          }])
+        }
+      }
+    }
 
     const toPromote: typeof g11Students = []
     const toOverAge: string[] = []

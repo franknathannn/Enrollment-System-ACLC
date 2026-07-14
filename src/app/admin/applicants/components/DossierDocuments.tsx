@@ -178,6 +178,15 @@ export const DossierDocuments = memo(function DossierDocuments({
             />
           </>
         )}
+        
+        {formData.has_voucher_cert && (
+          <CredentialCard
+            label="QVR / ESC Cert"
+            url={formData.voucher_cert_url}
+            onOpen={makeOpen("voucher_cert_url", `${student.last_name}_VOUCHER_CERT`.toUpperCase())}
+            isDarkMode={isDarkMode} isEditing={isEditing}
+          />
+        )}
       </div>
       <p className={`text-[8px] font-bold uppercase tracking-[0.3em] text-center mt-4 ${isDarkMode ? "text-slate-700" : "text-slate-300"}`}>
         Educational Verification System — Confidential

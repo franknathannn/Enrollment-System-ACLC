@@ -6,6 +6,8 @@ export const SectionCard = memo(function SectionCard({ section, isSelected, isDa
   const activeStudents = section.students?.filter((s: any) => s.status === 'Accepted' || s.status === 'Approved') || []
   const mCount = activeStudents.filter((s: any) => s.gender === 'Male').length
   const fCount = activeStudents.filter((s: any) => s.gender === 'Female').length
+  const jhsCount = activeStudents.filter((s: any) => s.student_category !== 'ALS Passer').length
+  const alsCount = activeStudents.filter((s: any) => s.student_category === 'ALS Passer').length
   const capacity = section.capacity || 40
   
   const fillPercent = (activeStudents.length / capacity) * 100
@@ -118,38 +120,38 @@ export const SectionCard = memo(function SectionCard({ section, isSelected, isDa
         </div>
       </div>
 
-      {/* ── GENDER TILES — SaaS mobile: flat panels · sm+: tinted glass ── */}
-      <div className={`grid grid-cols-2 gap-px border-t max-sm:border-slate-100 dark:max-sm:border-slate-800/80 ${theme.border} mx-0`}>
+      {/* ── METRICS GRID ── */}
+      <div className={`grid grid-cols-4 gap-px border-t max-sm:border-slate-100 dark:max-sm:border-slate-800/80 ${theme.border} mx-0`}>
         {/* Males */}
-        <div className={`flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 max-sm:bg-slate-50/90 dark:max-sm:bg-slate-900/50 ${isDarkMode ? 'sm:bg-blue-950/20' : 'sm:bg-blue-50/50'}`}>
-          <div>
-            <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-0.5 flex items-center gap-1">
-              <Users size={9} /> M
-            </p>
-            <span className={`text-2xl sm:text-3xl font-black tabular-nums text-blue-600 sm:text-blue-400 leading-none max-sm:drop-shadow-none dark:text-blue-400 ${isDarkMode ? 'sm:drop-shadow-[0_0_10px_rgba(96,165,250,0.5)]' : ''}`}>
-              {mCount}
-            </span>
-          </div>
-          {/* Mini M bar */}
-          <div className={`w-1.5 h-10 rounded-full overflow-hidden ${isDarkMode ? 'bg-blue-950/60' : 'bg-blue-100'}`}>
-            <div className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-full transition-all duration-700" style={{ height: `${mP}%`, marginTop: `${100 - mP}%` }} />
-          </div>
+        <div className={`flex flex-col items-center justify-center py-2.5 sm:py-3 max-sm:bg-slate-50/90 dark:max-sm:bg-slate-900/50 ${isDarkMode ? 'sm:bg-blue-950/20' : 'sm:bg-blue-50/50'}`}>
+          <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-0.5">M</p>
+          <span className={`text-xl sm:text-2xl font-black tabular-nums text-blue-600 sm:text-blue-400 leading-none dark:text-blue-400`}>
+            {mCount}
+          </span>
         </div>
 
         {/* Females */}
-        <div className={`flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-l max-sm:border-slate-100 dark:max-sm:border-slate-800/80 ${theme.border} max-sm:bg-slate-50/90 dark:max-sm:bg-slate-900/50 ${isDarkMode ? 'sm:bg-pink-950/20' : 'sm:bg-pink-50/50'}`}>
-          <div>
-            <p className="text-[8px] font-black text-pink-500 uppercase tracking-widest mb-0.5 flex items-center gap-1">
-              <Users size={9} /> F
-            </p>
-            <span className={`text-2xl sm:text-3xl font-black tabular-nums text-pink-600 sm:text-pink-400 leading-none max-sm:drop-shadow-none dark:text-pink-400 ${isDarkMode ? 'sm:drop-shadow-[0_0_10px_rgba(244,114,182,0.5)]' : ''}`}>
-              {fCount}
-            </span>
-          </div>
-          {/* Mini F bar */}
-          <div className={`w-1.5 h-10 rounded-full overflow-hidden ${isDarkMode ? 'bg-pink-950/60' : 'bg-pink-100'}`}>
-            <div className="w-full bg-gradient-to-t from-pink-600 to-pink-400 rounded-full transition-all duration-700" style={{ height: `${fP}%`, marginTop: `${100 - fP}%` }} />
-          </div>
+        <div className={`flex flex-col items-center justify-center py-2.5 sm:py-3 border-l max-sm:border-slate-100 dark:max-sm:border-slate-800/80 ${theme.border} max-sm:bg-slate-50/90 dark:max-sm:bg-slate-900/50 ${isDarkMode ? 'sm:bg-pink-950/20' : 'sm:bg-pink-50/50'}`}>
+          <p className="text-[8px] font-black text-pink-500 uppercase tracking-widest mb-0.5">F</p>
+          <span className={`text-xl sm:text-2xl font-black tabular-nums text-pink-600 sm:text-pink-400 leading-none dark:text-pink-400`}>
+            {fCount}
+          </span>
+        </div>
+
+        {/* JHS */}
+        <div className={`flex flex-col items-center justify-center py-2.5 sm:py-3 border-l max-sm:border-slate-100 dark:max-sm:border-slate-800/80 ${theme.border} max-sm:bg-slate-50/90 dark:max-sm:bg-slate-900/50 ${isDarkMode ? 'sm:bg-purple-950/20' : 'sm:bg-purple-50/50'}`}>
+          <p className="text-[8px] font-black text-purple-500 uppercase tracking-widest mb-0.5">JHS</p>
+          <span className={`text-xl sm:text-2xl font-black tabular-nums text-purple-600 sm:text-purple-400 leading-none dark:text-purple-400`}>
+            {jhsCount}
+          </span>
+        </div>
+
+        {/* ALS */}
+        <div className={`flex flex-col items-center justify-center py-2.5 sm:py-3 border-l max-sm:border-slate-100 dark:max-sm:border-slate-800/80 ${theme.border} max-sm:bg-slate-50/90 dark:max-sm:bg-slate-900/50 ${isDarkMode ? 'sm:bg-emerald-950/20' : 'sm:bg-emerald-50/50'}`}>
+          <p className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-0.5">ALS</p>
+          <span className={`text-xl sm:text-2xl font-black tabular-nums text-emerald-600 sm:text-emerald-400 leading-none dark:text-emerald-400`}>
+            {alsCount}
+          </span>
         </div>
       </div>
     </div>

@@ -74,6 +74,7 @@ export default function LMSHubPage() {
   }
 
   const displayedSections = sections.filter(sec => {
+    if (availableStrands && !availableStrands.includes(sec.strand)) return false
     if (strandFilter !== 'ALL' && sec.strand !== strandFilter) return false
     if (searchQuery) {
       const q = searchQuery.toLowerCase()

@@ -1,6 +1,6 @@
 "use server"
 
-import { supabase } from "@/lib/supabase/client"
+import { createAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
 /**
@@ -15,6 +15,7 @@ export async function snapshotCurrentYearData(schoolYear: string): Promise<{
   error?: string
 }> {
   if (!schoolYear) return { success: false, total: 0, error: "No school year provided." }
+  const supabase = createAdminClient()
   try {
     const [maleRes, femaleRes, jhsRes, alsRes] = await Promise.all([
       supabase.from("students").select("id", { count: "exact", head: true })
@@ -72,6 +73,7 @@ export async function snapshotCurrentYearData(schoolYear: string): Promise<{
  * which resolves the "unique constraint" error.
  */
 export async function recordYearlySnapshot(year: string, maleCount: number, femaleCount: number) {
+  const supabase = createAdminClient()
   try {
     const { data, error } = await supabase
       .from('enrollment_history')
@@ -107,6 +109,7 @@ export async function recordYearlySnapshot(year: string, maleCount: number, fema
  * Ordered by school year descending.
  */
 export async function getEnrollmentHistory() {
+  const supabase = createAdminClient()
   try {
     const { data, error } = await supabase
       .from('enrollment_history')
@@ -125,6 +128,7 @@ export async function getEnrollmentHistory() {
  * Deletes a specific yearly snapshot from the archives.
  */
 export async function deleteSnapshot(id: string) {
+  const supabase = createAdminClient()
   try {
     const { error } = await supabase
       .from('enrollment_history')

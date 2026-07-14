@@ -13,6 +13,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
 import { useEnrollmentValidation } from "@/hooks/useEnrollmentValidation"
 import { useThemeStore } from "@/store/useThemeStore"
@@ -23,6 +24,10 @@ export default function Step4Documents() {
   const formData = rawFormData as any
   const [loadingField, setLoadingField] = useState<string | null>(null)
   const isJHS = formData.student_category === "JHS Graduate"
+  const isPrivateJHS = isJHS && formData.school_type === "Private"
+  const isALS = formData.student_category === "ALS Passer"
+  const showVoucherQuestion = isPrivateJHS || isALS
+
   const { isFieldRequired } = useEnrollmentValidation()
 
   useEffect(() => {
@@ -63,6 +68,10 @@ export default function Step4Documents() {
     if (isJHS) { check('form_138_url'); check('good_moral_url') }
     else { check('cor_url'); check('af5_url'); check('diploma_url') }
 
+    if (showVoucherQuestion && formData.has_voucher_cert === "yes") {
+      check('voucher_cert_url')
+    }
+
     if (missing.length > 0) {
       const first = missing[0]
       const el = document.getElementById(`${first}_container`)
@@ -75,7 +84,7 @@ export default function Step4Documents() {
     setStep(5)
   }
 
-  const UploaderBox = ({ label, field }: { label: string; field: string }) => {
+  const UploaderBox = ({ label, field, acceptType }: { label: string; field: string; acceptType?: string }) => {
     const currentFileUrl = formData[field as keyof typeof formData] as string | null
     const required = isFieldRequired(field as any)
 
@@ -107,7 +116,14 @@ export default function Step4Documents() {
               </div>
             ) : currentFileUrl ? (
               <div className="absolute inset-0 w-full h-full group">
-                <img src={currentFileUrl} alt={label} className="w-full h-full object-cover opacity-60 transition-transform duration-700 lg:group-hover:scale-105" loading="lazy" style={{ transform: 'translateZ(0)' }} />
+                {currentFileUrl.toLowerCase().endsWith(".pdf") ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-red-500/10 opacity-60">
+                    <FileText size={32} className="text-red-400 mb-2" />
+                    <p className="text-xs font-black uppercase tracking-widest text-red-400">PDF Document</p>
+                  </div>
+                ) : (
+                  <img src={currentFileUrl} alt={label} className="w-full h-full object-cover opacity-60 transition-transform duration-700 lg:group-hover:scale-105" loading="lazy" style={{ transform: 'translateZ(0)' }} />
+                )}
                 <div className={cn("absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 sm:gap-4 transition-all duration-300 p-4", isDark ? "bg-slate-950/80" : "bg-white/80")}>
                   <Dialog>
                     <DialogTrigger asChild>
@@ -119,8 +135,12 @@ export default function Step4Documents() {
                       <DialogHeader>
                         <DialogTitle className="uppercase font-black tracking-[0.3em] text-lg italic text-blue-600 mb-4">{label}</DialogTitle>
                       </DialogHeader>
-                      <div className="relative overflow-hidden rounded-[32px] border-4 border-white/10 shadow-2xl">
-                        <img src={currentFileUrl} alt={label} className="max-h-[60dvh] sm:max-h-[70vh] w-full object-contain" loading="lazy" style={{ transform: 'translateZ(0)' }} />
+                      <div className="relative overflow-hidden rounded-[32px] border-4 border-white/10 shadow-2xl h-[60dvh] sm:h-[70vh]">
+                        {currentFileUrl.toLowerCase().endsWith(".pdf") ? (
+                          <iframe src={currentFileUrl} className="w-full h-full border-none" title={label} />
+                        ) : (
+                          <img src={currentFileUrl} alt={label} className="w-full h-full object-contain" loading="lazy" style={{ transform: 'translateZ(0)' }} />
+                        )}
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -131,7 +151,7 @@ export default function Step4Documents() {
               </div>
             ) : (
               <label className="w-full h-full min-h-[180px] flex flex-col items-center justify-center cursor-pointer p-6 z-10 group touch-manipulation">
-                <input type="file" className="hidden" onChange={e => handleUpload(e, field, label)} accept="image/*" />
+                <input type="file" className="hidden" onChange={e => handleUpload(e, field, label)} accept={acceptType || "image/*"} />
                 <div className={cn(
                   "w-16 h-16 rounded-3xl border-2 mb-5 flex items-center justify-center shadow-2xl transition-all duration-500 lg:group-hover:scale-110 lg:group-hover:rotate-6",
                   isDark ? "bg-blue-600/10 border-blue-500/20 lg:group-hover:bg-blue-600 lg:group-hover:border-blue-400" : "bg-blue-50 border-blue-100 lg:group-hover:bg-blue-600 lg:group-hover:border-blue-500"
@@ -244,6 +264,62 @@ export default function Step4Documents() {
             </>
           )}
         </div>
+
+        {/* Voucher Certificate Question (Conditional) */}
+        {showVoucherQuestion && (
+          <div className={cn("p-6 rounded-[24px] border shadow-sm transition-all duration-300 animate-step-in", isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200")}>
+            <div className="space-y-4">
+              <Label className="font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-blue-500" />
+                Voucher Verification
+              </Label>
+              <p className="text-xs text-slate-500">Do you have a DepEd QVR (Voucher) Certificate or ESC Certificate?</p>
+              
+              <RadioGroup
+                value={formData.has_voucher_cert || "no"}
+                onValueChange={(val) => {
+                  updateFormData({ has_voucher_cert: val as any })
+                  if (val !== "yes") updateFormData({ voucher_cert_url: undefined })
+                }}
+                className="flex flex-col gap-3 mt-4"
+              >
+                <div className={cn(
+                  "flex items-center space-x-2 border rounded-xl p-4 flex-1 cursor-pointer transition-colors",
+                  formData.has_voucher_cert === "yes" ? (isDark ? "bg-blue-950/40 border-blue-800" : "bg-blue-50 border-blue-200") : (isDark ? "border-slate-800 hover:bg-slate-800/50" : "border-slate-200 hover:bg-slate-50")
+                )} onClick={() => updateFormData({ has_voucher_cert: "yes" })}>
+                  <RadioGroupItem value="yes" id="voucher_yes" />
+                  <Label htmlFor="voucher_yes" className="cursor-pointer font-bold w-full">Yes, I have a certificate</Label>
+                </div>
+                <div className={cn(
+                  "flex items-center space-x-2 border rounded-xl p-4 flex-1 cursor-pointer transition-colors",
+                  formData.has_voucher_cert === "pending" ? (isDark ? "bg-amber-950/40 border-amber-800" : "bg-amber-50 border-amber-200") : (isDark ? "border-slate-800 hover:bg-slate-800/50" : "border-slate-200 hover:bg-slate-50")
+                )} onClick={() => {
+                  updateFormData({ has_voucher_cert: "pending", voucher_cert_url: undefined })
+                }}>
+                  <RadioGroupItem value="pending" id="voucher_pending" />
+                  <Label htmlFor="voucher_pending" className="cursor-pointer font-bold w-full">Applied, awaiting result</Label>
+                </div>
+                <div className={cn(
+                  "flex items-center space-x-2 border rounded-xl p-4 flex-1 cursor-pointer transition-colors",
+                  formData.has_voucher_cert === "no" ? (isDark ? "bg-slate-800 border-slate-700" : "bg-slate-100 border-slate-300") : (isDark ? "border-slate-800 hover:bg-slate-800/50" : "border-slate-200 hover:bg-slate-50")
+                )} onClick={() => {
+                  updateFormData({ has_voucher_cert: "no", voucher_cert_url: undefined })
+                }}>
+                  <RadioGroupItem value="no" id="voucher_no" />
+                  <Label htmlFor="voucher_no" className="cursor-pointer font-bold w-full">No, I do not have one</Label>
+                </div>
+              </RadioGroup>
+
+              {formData.has_voucher_cert === "yes" && (
+                <div className="pt-4 mt-4 border-t border-dashed border-slate-200 dark:border-slate-800 animate-step-in">
+                  <div className="grid grid-cols-1">
+                    <UploaderBox label="QVR / ESC Certificate (PDF ONLY)" field="voucher_cert_url" acceptType=".pdf" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* SUBMIT BUTTON */}

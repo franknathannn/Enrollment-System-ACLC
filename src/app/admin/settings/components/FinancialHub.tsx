@@ -41,15 +41,14 @@ export function FinancialHub({
           <div className="relative">
             <Landmark className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
             <Input
-              type="text"
-              value={voucherValue === 0 || voucherValue === null ? "" : voucherValue}
+              type="number"
+              value={voucherValue ?? ""}
               onChange={(e) => {
                 const val = e.target.value;
-                if (val === "" || val === " ") {
+                if (val === "") {
                   onVoucherValueChange("");
                 } else {
-                  const parsed = parseInt(val);
-                  if (!isNaN(parsed)) onVoucherValueChange(parsed);
+                  onVoucherValueChange(Number(val));
                 }
               }}
               className="h-14 rounded-2xl border-none font-bold text-lg pl-12 focus-visible:ring-emerald-500 transition-all duration-500"

@@ -19,7 +19,7 @@ export default function SectionsPage() {
   const {
     config, isDarkMode, sections, teachers, loading, isProcessing, selectedSectionName, setSelectedSectionName,
     searchTerm, setSearchTerm, debouncedSearch, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter, sectionSelection,
-    confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, 
+    confirmAdd, setConfirmAdd, confirmDeleteSelect, setConfirmDeleteSelect, isAddSectionOpen, setIsAddSectionOpen,
     availableStrands, expandedStrands, setExpandedStrands, groupedSections, strandLoads,
     exitingRows, hiddenRows, animatingIds, ghostStudents, viewerOpen, setViewerOpen,
     viewingFile, rotation, setRotation, unenrollOpen, setUnenrollOpen, activeUnenrollStudent, profileOpen, setProfileOpen,
@@ -27,7 +27,7 @@ export default function SectionsPage() {
     currentSectionData, handleExit, handleOpenFile, handleViewProfile, handleUnenroll, initiateAdd, handleBalance, toggleSelection,
     handleSelectAll, executeAdd, executeBulkDelete, handleDeleteSection, handleClearAllStudents, handleReturnToPending,
     handleConfirmUnenroll, handleSwitch, exportSectionCSV, exportSectionList, exportGlobalMasterlist, fetchSections, handleToggleLock, updateStudentProfile,
-    allSchedules, handleAdviserChange
+    allSchedules, handleAdviserChange, handleUpdateCapacity
   } = useSections()
 
   if (loading && sections.length === 0) return (
@@ -45,185 +45,194 @@ export default function SectionsPage() {
 
   return (
     <TooltipProvider delayDuration={100}>
-    <div className="relative min-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-colors duration-500 overflow-x-hidden max-w-[100vw]">
-      <style jsx global>{`
-        body { overflow-y: auto; }
-        ::-webkit-scrollbar { display: none; }
-        * { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
+      <div className="relative min-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-colors duration-500 overflow-x-hidden max-w-[100vw]">
+        <style jsx global>{`
+          body { overflow-y: auto; }
+          ::-webkit-scrollbar { display: none; }
+          * { -ms-overflow-style: none; scrollbar-width: none; }
+        `}</style>
 
-      <RealtimeStatusIndicator status={realtimeStatus} lastUpdate={lastUpdate} />
-      
-      <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700 pb-20 relative z-10 w-full overflow-x-hidden">
-      
-      {selectedSectionName ? (() => {
-        if (!currentSectionData) return null
-        return (
-          <SectionDetailView
-            sectionName={selectedSectionName}
-            currentSection={currentSection!}
-            activeStudents={activeStudents}
-            capacity={currentSectionData.capacity}
-            fillPercent={currentSectionData.fillPercent}
-            config={config}
-            isDarkMode={isDarkMode}
-            onBack={() => setSelectedSectionName(null)}
-            onRefresh={() => fetchSections(false)}
-            loading={loading}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            onExport={exportSectionCSV}
-            onExportList={exportSectionList}
-            sortedStudents={currentSectionData.sortedStudents}
-            mCount={currentSectionData.mCount}
-            fCount={currentSectionData.fCount}
-            debouncedSearch={debouncedSearch}
-            sections={sections}
-            handleReturnToPending={handleReturnToPending}
-            handleUnenroll={handleUnenroll}
-            handleSwitch={handleSwitch}
-            handleOpenFile={handleOpenFile}
-            handleViewProfile={handleViewProfile}
-            exitingRows={exitingRows}
-            hiddenRows={hiddenRows}
-            handleExit={handleExit}
-            animatingIds={animatingIds}
-            onToggleLock={handleToggleLock}
-            allSchedules={allSchedules}
-            teachers={teachers}
-            onChangeAdviser={handleAdviserChange}
-          />
-        )
-      })() : (
-        <>
-          <SectionsHeader 
-            isDarkMode={isDarkMode}
-            strandFilter={strandFilter}
-            setStrandFilter={setStrandFilter}
-            gradeLevelFilter={gradeLevelFilter}
-            setGradeLevelFilter={setGradeLevelFilter}
-            sectionSelection={sectionSelection}
-            setConfirmDeleteSelect={setConfirmDeleteSelect}
-            sections={sections}
-            handleDeleteSection={handleDeleteSection}
-            handleClearAllStudents={handleClearAllStudents}
-            initiateAdd={initiateAdd}
-            onBalance={handleBalance}
-            onExportGlobal={exportGlobalMasterlist}
-            isProcessing={isProcessing}
-            config={config}
-            allSchedules={allSchedules}
-            availableStrands={availableStrands}
-          />
-          
-          {availableStrands.map(strand => {
-            if (strandFilter !== 'ALL' && strandFilter !== strand) return null
-            
-            const titleMap: any = {
-              'ICT': { t: 'Information Technology', mt: 'ICT Program' },
-              'GAS': { t: 'General Academics', mt: 'GAS Program' },
-              'STEM': { t: 'Science, Technology, Engineering, Math', mt: 'STEM Program' },
-              'HUMSS': { t: 'Humanities & Social Sciences', mt: 'HUMSS Program' },
-              'ABM': { t: 'Accountancy, Business & Management', mt: 'ABM Program' },
-              'TechPro': { t: 'Technical-Professional', mt: 'TechPro Program' },
-              'Academic Track': { t: 'Academic Track', mt: 'Academic Program' }
-            }
-            
-            const info = titleMap[strand] || { t: strand, mt: strand }
-            let color = 'orange'
-            let icon = <BookOpen/>
-            
-            if (strand === 'ICT' || strand === 'TechPro') {
-              color = 'blue'
-              icon = <Cpu/>
-            } else if (strand === 'STEM') {
-              color = 'emerald'
-              icon = <Atom/>
-            } else if (strand === 'HUMSS') {
-              color = 'amber'
-              icon = <BookOpen/>
-            } else if (strand === 'ABM') {
-              color = 'yellow'
-              icon = <BarChart3/>
-            } else if (strand === 'GAS') {
-              color = 'orange'
-              icon = <BookOpen/>
-            }
-            
+        <RealtimeStatusIndicator status={realtimeStatus} lastUpdate={lastUpdate} />
+        
+        <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700 pb-20 relative z-10 w-full overflow-x-hidden">
+        
+          {selectedSectionName ? (() => {
+            if (!currentSectionData) return null
             return (
-              <SectionGroup 
-                key={strand} 
-                title={info.t}
-                mobileTitle={info.mt}
-                icon={icon} 
-                color={color} 
-                sections={(groupedSections[strand] || []).filter((s: any) => 
-                  gradeLevelFilter === 'ALL' || s.grade_level === gradeLevelFilter
-                )} 
-                load={strandLoads[strand] || { percent: 0, totalCapacity: 0, totalEnrolled: 0 }} 
-                onSelect={setSelectedSectionName} 
-                onDelete={handleDeleteSection} 
-                isExpanded={expandedStrands[strand] !== false} 
-                onToggle={() => setExpandedStrands((prev: any) => ({ ...prev, [strand]: prev[strand] === false }))}
-                selection={sectionSelection}
-                onToggleSelect={toggleSelection}
-                onSelectAll={handleSelectAll}
-                isDarkMode={isDarkMode}
+              <SectionDetailView
+                sectionName={selectedSectionName}
+                currentSection={currentSection!}
+                activeStudents={activeStudents}
+                capacity={currentSectionData.capacity}
+                fillPercent={currentSectionData.fillPercent}
                 config={config}
+                isDarkMode={isDarkMode}
+                onBack={() => setSelectedSectionName(null)}
+                onRefresh={() => fetchSections(false)}
+                loading={loading}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                onExport={exportSectionCSV}
+                onExportList={exportSectionList}
+                sortedStudents={currentSectionData.sortedStudents}
+                mCount={currentSectionData.mCount}
+                fCount={currentSectionData.fCount}
+                debouncedSearch={debouncedSearch}
+                sections={sections}
+                handleReturnToPending={handleReturnToPending}
+                handleUnenroll={handleUnenroll}
+                handleSwitch={handleSwitch}
+                handleOpenFile={handleOpenFile}
+                handleViewProfile={handleViewProfile}
+                exitingRows={exitingRows}
+                hiddenRows={hiddenRows}
+                handleExit={handleExit}
+                animatingIds={animatingIds}
+                onToggleLock={handleToggleLock}
+                allSchedules={allSchedules}
+                teachers={teachers}
+                onChangeAdviser={handleAdviserChange}
+                onUpdateCapacity={handleUpdateCapacity}
               />
             )
-          })}
-        </>
-      )}
+          })() : (
+            <>
+              <SectionsHeader 
+                isDarkMode={isDarkMode}
+                strandFilter={strandFilter}
+                setStrandFilter={setStrandFilter}
+                gradeLevelFilter={gradeLevelFilter}
+                setGradeLevelFilter={setGradeLevelFilter}
+                sectionSelection={sectionSelection}
+                setConfirmDeleteSelect={setConfirmDeleteSelect}
+                sections={sections}
+                handleDeleteSection={handleDeleteSection}
+                handleClearAllStudents={handleClearAllStudents}
+                initiateAdd={initiateAdd}
+                onBalance={handleBalance}
+                onExportGlobal={exportGlobalMasterlist}
+                isProcessing={isProcessing}
+                config={config}
+                allSchedules={allSchedules}
+                availableStrands={availableStrands}
+                onUpdateCapacity={handleUpdateCapacity}
+                isAddSectionOpen={isAddSectionOpen}
+                setIsAddSectionOpen={setIsAddSectionOpen}
+              />
+              
+              {availableStrands.map(strand => {
+                if (strandFilter !== 'ALL' && strandFilter !== strand) return null
+                
+                const titleMap: any = {
+                  'ICT': { t: 'Information Technology', mt: 'ICT Program' },
+                  'GAS': { t: 'General Academics', mt: 'GAS Program' },
+                  'STEM': { t: 'Science, Technology, Engineering, Math', mt: 'STEM Program' },
+                  'HUMSS': { t: 'Humanities & Social Sciences', mt: 'HUMSS Program' },
+                  'ABM': { t: 'Accountancy, Business & Management', mt: 'ABM Program' },
+                  'TechPro': { t: 'Technical-Professional', mt: 'TechPro Program' },
+                  'Academic Track': { t: 'Academic Track', mt: 'Academic Program' }
+                }
+                
+                const info = titleMap[strand] || { t: strand, mt: strand }
+                let color = 'orange'
+                let icon = <BookOpen/>
+                
+                if (strand === 'ICT' || strand === 'TechPro') {
+                  color = 'blue'
+                  icon = <Cpu/>
+                } else if (strand === 'STEM') {
+                  color = 'emerald'
+                  icon = <Atom/>
+                } else if (strand === 'HUMSS') {
+                  color = 'amber'
+                  icon = <BookOpen/>
+                } else if (strand === 'ABM') {
+                  color = 'yellow'
+                  icon = <BarChart3/>
+                } else if (strand === 'GAS') {
+                  color = 'orange'
+                  icon = <BookOpen/>
+                }
+                
+                return (
+                  <SectionGroup 
+                    key={strand} 
+                    title={info.t}
+                    mobileTitle={info.mt}
+                    icon={icon} 
+                    color={color} 
+                    sections={(groupedSections[strand] || []).filter((s: any) => 
+                      gradeLevelFilter === 'ALL' || s.grade_level === gradeLevelFilter
+                    )} 
+                    load={strandLoads[strand] || { percent: 0, totalCapacity: 0, totalEnrolled: 0 }} 
+                    onSelect={setSelectedSectionName} 
+                    onDelete={handleDeleteSection} 
+                    isExpanded={expandedStrands[strand] !== false} 
+                    onToggle={() => setExpandedStrands((prev: any) => ({ ...prev, [strand]: prev[strand] === false }))}
+                    selection={sectionSelection}
+                    onToggleSelect={toggleSelection}
+                    onSelectAll={handleSelectAll}
+                    isDarkMode={isDarkMode}
+                    config={config}
+                  />
+                )
+              })}
+            </>
+          )}
+        </div>
 
-      {/* DIALOGS (RETAINED) */}
-      <DocumentViewerDialog 
-        open={viewerOpen} 
-        onOpenChange={setViewerOpen} 
-        file={viewingFile} 
-        rotation={rotation} 
-        setRotation={setRotation} 
-      />
-      <UnenrollDialog 
-        open={unenrollOpen} 
-        onOpenChange={setUnenrollOpen} 
-        student={activeUnenrollStudent} 
-        onConfirm={handleConfirmUnenroll} 
-        isDarkMode={isDarkMode} 
-      />
-      <ProfileDialog 
-        open={profileOpen} 
-        onOpenChange={setProfileOpen} 
-        student={activeProfile} 
-        onOpenFile={handleOpenFile} 
-        isDarkMode={isDarkMode} 
-        onUpdate={updateStudentProfile}
-        sections={sections}
-        onStatusChange={(_, status) => {
-          if (status === 'Pending' && activeProfile) {
-            handleReturnToPending(activeProfile.id, `${activeProfile.first_name} ${activeProfile.last_name}`)
-            setProfileOpen(false)
-          }
-        }}
-      />
-      <AddSectionDialog 
-        open={confirmAdd.isOpen} 
-        onOpenChange={(open: boolean) => !open && setConfirmAdd({ ...confirmAdd, isOpen: false })} 
-        strand={confirmAdd.strand} 
-        onConfirm={executeAdd} 
-        isProcessing={isProcessing} 
-        isDarkMode={isDarkMode} 
-      />
-      <BulkDeleteDialog 
-        open={confirmDeleteSelect} 
-        onOpenChange={setConfirmDeleteSelect} 
-        count={sectionSelection.size} 
-        onConfirm={executeBulkDelete} 
-        isDarkMode={isDarkMode} 
-      />
-      {isProcessing && <ProcessingOverlay />}
-    </div>
-    </div>
+        {/* DIALOGS (RETAINED) */}
+        <DocumentViewerDialog 
+          open={viewerOpen} 
+          onOpenChange={setViewerOpen} 
+          file={viewingFile} 
+          rotation={rotation} 
+          setRotation={setRotation} 
+        />
+        <UnenrollDialog 
+          open={unenrollOpen} 
+          onOpenChange={setUnenrollOpen} 
+          student={activeUnenrollStudent} 
+          onConfirm={handleConfirmUnenroll} 
+          isDarkMode={isDarkMode} 
+        />
+        <ProfileDialog 
+          open={profileOpen} 
+          onOpenChange={setProfileOpen} 
+          student={activeProfile} 
+          onOpenFile={handleOpenFile} 
+          isDarkMode={isDarkMode} 
+          onUpdate={updateStudentProfile}
+          sections={sections}
+          onStatusChange={(_, status) => {
+            if (status === 'Pending' && activeProfile) {
+              handleReturnToPending(activeProfile.id, `${activeProfile.first_name} ${activeProfile.last_name}`)
+              setProfileOpen(false)
+            }
+          }}
+        />
+        <AddSectionDialog 
+          open={confirmAdd.isOpen} 
+          onOpenChange={(open: boolean) => !open && setConfirmAdd({ ...confirmAdd, isOpen: false })} 
+          strand={confirmAdd.strand} 
+          capacity={confirmAdd.capacity} 
+          onConfirm={executeAdd} 
+          isProcessing={isProcessing} 
+          isDarkMode={isDarkMode} 
+          onGoBack={() => {
+            setConfirmAdd(c => ({ ...c, isOpen: false }))
+            setIsAddSectionOpen(true)
+          }}
+        />
+        <BulkDeleteDialog 
+          open={confirmDeleteSelect} 
+          onOpenChange={setConfirmDeleteSelect} 
+          count={sectionSelection.size} 
+          onConfirm={executeBulkDelete} 
+          isDarkMode={isDarkMode} 
+        />
+        {isProcessing && <ProcessingOverlay />}
+      </div>
     </TooltipProvider>
   )
 }

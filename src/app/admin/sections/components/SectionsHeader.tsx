@@ -11,7 +11,6 @@ import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { DeleteManagementDialog } from "./DeleteManagementDialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { BulkScheduleManagerDialog } from "../../schedules/components/schedule/BulkScheduleManagerDialog"
 
 interface SectionsHeaderProps {
   isDarkMode: boolean
@@ -30,7 +29,10 @@ interface SectionsHeaderProps {
   isProcessing: boolean
   config: any
   allSchedules: any[]
-  onExportGlobal: (strand: string) => void
+  onExportGlobal: (strand: string, gradeLevel: string) => void
+  onUpdateCapacity: (id: string, capacity: number) => void
+  isAddSectionOpen: boolean
+  setIsAddSectionOpen: (open: boolean) => void
 }
 
 
@@ -226,10 +228,9 @@ export const SectionsHeader = memo(({
   isDarkMode, strandFilter, setStrandFilter, gradeLevelFilter, setGradeLevelFilter,
   sectionSelection, setConfirmDeleteSelect,
   sections, handleDeleteSection, handleClearAllStudents, initiateAdd, onBalance, isProcessing,
-  config, allSchedules, onExportGlobal, availableStrands = ['ICT', 'GAS']
+  config, allSchedules, onExportGlobal, availableStrands = ['ICT', 'GAS'], onUpdateCapacity,
+  isAddSectionOpen, setIsAddSectionOpen
 }: SectionsHeaderProps) => {
-
-  const [scheduleManagerOpen, setScheduleManagerOpen] = useState(false)
 
   // 🧪 PROP-BASED THEME ENGINE (Ignoring Tailwind dark: for state sync)
   const theme = {
@@ -367,94 +368,25 @@ export const SectionsHeader = memo(({
               onDelete={handleDeleteSection}
               onClearStudents={handleClearAllStudents}
               isDarkMode={isDarkMode}
+              
+              // New unified props
+              onUpdateCapacity={onUpdateCapacity}
+              onBalance={onBalance}
+              onExportGlobal={onExportGlobal}
+              strandFilter={strandFilter}
+              gradeLevelFilter={gradeLevelFilter}
+              initiateAdd={initiateAdd}
+              availableStrands={availableStrands}
+              isProcessing={isProcessing}
+              config={config}
+              isAddSectionOpen={isAddSectionOpen}
+              setIsAddSectionOpen={setIsAddSectionOpen}
             />
           </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Manage & Delete Sections</p></TooltipContent>
+          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Open Control Center</p></TooltipContent>
         </Tooltip>
 
-        <div className="h-8 w-px bg-slate-500/10 mx-1 hidden md:block" />
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={() => onBalance(strandFilter)}
-              disabled={isProcessing}
-              className="rounded-[18px] bg-purple-600 hover:bg-purple-700 h-11 px-4 sm:px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-purple-500/20 transition-all transform-gpu active:scale-90 col-span-2 sm:col-span-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed text-white"
-            >
-              <Scale className="mr-1.5" size={14} /> Balance {strandFilter}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Auto-distribute Students</p></TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={() => initiateAdd('ICT')}
-              disabled={isProcessing}
-              className="rounded-[18px] bg-blue-600 hover:bg-blue-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-blue-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none text-white"
-            >
-              <Plus className="mr-2" size={16} /> Add ICT
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Create New ICT Section</p></TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={() => initiateAdd('GAS')}
-              disabled={isProcessing}
-              className="rounded-[18px] bg-orange-600 hover:bg-orange-700 h-11 px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-orange-500/20 transition-all transform-gpu active:scale-90 flex-1 sm:flex-none text-white"
-            >
-              <Plus className="mr-2" size={16} /> Add GAS
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Create New GAS Section</p></TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={() => setScheduleManagerOpen(true)}
-              className="rounded-[18px] bg-indigo-600 hover:bg-indigo-700 h-11 px-4 sm:px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-indigo-500/20 transition-all transform-gpu active:scale-90 col-span-2 sm:col-span-1 sm:flex-none text-white border border-indigo-400/20"
-            >
-              <Layers className="mr-1.5" size={14} /> Schedule Manager
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Open Bulk Schedule Editor</p></TooltipContent>
-        </Tooltip>
-
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  className="rounded-[18px] bg-emerald-600 hover:bg-emerald-700 h-11 px-4 sm:px-5 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all transform-gpu active:scale-90 col-span-2 sm:col-span-1 sm:flex-none text-white"
-                >
-                  <FileDown className="mr-1.5" size={14} /> Export Masterlist <ChevronDown className="ml-1" size={12} />
-                </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent className="bg-slate-900 text-white border-slate-800"><p>Export Full List</p></TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent align="end" className={`w-52 font-black uppercase tracking-widest text-[9px] ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}>
-            {availableStrands.map(strand => (
-              <DropdownMenuItem key={strand} onClick={() => onExportGlobal(strand)} className="cursor-pointer py-3 focus:bg-emerald-600 focus:text-white">{strand} MASTERLIST</DropdownMenuItem>
-            ))}
-            <DropdownMenuItem onClick={() => onExportGlobal("ALL")} className="cursor-pointer py-3 focus:bg-emerald-600 focus:text-white">ALL STRANDS MASTERLIST</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
-
-      <BulkScheduleManagerDialog
-        open={scheduleManagerOpen}
-        onOpenChange={setScheduleManagerOpen}
-        sections={sections}
-        isDarkMode={isDarkMode}
-        config={config}
-        allSchedules={allSchedules}
-      />
     </ThemedCard>
   )
 })

@@ -20,7 +20,15 @@ export default function LandingClient({ settings, programs, announcements, stats
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Live state for portal configuration
   const [liveConfig, setLiveConfig] = useState(systemConfig || null)
-  const isPortalActive = liveConfig?.is_portal_active ?? true
+  const isPortalActive = (() => {
+    if (!liveConfig) return true
+    if (!liveConfig.is_portal_active) return false
+    if (liveConfig.control_mode === 'manual') return true
+    const now = new Date()
+    const start = liveConfig.enrollment_start ? new Date(liveConfig.enrollment_start) : null
+    const end = liveConfig.enrollment_end ? new Date(liveConfig.enrollment_end) : null
+    return !!(start && end && now >= start && now <= end)
+  })()
   
   const [liveSettings, setLiveSettings] = useState(settings || {})
   const [livePrograms, setLivePrograms] = useState(programs || [])

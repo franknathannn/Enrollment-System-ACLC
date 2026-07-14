@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { themeColors } from "@/lib/themeColors"
 import { 
   FileText, User, GraduationCap, Users, ShieldCheck, 
-  Loader2, CheckCircle2
+  Loader2, CheckCircle2, ChevronDown, ChevronUp
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -64,6 +64,7 @@ type FieldRequirements = {
   cor_url: FieldRequirement
   af5_url: FieldRequirement
   diploma_url: FieldRequirement
+  voucher_cert_url: FieldRequirement
 }
 
 const DEFAULT_REQUIREMENTS: FieldRequirements = {
@@ -113,6 +114,7 @@ const DEFAULT_REQUIREMENTS: FieldRequirements = {
   cor_url:              { required: false, editable: true },
   af5_url:              { required: false, editable: true },
   diploma_url:          { required: false, editable: true },
+  voucher_cert_url:     { required: false, editable: true },
 }
 
 const STEP_GROUPS = [
@@ -173,11 +175,12 @@ const STEP_GROUPS = [
     fields: [
       { key: "profile_2x2_url",       label: "2x2 ID Photo" },
       { key: "birth_certificate_url", label: "Birth Certificate" },
-      { key: "form_138_url",          label: "Form 138 (Report Card)" },
-      { key: "good_moral_url",        label: "Certificate of Good Moral" },
-      { key: "cor_url",               label: "ALS COR" },
-      { key: "af5_url",               label: "AF5 Form" },
-      { key: "diploma_url",           label: "ALS Diploma" },
+      { key: "form_138_url",          label: "Form 138 (Report Card)", description: "For JHS Graduates" },
+      { key: "good_moral_url",        label: "Certificate of Good Moral", description: "For JHS Graduates" },
+      { key: "cor_url",               label: "ALS COR", description: "For ALS Passers" },
+      { key: "af5_url",               label: "AF5 Form", description: "For ALS Passers" },
+      { key: "diploma_url",           label: "ALS Diploma", description: "For ALS Passers" },
+      { key: "voucher_cert_url",      label: "QVR / ESC Certificate", description: "For Private JHS and ALS Passers" },
     ]
   }
 ]
@@ -198,6 +201,13 @@ export function EnrollmentFormControl({ configId, isDarkMode }: EnrollmentFormCo
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const saveTimeoutRef = useRef<any>(null)
+  const [expandedSteps, setExpandedSteps] = useState<Record<number, boolean>>({
+    0: true, 1: true, 2: true, 3: true
+  })
+
+  const toggleStep = (idx: number) => {
+    setExpandedSteps(prev => ({ ...prev, [idx]: !prev[idx] }))
+  }
 
   const loadRequirements = useCallback(async () => {
     if (!configId) {
@@ -399,16 +409,29 @@ export function EnrollmentFormControl({ configId, isDarkMode }: EnrollmentFormCo
           const Icon = step.icon
           return (
             <div key={stepIdx} className="space-y-4">
-              <div className={`flex items-center gap-3 pb-3 border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                <div className="p-2 bg-blue-600/10 rounded-xl">
-                  <Icon size={18} className="text-blue-600" />
+              <div 
+                className={`flex items-center justify-between pb-3 border-b cursor-pointer transition-colors hover:opacity-80 ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}
+                onClick={() => toggleStep(stepIdx)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-600/10 rounded-xl">
+                    <Icon size={18} className="text-blue-600" />
+                  </div>
+                  <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>
+                    {step.title}
+                  </ThemedText>
                 </div>
-                <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>
-                  {step.title}
-                </ThemedText>
+                <div className="p-2 bg-slate-500/10 rounded-full">
+                  {expandedSteps[stepIdx] ? (
+                    <ChevronUp size={14} className={isDarkMode ? 'text-slate-400' : 'text-slate-500'} />
+                  ) : (
+                    <ChevronDown size={14} className={isDarkMode ? 'text-slate-400' : 'text-slate-500'} />
+                  )}
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {expandedSteps[stepIdx] && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {step.fields.map((field) => {
                   const fieldKey = field.key as keyof FieldRequirements
                   const fieldReq = requirements[fieldKey] ?? DEFAULT_REQUIREMENTS[fieldKey] ?? { required: false, editable: false }
@@ -427,9 +450,16 @@ export function EnrollmentFormControl({ configId, isDarkMode }: EnrollmentFormCo
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>
-                            {field.label}
-                          </ThemedText>
+                          <div className="flex flex-col">
+                            <ThemedText variant="label" className="text-[10px] font-bold uppercase tracking-wide" isDarkMode={isDarkMode}>
+                              {field.label}
+                            </ThemedText>
+                            {(field as any).description && (
+                              <span className="text-[9px] font-medium text-slate-500 italic mt-0.5">
+                                {(field as any).description}
+                              </span>
+                            )}
+                          </div>
                           {fieldReq.required && (
                             <span className="px-2 py-0.5 bg-red-500/20 text-red-500 text-[8px] font-bold uppercase rounded-full">
                               Required
@@ -478,6 +508,7 @@ export function EnrollmentFormControl({ configId, isDarkMode }: EnrollmentFormCo
                   )
                 })}
               </div>
+              )}
             </div>
           )
         })}

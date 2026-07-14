@@ -35,14 +35,14 @@ export function useStudentActions({ students, setStudents, modals }: ActionDepen
     }, 300)
   }, [])
 
-  const handleStatusChange = useCallback(async (studentId: string, name: string, status: any, feedback?: string) => {
+  const handleStatusChange = useCallback(async (studentId: string, name: string, status: any, feedback?: string, extra?: { student_category?: string; shs_vms_registered?: boolean }) => {
     setProcessingIds(prev => { const next = new Set(prev); next.add(studentId); return next })
     const toastId = toast.loading(`Processing ...`)
     try {
       setExitingRows(prev => ({ ...prev, [studentId]: true }))
       await new Promise(resolve => setTimeout(resolve, 280))
       setHiddenRows(prev => { const next = new Set(prev); next.add(studentId); return next })
-      const result = await updateApplicantStatus(studentId, status, feedback);
+      const result = await updateApplicantStatus(studentId, status, feedback, extra);
       if (!result.success) {
         throw new Error(result.error || "Failed to update status")
       }

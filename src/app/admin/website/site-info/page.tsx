@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ImageUpload } from "@/components/ui/image-upload"
+import { LiveDashboardControl } from "../../settings/components/LiveDashboardControl"
 
 export default function SiteInfoAdminPage() {
   const { isDarkMode } = useTheme()
@@ -108,6 +109,9 @@ export default function SiteInfoAdminPage() {
       ) : (
         <div className="space-y-8">
           
+          {/* Section: Live Dashboard Visibility */}
+          <LiveDashboardControl isDarkMode={isDarkMode} />
+
           {/* Section: Typography & Content */}
           <div className={`rounded-[32px] overflow-hidden border shadow-sm ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
             <div className={`p-6 border-b flex items-center gap-3 ${isDarkMode ? 'border-slate-800 bg-slate-900/80' : 'border-slate-100 bg-slate-50'}`}>

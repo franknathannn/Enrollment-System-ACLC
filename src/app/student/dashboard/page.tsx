@@ -6,8 +6,9 @@ import { studentSupabase } from "@/lib/supabase/student-client"
 import {
   Loader2, LogOut, GraduationCap, QrCode, CalendarDays,
   BookOpen, Copy, Check, ClipboardList, Sun, Moon, User,
-  LayoutGrid, List, Download, CheckCircle2, Clock, FileDown,
+  LayoutGrid, List, Download, CheckCircle2, Clock, FileDown, DollarSign
 } from "lucide-react"
+import StudentFinanceTab from "./StudentFinanceTab"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { toPng } from "html-to-image"
 import { saveAs } from "file-saver"
@@ -165,7 +166,7 @@ function DashboardContent() {
   const [student, setStudent] = useState<StudentData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showWelcome, setShowWelcome] = useState(false)
-  const [activeTab, setActiveTab] = useState<"info" | "schedule" | "qr" | "attendance" | "announcements">("info")
+  const [activeTab, setActiveTab] = useState<"info" | "schedule" | "qr" | "attendance" | "announcements" | "finance">("info")
   const [copied, setCopied] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<"list" | "grid">("list")
   const [gridSchedules, setGridSchedules] = useState<any[]>([])
@@ -546,6 +547,10 @@ function DashboardContent() {
         <StudentInfoTab student={student} dm={dm} onStudentUpdate={(updated) => setStudent(updated as StudentData)} />
       )}
 
+      {activeTab === "finance" && (
+        <StudentFinanceTab studentId={student.id} dm={dm} />
+      )}
+
       {activeTab === "schedule" && !student.section && (
         <div className={`text-center py-20 ${emptyCard}`}>
           <CalendarDays className={`w-8 h-8 mx-auto mb-3 ${textMuted}`} />
@@ -752,7 +757,7 @@ function DashboardContent() {
 
           {/* Tabs array for mapping */}
           <TooltipProvider delayDuration={300}>
-            <div className={`grid gap-1 p-1.5 rounded-[20px] md:rounded-2xl border backdrop-blur-sm w-full ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`} style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
+            <div className={`grid gap-1 p-1.5 rounded-[20px] md:rounded-2xl border backdrop-blur-sm w-full ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`} style={{ gridTemplateColumns: "repeat(6, minmax(0, 1fr))" }}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button className={tabBtn(activeTab === "info")} onClick={() => setActiveTab("info")}>
@@ -801,6 +806,16 @@ function DashboardContent() {
                 </TooltipTrigger>
                 <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
                   <p className="font-bold text-[10px] uppercase tracking-widest">School news for you</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className={tabBtn(activeTab === "finance")} onClick={() => setActiveTab("finance")}>
+                    <DollarSign size={13} /><span className="hidden md:inline">Balance</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-950 text-white border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl">
+                  <p className="font-bold text-[10px] uppercase tracking-widest">Your statement of account & balance</p>
                 </TooltipContent>
               </Tooltip>
             </div>

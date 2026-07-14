@@ -648,7 +648,7 @@ function ArchiveContent() {
                 <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`}>Academic Vault</p>
               </div>
               <h1 className="text-2xl sm:text-5xl font-black tracking-tighter uppercase leading-none" style={{ color: tc.text.primary }}>Student Archive</h1>
-              <p className="text-[10px] sm:text-[11px] font-bold italic mt-1" style={{ color: tc.text.muted }}>Institutional History & Graduate Ledger</p>
+              <p className="text-[10px] sm:text-[11px] font-bold italic mt-1" style={{ color: tc.text.muted }}>Years Completed · Graduate Ledger</p>
             </div>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
@@ -671,16 +671,33 @@ function ArchiveContent() {
           </div>
         </div>
 
-        {/* YEAR SELECTOR */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: tc.text.muted }}>School Year:</span>
+        {/* YEAR SELECTOR — Dropdown */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2" style={{ color: tc.text.muted }}>
+            <GraduationCap size={14} />
+            <span className="text-[9px] font-black uppercase tracking-widest">Year Completed:</span>
+          </div>
           {yearsLoading ? <Loader2 size={14} className="animate-spin text-blue-500" />
-            : years.length === 0 ? <span className="text-[10px] text-slate-400">No archived records found</span>
-            : years.map(y => (
-              <button key={y} onClick={() => setSelectedYear(y)} className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${selectedYear === y ? "bg-blue-600 text-white shadow-md" : isDarkMode ? "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800"}`}>
-                S.Y. {y}
-              </button>
-            ))
+            : years.length === 0 ? <span className="text-[10px] text-slate-400">No graduated records found</span>
+            : (
+              <div className="relative">
+                <select
+                  value={selectedYear}
+                  onChange={e => setSelectedYear(e.target.value)}
+                  className={`appearance-none cursor-pointer pl-4 pr-10 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all border-2 outline-none focus:ring-2 focus:ring-amber-500/30
+                    ${isDarkMode
+                      ? "bg-slate-800/80 border-amber-500/30 text-amber-400 hover:bg-slate-700 hover:border-amber-400/50"
+                      : "bg-white border-amber-400/40 text-amber-700 hover:bg-amber-50 hover:border-amber-500/50 shadow-sm"
+                    }`}
+                  style={{ minWidth: 200 }}
+                >
+                  {years.map(y => (
+                    <option key={y} value={y}>S.Y. {y}</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
+              </div>
+            )
           }
         </div>
       </div>
@@ -758,8 +775,8 @@ function ArchiveContent() {
                <Archive size={32} />
             </div>
             <div className="text-center space-y-1">
-              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">No Archived Records Found</p>
-              {!selectedYear && <p className="text-[9px] text-slate-500 uppercase tracking-widest">Select a school year above to begin research</p>}
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">No Graduated Records Found</p>
+               {!selectedYear && <p className="text-[9px] text-slate-500 uppercase tracking-widest">Select a graduation year above to begin</p>}
             </div>
           </div>
         ) : (<>

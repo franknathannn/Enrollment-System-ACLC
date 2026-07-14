@@ -478,11 +478,18 @@ export const SpikeAnalyticsSection = memo(function SpikeAnalyticsSection({ spike
     </Card>
   )
 })
-export const RevenueSection = memo(function RevenueSection({ revenueMatrix, prediction, comparison, isDarkMode }: any) {
+
+export const RevenueSection = memo(function RevenueSection({
+  revenueMatrix,
+  revenueYear,
+  setRevenueYear,
+  availableYears,
+  isDarkMode
+}: any) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
+    <div className="w-full">
       <Card
-        className="lg:col-span-2 p-8 md:p-14 rounded-[3rem] md:rounded-[4rem] relative overflow-hidden group transition-all duration-500 hover:shadow-2xl"
+        className="p-8 md:p-14 rounded-[3rem] md:rounded-[4rem] relative overflow-hidden group transition-all duration-500 hover:shadow-2xl"
         style={{
           backgroundColor: isDarkMode ? themeColors.dark.surface : 'rgba(255, 255, 255, 0.8)',
           borderColor: isDarkMode ? themeColors.dark.border : 'rgba(226, 232, 240, 0.5)'
@@ -495,14 +502,40 @@ export const RevenueSection = memo(function RevenueSection({ revenueMatrix, pred
 
         <div className="relative z-10 space-y-12">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-8">
-            <div className="space-y-2">
-              <ThemedText variant="h3" className="flex items-center gap-4 text-xl md:text-3xl font-black tracking-tight" isDarkMode={isDarkMode}>
-                <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl">
-                  <Landmark size={24} />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="space-y-2">
+                <ThemedText variant="h3" className="flex items-center gap-4 text-xl md:text-3xl font-black tracking-tight" isDarkMode={isDarkMode}>
+                  <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                    <Landmark size={24} />
+                  </div>
+                  Graduates Revenue
+                </ThemedText>
+                <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] opacity-50 px-1">Registrar Monitoring (₱{revenueMatrix.voucherLabel.toLocaleString()} / Graduate)</p>
+              </div>
+
+              {/* School Year Select Dropdown */}
+              {availableYears && availableYears.length > 0 && (
+                <div className="relative shrink-0">
+                  <select
+                    value={revenueYear}
+                    onChange={(e) => setRevenueYear(e.target.value)}
+                    className={`appearance-none font-black uppercase tracking-wider text-[10px] pl-4 pr-10 py-2.5 rounded-xl border outline-none transition-all duration-300 cursor-pointer ${
+                      isDarkMode
+                        ? 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    {availableYears.map((yr: string) => (
+                      <option key={yr} value={yr} className={isDarkMode ? 'bg-slate-950 text-slate-300' : 'bg-white text-slate-600'}>
+                        SY {yr}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500">
+                    <ChevronRight size={14} className="rotate-90" />
+                  </div>
                 </div>
-                Graduates Revenue
-              </ThemedText>
-              <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] opacity-50 px-1">Registrar Monitoring (₱{revenueMatrix.voucherLabel.toLocaleString()} / Graduate)</p>
+              )}
             </div>
             <div className="text-left sm:text-right">
               <Tooltip>
@@ -536,53 +569,19 @@ export const RevenueSection = memo(function RevenueSection({ revenueMatrix, pred
           <div className={`grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-12 pt-10 border-t ${isDarkMode ? 'border-slate-800/60' : 'border-slate-100'}`}>
             <div className={`space-y-3 p-6 rounded-[2rem] border group/item hover:bg-white dark:hover:bg-slate-800/50 transition-all ${isDarkMode ? 'bg-slate-800/30 border-slate-800/50' : 'bg-slate-50/50 border-slate-100/50'}`}>
               <ThemedText variant="label" className="text-[10px] font-black uppercase tracking-widest opacity-50" isDarkMode={isDarkMode}>ICT Revenue contribution</ThemedText>
-              <ThemedText variant="h3" className="text-xl md:text-3xl font-black tabular-nums" isDarkMode={isDarkMode}>₱{(revenueMatrix.qualifiedICT * revenueMatrix.voucherLabel).toLocaleString()}</ThemedText>
+              <ThemedText variant="h3" className="text-xl md:text-3xl font-black tabular-nums" isDarkMode={isDarkMode}>₱{(revenueMatrix.qualifiedICTRevenue ?? 0).toLocaleString()}</ThemedText>
             </div>
             <div className={`space-y-3 p-6 rounded-[2rem] border group/item hover:bg-white dark:hover:bg-slate-800/50 transition-all sm:text-right ${isDarkMode ? 'bg-slate-800/30 border-slate-800/50' : 'bg-slate-50/50 border-slate-100/50'}`}>
               <ThemedText variant="label" className="text-[10px] font-black uppercase tracking-widest opacity-50" isDarkMode={isDarkMode}>GAS Revenue contribution</ThemedText>
-              <ThemedText variant="h3" className="text-xl md:text-3xl font-black tabular-nums" isDarkMode={isDarkMode}>₱{(revenueMatrix.qualifiedGAS * revenueMatrix.voucherLabel).toLocaleString()}</ThemedText>
+              <ThemedText variant="h3" className="text-xl md:text-3xl font-black tabular-nums" isDarkMode={isDarkMode}>₱{(revenueMatrix.qualifiedGASRevenue ?? 0).toLocaleString()}</ThemedText>
             </div>
           </div>
-        </div>
-      </Card>
-      <Card
-        className="p-8 md:p-12 rounded-[3rem] md:rounded-[4rem] relative overflow-hidden flex flex-col justify-between min-h-[400px] group transition-all duration-500 hover:shadow-2xl border-none"
-        style={{
-          background: isDarkMode ? themeColors.dark.surface : 'linear-gradient(135deg, #1e40af, #2563eb)',
-          borderColor: isDarkMode ? themeColors.dark.border : 'transparent'
-        }}
-      >
-        {/* Decorative SaaS elements */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 blur-[100px] rounded-full -mr-20 -mt-20 group-hover:bg-white/20 transition-all duration-700" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 blur-[80px] rounded-full -ml-16 -mb-16 group-hover:bg-black/20 transition-all duration-700" />
-        <div className="relative z-10 space-y-10">
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-2xl backdrop-blur-md border border-white/20 ${isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-white/20 text-white'}`}>
-              <Timer size={24} />
-            </div>
-            <h3 className={`text-[11px] md:text-[13px] font-black uppercase tracking-[0.3em] ${isDarkMode ? 'text-blue-300' : 'text-white/90'}`}>
-              Applicants Forecast
-            </h3>
-          </div>
-          <div className="space-y-2">
-            <p className="text-5xl md:text-7xl font-black tracking-tighter leading-none text-white drop-shadow-xl tabular-nums">
-              <AnimatedNumber value={prediction.days} />
-            </p>
-            <p className={`text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] px-1 italic ${isDarkMode ? 'text-slate-500' : 'text-blue-100/70'}`}>
-              Days to 100% capacity based on {prediction.speed} intakes/day.
-            </p>
-          </div>
-        </div>
-        <div className={`relative z-10 p-6 md:p-8 rounded-[2.5rem] border backdrop-blur-md shadow-2xl transition-all duration-500 group-hover:scale-[1.02] ${isDarkMode ? 'bg-slate-800/50 border-white/5' : 'bg-white/15 border-white/30'}`}>
-          <p className={`text-[10px] font-black uppercase tracking-[0.3em] mb-3 ${isDarkMode ? 'text-blue-400' : 'text-blue-100'}`}>System Insight</p>
-          <p className={`text-sm font-bold leading-relaxed tracking-tight ${isDarkMode ? 'text-slate-200' : 'text-white'}`}>
-            Registration is performing at <span className="text-lg font-black underline decoration-2 underline-offset-4">{comparison.percent}%</span> efficiency vs {comparison.prevYear || 'baseline'}.
-          </p>
         </div>
       </Card>
     </div>
   )
 })
+
 export const CapacitySection = memo(function CapacitySection({ capacityPercentage, stats, system, topJHSLeaders, pieData, isDarkMode }: any) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-12">

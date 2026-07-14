@@ -1,7 +1,7 @@
 // c:\Users\Nath\Documents\Enrollment System\enrollment-system\src\app\admin\sections\components\SectionGroup.tsx
 
 import { memo, useMemo, useState, useEffect, useRef } from "react"
-import { ChevronDown, ChevronUp, CheckSquare, Square, Cpu, BookOpen } from "lucide-react"
+import { ChevronDown, ChevronUp, CheckSquare, Square, Cpu, BookOpen, Atom, BarChart3 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableRow, TableHeader, TableHead } from "@/components/ui/table"
@@ -20,8 +20,97 @@ const SectionRow = memo(({ sec, idx, onSelect, onToggleSelect, isSelected, isDar
   const mP = capacity > 0 ? Math.min((mCount / capacity) * 100, 100) : 0
   const fP = capacity > 0 ? Math.min((fCount / capacity) * 100, 100) : 0
 
-  const isICT = sec.strand === 'ICT'
+  const strand = sec.strand || 'GAS'
+  const isICT = strand === 'ICT'
   const isFull = fillPercent >= 100
+
+  const strandThemeMap: Record<string, {
+    rowActiveBg: string;
+    hoverBg: string;
+    leftBarBg: string;
+    leftBarShadow: string;
+    checkColor: string;
+    icon: React.ReactNode;
+    badgeClass: string;
+    fullShadow: string;
+    fullGlowBg: string;
+    fullProgressGlow: string;
+  }> = {
+    'ICT': {
+      rowActiveBg: isDarkMode ? 'from-blue-900/40 to-slate-900' : 'from-blue-50 to-white',
+      hoverBg: isDarkMode ? 'rgba(30, 58, 138, 0.4)' : 'rgba(239, 246, 255, 1)',
+      leftBarBg: 'bg-blue-500',
+      leftBarShadow: 'shadow-[0_0_15px_rgba(59,130,246,0.8)]',
+      checkColor: 'text-blue-600',
+      icon: <Cpu size={16} className="text-blue-500/50" />,
+      badgeClass: 'from-blue-500 to-blue-600 shadow-blue-500/20',
+      fullShadow: 'shadow-[0_0_15px_rgba(59,130,246,0.15)] dark:shadow-[0_0_15px_rgba(59,130,246,0.3)]',
+      fullGlowBg: 'bg-blue-500/10',
+      fullProgressGlow: 'shadow-[0_0_20px_rgba(59,130,246,0.4)]'
+    },
+    'TechPro': {
+      rowActiveBg: isDarkMode ? 'from-blue-900/40 to-slate-900' : 'from-blue-50 to-white',
+      hoverBg: isDarkMode ? 'rgba(30, 58, 138, 0.4)' : 'rgba(239, 246, 255, 1)',
+      leftBarBg: 'bg-blue-500',
+      leftBarShadow: 'shadow-[0_0_15px_rgba(59,130,246,0.8)]',
+      checkColor: 'text-blue-600',
+      icon: <Cpu size={16} className="text-blue-500/50" />,
+      badgeClass: 'from-blue-500 to-blue-600 shadow-blue-500/20',
+      fullShadow: 'shadow-[0_0_15px_rgba(59,130,246,0.15)] dark:shadow-[0_0_15px_rgba(59,130,246,0.3)]',
+      fullGlowBg: 'bg-blue-500/10',
+      fullProgressGlow: 'shadow-[0_0_20px_rgba(59,130,246,0.4)]'
+    },
+    'STEM': {
+      rowActiveBg: isDarkMode ? 'from-emerald-900/40 to-slate-900' : 'from-emerald-50 to-white',
+      hoverBg: isDarkMode ? 'rgba(6, 78, 59, 0.4)' : 'rgba(236, 253, 245, 1)',
+      leftBarBg: 'bg-emerald-500',
+      leftBarShadow: 'shadow-[0_0_15px_rgba(16,185,129,0.8)]',
+      checkColor: 'text-emerald-600',
+      icon: <Atom size={16} className="text-emerald-500/50" />,
+      badgeClass: 'from-emerald-500 to-emerald-600 shadow-emerald-500/20',
+      fullShadow: 'shadow-[0_0_15px_rgba(16,185,129,0.15)] dark:shadow-[0_0_15px_rgba(16,185,129,0.3)]',
+      fullGlowBg: 'bg-emerald-500/10',
+      fullProgressGlow: 'shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+    },
+    'ABM': {
+      rowActiveBg: isDarkMode ? 'from-yellow-900/40 to-slate-900' : 'from-yellow-50 to-white',
+      hoverBg: isDarkMode ? 'rgba(120, 53, 15, 0.4)' : 'rgba(254, 252, 232, 1)',
+      leftBarBg: 'bg-yellow-500',
+      leftBarShadow: 'shadow-[0_0_15px_rgba(234,179,8,0.8)]',
+      checkColor: 'text-yellow-600',
+      icon: <BarChart3 size={16} className="text-yellow-500/50" />,
+      badgeClass: 'from-yellow-500 to-yellow-600 shadow-yellow-500/20',
+      fullShadow: 'shadow-[0_0_15px_rgba(234,179,8,0.15)] dark:shadow-[0_0_15px_rgba(234,179,8,0.3)]',
+      fullGlowBg: 'bg-yellow-500/10',
+      fullProgressGlow: 'shadow-[0_0_20px_rgba(234,179,8,0.4)]'
+    },
+    'HUMSS': {
+      rowActiveBg: isDarkMode ? 'from-amber-900/40 to-slate-900' : 'from-amber-50 to-white',
+      hoverBg: isDarkMode ? 'rgba(120, 53, 15, 0.4)' : 'rgba(254, 243, 199, 1)',
+      leftBarBg: 'bg-amber-500',
+      leftBarShadow: 'shadow-[0_0_15px_rgba(245,158,11,0.8)]',
+      checkColor: 'text-amber-600',
+      icon: <BookOpen size={16} className="text-amber-500/50" />,
+      badgeClass: 'from-amber-500 to-amber-600 shadow-amber-500/20',
+      fullShadow: 'shadow-[0_0_15px_rgba(245,158,11,0.15)] dark:shadow-[0_0_15px_rgba(245,158,11,0.3)]',
+      fullGlowBg: 'bg-amber-500/10',
+      fullProgressGlow: 'shadow-[0_0_20px_rgba(245,158,11,0.4)]'
+    },
+    'GAS': {
+      rowActiveBg: isDarkMode ? 'from-orange-900/40 to-slate-900' : 'from-orange-50 to-white',
+      hoverBg: isDarkMode ? 'rgba(124, 45, 18, 0.4)' : 'rgba(255, 247, 237, 1)',
+      leftBarBg: 'bg-orange-500',
+      leftBarShadow: 'shadow-[0_0_15px_rgba(249,115,22,0.8)]',
+      checkColor: 'text-orange-600',
+      icon: <BookOpen size={16} className="text-orange-500/50" />,
+      badgeClass: 'from-orange-500 to-orange-600 shadow-orange-500/20',
+      fullShadow: 'shadow-[0_0_15px_rgba(249,115,22,0.15)] dark:shadow-[0_0_15px_rgba(249,115,22,0.3)]',
+      fullGlowBg: 'bg-orange-500/10',
+      fullProgressGlow: 'shadow-[0_0_20px_rgba(249,115,22,0.4)]'
+    }
+  }
+
+  const rowTheme = strandThemeMap[strand] || strandThemeMap['GAS']
 
   // Animation State
   const [animM, setAnimM] = useState(false)
@@ -71,15 +160,13 @@ const SectionRow = memo(({ sec, idx, onSelect, onToggleSelect, isSelected, isDar
     <TableRow
       onClick={() => onSelect(sec.section_name)}
       className={`cursor-pointer transition-all duration-300 relative group overflow-hidden animate-in slide-in-from-right-4 fade-in fill-mode-backwards hover:shadow-xl hover:scale-[1.005] rounded-xl ${isSelected
-          ? (isICT ? (isDarkMode ? 'bg-gradient-to-r from-blue-900/40 to-slate-900' : 'bg-gradient-to-r from-blue-50 to-white') : (isDarkMode ? 'bg-gradient-to-r from-orange-900/40 to-slate-900' : 'bg-gradient-to-r from-orange-50 to-white'))
+          ? `bg-gradient-to-r ${rowTheme.rowActiveBg}`
           : (isDarkMode ? 'bg-gradient-to-r from-slate-900 to-slate-950 hover:from-slate-800 hover:to-slate-900' : 'bg-gradient-to-r from-white to-slate-50 hover:from-slate-50 hover:to-white')
         }`}
       style={{ animationDelay: `${idx * 50}ms`, boxShadow: isSelected ? undefined : (isDarkMode ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 20px rgba(148, 163, 184, 0.1)') }}
       onMouseEnter={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.backgroundColor = isICT
-            ? (isDarkMode ? 'rgba(30, 58, 138, 0.4)' : 'rgba(239, 246, 255, 1)')
-            : (isDarkMode ? 'rgba(124, 45, 18, 0.4)' : 'rgba(255, 247, 237, 1)')
+          e.currentTarget.style.backgroundColor = rowTheme.hoverBg;
         }
       }}
       onMouseLeave={(e) => {
@@ -89,27 +176,25 @@ const SectionRow = memo(({ sec, idx, onSelect, onToggleSelect, isSelected, isDar
       }}
     >
       <TableCell className="pl-8 py-4 relative">
-        <div className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-300 ${isSelected ? `opacity-100 ${isICT ? 'shadow-[0_0_15px_rgba(59,130,246,0.8)]' : 'shadow-[0_0_15px_rgba(249,115,22,0.8)]'}` : 'opacity-30 group-hover:opacity-100 shadow-none'} ${isICT ? 'bg-blue-500' : 'bg-orange-500'}`} />
+        <div className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-300 ${isSelected ? `opacity-100 ${rowTheme.leftBarShadow}` : 'opacity-30 group-hover:opacity-100 shadow-none'} ${rowTheme.leftBarBg}`} />
         <div className="flex items-center gap-3">
           <button onClick={(e) => { e.stopPropagation(); onToggleSelect(sec.id); }}>
             {isSelected ? (
-              <CheckSquare size={18} className={isICT ? "text-blue-600" : "text-orange-600"} />
+              <CheckSquare size={18} className={rowTheme.checkColor} />
             ) : (
               <Square size={18} className="text-slate-300" />
             )}
           </button>
-          {isICT ? <Cpu size={16} className="text-blue-500/50" /> : <BookOpen size={16} className="text-orange-500/50" />}
+          {rowTheme.icon}
         </div>
       </TableCell>
       <TableCell className="py-4">
         <div>
           <p className={`font-black uppercase text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{sec.section_name}</p>
           <div className="flex items-center gap-2 mt-1">
-            {isICT ? (
-              <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-none text-[8px] font-black uppercase px-2 py-0.5 shadow-md shadow-blue-500/20">ICT Strand</Badge>
-            ) : (
-              <Badge className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-none text-[8px] font-black uppercase px-2 py-0.5 shadow-md shadow-orange-500/20">GAS Strand</Badge>
-            )}
+            <Badge className={`bg-gradient-to-r ${rowTheme.badgeClass} text-white border-none text-[8px] font-black uppercase px-2 py-0.5 shadow-md`}>
+              {strand} Strand
+            </Badge>
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">S.Y. {config?.school_year || "UNSET"}</span>
           </div>
         </div>
@@ -117,18 +202,12 @@ const SectionRow = memo(({ sec, idx, onSelect, onToggleSelect, isSelected, isDar
       <TableCell className="py-4 w-[30%]">
         <div className={`p-4 rounded-2xl border relative overflow-hidden group/progress transition-all duration-500 
           ${animTotal ? 'ring-2 ring-offset-2 ring-offset-slate-900 ring-blue-500 scale-[1.02]' : ''}
-          ${isFull
-            ? (isICT
-              ? 'shadow-[0_0_15px_rgba(59,130,246,0.15)] dark:shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-              : 'shadow-[0_0_15px_rgba(249,115,22,0.15)] dark:shadow-[0_0_15px_rgba(249,115,22,0.3)]')
-            : ''} 
+          ${isFull ? rowTheme.fullShadow : ''} 
           ${isDarkMode ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
 
           {/* Blur/Glow Effect */}
           <div className={`absolute inset-0 opacity-0 group-hover/progress:opacity-100 transition-opacity duration-500 
-            ${isFull
-              ? (isICT ? 'opacity-100 bg-blue-500/10' : 'opacity-100 bg-orange-500/10')
-              : (isICT ? 'bg-blue-500/5' : 'bg-orange-500/5')}`} />
+            ${isFull ? rowTheme.fullGlowBg : 'bg-slate-500/5'}`} />
 
           <div className="flex justify-between items-end mb-2 relative z-10">
             <span className={`text-[10px] font-black uppercase transition-all duration-300 ${animM ? 'text-blue-400 scale-110' : 'text-blue-500'}`}>{Math.round(mP)}% Male</span>
@@ -137,12 +216,7 @@ const SectionRow = memo(({ sec, idx, onSelect, onToggleSelect, isSelected, isDar
           </div>
 
           <div className={`relative h-3 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-800 shadow-inner isolate transition-all duration-500 ease-in-out
-              ${isFull
-              ? (isICT
-                ? 'shadow-[0_0_20px_rgba(59,130,246,0.4)]'
-                : 'shadow-[0_0_20px_rgba(249,115,22,0.4)]')
-              : 'shadow-none'
-            }`}>
+              ${isFull ? rowTheme.fullProgressGlow : 'shadow-none'}`}>
             <div
               style={{ width: `${mP}%` }}
               className={`absolute left-0 top-0 bottom-0 h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(59,130,246,0.8)] ${animM ? 'brightness-150' : ''}`}

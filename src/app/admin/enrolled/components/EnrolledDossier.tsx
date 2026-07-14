@@ -17,6 +17,7 @@ const WATCHED_FIELDS = [
   "last_school_attended", "gwa_grade_10", "strand", "section",
   "school_type", "year_completed_jhs", "last_school_address",
   "facebook_user", "facebook_link", "preferred_modality", "preferred_shift",
+  "student_category", "grade_level",
 ] as const
 
 export const EnrolledDossier = memo(function EnrolledDossier({

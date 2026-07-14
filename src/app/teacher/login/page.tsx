@@ -62,14 +62,28 @@ export default function TeacherLoginPage() {
     }
     setLoading(true)
     const toastId = toast.loading("Signing in...", { style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+
+    // Safety net: if login takes longer than 15s, unblock the UI
+    const loginTimeout = setTimeout(() => {
+      setLoading(false)
+      toast.error("Login is taking too long. Please check your connection and try again.", {
+        id: toastId,
+        style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }
+      })
+    }, 15000)
+
     const isHuman = await verifyTurnstile(turnstileToken)
     if (!isHuman) {
+      clearTimeout(loginTimeout)
       toast.error("Security check failed. Please refresh and try again.", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
       setLoading(false)
       return
     }
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: trimmed, password })
+
+      clearTimeout(loginTimeout)
+
       if (error) {
         setFailedAttempts(prev => prev + 1)
         setTurnstileToken(null)
@@ -79,8 +93,11 @@ export default function TeacherLoginPage() {
         return
       }
       toast.success("Signed in. Redirecting...", { id: toastId, duration: 1000, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
+      // Fallback: clear loading if navigation takes too long (e.g. cold start)
+      setTimeout(() => setLoading(false), 5000)
       window.location.href = "/teacher/dashboard"
     } catch {
+      clearTimeout(loginTimeout)
       toast.error("Connection error. Check your network.", { id: toastId, style: { fontSize: "11px", fontWeight: "900", textTransform: "uppercase" } })
       setLoading(false)
     }
@@ -181,7 +198,7 @@ export default function TeacherLoginPage() {
               </div>
               <div className="flex justify-center my-4">
                 <div className={cn("rounded-2xl border shadow-sm px-3 py-2", isDarkMode ? "bg-slate-900/50 border-white/10" : "bg-white border-slate-100")}>
-                  <TurnstileWidget key={`${turnstileKey}-${isDarkMode ? 'dark' : 'light'}`} onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} theme={isDarkMode ? "dark" : "light"} />
+                  <TurnstileWidget key={`${turnstileKey}-${isDarkMode ? 'dark' : 'light'}`} onVerify={setTurnstileToken} onExpire={() => { setTurnstileToken(null); setTurnstileKey(k => k + 1) }} theme={isDarkMode ? "dark" : "light"} />
                 </div>
               </div>
               {failedAttempts > 0 && (

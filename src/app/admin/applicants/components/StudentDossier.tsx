@@ -4,7 +4,7 @@ import { memo, useState, useRef, useEffect, useMemo } from "react"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase/admin-client"
 
-import { DossierHeader }   from "./DossierHeader.tsx"
+import { DossierHeader }   from "./DossierHeader"
 import { DossierSections } from "./DossierSections"
 import { DossierDocuments } from "./DossierDocuments"
 
@@ -16,6 +16,7 @@ const WATCHED_FIELDS = [
   "last_school_attended", "gwa_grade_10", "strand", "section",
   "school_type", "year_completed_jhs", "last_school_address",
   "facebook_user", "facebook_link", "preferred_modality", "preferred_shift",
+  "student_category", "grade_level",
 ] as const
 
 

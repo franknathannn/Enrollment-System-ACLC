@@ -19,6 +19,7 @@ export default function SchedulesPage() {
   const [scheduleRows, setScheduleRows] = useState<ScheduleRow[]>([])
   const [allSections,  setAllSections]  = useState<SectionRow[]>([])
   const [loading,      setLoading]      = useState(true)
+  const [availableStrands, setAvailableStrands] = useState<string[]>([])
 
   const [pageTab, setPageTab] = useState<"manager" | "timetable" | "calendar" | "rooms">(() => {
     if (typeof window !== "undefined") {
@@ -35,21 +36,37 @@ export default function SchedulesPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [{ data: secData, error: secErr }, { data: schData, error: schErr }, { data: tchData }, { data: cfgData }] =
+      const [{ data: secData, error: secErr }, { data: schData, error: schErr }, { data: tchData }, { data: cfgData }, { data: sData }] =
         await Promise.all([
           supabase.from("sections").select("*, students!section_id(id, status, gender, student_category)").order("section_name"),
           supabase.from("schedules").select("*, rooms(name)").order("start_time"),
           supabase.from("teachers").select("id, full_name").eq("is_active", true).order("full_name"),
           supabase.from("system_config").select("school_year").single(),
+          supabase.from("system_settings").select("*").eq("setting_key", "available_strands"),
         ])
       if (secErr) throw secErr
       if (schErr) throw schErr
-      setAllSections((secData ?? []) as SectionRow[])
+
+      let strands = ['ICT', 'GAS']
+      if (sData && sData.length > 0 && sData[0].value_text) {
+        try {
+          strands = JSON.parse(sData[0].value_text)
+        } catch(e) {}
+      }
+      setAvailableStrands(strands)
+
+      const filteredSections = (secData ?? []).filter((s: any) => strands.includes(s.strand))
+      setAllSections(filteredSections as SectionRow[])
+
       const mappedSchedules = (schData ?? []).map((r: any) => ({
         ...r,
         room: r.rooms?.name || r.room,
         teacher: (tchData ?? []).find((t: any) => t.id === r.teacher_id)?.full_name || r.teacher || null
-      })) as ScheduleRow[]
+      })).filter((r: any) => {
+        const sec = (secData ?? []).find((s: any) => s.section_name === r.section)
+        return sec ? strands.includes(sec.strand) : true
+      }) as ScheduleRow[]
+
       setScheduleRows(mappedSchedules)
       if (cfgData?.school_year) setSchoolYear(cfgData.school_year)
     } catch (e: any) {

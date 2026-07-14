@@ -91,6 +91,9 @@ export const DossierSections = memo(function DossierSections({
     schoolTypeOpen, setSchoolTypeOpen,
   } = dropdowns
 
+  const [categoryOpen, setCategoryOpen] = useState(false)
+  const [gradeLevelOpen, setGradeLevelOpen] = useState(false)
+
   const inputClass = getInputClass(isDarkMode)
   const labelClass = getLabelClass(isDarkMode)
 
@@ -465,6 +468,61 @@ export const DossierSections = memo(function DossierSections({
                 <p className={`text-xl md:text-2xl font-black leading-none ${isDarkMode ? "text-purple-400" : "text-purple-700"}`}>{formData.section || "Unassigned"}</p>
               )}
             </div>
+
+            {/* Voucher Category */}
+            <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 min-w-0 ${isDarkMode ? "bg-emerald-900/10 border-emerald-900/40" : "bg-emerald-50 border-emerald-200"}`}>
+              <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`}>Voucher Category</p>
+              {isEditing ? (
+                <div className="relative">
+                  <Button onClick={() => setCategoryOpen(!categoryOpen)} className={`w-full justify-between ${inputClass} px-3`} variant="ghost">
+                    {formData.student_category || "Standard"}
+                    <ChevronDown size={14} className={`transition-transform duration-300 ${categoryOpen ? "rotate-180" : ""}`} />
+                  </Button>
+                  {categoryOpen && (
+                    <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 max-h-[200px] overflow-y-auto ${isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-100"}`}>
+                      <div className="p-1 space-y-1">
+                        {["JHS Graduate", "ALS Passer", "PEPT Passer", "Private non-ESC", "Transferee"].map((cat) => (
+                          <button key={cat} onClick={() => { onChange("student_category", cat); setCategoryOpen(false) }}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.student_category === cat ? isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-50 text-blue-600" : isDarkMode ? "text-slate-400 hover:bg-slate-800 hover:text-white" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+                            {cat} {formData.student_category === cat && <Check size={12} />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className={`text-xl md:text-2xl font-black leading-none ${isDarkMode ? "text-emerald-400" : "text-emerald-700"}`}>{formData.student_category || "Standard"}</p>
+              )}
+            </div>
+
+            {/* Grade Level */}
+            <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 min-w-0 ${isDarkMode ? "bg-blue-900/10 border-blue-900/40" : "bg-blue-50 border-blue-200"}`}>
+              <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`}>Grade Level</p>
+              {isEditing ? (
+                <div className="relative">
+                  <Button onClick={() => setGradeLevelOpen(!gradeLevelOpen)} className={`w-full justify-between ${inputClass} px-3`} variant="ghost">
+                    {formData.grade_level || "11"}
+                    <ChevronDown size={14} className={`transition-transform duration-300 ${gradeLevelOpen ? "rotate-180" : ""}`} />
+                  </Button>
+                  {gradeLevelOpen && (
+                    <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 max-h-[200px] overflow-y-auto ${isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-100"}`}>
+                      <div className="p-1 space-y-1">
+                        {["11", "12", "GRADUATED"].map((lvl) => (
+                          <button key={lvl} onClick={() => { onChange("grade_level", lvl); setGradeLevelOpen(false) }}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.grade_level === lvl ? isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-50 text-blue-600" : isDarkMode ? "text-slate-400 hover:bg-slate-800 hover:text-white" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+                            {lvl} {formData.grade_level === lvl && <Check size={12} />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className={`text-xl md:text-2xl font-black leading-none ${isDarkMode ? "text-blue-400" : "text-blue-700"}`}>{formData.grade_level || "11"}</p>
+              )}
+            </div>
+
           </div>
         </div>
       </div>

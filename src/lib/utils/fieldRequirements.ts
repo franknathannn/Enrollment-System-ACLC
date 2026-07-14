@@ -50,6 +50,7 @@ export type FieldRequirements = {
   cor_url: FieldRequirement
   af5_url: FieldRequirement
   diploma_url: FieldRequirement
+  voucher_cert_url: FieldRequirement
 }
 
 export const DEFAULT_FIELD_REQUIREMENTS: FieldRequirements = {
@@ -97,6 +98,7 @@ export const DEFAULT_FIELD_REQUIREMENTS: FieldRequirements = {
   cor_url:               { required: false, editable: true },
   af5_url:               { required: false, editable: true },
   diploma_url:           { required: false, editable: true },
+  voucher_cert_url:      { required: false, editable: true },
 }
 
 /**

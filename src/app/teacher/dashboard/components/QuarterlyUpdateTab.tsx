@@ -81,14 +81,13 @@ export function QuarterlyUpdateTab({ dm, session }: QuarterlyUpdateTabProps) {
     const existing = submissions.find(s => s.requirement_id === reqId && s.status !== 'Invalidated')
     if (existing) {
       setSubmitting(false)
-      return toast.error("You already have an active submission for this requirement.")
+      return toast.error("An active submission is already registered for this deliverable.")
     }
 
     let finalUrl = url.trim()
 
     if (file) {
-      const toastId = toast.loading("Uploading file...")
-      // Keep original name but add timestamp to prevent collision
+      const toastId = toast.loading("Uploading document...")
       const safeOriginalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
       const fileName = `${session.id}-${Date.now()}-${safeOriginalName}`
       const filePath = `submissions/${fileName}`
@@ -113,7 +112,7 @@ export function QuarterlyUpdateTab({ dm, session }: QuarterlyUpdateTabProps) {
     if (error) {
       toast.error(error.message)
     } else {
-      toast.success("Submitted successfully!")
+      toast.success("Deliverable submitted successfully!")
       setActiveReqId(null)
       setUrl("")
       setFile(null)
@@ -127,12 +126,11 @@ export function QuarterlyUpdateTab({ dm, session }: QuarterlyUpdateTabProps) {
   const card = dm ? "border-slate-700/60 bg-slate-900/50" : "border-slate-200 bg-white"
 
   // Checking "Near Deadline" globally for this teacher
-  // Requirements that don't have a valid submission, and whose deadline is within 3 days.
   const now = new Date()
   const threeDaysFromNow = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000))
   const urgentRequirements = requirements.filter(req => {
     const subm = submissions.find(s => s.requirement_id === req.id && s.status !== 'Invalidated')
-    if (subm) return false // They handled it
+    if (subm) return false
     const dl = new Date(req.deadline)
     return dl > now && dl <= threeDaysFromNow && req.is_required
   })
@@ -143,8 +141,8 @@ export function QuarterlyUpdateTab({ dm, session }: QuarterlyUpdateTabProps) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gradient-to-br from-blue-600 to-indigo-600 rounded-[32px] p-6 sm:p-8 text-white relative overflow-hidden shadow-lg shadow-blue-500/20 gap-4">
         <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 blur-2xl rounded-full" />
         <div className="relative z-10 w-full sm:w-auto">
-          <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight">Academic Requirements</h2>
-          <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-blue-200 mt-1">Submission of Requirements</p>
+          <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight">Academic Deliverables Registry</h2>
+          <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-blue-200 mt-1">Official Submissions Desk</p>
         </div>
         <div className="relative z-10 shrink-0 w-full sm:w-auto">
           <select value={semesterFilter} onChange={e => setSemesterFilter(e.target.value)}
@@ -162,9 +160,9 @@ export function QuarterlyUpdateTab({ dm, session }: QuarterlyUpdateTabProps) {
               <AlertTriangle className="text-amber-500 w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-amber-500 font-black uppercase tracking-tight text-sm">Action Required: Deadlines Approaching</h3>
+              <h3 className="text-amber-500 font-black uppercase tracking-tight text-sm">Administrative Action Required: Approaching Deadlines</h3>
               <p className={`text-xs font-medium mt-1 ${dm ? "text-amber-200/70" : "text-amber-700/80"}`}>
-                You have {urgentRequirements.length} required submission(s) due within the next 3 days. Please fulfill them below.
+                You have {urgentRequirements.length} compulsory academic deliverable(s) due within the next 72 hours. Please complete them below.
               </p>
             </div>
           </div>
@@ -178,8 +176,8 @@ export function QuarterlyUpdateTab({ dm, session }: QuarterlyUpdateTabProps) {
           <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 ${dm ? "bg-slate-800" : "bg-slate-100"}`}>
             <FileSpreadsheet size={28} className={`opacity-40 ${sub}`} />
           </div>
-          <p className={`text-sm font-black uppercase tracking-widest ${head}`}>No Requirements Assigned</p>
-          <p className={`text-xs mt-1 ${sub}`}>Admins have not scheduled any requirements for {semesterFilter}.</p>
+          <p className={`text-sm font-black uppercase tracking-widest ${head}`}>No Deliverables Registry Data</p>
+          <p className={`text-xs mt-1 ${sub}`}>No academic deliverables have been published for this term.</p>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -192,34 +190,35 @@ export function QuarterlyUpdateTab({ dm, session }: QuarterlyUpdateTabProps) {
             let canSubmit = false
 
             if (subm) {
-              // They submitted!
               const isLate = new Date(subm.created_at) > dl
               canSubmit = subm.status === 'Invalidated'
+              const formattedStatus = subm.status === 'Accepted' ? 'Validated & Approved'
+                                    : subm.status === 'Invalidated' ? 'Returned for Revision'
+                                    : 'Awaiting Verification'
               statusMarkup = (
                 <div className="flex flex-col md:items-end gap-2 text-right">
                   <div className="flex items-center gap-2">
                     <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${subm.status === 'Accepted' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
                       subm.status === 'Invalidated' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' :
                         'bg-blue-500/10 text-blue-500 border border-blue-500/20'
-                      }`}>{subm.status}</span>
+                      }`}>{formattedStatus}</span>
 
                     <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${isLate ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                      }`}>{isLate ? "LATE" : "ON-TIME"}</span>
+                      }`}>{isLate ? "LATE SUBMISSION" : "ON-TIME SUBMISSION"}</span>
                   </div>
                   {subm.admin_feedback && (
                     <div className={`text-[10px] font-medium flex items-center gap-1.5 ${dm ? "text-slate-400" : "text-slate-500"}`}>
-                      <MessageSquare size={10} /> Admins: "{subm.admin_feedback}"
+                      <MessageSquare size={10} /> Registrar Comments: "{subm.admin_feedback}"
                     </div>
                   )}
                 </div>
               )
             } else {
-              // Missing
               canSubmit = true
               statusMarkup = (
                 <div className="flex items-center gap-2">
                   <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${isPastDl ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : dm ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'
-                    }`}>{isPastDl ? "OVERDUE" : "AWAITING SUBMISSION"}</span>
+                    }`}>{isPastDl ? "PAST DUE" : "PENDING SUBMISSION"}</span>
                 </div>
               )
             }
@@ -234,9 +233,10 @@ export function QuarterlyUpdateTab({ dm, session }: QuarterlyUpdateTabProps) {
                     <div className="flex items-center gap-2 mb-1.5">
                       <h3 className={`text-lg font-black tracking-tight ${head}`}>{req.title}</h3>
                       {!req.is_required && <span className="bg-slate-500/10 text-slate-500 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Optional</span>}
+                      {req.is_required && <span className="bg-blue-500/10 text-blue-500 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Compulsory</span>}
                     </div>
                     <p className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 text-rose-500">
-                      <Calendar size={12} /> Due: {dl.toLocaleString()}
+                      <Calendar size={12} /> Deadline: {dl.toLocaleString()}
                     </p>
                   </div>
 
@@ -246,7 +246,7 @@ export function QuarterlyUpdateTab({ dm, session }: QuarterlyUpdateTabProps) {
                       <button onClick={() => { setActiveReqId(isActiveForm ? null : req.id); setUrl(""); setFile(null) }}
                         className={`h-9 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all
                            ${isActiveForm ? "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300" : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-500/20"}`}>
-                        {isActiveForm ? "Cancel" : (subm?.status === 'Invalidated' ? "Re-Submit" : "Submit File")}
+                        {isActiveForm ? "Cancel" : (subm?.status === 'Invalidated' ? "Submit Revision" : "Submit Deliverable")}
                       </button>
                     )}
                   </div>
@@ -256,18 +256,18 @@ export function QuarterlyUpdateTab({ dm, session }: QuarterlyUpdateTabProps) {
                 {isActiveForm && (
                   <div className={`p-6 border-t ${dm ? "border-slate-700/50 bg-slate-900/40" : "border-slate-200 bg-slate-50"} animate-in slide-in-from-top-4`}>
                     <div className="max-w-2xl">
-                      <h4 className={`text-xs font-black uppercase mb-4 ${head}`}>Complete Requirement</h4>
+                      <h4 className={`text-xs font-black uppercase mb-4 ${head}`}>Submission Documentation</h4>
 
                       <div className="space-y-4">
                         <div className="space-y-1.5">
-                          <label className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>Submission Link (Google Drive, Forms)</label>
-                          <input value={url} onChange={e => setUrl(e.target.value)} disabled={!!file} placeholder={file ? "Disabled—using file upload" : "https://docs.google.com/..."}
+                          <label className={`text-[9px] font-black uppercase tracking-[0.2em] ${sub}`}>External Document URL (Google Drive, Cloud Storage)</label>
+                          <input value={url} onChange={e => setUrl(e.target.value)} disabled={!!file} placeholder={file ? "Using direct file upload option" : "https://docs.google.com/..."}
                             className={`w-full h-11 px-4 rounded-xl text-sm font-bold border transition-colors outline-none focus:border-blue-500 ${dm ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500" : "bg-white border-slate-200 text-slate-900 placeholder-slate-400"} disabled:opacity-50`} />
                         </div>
 
                         <div className="flex items-center gap-4">
                           <div className={`h-px flex-1 ${dm ? "bg-slate-800" : "bg-slate-200"}`} />
-                          <span className={`text-[9px] font-black uppercase tracking-widest ${sub}`}>OR UPLOAD FILE</span>
+                          <span className={`text-[9px] font-black uppercase tracking-widest ${sub}`}>OR UPLOAD OFFICIAL DOCUMENT</span>
                           <div className={`h-px flex-1 ${dm ? "bg-slate-800" : "bg-slate-200"}`} />
                         </div>
 
@@ -281,7 +281,7 @@ export function QuarterlyUpdateTab({ dm, session }: QuarterlyUpdateTabProps) {
 
                         <button onClick={() => handleSubmit(req.id)} disabled={submitting || (!url.trim() && !file)}
                           className="h-11 w-full mt-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                          {submitting ? <Loader2 size={16} className="animate-spin" /> : <><Send size={14} /> Submit Final</>}
+                          {submitting ? <Loader2 size={16} className="animate-spin" /> : <><Send size={14} /> Confirm Submission</>}
                         </button>
                       </div>
                     </div>

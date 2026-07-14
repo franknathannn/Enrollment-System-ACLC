@@ -20,10 +20,8 @@ import { PreEnrollmentMode } from "./components/PreEnrollmentMode"
 import { CapacityGuardian } from "./components/CapacityGuardian"
 import { FinancialHub } from "./components/FinancialHub"
 import { SettingsActions } from "./components/SettingsActions"
-import { EnrollmentFormControl } from "./components/EnrollmentFormControl"
 import { GradeOperationsPanel } from "./components/GradeOperationsPanel"
 import { StudentEditControl } from "./components/StudentEditControl"
-import { LiveDashboardControl } from "./components/LiveDashboardControl"
 
 type ConfigState = {
   id: string
@@ -102,13 +100,11 @@ export default function SettingsPage() {
   }, []);
   const loadSettings = useCallback(async () => {
     try {
-      // Use maybeSingle() to avoid crashing if table is empty or RLS blocks it
-      const { data: configRows, error: configError } = await supabase
+      const { data: initialConfig, error: configError } = await supabase
         .from('system_config')
         .select('*')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-      let configData = configRows?.[0] ?? null
+        .maybeSingle()
+      let configData = initialConfig
 
       if (configError) {
         console.error("Error fetching system_config:", configError)
@@ -155,7 +151,7 @@ export default function SettingsPage() {
           startDate: configData.enrollment_start || "",
           endDate: configData.enrollment_end || "",
           controlMode,
-          voucherValue: configData.voucher_value ?? 22500,
+          voucherValue: (!configData.voucher_value || configData.voucher_value <= 0) ? 22500 : configData.voucher_value,
           isPreEnrollment: configData.is_pre_enrollment ?? false,
           grade12Enabled: configData.grade12_enabled ?? true,
           notifyParentsStatus: configData.notify_parents_status ?? true,
@@ -193,8 +189,6 @@ export default function SettingsPage() {
         : supabase
             .from('system_config')
             .select('is_portal_active, control_mode, is_pre_enrollment, close_portal_when_full')
-            .order('updated_at', { ascending: false })
-            .limit(1)
             .maybeSingle()
 
       const [{ data: configData }, { count }] = await Promise.all([
@@ -394,9 +388,12 @@ export default function SettingsPage() {
       return toast.error("Validation Error: Capacity field cannot be blank.")
     }
 
-    // VOUCHER BLANK CHECK (UPDATED REQUEST)
+    // VOUCHER BLANK OR INVALID CHECK (UPDATED REQUEST)
     if (config.voucherValue === "" || config.voucherValue === null) {
       return toast.error("Financial Error: Voucher Value cannot be blank.")
+    }
+    if (Number(config.voucherValue) <= 0) {
+      return toast.error("Financial Error: Voucher Value must be greater than 0.")
     }
 
     const numericCapacity = Number(config.capacity)
@@ -685,8 +682,6 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <LiveDashboardControl isDarkMode={isDarkMode} />
-
             <ParentNotificationControl
               isDarkMode={isDarkMode}
               updating={updating}
@@ -803,17 +798,6 @@ export default function SettingsPage() {
                   toast.error("Failed to update slot display mode")
                 } finally { setUpdating(false) }
               }}
-            />
-
-            <FinancialHub
-              voucherValue={config.voucherValue}
-              isDarkMode={isDarkMode}
-              onVoucherValueChange={(value) => setConfig({ ...config, voucherValue: value })}
-            />
-
-            <EnrollmentFormControl
-              configId={config.id}
-              isDarkMode={isDarkMode}
             />
 
             <GradeOperationsPanel

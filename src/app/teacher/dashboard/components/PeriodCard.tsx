@@ -321,14 +321,6 @@ export function PeriodCard({ period, idx, color, students, loading: studLoad, dm
           {/* Stacked on mobile, row on desktop */}
           <div className="flex flex-col md:flex-row items-end md:items-center gap-1">
             <button
-              onClick={() => router.push(`/teacher/dashboard/gradebook/${sectionObj?.id}`)}
-              disabled={!sectionObj}
-              className={`h-7 px-3 text-[9px] font-black uppercase tracking-wider rounded-xl border transition-all duration-200 active:scale-95 disabled:opacity-50
-                ${dm ? "bg-blue-600/10 border-blue-600/30 text-blue-400 hover:bg-blue-600/20" : "bg-blue-600/5 border-blue-200 text-blue-600 hover:bg-blue-50"}`}
-            >
-              Gradebook
-            </button>
-            <button
               onClick={() => exportSimpleMasterlist(period.section, mine, formatTeacherName(session.full_name, session.gender))}
               title="Export Masterlist"
               className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl border transition-all duration-200 active:scale-95

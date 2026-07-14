@@ -118,6 +118,7 @@ export default function Step5Review() {
         last_school_address: formData.last_school_address || null, facebook_user: formData.facebook_user || null,
         facebook_link: formData.facebook_link || null, preferred_modality: formData.preferred_modality || null,
         preferred_shift: formData.preferred_shift || null,
+        has_voucher_cert: formData.has_voucher_cert || "no", voucher_cert_url: formData.voucher_cert_url || null,
       }
 
       const { data, error } = await supabase.from('students').upsert({ ...(formData.id ? { id: formData.id } : {}), ...studentData }, { onConflict: 'lrn' }).select().single()

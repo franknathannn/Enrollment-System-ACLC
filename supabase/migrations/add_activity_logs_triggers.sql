@@ -135,3 +135,41 @@ CREATE TRIGGER tr_log_class_suspensions AFTER INSERT OR DELETE ON public.class_s
 CREATE TRIGGER tr_log_system_config AFTER UPDATE ON public.system_config FOR EACH ROW EXECUTE FUNCTION public.log_activity();
 CREATE TRIGGER tr_log_system_settings AFTER UPDATE ON public.system_settings FOR EACH ROW EXECUTE FUNCTION public.log_activity();
 CREATE TRIGGER tr_log_teachers AFTER INSERT OR DELETE ON public.teachers FOR EACH ROW EXECUTE FUNCTION public.log_activity();
+
+-- Trigger Function for Auto-Creating Grade 12 Sections on School Year Update
+CREATE OR REPLACE FUNCTION public.auto_create_g12_sections_on_sy_change()
+RETURNS TRIGGER AS $$
+DECLARE
+    r record;
+    g12_name text;
+    has_g12 integer;
+BEGIN
+    -- Check if the school_year has actually changed
+    IF NEW.school_year IS DISTINCT FROM OLD.school_year THEN
+        -- Loop through all existing Grade 11 sections
+        FOR r IN SELECT section_name, strand, capacity FROM public.sections WHERE grade_level = '11' LOOP
+            -- Derive Grade 12 section name
+            g12_name := REPLACE(r.section_name, '11', '12');
+            
+            -- Check if it already exists
+            SELECT COUNT(*) INTO has_g12 FROM public.sections WHERE section_name = g12_name;
+            
+            IF has_g12 = 0 THEN
+                INSERT INTO public.sections (section_name, strand, grade_level, capacity)
+                VALUES (g12_name, r.strand, '12', r.capacity);
+            END IF;
+        END LOOP;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS tr_auto_create_g12_sections ON public.system_config;
+
+-- Create trigger on system_config
+CREATE TRIGGER tr_auto_create_g12_sections
+AFTER UPDATE OF school_year ON public.system_config
+FOR EACH ROW
+EXECUTE FUNCTION public.auto_create_g12_sections_on_sy_change();
+

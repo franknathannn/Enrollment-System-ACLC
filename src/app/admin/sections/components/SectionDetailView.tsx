@@ -1,5 +1,5 @@
-import { memo } from "react"
-import { Loader2, ArrowLeft, RefreshCw, Search, FileDown, GraduationCap, Users2 } from "lucide-react"
+import { memo, useState } from "react"
+import { Loader2, ArrowLeft, RefreshCw, Search, FileDown, GraduationCap, Users2, Edit2, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -42,20 +42,74 @@ export const SectionDetailView = memo(function SectionDetailView({
   animatingIds,
   onToggleLock,
   teachers = [],
+  allSchedules,
   onChangeAdviser,
+  onUpdateCapacity,
 }: any) {
+  const [isEditingCap, setIsEditingCap] = useState(false)
+  const [newCap, setNewCap] = useState(capacity)
+  const strand = currentSection?.strand || 'GAS'
+  const isICT = strand === 'ICT'
 
-  const isICT = currentSection?.strand === 'ICT'
+  const themeMap: Record<string, { gradient: string; accentBg: string; textClass: string; bgGlow1: string; bgGlow2: string; tabBg: string }> = {
+    'ICT': {
+      gradient: 'from-[#020617] via-[#0f172a] to-[#020617]',
+      accentBg: 'bg-blue-600 hover:bg-blue-700',
+      textClass: 'text-blue-400',
+      bgGlow1: 'bg-blue-900',
+      bgGlow2: 'bg-cyan-500',
+      tabBg: 'data-[state=active]:bg-blue-600'
+    },
+    'TechPro': {
+      gradient: 'from-[#020617] via-[#0f172a] to-[#020617]',
+      accentBg: 'bg-blue-600 hover:bg-blue-700',
+      textClass: 'text-blue-400',
+      bgGlow1: 'bg-blue-900',
+      bgGlow2: 'bg-cyan-500',
+      tabBg: 'data-[state=active]:bg-blue-600'
+    },
+    'STEM': {
+      gradient: 'from-[#022c22] via-[#064e3b] to-[#022c22]',
+      accentBg: 'bg-emerald-600 hover:bg-emerald-700',
+      textClass: 'text-emerald-400',
+      bgGlow1: 'bg-emerald-950/70',
+      bgGlow2: 'bg-teal-500',
+      tabBg: 'data-[state=active]:bg-emerald-600'
+    },
+    'ABM': {
+      gradient: 'from-[#78350f] via-[#b45309] to-[#78350f]',
+      accentBg: 'bg-yellow-600 hover:bg-yellow-700',
+      textClass: 'text-yellow-400',
+      bgGlow1: 'bg-amber-950/70',
+      bgGlow2: 'bg-yellow-500',
+      tabBg: 'data-[state=active]:bg-yellow-600'
+    },
+    'HUMSS': {
+      gradient: 'from-[#451a03] via-[#7c2d12] to-[#451a03]',
+      accentBg: 'bg-amber-600 hover:bg-amber-700',
+      textClass: 'text-amber-400',
+      bgGlow1: 'bg-amber-950/70',
+      bgGlow2: 'bg-orange-500',
+      tabBg: 'data-[state=active]:bg-amber-600'
+    },
+    'GAS': {
+      gradient: 'from-[#1a0b0b] via-[#381102] to-[#1a0b0b]',
+      accentBg: 'bg-orange-600 hover:bg-orange-700',
+      textClass: 'text-orange-400',
+      bgGlow1: 'bg-orange-950/70',
+      bgGlow2: 'bg-amber-600',
+      tabBg: 'data-[state=active]:bg-orange-600'
+    }
+  }
+
+  const strandTheme = themeMap[strand] || themeMap['GAS']
 
   const adviserMatch = teachers?.find((t: any) => t.id === currentSection?.adviser_id)
   const rawAdviserName = adviserMatch ? adviserMatch.full_name : undefined
   const prefixedAdviserName = adviserMatch ? formatTeacherName(adviserMatch.full_name, adviserMatch.gender) : undefined
 
-  const strandGradient = isICT
-    ? 'from-[#020617] via-[#0f172a] to-[#020617]'
-    : 'from-[#1a0b0b] via-[#381102] to-[#1a0b0b]'
-
-  const accentColor = isICT ? 'bg-blue-600' : 'bg-orange-600'
+  const strandGradient = strandTheme.gradient
+  const accentColor = strandTheme.accentBg
 
   if (!currentSection) return (
     <div className="h-96 flex flex-col items-center justify-center gap-4 text-slate-400">
@@ -67,7 +121,7 @@ export const SectionDetailView = memo(function SectionDetailView({
     </div>
   )
 
-  const triggerClass = `flex-1 md:flex-none rounded-[16px] md:rounded-full px-2 md:px-12 py-3 md:py-3.5 font-black uppercase text-[9px] md:text-[10px] tracking-wider md:tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 data-[state=active]:text-white data-[state=active]:shadow-lg ${isICT ? 'data-[state=active]:bg-blue-600' : 'data-[state=active]:bg-orange-600'} hover:text-slate-400`
+  const triggerClass = `flex-1 md:flex-none rounded-[16px] md:rounded-full px-2 md:px-12 py-3 md:py-3.5 font-black uppercase text-[9px] md:text-[10px] tracking-wider md:tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 data-[state=active]:text-white data-[state=active]:shadow-lg ${strandTheme.tabBg} hover:text-slate-400`
   const dividerClass = `hidden md:block w-[1px] h-6 ${isDarkMode ? 'bg-white/10' : 'bg-slate-200'}`
 
   return (
@@ -174,8 +228,8 @@ export const SectionDetailView = memo(function SectionDetailView({
       <div className={`p-6 md:p-16 rounded-[40px] md:rounded-[60px] text-white relative overflow-hidden transition-all duration-1000 isolate z-10 bg-clip-padding shadow-xl outline outline-1 outline-transparent ${isDarkMode ? 'bg-black border border-white/5' : `bg-gradient-to-br ${strandGradient}`
         }`}>
 
-        <div className={`absolute -top-24 -left-24 w-[300px] md:w-[500px] h-[300px] md:h-[500px] blur-[100px] md:blur-[140px] opacity-30 rounded-full mix-blend-screen pointer-events-none ${isICT ? 'bg-blue-900' : 'bg-orange-900'}`} />
-        <div className={`absolute bottom-0 right-0 w-[200px] md:w-[400px] h-[200px] md:h-[400px] blur-[100px] md:blur-[160px] opacity-10 rounded-full pointer-events-none ${isICT ? 'bg-cyan-500' : 'bg-amber-600'}`} />
+        <div className={`absolute -top-24 -left-24 w-[300px] md:w-[500px] h-[300px] md:h-[500px] blur-[100px] md:blur-[140px] opacity-30 rounded-full mix-blend-screen pointer-events-none ${strandTheme.bgGlow1}`} />
+        <div className={`absolute bottom-0 right-0 w-[200px] md:w-[400px] h-[200px] md:h-[400px] blur-[100px] md:blur-[160px] opacity-10 rounded-full pointer-events-none ${strandTheme.bgGlow2}`} />
 
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-16 items-center">
           <div className="space-y-4 md:space-y-8">
@@ -208,19 +262,57 @@ export const SectionDetailView = memo(function SectionDetailView({
                   <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-white/20 mb-2 md:mb-4">Gender Saturation</p>
                   <div className="flex items-baseline gap-3">
                     <span className="text-4xl md:text-7xl font-black tracking-tighter tabular-nums">{activeStudents.length}</span>
-                    <span className="text-white/20 font-black text-sm md:text-xl tracking-tighter uppercase">/ {capacity}</span>
+                    {!isEditingCap ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/20 font-black text-sm md:text-xl tracking-tighter uppercase">/ {capacity}</span>
+                        <Button variant="ghost" size="icon" onClick={() => setIsEditingCap(true)} className="h-6 w-6 rounded-full hover:bg-white/10 text-white/40 hover:text-white">
+                          <Edit2 size={12} />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <span className="text-white/20 font-black text-sm md:text-xl tracking-tighter uppercase">/</span>
+                        <Input 
+                          type="number" 
+                          value={newCap} 
+                          onChange={e => setNewCap(parseInt(e.target.value) || 0)}
+                          className="w-16 h-8 bg-black/40 border-white/20 text-white text-center font-bold"
+                        />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => {
+                            if (newCap !== capacity && onUpdateCapacity) {
+                              onUpdateCapacity(currentSection.id, newCap)
+                            }
+                            setIsEditingCap(false)
+                          }} 
+                          className="h-8 w-8 text-emerald-400 hover:text-emerald-300 hover:bg-white/10"
+                        >
+                          <Check size={14} />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => { setIsEditingCap(false); setNewCap(capacity); }} 
+                          className="h-8 w-8 text-slate-400 hover:text-slate-300 hover:bg-white/10"
+                        >
+                          <X size={14} />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center border border-white/5 bg-black/20">
-                    <Users2 className={isICT ? 'text-blue-400' : 'text-orange-400'} size={20} />
+                    <Users2 className={strandTheme.textClass} size={20} />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-3 md:space-y-5 mb-6 md:mb-8">
                 <div className="flex items-center gap-2">
-                  <Shield size={14} className={isICT ? 'text-blue-400' : 'text-orange-400'} />
+                  <Shield size={14} className={strandTheme.textClass} />
                   <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Section Adviser</span>
                   <span className="text-[9px] md:text-[10px] font-bold opacity-50 ml-1">{prefixedAdviserName || '—'}</span>
                 </div>
@@ -229,7 +321,7 @@ export const SectionDetailView = memo(function SectionDetailView({
               <div className="space-y-3 md:space-y-5">
                 <div className="flex justify-between items-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em]">
                   <span className="opacity-30">Gender Bar</span>
-                  <span className={isICT ? 'text-blue-400' : 'text-orange-400'}>{Math.round(fillPercent)}% Complete</span>
+                  <span className={strandTheme.textClass}>{Math.round(fillPercent)}% Complete</span>
                 </div>
 
                 <div className="relative h-2 md:h-2.5 w-full bg-black/40 rounded-full overflow-hidden shadow-inner isolate">

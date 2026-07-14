@@ -4,8 +4,8 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import {
   GraduationCap, LayoutDashboard, Users, Settings,
   LogOut, BookOpen, User as UserIcon, Loader2,
-  Camera, MessageSquare, ChevronLeft, ChevronRight, Menu, Activity, Sun, Moon, UserCheck, ChartColumnBig,
-  CalendarRange, Archive, BarChart2, Globe, LayoutTemplate, Megaphone
+  Camera, MessageSquare, ChevronLeft, ChevronRight, ChevronDown, Menu, Activity, Sun, Moon, UserCheck, ChartColumnBig,
+  CalendarRange, Archive, BarChart2, Globe, LayoutTemplate, Megaphone, Landmark, ClipboardList, DollarSign
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -140,6 +140,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { href: "/admin/dashboard", icon: <LayoutDashboard size={18} />, label: "Dashboard" },
         { href: "/admin/predictive-analytics", icon: <ChartColumnBig size={18} />, label: "Analysis" },
+        { 
+          href: "/admin/financial", 
+          icon: <Landmark size={18} />, 
+          label: "Financial",
+          subItems: [
+            { href: "/admin/financial/student-balance", icon: <DollarSign size={18} />, label: "Student Balance" },
+            { href: "/admin/financial/payees", icon: <Users size={18} />, label: "Payees" }
+          ]
+        },
       ],
     },
     {
@@ -162,21 +171,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       ],
     },
     {
+      label: "Communication",
+      items: [
+        { href: "/admin/communication", icon: <MessageSquare size={18} />, label: "Messenger" },
+      ],
+    },
+    {
       label: "System",
       items: [
-        { href: "/admin/settings", icon: <Settings size={18} />, label: "Settings" },
+        { 
+          href: "/admin/settings", 
+          icon: <Settings size={18} />, 
+          label: "Settings",
+          subItems: [
+            { href: "/admin/enrollment-settings", icon: <ClipboardList size={18} />, label: "Enrollment Form" }
+          ]
+        },
         { href: "/admin/archive", icon: <Archive size={18} />, label: "Archive" },
         { href: "/admin/activity_logs", icon: <Activity size={18} />, label: "Activity Logs" },
-        { href: "/admin/communication", icon: <MessageSquare size={18} />, label: "Messenger" },
       ],
     },
     {
       label: "Website Content",
       items: [
-        { href: "/admin/website/announcements", icon: <Megaphone size={18} />, label: "Announcements" },
-        { href: "/admin/website/programs", icon: <LayoutTemplate size={18} />, label: "Programs" },
-        { href: "/admin/website/research", icon: <BookOpen size={18} />, label: "Research" },
-        { href: "/admin/website/site-info", icon: <Globe size={18} />, label: "Site Info" },
+        { 
+          href: "/admin/website/site-info", 
+          icon: <Globe size={18} />, 
+          label: "Site Info",
+          subItems: [
+            { href: "/admin/website/announcements", icon: <Megaphone size={18} />, label: "Announcements" },
+            { href: "/admin/website/programs", icon: <LayoutTemplate size={18} />, label: "Programs" },
+            { href: "/admin/website/research", icon: <BookOpen size={18} />, label: "Research" },
+          ]
+        },
       ],
     },
   ];
@@ -286,7 +313,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {group.label}
               </p>
               {group.items.map((item) => (
-                <AdminNavLink key={item.href} {...item} active={pathname === item.href} collapsed={isCollapsed} isDarkMode={isDarkMode} />
+                <AdminNavLink key={item.href} {...item} active={pathname === item.href} collapsed={isCollapsed} isDarkMode={isDarkMode} pathname={pathname} />
               ))}
             </div>
           ))}
@@ -449,19 +476,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {group.label}
                   </p>
                   {group.items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-4 p-5 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all"
-                      style={{
-                        backgroundColor: pathname === item.href ? themeColors.light.primary : 'transparent',
-                        color: pathname === item.href ? themeColors.dark.text.primary : (isDarkMode ? themeColors.dark.text.secondary : themeColors.light.text.muted),
-                        boxShadow: pathname === item.href ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' : 'none'
-                      }}
-                    >
-                      {item.icon} {item.label}
-                    </Link>
+                    <div key={item.href} className="flex flex-col w-full">
+                      <Link
+                        href={item.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-4 p-5 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all"
+                        style={{
+                          backgroundColor: pathname === item.href ? themeColors.light.primary : 'transparent',
+                          color: pathname === item.href ? themeColors.dark.text.primary : (isDarkMode ? themeColors.dark.text.secondary : themeColors.light.text.muted),
+                        }}
+                      >
+                        {item.icon}
+                        {item.label}
+                      </Link>
+                      
+                      {/* Mobile SubItems */}
+                      {(item as any).subItems && (
+                        <div className="flex flex-col ml-6 mt-1 space-y-1">
+                          {(item as any).subItems.map((sub: any) => (
+                            <Link
+                              key={sub.href}
+                              href={sub.href}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="flex items-center gap-4 p-4 rounded-2xl font-black uppercase text-[9px] tracking-widest transition-all opacity-80"
+                              style={{
+                                backgroundColor: pathname === sub.href ? themeColors.light.primary : 'transparent',
+                                color: pathname === sub.href ? themeColors.dark.text.primary : (isDarkMode ? themeColors.dark.text.secondary : themeColors.light.text.muted),
+                              }}
+                            >
+                              {sub.icon}
+                              {sub.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               ))}
@@ -658,60 +707,106 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 }
 
-function AdminNavLink({ href, icon, label, active, collapsed, isDarkMode }: { href: string, icon: React.ReactNode, label: string, active: boolean, collapsed: boolean, isDarkMode: boolean }) {
+function AdminNavLink({ href, icon, label, active, collapsed, isDarkMode, subItems, pathname }: any) {
+  const hasSub = subItems && subItems.length > 0;
+  const isSubActive = hasSub && subItems.some((s: any) => pathname === s.href);
+  const [isOpen, setIsOpen] = useState(active || isSubActive);
+
   return (
-    <Link
-      href={href}
-      className={cn(
-        "flex items-center gap-4 px-5 py-4 rounded-[24px] font-black transition-all duration-500 relative group",
-        collapsed ? "justify-center px-0" : ""
-      )}
-      style={{
-        background: active
-          ? (isDarkMode ? 'linear-gradient(to bottom right, rgb(29, 78, 216), rgb(30, 58, 138))' : '#0f172a')
-          : 'transparent',
-        color: active
-          ? 'rgb(255, 255, 255)'
-          : (isDarkMode ? themeColors.dark.text.muted : themeColors.light.text.secondary),
-        border: 'none',
-        boxShadow: active
-          ? (isDarkMode ? '0 15px 30px -10px rgba(59, 130, 246, 0.5)' : '0 15px 30px rgba(15, 23, 42, 0.2)')
-          : 'none'
-      }}
-      onMouseEnter={(e) => {
-        if (!active) {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';
-          e.currentTarget.style.color = isDarkMode ? themeColors.dark.primary : themeColors.light.primary;
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active) {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.color = isDarkMode ? themeColors.dark.text.muted : themeColors.light.text.secondary;
-        }
-      }}
-    >
-      <span
-        className="transition-all duration-500"
-        style={{
-          color: active ? (isDarkMode ? 'rgb(147, 197, 253)' : '#3b82f6') : (isDarkMode ? themeColors.dark.text.muted : themeColors.light.text.secondary),
-          transform: active ? 'scale(1.1) rotate(3deg)' : 'scale(1) rotate(0deg)'
-        }}
-      >
-        {icon}
-      </span>
+    <div className="flex flex-col w-full relative">
+      <div className="flex items-center relative group">
+        {hasSub && !collapsed && (
+          <button 
+            onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
+            className="absolute left-2 z-10 p-1 hover:bg-slate-500/20 rounded-full transition-colors"
+          >
+            {isOpen ? (
+              <ChevronDown size={12} className={isDarkMode ? 'text-slate-400' : 'text-slate-500'} />
+            ) : (
+              <ChevronRight size={12} className={isDarkMode ? 'text-slate-400' : 'text-slate-500'} />
+            )}
+          </button>
+        )}
+        <Link
+          href={href}
+          className={cn(
+            "flex items-center gap-4 px-5 py-4 rounded-[24px] font-black transition-all duration-500 relative flex-1",
+            collapsed ? "justify-center px-0" : "",
+            hasSub && !collapsed ? "pl-8" : ""
+          )}
+          style={{
+            background: active
+              ? (isDarkMode ? 'linear-gradient(to bottom right, rgb(29, 78, 216), rgb(30, 58, 138))' : '#0f172a')
+              : 'transparent',
+            color: active
+              ? 'rgb(255, 255, 255)'
+              : (isDarkMode ? themeColors.dark.text.muted : themeColors.light.text.secondary),
+            border: 'none',
+            boxShadow: active
+              ? (isDarkMode ? '0 15px 30px -10px rgba(59, 130, 246, 0.5)' : '0 15px 30px rgba(15, 23, 42, 0.2)')
+              : 'none'
+          }}
+          onMouseEnter={(e) => {
+            if (!active) {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';
+              e.currentTarget.style.color = isDarkMode ? themeColors.dark.primary : themeColors.light.primary;
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!active) {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.color = isDarkMode ? themeColors.dark.text.muted : themeColors.light.text.secondary;
+            }
+          }}
+        >
+          <span
+            className="transition-all duration-500"
+            style={{
+              color: active ? (isDarkMode ? 'rgb(147, 197, 253)' : '#3b82f6') : (isDarkMode ? themeColors.dark.text.muted : themeColors.light.text.secondary),
+              transform: active ? 'scale(1.1) rotate(3deg)' : 'scale(1) rotate(0deg)'
+            }}
+          >
+            {icon}
+          </span>
 
-      {!collapsed && (
-        <span className="text-[10px] uppercase tracking-[0.25em] animate-in fade-in slide-in-from-left-2 duration-700">
-          {label}
-        </span>
-      )}
+          {!collapsed && (
+            <span className="text-[10px] uppercase tracking-[0.25em] animate-in fade-in slide-in-from-left-2 duration-700">
+              {label}
+            </span>
+          )}
 
-      {active && !collapsed && (
-        <div className="absolute right-4 w-1 h-4 bg-blue-400 rounded-full animate-pulse" />
+          {active && !collapsed && (
+            <div className="absolute right-4 w-1 h-4 bg-blue-400 rounded-full animate-pulse" />
+          )}
+        </Link>
+      </div>
+
+      {/* Sub Items Renderer */}
+      {hasSub && isOpen && !collapsed && (
+        <div className="flex flex-col ml-8 mt-1 space-y-1 animate-in slide-in-from-top-2 fade-in duration-300">
+          {subItems.map((sub: any) => {
+            const isSubActive = pathname === sub.href;
+            return (
+              <Link
+                key={sub.href}
+                href={sub.href}
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl font-bold transition-all duration-300 group"
+                style={{
+                  background: isSubActive ? (isDarkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(15, 23, 42, 0.05)') : 'transparent',
+                  color: isSubActive ? (isDarkMode ? 'rgb(147, 197, 253)' : '#0f172a') : (isDarkMode ? themeColors.dark.text.muted : themeColors.light.text.secondary)
+                }}
+              >
+                <span className="transition-transform group-hover:scale-110">
+                  {sub.icon}
+                </span>
+                <span className="text-[9px] uppercase tracking-widest">{sub.label}</span>
+              </Link>
+            )
+          })}
+        </div>
       )}
-    </Link>
+    </div>
   );
 }

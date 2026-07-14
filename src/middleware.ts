@@ -108,7 +108,7 @@ export async function middleware(request: NextRequest) {
         // For AuthSessionMissingError and other errors, we simply leave `user` as null
         // so the authorization logic below correctly redirects them to the login page.
       } else {
-        user = data.user as typeof user
+        user = data.user as any
       }
     } catch (authErr) {
       // Catch any unexpected exceptions but don't throw, let it fall through as unauthenticated.

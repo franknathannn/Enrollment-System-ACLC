@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState, useCallback } from "react"
 import { Loader2 } from "lucide-react"
 import { useTheme } from "@/hooks/useTheme"
 import { StarConstellation } from "./components/StarConstellation"
@@ -12,6 +12,7 @@ import { ApplicantModals } from "./components/ApplicantModals"
 import { DocumentViewerModal } from "./components/DocumentViewerModal"
 import { CapacityAlert } from "./components/CapacityAlert"
 import { StudentProfileModal } from "./components/StudentProfileModal"
+import { AcceptConfirmModal } from "./components/AcceptConfirmModal"
 import { useApplicants } from "./hooks/useApplicants"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -36,6 +37,39 @@ export default function ApplicantsPage() {
    updateStudentProfile,
    sections
  } = useApplicants()
+
+ // ── Accept Confirmation Modal state ──────────────────────────────────
+ const [acceptModalStudent, setAcceptModalStudent] = useState<any>(null)
+ const [acceptModalMeta, setAcceptModalMeta] = useState<{ id: string; name: string } | null>(null)
+
+ // Intercept accept calls: instead of immediately accepting, open the modal
+ const handleAcceptIntercept = useCallback((studentId: string, name: string, status: string) => {
+   if (status === 'Accepted' || status === 'Approved') {
+     const student = students.find(s => s.id === studentId)
+     if (student) {
+       setAcceptModalStudent(student)
+       setAcceptModalMeta({ id: studentId, name })
+       return
+     }
+   }
+   // For non-accept statuses (Pending, etc.), call directly
+   handleStatusChange(studentId, name, status)
+ }, [students, handleStatusChange])
+
+ // Called when user confirms in the AcceptConfirmModal
+  const handleAcceptConfirm = useCallback((voucherStatus: string, checks: Record<string, boolean>, isPayee: boolean) => {
+    if (!acceptModalMeta) return
+    const extra = {
+      voucher_status: voucherStatus,
+      shs_vms_registered: checks.shs_vms,
+      is_payee: isPayee,
+    }
+    handleExit(acceptModalMeta.id, () => {
+      handleStatusChange(acceptModalMeta.id, acceptModalMeta.name, 'Accepted', undefined, extra)
+    })
+   setAcceptModalStudent(null)
+   setAcceptModalMeta(null)
+ }, [acceptModalMeta, handleExit, handleStatusChange])
 
  // Calculate visible students for the current page (for the filter component)
  const visibleStudentsForFilter = useMemo(() => {
@@ -114,7 +148,7 @@ export default function ApplicantsPage() {
       animatingIds={animatingIds}
       setOpenStudentDialog={setOpenStudentDialog}
       handleExit={handleExit}
-      handleStatusChange={handleStatusChange}
+      handleStatusChange={handleAcceptIntercept}
       setActiveDeclineStudent={setActiveDeclineStudent}
       setDeclineModalOpen={setDeclineModalOpen}
       setActiveDeleteStudent={setActiveDeleteStudent}
@@ -137,7 +171,7 @@ export default function ApplicantsPage() {
      sections={sections}
      onStatusChange={(id, status) => { 
        if (selectedStudentForDialog) {
-         handleStatusChange(id, `${selectedStudentForDialog.first_name} ${selectedStudentForDialog.last_name}`, status); 
+         handleAcceptIntercept(id, `${selectedStudentForDialog.first_name} ${selectedStudentForDialog.last_name}`, status); 
        }
        setOpenStudentDialog(null); 
      }}
@@ -176,6 +210,14 @@ export default function ApplicantsPage() {
      bulkDeleteModalOpen={bulkDeleteModalOpen}
      setBulkDeleteModalOpen={setBulkDeleteModalOpen}
      processBulkDelete={processBulkDelete}
+   />
+
+   <AcceptConfirmModal
+     student={acceptModalStudent}
+     isOpen={!!acceptModalStudent}
+     isDarkMode={isDarkMode}
+     onClose={() => { setAcceptModalStudent(null); setAcceptModalMeta(null) }}
+     onConfirm={handleAcceptConfirm}
    />
 
    <BulkActionsFloatingBar 

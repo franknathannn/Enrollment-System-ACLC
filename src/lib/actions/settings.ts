@@ -125,14 +125,6 @@ export async function checkAndSyncSystemCapacity() {
 
 /**
  * 🎯 STRICT SEQUENTIAL GENDER-BALANCED REDISTRIBUTION
- * 
- * RULES:
- * 1. Fill ICT11-A completely BEFORE moving to ICT11-B
- * 2. Maintain gender balance within each section:
- *    - ODD capacity: Max 1-person imbalance (3M/2F ✅, 4M/1F ❌)
- *    - EVEN capacity: Perfect balance (3M/3F ✅, 4M/2F ❌)
- * 3. If a section can't be filled further without violating balance,
- *    mark it as "complete" and move to next section
  */
 export async function syncSectionCapacities() {
   const supabase = createAdminClient()
@@ -146,7 +138,7 @@ export async function syncSectionCapacities() {
 
   const { data: sections } = await supabase
     .from('sections')
-    .select('id, section_name, strand, grade_level')
+    .select('id, section_name, strand, grade_level, capacity')
     .order('section_name', { ascending: true })
     
   if (!sections || sections.length === 0) {
@@ -171,119 +163,126 @@ export async function syncSectionCapacities() {
       const idx = g12Sections.findIndex(s => s.id === sec.id)
       newCap = idx < g12Rem ? g12Base + 1 : g12Base
     }
-    return { ...sec, newCapacity: newCap }
+    return { ...sec, capacity: newCap }
   })
 
+  // Update capacities in database
   const updatePromises = sectionCapacities.map(sec => 
-    supabase.from('sections').update({ capacity: sec.newCapacity }).eq('id', sec.id)
+    supabase.from('sections').update({ capacity: sec.capacity }).eq('id', sec.id)
   )
-
+  
   try {
     await Promise.all(updatePromises)
     
+    const gradeLevels = ['11', '12']
     const strands = ['ICT', 'GAS']
     const allUpdates: any[] = []
     
-    for (const strand of strands) {
-      const strandSections = sectionCapacities.filter(s => s.strand === strand)
-      if (strandSections.length === 0) continue
+    for (const grade of gradeLevels) {
+      for (const strand of strands) {
+        const strandSections = sectionCapacities.filter(s => s.strand === strand && s.grade_level === grade)
+        if (strandSections.length === 0) continue
 
-      // Get all students for this strand, sorted alphabetically
-      const { data: students } = await supabase
-        .from('students')
-        .select('id, section_id, first_name, last_name, gender, is_locked')
-        .eq('strand', strand)
-        .in('status', ['Accepted', 'Approved'])
-        .order('last_name', { ascending: true })
-        .order('first_name', { ascending: true })
+        // Get all students for this grade and strand, sorted alphabetically
+        const { data: students } = await supabase
+          .from('students')
+          .select('id, section_id, first_name, last_name, gender, is_locked')
+          .eq('strand', strand)
+          .eq('grade_level', grade)
+          .in('status', ['Accepted', 'Approved'])
+          .or('is_archived.is.null,is_archived.eq.false')
+          .order('last_name', { ascending: true })
+          .order('first_name', { ascending: true })
 
-      if (!students || students.length === 0) continue
+        if (!students || students.length === 0) continue
 
-      // Separate locked and unlocked students
-      const lockedStudents = students.filter(s => s.is_locked && s.section_id)
-      const unlockedStudents = students.filter(s => !s.is_locked || !s.section_id)
+        // Separate locked and unlocked students
+        const lockedStudents = students.filter(s => s.is_locked && s.section_id)
+        const unlockedStudents = students.filter(s => !s.is_locked || !s.section_id)
 
-      // FIX: Unassign unlocked students in this strand first to handle shrinking
-      await supabase.from('students')
-        .update({ section_id: null, section: 'Unassigned' })
-        .eq('strand', strand)
-        .in('status', ['Accepted', 'Approved'])
-        .eq('is_locked', false)
+        // Unassign unlocked students in this grade and strand first to handle shrinking
+        await supabase.from('students')
+          .update({ section_id: null, section: 'Unassigned' })
+          .eq('strand', strand)
+          .eq('grade_level', grade)
+          .in('status', ['Accepted', 'Approved'])
+          .eq('is_locked', false)
 
-      // Separate by gender
-      const males = unlockedStudents.filter(s => s.gender === 'Male')
-      const females = unlockedStudents.filter(s => s.gender === 'Female')
+        // Separate by gender
+        const males = unlockedStudents.filter(s => s.gender === 'Male')
+        const females = unlockedStudents.filter(s => s.gender === 'Female')
 
-      let maleIndex = 0
-      let femaleIndex = 0
-      
-      // 🎯 STRICT SEQUENTIAL FILLING
-      for (let i = 0; i < strandSections.length; i++) {
-        const section = strandSections[i]
-        const capacity = section.newCapacity
+        let maleIndex = 0
+        let femaleIndex = 0
         
-        // Start with locked students for this section
-        const lockedInThisSection = lockedStudents.filter(s => s.section_id === section.id)
-        const studentsForSection: typeof students = [...lockedInThisSection]
-
-        // Calculate targets to avoid deadlock
-        const halfCap = Math.floor(capacity / 2)
-        const isOdd = capacity % 2 !== 0
-        
-        let maxM = halfCap
-        let maxF = halfCap
-        
-        if (isOdd) {
-            const malesLeft = males.length - maleIndex
-            const femalesLeft = females.length - femaleIndex
-            if (malesLeft >= femalesLeft) maxM++
-            else maxF++
-        }
-        
-        // Stop if no students left at all
-        if (maleIndex >= males.length && femaleIndex >= females.length) break
-        
-        // 🔥 FILL THIS SECTION TO CAPACITY
-        while (studentsForSection.length < capacity) {
-          const currentMales = studentsForSection.filter(s => s.gender === 'Male').length
-          const currentFemales = studentsForSection.filter(s => s.gender === 'Female').length
+        // 🎯 STRICT SEQUENTIAL FILLING
+        for (let i = 0; i < strandSections.length; i++) {
+          const section = strandSections[i]
+          const capacity = section.capacity
           
-          const malesAvailable = maleIndex < males.length
-          const femalesAvailable = femaleIndex < females.length
+          // Start with locked students for this section
+          const lockedInThisSection = lockedStudents.filter(s => s.section_id === section.id)
+          const studentsForSection: typeof students = [...lockedInThisSection]
+
+          // Calculate targets to avoid deadlock
+          const halfCap = Math.floor(capacity / 2)
+          const isOdd = capacity % 2 !== 0
           
-          if (!malesAvailable && !femalesAvailable) break
+          let maxM = halfCap
+          let maxF = halfCap
           
-          const canAddMale = malesAvailable && currentMales < maxM
-          const canAddFemale = femalesAvailable && currentFemales < maxF
-          
-          if (canAddMale && canAddFemale) {
-            if (currentMales <= currentFemales) {
-              studentsForSection.push(males[maleIndex++])
-            } else {
-              studentsForSection.push(females[femaleIndex++])
-            }
-          } else if (canAddMale) {
-            studentsForSection.push(males[maleIndex++])
-          } else if (canAddFemale) {
-            studentsForSection.push(females[femaleIndex++])
-          } else {
-            break
+          if (isOdd) {
+              const malesLeft = males.length - maleIndex
+              const femalesLeft = females.length - femaleIndex
+              if (malesLeft >= femalesLeft) maxM++
+              else maxF++
           }
-        }
+          
+          // Stop if no students left at all
+          if (maleIndex >= males.length && femaleIndex >= females.length) break
+          
+          // 🔥 FILL THIS SECTION TO CAPACITY
+          while (studentsForSection.length < capacity) {
+            const currentMales = studentsForSection.filter(s => s.gender === 'Male').length
+            const currentFemales = studentsForSection.filter(s => s.gender === 'Female').length
+            
+            const malesAvailable = maleIndex < males.length
+            const femalesAvailable = femaleIndex < females.length
+            
+            if (!malesAvailable && !femalesAvailable) break
+            
+            const canAddMale = malesAvailable && currentMales < maxM
+            const canAddFemale = femalesAvailable && currentFemales < maxF
+            
+            if (canAddMale && canAddFemale) {
+              if (currentMales <= currentFemales) {
+                studentsForSection.push(males[maleIndex++])
+              } else {
+                studentsForSection.push(females[femaleIndex++])
+              }
+            } else if (canAddMale) {
+              studentsForSection.push(males[maleIndex++])
+            } else if (canAddFemale) {
+              studentsForSection.push(females[femaleIndex++])
+            } else {
+              break
+            }
+          }
 
-        const idsToUpdate = studentsForSection.filter(s => !s.is_locked).map(s => s.id)
-        if (idsToUpdate.length > 0) {
-          allUpdates.push({
-            section_id: section.id,
-            section: section.section_name,
-            ids: idsToUpdate
-          })
+          const idsToUpdate = studentsForSection.filter(s => !s.is_locked).map(s => s.id)
+          if (idsToUpdate.length > 0) {
+            allUpdates.push({
+              section_id: section.id,
+              section: section.section_name,
+              ids: idsToUpdate
+            })
+          }
+          
+          // Log for debugging
+          const mCount = studentsForSection.filter(s => s.gender === 'Male').length
+          const fCount = studentsForSection.filter(s => s.gender === 'Female').length
+          console.log(`✅ ${section.section_name}: ${mCount}M/${fCount}F (${studentsForSection.length}/${capacity})`)
         }
-        
-        // Log for debugging
-        const mCount = studentsForSection.filter(s => s.gender === 'Male').length
-        const fCount = studentsForSection.filter(s => s.gender === 'Female').length
-        console.log(`✅ ${section.section_name}: ${mCount}M/${fCount}F (${studentsForSection.length}/${capacity})`)
       }
     }
 
@@ -291,7 +290,6 @@ export async function syncSectionCapacities() {
     if (allUpdates.length > 0) {
       const updatePromises = []
       for (const update of allUpdates) {
-        // Postgres IN clause can handle thousands of items, but we chunk at 500 for safety
         const chunkSize = 500
         for (let i = 0; i < update.ids.length; i += chunkSize) {
           const chunkIds = update.ids.slice(i, i + chunkSize)
@@ -303,7 +301,6 @@ export async function syncSectionCapacities() {
           )
         }
       }
-      // Execute all section bulk updates concurrently
       await Promise.all(updatePromises)
     }
 
@@ -376,16 +373,9 @@ export async function toggleEnrollment(status: boolean) {
   revalidatePath("/") 
   return { success: true }
 }
+
 /**
- * SCHOOL YEAR ROLLOVER
- * 
- * Logic:
- * - All currently Approved/Accepted G11 students → promoted to G12 (section_id cleared, section cleared)
- * - Students that would be Grade 13+ (their enrollment school_year start + 2 <= current school_year start)
- *   are NOT promoted, they simply remain archived (no section assignment)
- * - The "current school year" is read from system_config
- * 
- * Returns counts: promoted, skipped (already G12+), overAge
+ * SCHOOL YEAR ROLLOVER AND GRADE 12 PROMOTION
  */
 export async function rolloverToGrade12(): Promise<{
   success: boolean
@@ -406,10 +396,9 @@ export async function rolloverToGrade12(): Promise<{
       return { success: false, promoted: 0, overAge: 0, error: 'No school year configured.' }
     }
 
-    // Parse current school year start (e.g. "2025-2026" -> 2025)
     const currentSYStart = parseInt(config.school_year.split('-')[0])
 
-    // Fetch all Approved/Accepted G11 students (non-mock)
+    // Fetch all Approved/Accepted G11 students
     const { data: students, error: fetchErr } = await supabase
       .from('students')
       .select('id, school_year, grade_level')
@@ -419,33 +408,54 @@ export async function rolloverToGrade12(): Promise<{
 
     if (fetchErr) throw fetchErr
 
+    // 1. Fetch current Grade 11 sections
+    const { data: g11Secs } = await supabase
+      .from('sections')
+      .select('section_name, strand, capacity')
+      .eq('grade_level', '11')
+
+    // 2. Auto-create matching Grade 12 sections if they do not exist
+    if (g11Secs && g11Secs.length > 0) {
+      for (const g11Sec of g11Secs) {
+        const g12Name = g11Sec.section_name.replace('11', '12')
+        
+        const { count } = await supabase
+          .from('sections')
+          .select('*', { count: 'exact', head: true })
+          .eq('section_name', g12Name)
+
+        if (count === 0) {
+          await supabase.from('sections').insert([{
+            section_name: g12Name,
+            strand: g11Sec.strand,
+            grade_level: '12',
+            capacity: g11Sec.capacity
+          }])
+        }
+      }
+    }
+
     const toPromote: string[] = []
     let overAge = 0
 
     for (const s of (students || [])) {
-      // Parse student's enrollment school year start
       const studentSYStart = s.school_year ? parseInt(s.school_year.split('-')[0]) : null
       
       if (studentSYStart === null) {
-        // No school year data — promote anyway (assume current year)
         toPromote.push(s.id)
         continue
       }
 
-      // How many years have passed since the student enrolled?
       const yearDiff = currentSYStart - studentSYStart
 
       if (yearDiff >= 2) {
-        // They would be Grade 13+ (enrolled 2+ years ago, G11 -> G12 = 1 year gap)
-        // Do NOT promote — just count as over age
         overAge++
       } else {
-        // Normal G11 -> G12 promotion
         toPromote.push(s.id)
       }
     }
 
-    // Promote in batches
+    // Promote G11 -> G12 in batches
     if (toPromote.length > 0) {
       const chunkSize = 50
       for (let i = 0; i < toPromote.length; i += chunkSize) {
@@ -455,12 +465,15 @@ export async function rolloverToGrade12(): Promise<{
           .update({
             grade_level: '12',
             section_id: null,
-            section: null,
+            section: 'Unassigned',
           })
           .in('id', chunk)
         if (updateErr) throw updateErr
       }
     }
+
+    // 3. Automatically run syncSectionCapacities to assign students to Grade 12 sections
+    await syncSectionCapacities()
 
     revalidatePath('/admin/sections')
     revalidatePath('/admin/applicants')

@@ -9,7 +9,7 @@ import { themeColors } from "@/lib/themeColors"
 export const UnenrollDialog = memo(function UnenrollDialog({ open, onOpenChange, student, onConfirm, isDarkMode }: any) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
+      <DialogContent
         className="w-[95vw] md:w-full max-w-md rounded-[32px] p-0 overflow-hidden border-none shadow-2xl z-[10000] transition-colors duration-500"
         style={{ backgroundColor: isDarkMode ? themeColors.dark.surface : themeColors.light.surface }}
       >
@@ -25,32 +25,32 @@ export const UnenrollDialog = memo(function UnenrollDialog({ open, onOpenChange,
         </div>
 
         <div className="p-8 space-y-6 text-center">
-           <div className={`p-6 rounded-[32px] border ${isDarkMode ? 'bg-red-900/20 border-red-900/30' : 'bg-red-50 border-red-100'}`}>
-              <p className={`text-sm font-bold leading-relaxed ${isDarkMode ? 'text-red-200' : 'text-red-900'}`}>
-                Are you sure you want to permanently erase <br/>
-                <span className="text-lg uppercase font-black underline decoration-2">
-                  {student?.last_name}, {student?.first_name}
-                </span>?
-              </p>
-              <p className="text-[10px] font-black uppercase text-red-500 mt-4 tracking-widest">
-                Student data will be removed from all matrices.
-              </p>
-           </div>
-           <DialogFooter className="flex-col sm:flex-col gap-2">
-              <Button 
-                onClick={onConfirm} 
-                className="w-full h-14 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Execute Database Purge
-              </Button>
-              <Button 
-                variant="ghost" 
-                onClick={() => onOpenChange(false)} 
-                className="w-full h-12 rounded-2xl text-slate-400 font-black uppercase text-[10px]"
-              >
-                Cancel
-              </Button>
-           </DialogFooter>
+          <div className={`p-6 rounded-[32px] border ${isDarkMode ? 'bg-red-900/20 border-red-900/30' : 'bg-red-50 border-red-100'}`}>
+            <p className={`text-sm font-bold leading-relaxed ${isDarkMode ? 'text-red-200' : 'text-red-900'}`}>
+              Are you sure you want to permanently erase <br />
+              <span className="text-lg uppercase font-black underline decoration-2">
+                {student?.last_name}, {student?.first_name}
+              </span>?
+            </p>
+            <p className="text-[10px] font-black uppercase text-red-500 mt-4 tracking-widest">
+              Student data will be removed from all Sections.
+            </p>
+          </div>
+          <DialogFooter className="flex-col sm:flex-col gap-2">
+            <Button
+              onClick={onConfirm}
+              className="w-full h-14 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              Execute Database Purge
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              className="w-full h-12 rounded-2xl text-slate-400 font-black uppercase text-[10px]"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

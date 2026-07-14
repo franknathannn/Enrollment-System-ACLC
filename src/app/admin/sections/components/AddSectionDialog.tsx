@@ -1,11 +1,7 @@
-// c:\Users\Nath\Documents\Enrollment System\enrollment-system\src\app\admin\sections\components\AddSectionDialog.tsx
-
 import { memo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-// ✅ FIXED: Added missing Badge import
 import { Badge } from "@/components/ui/badge"
-// ✅ FIXED: Added missing Loader2 import
 import { LayoutGrid, Plus, Info, Loader2 } from "lucide-react"
 
 export const AddSectionDialog = memo(function AddSectionDialog({
@@ -14,12 +10,13 @@ export const AddSectionDialog = memo(function AddSectionDialog({
   strand,
   onConfirm,
   isProcessing,
-  isDarkMode
+  isDarkMode,
+  capacity,
+  onGoBack
 }: any) {
 
   const isICT = strand === 'ICT';
 
-  // 🧪 PROP-BASED THEME ENGINE (Ignoring Tailwind dark: selectors for sync accuracy)
   const theme = {
     surface: isDarkMode ? 'bg-slate-950' : 'bg-white',
     textMain: isDarkMode ? 'text-white' : 'text-slate-900',
@@ -37,7 +34,7 @@ export const AddSectionDialog = memo(function AddSectionDialog({
       <DialogContent
         className={`w-[95vw] md:w-full max-w-sm rounded-[32px] p-0 overflow-hidden border-none shadow-2xl transition-all duration-500 ${theme.surface}`}
       >
-        {/* 🏙️ HEADER SECTION */}
+        {/* HEADER SECTION */}
         <div className={`p-8 pb-4 relative overflow-hidden ${isDarkMode ? 'bg-black/40' : 'bg-slate-50'}`}>
           {/* Lively Background Glow */}
           <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full -mr-16 -mt-16 opacity-20 ${isICT ? 'bg-blue-500' : 'bg-orange-500'}`} />
@@ -60,22 +57,22 @@ export const AddSectionDialog = memo(function AddSectionDialog({
           </DialogHeader>
         </div>
 
-        {/* 📋 CONTENT SECTION */}
+        {/* CONTENT SECTION */}
         <div className="p-8 pt-6">
           <div className={`p-4 rounded-2xl border border-dashed mb-8 flex items-start gap-3 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-300'}`}>
             <Info size={16} className="text-slate-400 shrink-0 mt-0.5" />
             <p className={`text-[10px] font-medium leading-relaxed italic ${theme.textSub}`}>
-              The system will automatically assign the next sequential ID to this section. This action increases total capacity by 40 Sections.
+              The system will automatically assign the next sequential ID to this section. This action increases total capacity by {capacity || 30} Students.
             </p>
           </div>
 
           <DialogFooter className="flex flex-col sm:flex-row gap-3">
             <Button
-              onClick={() => onOpenChange(false)}
+              onClick={onGoBack}
               variant="ghost"
               className={`flex-1 h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all active:scale-95 ${theme.textSub} hover:bg-slate-500/10`}
             >
-              Abort
+              Go Back
             </Button>
             <Button
               onClick={onConfirm}
