@@ -2,7 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-import { checkAndSyncSystemCapacity } from "./settings"
+
 
 /**
  * 🔥 NUCLEAR OPTION: REDISTRIBUTE STUDENTS
@@ -294,8 +294,6 @@ export async function deleteApplicant(id: string) {
   revalidatePath("/admin/dashboard")
   revalidatePath("/admin/sections")
 
-  await checkAndSyncSystemCapacity()
-
   return { success: true }
 }
 
@@ -488,8 +486,6 @@ export async function updateApplicantStatus(id: string, newStatus: string, feedb
   revalidatePath("/admin/dashboard")
   revalidatePath("/admin/sections")
   revalidatePath("/admin/status")
-
-  await checkAndSyncSystemCapacity()
 
   return {
     success: true,
@@ -723,8 +719,6 @@ export async function bulkUpdateApplicantStatus(ids: string[], newStatus: string
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/sections")
 
-    await checkAndSyncSystemCapacity()
-
     return { success: true, results }
   } catch (error) {
     console.error("Bulk update error:", error)
@@ -765,8 +759,6 @@ export async function bulkDeleteApplicants(ids: string[]) {
     revalidatePath("/admin/applicants")
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/sections")
-
-    await checkAndSyncSystemCapacity()
 
     return { success: true }
   } catch (error) {

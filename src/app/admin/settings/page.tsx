@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { supabase } from "@/lib/supabase/admin-client"
 import {
-  forceSyncCapacities,
   updateCapacity
 } from "@/lib/actions/settings"
 import { snapshotCurrentYearData } from "@/lib/actions/history"
@@ -17,7 +16,6 @@ import { ParentNotificationControl } from "./components/ParentNotificationContro
 import { ManualPortalOverride } from "./components/ManualPortalOverride"
 import { EnrollmentMatrix } from "./components/EnrollmentMatrix"
 import { PreEnrollmentMode } from "./components/PreEnrollmentMode"
-import { CapacityGuardian } from "./components/CapacityGuardian"
 import { FinancialHub } from "./components/FinancialHub"
 import { SettingsActions } from "./components/SettingsActions"
 import { GradeOperationsPanel } from "./components/GradeOperationsPanel"
@@ -359,27 +357,7 @@ export default function SettingsPage() {
     }
   }
 
-  // --- LOGIC C: Capacity Guardian (STRICTLY RETAINED) ---
-  const runCapacityGuardian = async () => {
-    setUpdating(true)
-    try {
-      const currentCap = Number(config.capacity)
-      if (currentAccepted >= currentCap) {
-        const { error } = await supabase.from('system_config').update({
-          is_portal_active: false,
-        }).eq('id', config.id)
-        if (error) throw error
-        setConfig(prev => ({ ...prev, isOpen: false }))
-        toast.warning("Guardian Critical: Limit reached. Portal shutdown complete."); await logActivity("Guardian Critical: Limit reached. Portal shutdown complete.");
-      } else {
-        toast.info(`Integrity verified. ${currentCap - currentAccepted} slots available.`)
-      }
-    } catch (_err) {
-      toast.error("Guardian Execution Failed.")
-    } finally {
-      setUpdating(false)
-    }
-  }
+
 
   // --- GLOBAL SAVE: ENFORCING PROTOCOLS ---
   const handleGlobalSave = async () => {
@@ -529,87 +507,6 @@ export default function SettingsPage() {
     } finally {
       setIsCommittingMatrix(false)
     }
-  }
-
-  // --- REACTIVE SATURATION ENGINE ---
-  const capacityPercentage = useMemo(() => {
-    const cap = Number(config.capacity)
-    if (!cap || cap <= 0) return 0
-    return Math.min((currentAccepted / cap) * 100, 100)
-  }, [currentAccepted, config.capacity])
-
-  // --- AUTO CAPACITY GUARDIAN ---
-  // ONLY reacts to capacity and portal status changes.
-  // Does NOT react to date changes — dates are handled by Commit and mode toggle.
-  // In MANUAL mode: never auto-closes/auto-reopens. Admin override stays authoritative.
-  // In AUTOMATIC mode: auto-closes at 100%, auto-reopens when slots free up (if within dates).
-  const startDateRef = useRef(config.startDate)
-  const endDateRef = useRef(config.endDate)
-  useEffect(() => { startDateRef.current = config.startDate }, [config.startDate])
-  useEffect(() => { endDateRef.current = config.endDate }, [config.endDate])
-
-  useEffect(() => {
-    if (_loading || !config.id || !config.closePortalWhenFull) return;
-
-    if (config.isOpen && capacityPercentage >= 100 && config.controlMode === 'automatic') {
-      // Auto-close portal when capacity is reached (automatic mode only)
-      const autoRunGuardian = async () => {
-        setUpdating(true)
-        try {
-          const { error } = await supabase.from('system_config').update({
-            is_portal_active: false,
-          }).eq('id', config.id)
-          if (error) throw error
-          setConfig(prev => ({ ...prev, isOpen: false }))
-          toast.warning("Auto-Trigger: Capacity limit reached. Portal automatically closed."); await logActivity("Auto-Trigger: Capacity limit reached. Portal automatically closed.");
-        } catch (_err) {
-          console.error("Auto Guardian Execution Failed.")
-        } finally {
-          setUpdating(false)
-        }
-      }
-      autoRunGuardian()
-    } else if (!config.isOpen && capacityPercentage < 100 && config.controlMode === 'automatic') {
-      // Auto-reopen ONLY in automatic mode when slots freed up and dates are valid
-      const autoReopen = async () => {
-        setUpdating(true)
-        try {
-          let calculatedStatus = false
-          const sd = startDateRef.current
-          const ed = endDateRef.current
-          if (sd && ed) {
-            const today = new Date()
-            today.setHours(0, 0, 0, 0)
-            const start = new Date(sd)
-            const end = new Date(ed)
-            end.setHours(23, 59, 59, 999)
-            calculatedStatus = today >= start && today <= end
-          }
-
-          if (calculatedStatus) {
-            const { error } = await supabase.from('system_config').update({
-              is_portal_active: true,
-            }).eq('id', config.id)
-
-            if (error) throw error
-            setConfig(prev => ({ ...prev, isOpen: true }))
-            toast.success("Auto-Trigger: Slot freed up! Portal automatically re-opened."); await logActivity("Auto-Trigger: Slot freed up! Portal automatically re-opened.");
-          }
-        } catch (_err) {
-          console.error("Auto Guardian Re-open Failed.")
-        } finally {
-          setUpdating(false)
-        }
-      }
-      autoReopen()
-    }
-  }, [_loading, capacityPercentage, config.closePortalWhenFull, config.isOpen, config.id, config.controlMode])
-
-  const handleSync = async () => {
-    setIsSyncing(true)
-    await forceSyncCapacities()
-    setIsSyncing(false)
-    toast.success("Recalibrated Successfully."); await logActivity("Recalibrated Successfully.");
   }
 
   return (
@@ -762,43 +659,6 @@ export default function SettingsPage() {
               onCommit={handleMatrixCommit}
             />
 
-            <CapacityGuardian
-              capacity={config.capacity}
-              currentAccepted={currentAccepted}
-              capacityPercentage={capacityPercentage}
-              isDarkMode={isDarkMode}
-              updating={updating}
-              closePortalWhenFull={config.closePortalWhenFull}
-              slotDisplayMode={config.slotDisplayMode}
-              onCapacityChange={(value) => setConfig({ ...config, capacity: value })}
-              onIntegrityScan={runCapacityGuardian}
-              onClosePortalChange={async (v) => {
-                setUpdating(true)
-                const prev = config.closePortalWhenFull
-                setConfig(p => ({ ...p, closePortalWhenFull: v }))
-                try {
-                  const { error } = await supabase.from('system_config').update({ close_portal_when_full: v }).eq('id', config.id)
-                  if (error) throw error
-                  toast.success(`Auto-close portal ${v ? 'ENABLED' : 'DISABLED'}`); await logActivity(`Auto-close portal ${v ? 'ENABLED' : 'DISABLED'}`);
-                } catch {
-                  setConfig(p => ({ ...p, closePortalWhenFull: prev }))
-                  toast.error("Failed to update auto-close setting")
-                } finally { setUpdating(false) }
-              }}
-              onSlotDisplayChange={async (v) => {
-                setUpdating(true)
-                const prev = config.slotDisplayMode
-                setConfig(p => ({ ...p, slotDisplayMode: v }))
-                try {
-                  const { error } = await supabase.from('system_config').update({ slot_display_mode: v }).eq('id', config.id)
-                  if (error) throw error
-                  toast.success(`Slot display mode updated to ${v.toUpperCase()}`); await logActivity(`Slot display mode updated to ${v.toUpperCase()}`);
-                } catch {
-                  setConfig(p => ({ ...p, slotDisplayMode: prev }))
-                  toast.error("Failed to update slot display mode")
-                } finally { setUpdating(false) }
-              }}
-            />
 
             <GradeOperationsPanel
               isDarkMode={isDarkMode}
@@ -808,9 +668,9 @@ export default function SettingsPage() {
 
             <SettingsActions
               isSaving={isSaving}
-              isSyncing={isSyncing}
+              isSyncing={false}
               onSave={handleGlobalSave}
-              onSync={handleSync}
+              onSync={() => {}}
             />
           </div>
         </div>

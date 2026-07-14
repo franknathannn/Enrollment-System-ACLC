@@ -1,0 +1,20 @@
+const fs = require('fs');
+const path = require('path');
+const JSZip = require('jszip');
+
+async function main() {
+    const templatePath = path.join(__dirname, '..', 'public', 'Automated_School_Form.xlsx');
+    const buffer = fs.readFileSync(templatePath);
+    const zip = await JSZip.loadAsync(buffer);
+    const sheet13 = zip.file('xl/worksheets/sheet13.xml');
+    if (!sheet13) {
+        console.log("No sheet13.xml");
+        return;
+    }
+    const xml = await sheet13.async('string');
+    // Let's print out cell N6
+    const matchN6 = xml.match(/<c r="N6"[\s\S]*?<\/c>/);
+    console.log("N6 XML:", matchN6 ? matchN6[0] : "Not found");
+}
+
+main().catch(console.error);

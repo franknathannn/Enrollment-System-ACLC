@@ -2,6 +2,7 @@
 "use client"
 
 import { usePathname, useRouter } from "next/navigation"
+import Link from "next/link"
 import { CalendarDays, Bell, QrCode, BarChart2, AlertTriangle, Calendar, MessageSquare, FileText, BookOpen, Sun, Moon, LogOut, Menu } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { DashboardProvider, useDashboard } from "./context"
@@ -139,8 +140,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               {dm ? <Sun size={14} /> : <Moon size={14} />}
             </button>
 
-            <button
-              onClick={() => navigateTo("announcements")}
+            <Link
+              href="/teacher/dashboard/announcements"
               className={`p-2 rounded-xl transition-colors relative ${dm ? "hover:bg-slate-800 text-slate-400 hover:text-white" : "hover:bg-slate-100 text-slate-500 hover:text-slate-900"}`}
             >
               <Bell size={14} />
@@ -149,7 +150,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   {pinnedCount}
                 </span>
               )}
-            </button>
+            </Link>
 
             <button
               onClick={handleLogout}
@@ -175,7 +176,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 { key: "gradebook",    label: "Gradebook",       icon: <BookOpen size={15} /> },
                 { key: "attendance",   label: "QR Scanner",      icon: <QrCode size={15} /> },
                 { key: "cutting",      label: "Cutting Detector",icon: <AlertTriangle size={15} /> },
-                { key: "quarterly",    label: "Submit Grades",   icon: <BarChart2 size={15} /> },
                 { key: "reports",      label: "Reports",         icon: <FileText size={15} /> },
                 { key: "announcements",label: "Portal News",     icon: <Bell size={15} /> },
                 { key: "calendar",     label: "Academic Calendar",icon: <Calendar size={15} /> },
@@ -184,8 +184,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 const active = currentTab === item.key
 
                 const buttonEl = (
-                  <button
-                    onClick={() => navigateTo(item.key)}
+                  <Link
+                    href={`/teacher/dashboard/${item.key}`}
                     className={`flex items-center rounded-2xl transition-all duration-200 w-full relative overflow-hidden
                       ${isSidebarCollapsed ? "justify-center p-3.5" : "gap-3 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest"}
                       ${active
@@ -209,7 +209,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     {isSidebarCollapsed && item.key === "announcements" && pinnedCount > 0 && (
                       <span className={`absolute top-2.5 right-2.5 w-2 h-2 bg-amber-500 rounded-full animate-pulse border ${dm ? "border-slate-900" : "border-white"} shadow-sm`} />
                     )}
-                  </button>
+                  </Link>
                 )
 
                 if (!isSidebarCollapsed) {
@@ -272,33 +272,30 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="md:hidden">
               <TooltipProvider delayDuration={300}>
                 <div className={`grid grid-cols-9 gap-1 p-1.5 rounded-2xl border backdrop-blur-sm w-full ${dm ? "border-slate-700/60 bg-slate-800/50" : "border-slate-200/80 bg-white/70 shadow-sm"}`}>
-                  <button className={tabBtn(currentTab === "schedule")} onClick={() => navigateTo("schedule")}>
+                  <Link className={tabBtn(currentTab === "schedule")} href="/teacher/dashboard/schedule">
                     <CalendarDays size={13} />
-                  </button>
-                  <button className={tabBtn(currentTab === "gradebook")} onClick={() => navigateTo("gradebook")}>
+                  </Link>
+                  <Link className={tabBtn(currentTab === "gradebook")} href="/teacher/dashboard/gradebook">
                     <BookOpen size={13} />
-                  </button>
-                  <button className={tabBtn(currentTab === "attendance")} onClick={() => navigateTo("attendance")}>
+                  </Link>
+                  <Link className={tabBtn(currentTab === "attendance")} href="/teacher/dashboard/attendance">
                     <QrCode size={13} />
-                  </button>
-                  <button className={tabBtn(currentTab === "cutting")} onClick={() => navigateTo("cutting")}>
+                  </Link>
+                  <Link className={tabBtn(currentTab === "cutting")} href="/teacher/dashboard/cutting">
                     <AlertTriangle size={13} />
-                  </button>
-                  <button className={tabBtn(currentTab === "quarterly")} onClick={() => navigateTo("quarterly")}>
-                    <BarChart2 size={13} />
-                  </button>
-                  <button className={tabBtn(currentTab === "reports")} onClick={() => navigateTo("reports")}>
+                  </Link>
+                  <Link className={tabBtn(currentTab === "reports")} href="/teacher/dashboard/reports">
                     <FileText size={13} />
-                  </button>
-                  <button className={tabBtn(currentTab === "announcements")} onClick={() => navigateTo("announcements")}>
+                  </Link>
+                  <Link className={tabBtn(currentTab === "announcements")} href="/teacher/dashboard/announcements">
                     <Bell size={13} />
-                  </button>
-                  <button className={tabBtn(currentTab === "calendar")} onClick={() => navigateTo("calendar")}>
+                  </Link>
+                  <Link className={tabBtn(currentTab === "calendar")} href="/teacher/dashboard/calendar">
                     <Calendar size={13} />
-                  </button>
-                  <button className={tabBtn(currentTab === "chat")} onClick={() => navigateTo("chat")}>
+                  </Link>
+                  <Link className={tabBtn(currentTab === "chat")} href="/teacher/dashboard/chat">
                     <MessageSquare size={13} />
-                  </button>
+                  </Link>
                 </div>
               </TooltipProvider>
             </div>

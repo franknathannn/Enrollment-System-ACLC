@@ -1,13 +1,13 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { getStudentBalances, addCustomCharge, recordCashPayment, getStudentBalanceDetails, getUniqueCustomCharges } from "@/lib/actions/financial"
+import { getStudentBalances, addCustomCharge, recordCashPayment, getStudentBalanceDetails, getUniqueCustomCharges, deleteCustomCharge, deleteCustomChargeGroup, clearStudentPayments } from "@/lib/actions/financial"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { 
-  Loader2, DollarSign, Search, PlusCircle, CheckCircle2, FileText, ChevronRight, X, ArrowUpDown, User
+  Loader2, DollarSign, Search, PlusCircle, CheckCircle2, FileText, ChevronRight, X, ArrowUpDown, User, Trash2
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useTheme } from "@/hooks/useTheme"
@@ -44,6 +44,82 @@ export default function StudentBalancePage() {
   // Strands & Unique Charges states
   const [availableStrands, setAvailableStrands] = useState<string[]>(["ICT", "GAS"])
   const [postedCharges, setPostedCharges] = useState<any[]>([])
+
+  // Beautiful Confirmation dialog state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    action: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    action: async () => {},
+  })
+
+  const handleDeleteIndividualFee = (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Remove Individual Charge",
+      message: "Are you sure you want to remove this charge for this student? This will deduct the amount from their balance.",
+      action: async () => {
+        const res = await deleteCustomCharge(id)
+        if (res.success) {
+          toast.success("Charge deleted successfully")
+          if (selectedStudent) {
+            const detailsRes = await getStudentBalanceDetails(selectedStudent.id)
+            if (detailsRes.success) {
+              setSoaDetails(detailsRes.data)
+            }
+          }
+          fetchData()
+        } else {
+          toast.error(res.error || "Failed to delete charge")
+        }
+      }
+    })
+  }
+
+  const handleDeleteFeeGroup = (feeName: string, amount: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Custom Fee Group",
+      message: `Are you sure you want to delete "${feeName}" (₱${amount.toLocaleString()}) for ALL students? This cannot be undone.`,
+      action: async () => {
+        const res = await deleteCustomChargeGroup(feeName, amount)
+        if (res.success) {
+          toast.success("Custom fee deleted for all students")
+          fetchData()
+        } else {
+          toast.error(res.error || "Failed to delete custom fee group")
+        }
+      }
+    })
+  }
+
+  const handleClearStudentPayments = (studentId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Clear Student Payments",
+      message: "Are you sure you want to delete ALL recorded payments for this student? This action cannot be undone.",
+      action: async () => {
+        const res = await clearStudentPayments(studentId)
+        if (res.success) {
+          toast.success("Payments cleared successfully")
+          if (selectedStudent) {
+            const detailsRes = await getStudentBalanceDetails(selectedStudent.id)
+            if (detailsRes.success) {
+              setSoaDetails(detailsRes.data)
+            }
+          }
+          fetchData()
+        } else {
+          toast.error(res.error || "Failed to clear payments")
+        }
+      }
+    })
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -438,7 +514,16 @@ export default function StudentBalancePage() {
               <tbody>
                 {postedCharges.map((c, i) => (
                   <tr key={i} className="hover:bg-slate-500/5 border-t border-slate-100 dark:border-slate-800 transition-colors">
-                    <td className="px-6 py-3 text-slate-900 dark:text-white">{c.fee_name}</td>
+                    <td className="px-6 py-3 text-slate-900 dark:text-white flex items-center justify-between">
+                      <span>{c.fee_name}</span>
+                      <button
+                        onClick={() => handleDeleteFeeGroup(c.fee_name, c.amount)}
+                        className="text-red-500 hover:text-red-700 p-1 sm:p-1.5 rounded hover:bg-red-500/10 transition-all flex items-center gap-1.5 text-[8px] sm:text-[9px] uppercase tracking-widest font-black"
+                        title="Delete this fee group for all students"
+                      >
+                        <Trash2 size={11} /> Delete Fee Group
+                      </button>
+                    </td>
                     <td className="px-6 py-3 text-amber-500">₱{c.amount.toLocaleString()}</td>
                     <td className="px-6 py-3 text-right text-slate-550">{c.count} Students</td>
                   </tr>
@@ -491,7 +576,21 @@ export default function StudentBalancePage() {
 
               {/* Statement Breakdown Table */}
               <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5"><FileText size={12} /> Transaction History</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                    <FileText size={12} /> Transaction History
+                  </p>
+                  {soaDetails.payments.length > 0 && (
+                    <Button 
+                      onClick={() => handleClearStudentPayments(soaDetails.student.id)} 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 rounded-lg text-red-500 hover:text-red-750 hover:bg-red-500/10 font-black uppercase text-[8px] tracking-widest gap-1.5"
+                    >
+                      <Trash2 size={12} /> Clear Payments
+                    </Button>
+                  )}
+                </div>
                 
                 <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden text-xs font-bold">
                   <table className="w-full text-left">
@@ -523,7 +622,16 @@ export default function StudentBalancePage() {
                       {/* Custom charges */}
                       {soaDetails.customFees.map((f: any) => (
                         <tr key={f.id} className="border-b border-slate-100 dark:border-slate-900">
-                          <td className="px-4 py-2.5">{f.fee_name}</td>
+                          <td className="px-4 py-2.5 flex items-center justify-between">
+                            <span>{f.fee_name}</span>
+                            <button
+                              onClick={() => handleDeleteIndividualFee(f.id)}
+                              className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-500/10 transition-colors"
+                              title="Remove this charge"
+                            >
+                              <X size={12} />
+                            </button>
+                          </td>
                           <td className="px-4 py-2.5 text-slate-400">{new Date(f.created_at).toLocaleDateString()}</td>
                           <td className="px-4 py-2.5 text-right text-amber-500">₱{f.amount.toLocaleString()}</td>
                           <td className="px-4 py-2.5 text-right">-</td>
@@ -547,6 +655,40 @@ export default function StudentBalancePage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Beautiful Confirm Dialog */}
+      <Dialog open={confirmModal.isOpen} onOpenChange={(open) => setConfirmModal(prev => ({ ...prev, isOpen: open }))}>
+        <DialogContent className={`max-w-md rounded-3xl ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white text-slate-900'}`}>
+          <DialogHeader>
+            <DialogTitle className="uppercase font-black tracking-wider text-base italic text-red-500">
+              {confirmModal.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 pt-3">
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-405">
+              {confirmModal.message}
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                className="flex-1 h-11 rounded-xl font-bold uppercase tracking-wider text-[10px]"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  await confirmModal.action()
+                  setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                }}
+                className="flex-1 h-11 rounded-xl font-bold uppercase tracking-wider text-[10px] bg-red-500 hover:bg-red-600 text-white"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

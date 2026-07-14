@@ -11,7 +11,6 @@ import { AnnouncementPanel } from "./components/AnnouncementPanel"
 import type { Teacher } from "./types"
 import { supabase } from "@/lib/supabase/admin-client"
 import { AcademicCalendarTab } from "@/app/teacher/dashboard/components/AcademicCalendarTab"
-import { QuarterlyUpdatesAdminTab } from "./components/QuarterlyUpdatesAdminTab"
 import { AdminReportsTab } from "./components/AdminReportsTab"
 import { formatTeacherName } from "@/lib/utils/formatTeacherName"
 
@@ -64,10 +63,10 @@ export default function TeachersPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Teacher | null>(null)
   const [viewing, setViewing] = useState<Teacher | null>(null)
-  const [tab, setTab] = useState<"list" | "announcements" | "quarterly" | "calendar" | "reports">(() => {
+  const [tab, setTab] = useState<"list" | "announcements" | "calendar" | "reports">(() => {
     if (typeof window !== "undefined") {
       const s = sessionStorage.getItem("teachers_tab")
-      if (s === "list" || s === "announcements" || s === "quarterly" || s === "calendar" || s === "reports") return s
+      if (s === "list" || s === "announcements" || s === "calendar" || s === "reports") return s
     }
     return "list"
   })
@@ -227,9 +226,7 @@ export default function TeachersPage() {
                 <span className="bg-amber-500 text-white text-[8px] font-black rounded-full w-4 h-4 flex items-center justify-center shrink-0">{announcements.length}</span>
               )}
             </button>
-            <button className={`${tabBase} justify-center ${tab === "quarterly" ? tabAct : tabInact}`} onClick={() => setTab("quarterly")}>
-              <BarChart2 size={12} /> <span>Quarterly Update</span>
-            </button>
+
             <button className={`${tabBase} justify-center ${tab === "calendar" ? tabAct : tabInact}`} onClick={() => setTab("calendar")}>
               <CalendarDays size={12} /> <span>Calendar</span>
             </button>
@@ -441,10 +438,7 @@ export default function TeachersPage() {
             />
           )}
 
-          {/* Quarterly Updates — Admin review interface */}
-          {tab === "quarterly" && (
-            <QuarterlyUpdatesAdminTab isDarkMode={dm} schoolYear={schoolYear} />
-          )}
+
 
           {/* Calendar — read-only view of academic calendar */}
           {tab === "calendar" && (

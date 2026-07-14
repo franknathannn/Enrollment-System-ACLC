@@ -18,7 +18,7 @@ export function SettingsActions({
   onSync
 }: SettingsActionsProps) {
   return (
-    <div className="pt-6 space-y-4">
+    <div className="pt-6">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button 
@@ -34,25 +34,6 @@ export function SettingsActions({
           <p>Save changes to system configuration</p>
         </TooltipContent>
       </Tooltip>
-
-      <div className="flex justify-center">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              onClick={onSync} 
-              disabled={isSyncing} 
-              variant="ghost" 
-              className="text-slate-400 hover:text-amber-600 text-[10px] font-bold uppercase tracking-widest group"
-            >
-              <Zap size={14} className="mr-2 group-hover:fill-amber-600 transition-all" /> 
-              {isSyncing ? "Calibrating..." : "Force Sync Capacities"}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-900 text-white border-slate-800">
-            <p>Recalculate capacity usage from database</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
     </div>
   )
 }

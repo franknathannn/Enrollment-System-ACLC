@@ -18,13 +18,17 @@ interface AcceptConfirmModalProps {
 }
 
 const VOUCHER_STATUSES = [
-  "CATEGORY A - JHS Graduate",
-  "CATEGORY B - SUC/LUC JHS Graduate",
-  "CATEGORY C - ESC Grantee",
-  "CATEGORY D - Private non-ESC",
-  "CATEGORY E - ALS/PEPT Passer",
-  "Transferee",
+  "Category A,B,C - 100% Voucher",
+  "Category D,E - 80% Voucher",
 ]
+
+function getGroupedCategory(category: string | null) {
+  const cat = (category || "").toLowerCase()
+  if (cat.includes("esc") || cat.includes("private") || cat.includes("category d") || cat.includes("category e") || cat.includes("d, e") || cat.includes("80%")) {
+    return "Category D,E - 80% Voucher"
+  }
+  return "Category A,B,C - 100% Voucher"
+}
 
 // ── Inline Document Viewer (adapted from archive) ────────────────────
 function DocViewer({ docs, initialIndex, onClose }: {
@@ -136,7 +140,8 @@ export const AcceptConfirmModal = memo(function AcceptConfirmModal({
   // Reset state when student changes
   useEffect(() => {
     if (student) {
-      setVoucherStatus((student as any)?.voucher_status || student?.student_category || "CATEGORY A - JHS Graduate")
+      const initialStatus = (student as any)?.voucher_status || student?.student_category
+      setVoucherStatus(initialStatus === "Category D,E - 80% Voucher" || initialStatus === "Category A,B,C - 100% Voucher" ? initialStatus : getGroupedCategory(initialStatus))
       setChecks({ lrn_verified: false, voucher_cert: false, shs_vms: false })
       setStatusOpen(false)
       setViewingDocIndex(null)
@@ -144,8 +149,8 @@ export const AcceptConfirmModal = memo(function AcceptConfirmModal({
     }
   }, [student?.id])
 
-  const isPayee = payeeOverride || voucherStatus.includes("CATEGORY D") || voucherStatus === "Transferee"
-  const allChecked = checks.lrn_verified && (checks.voucher_cert || isPayee) && checks.shs_vms
+  const isPayee = payeeOverride
+  const allChecked = checks.lrn_verified && (isPayee || (checks.voucher_cert && checks.shs_vms))
 
   const toggleCheck = (key: keyof typeof checks) => {
     setChecks(prev => ({ ...prev, [key]: !prev[key] }))
@@ -314,8 +319,8 @@ export const AcceptConfirmModal = memo(function AcceptConfirmModal({
                 : isDarkMode ? "border-slate-800" : "border-slate-200"
             }`}>
               <div className="space-y-0.5">
-                <p className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? "text-slate-350" : "text-slate-850"}`}>
-                  Payee Override (No Voucher)
+                <p className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? "text-slate-355" : "text-slate-855"}`}>
+                  PAYEE only. No Voucher.
                 </p>
                 <p className="text-[8px] sm:text-[9px] text-slate-500">Forces student to pay full tuition fee (removes voucher discount)</p>
               </div>
@@ -324,9 +329,6 @@ export const AcceptConfirmModal = memo(function AcceptConfirmModal({
                 checked={payeeOverride} 
                 onChange={(e) => {
                   setPayeeOverride(e.target.checked)
-                  if (e.target.checked && !voucherStatus.includes("CATEGORY D") && voucherStatus !== "Transferee") {
-                    setVoucherStatus("CATEGORY D - Private non-ESC")
-                  }
                 }}
                 className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-700 bg-transparent cursor-pointer"
               />
@@ -382,40 +384,41 @@ export const AcceptConfirmModal = memo(function AcceptConfirmModal({
               </p>
               <div className="space-y-1.5 sm:space-y-2">
                 {[
-                  { key: "lrn_verified" as const, label: "LRN matches Grade 10 report card" },
-                  { key: "voucher_cert" as const, label: isPayee ? "No voucher certificate required (Payee)" : "Voucher certificate verified" },
-                  { key: "shs_vms" as const, label: "Registered in SHS VMS" },
-                ].map(({ key, label }) => {
-                  const isChecked = checks[key] || (key === "voucher_cert" && isPayee)
-                  const isDisabled = key === "voucher_cert" && isPayee
+                  { key: "lrn_verified" as const, label: "LRN matches Grade 10 report card", required: true },
+                  { key: "voucher_cert" as const, label: isPayee ? "No voucher certificate required (Payee)" : "Voucher certificate verified", required: !isPayee },
+                  { key: "shs_vms" as const, label: isPayee ? "No SHS VMS registration required (Payee)" : "Registered in SHS VMS", required: !isPayee },
+                ].map(({ key, label, required }) => {
+                  const isChecked = checks[key] || !required
+                  const isDisabled = !required
                   return (
-                  <button
-                    key={key}
-                    onClick={() => { if (!isDisabled) toggleCheck(key) }}
-                    className={`w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border transition-all text-left group ${
-                      isChecked
-                        ? isDarkMode
-                          ? "bg-emerald-900/20 border-emerald-500/30 text-emerald-300"
-                          : "bg-emerald-50 border-emerald-300 text-emerald-700"
-                        : isDarkMode
-                          ? "bg-slate-800/50 border-slate-700/60 text-slate-400 hover:border-slate-600"
-                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                    } ${isDisabled ? "opacity-60 cursor-not-allowed" : ""}`}
-                  >
-                    <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${
-                      isChecked
-                        ? "bg-emerald-500 border-emerald-500"
-                        : isDarkMode
-                          ? "border-slate-600 group-hover:border-slate-500"
-                          : "border-slate-300 group-hover:border-slate-400"
-                    }`}>
-                      <Check size={12} className={isChecked ? "text-white" : "text-transparent"} strokeWidth={3} />
-                    </div>
-                    <span className={`text-[9px] sm:text-[10px] font-bold tracking-widest uppercase`}>
-                      {label}
-                    </span>
-                  </button>
-                )})}
+                    <button
+                      key={key}
+                      onClick={() => { if (!isDisabled) toggleCheck(key) }}
+                      className={`w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border transition-all text-left group ${
+                        isChecked
+                          ? isDarkMode
+                            ? "bg-emerald-900/20 border-emerald-500/30 text-emerald-300"
+                            : "bg-emerald-50 border-emerald-300 text-emerald-700"
+                          : isDarkMode
+                            ? "bg-slate-800/50 border-slate-700/60 text-slate-400 hover:border-slate-600"
+                            : "bg-white border-slate-200 text-slate-555 hover:border-slate-300"
+                      } ${isDisabled ? "opacity-60 cursor-not-allowed" : ""}`}
+                    >
+                      <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${
+                        isChecked
+                          ? "bg-emerald-500 border-emerald-500"
+                          : isDarkMode
+                            ? "border-slate-600 group-hover:border-slate-500"
+                            : "border-slate-300 group-hover:border-slate-400"
+                      }`}>
+                        <Check size={12} className={isChecked ? "text-white" : "text-transparent"} strokeWidth={3} />
+                      </div>
+                      <span className={`text-[9px] sm:text-[10px] font-bold tracking-widest uppercase`}>
+                        {label}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -446,7 +449,12 @@ export const AcceptConfirmModal = memo(function AcceptConfirmModal({
               Cancel
             </Button>
             <Button
-              onClick={() => onConfirm(voucherStatus, checks, payeeOverride)}
+              onClick={() => {
+                let dbCategory = voucherStatus
+                if (voucherStatus.includes("Category A,B,C")) dbCategory = "CATEGORY A, B, C"
+                if (voucherStatus.includes("Category D,E")) dbCategory = "CATEGORY D, E"
+                onConfirm(dbCategory, checks, payeeOverride)
+              }}
               className={`flex-1 h-11 sm:h-12 rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest shadow-xl transition-all ${
                 allChecked
                   ? "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-emerald-500/25"

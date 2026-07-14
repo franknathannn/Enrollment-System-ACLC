@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Save, Loader2, Search, ChevronDown, Check, ShieldAlert, ArrowLeft, FileDown } from "lucide-react"
+import { Loader2, Search, ChevronDown, Check, ShieldAlert, ArrowLeft, FileDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { supabase } from "@/lib/supabase/admin-client"
@@ -135,12 +135,10 @@ export default function AdminGradebookPage() {
   const [studentEnrollmentMap, setStudentEnrollmentMap] = useState<Record<string, string>>({})
   
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   
   const [activeTab, setActiveTab] = useState("numerical")
   const [coreValueQuarterView, setCoreValueQuarterView] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   
   const [schoolYear, setSchoolYear] = useState("2025-2026")
 
@@ -274,6 +272,77 @@ export default function AdminGradebookPage() {
     fetchNumericalGrades()
   }, [selectedSubject, students, section])
 
+  useEffect(() => {
+    if (students.length === 0 || !section) return
+
+    console.log("Subscribing to admin gradebook real-time changes...")
+    const channel = supabase
+      .channel('admin_gradebook_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'grades' },
+        (payload: any) => {
+          console.log('Real-time grades event received:', payload)
+          if (payload.new && payload.new.enrollment_id) {
+            setGradesData(prev => {
+              const studentId = Object.keys(prev).find(
+                key => prev[key].enrollment_id?.toString() === payload.new.enrollment_id?.toString()
+              )
+              if (!studentId) {
+                console.warn('Matching student not found for enrollment_id:', payload.new.enrollment_id)
+                return prev
+              }
+              return {
+                ...prev,
+                [studentId]: {
+                  ...prev[studentId],
+                  q1: payload.new.q1?.toString() || '',
+                  q2: payload.new.q2?.toString() || '',
+                  q3: payload.new.q3?.toString() || '',
+                  q4: payload.new.q4?.toString() || '',
+                  final: payload.new.final_rating?.toString() || ''
+                }
+              }
+            })
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lms_core_values' },
+        (payload: any) => {
+          console.log('Real-time core values event received:', payload)
+          if (payload.new && payload.new.student_id && payload.new.school_year === schoolYear) {
+            setCoreValuesData(prev => {
+              const studentId = payload.new.student_id
+              const cvKey = `${payload.new.core_value}_${payload.new.behavior_statement}`
+              if (!prev[studentId]) return prev
+              return {
+                ...prev,
+                [studentId]: {
+                  ...prev[studentId],
+                  [cvKey]: {
+                    q1: payload.new.q1 || '',
+                    q2: payload.new.q2 || '',
+                    q3: payload.new.q3 || '',
+                    q4: payload.new.q4 || ''
+                  }
+                }
+              }
+            })
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Supabase real-time channel subscription status:', status)
+      })
+
+    return () => {
+      console.log("Cleaning up real-time subscription...")
+      supabase.removeChannel(channel)
+    }
+  }, [students, section, schoolYear])
+
   const isTrimester = section?.lms_grading_system === 'Trimester'
   const allQuarters = isTrimester ? ['q1', 'q2', 'q3'] : ['q1', 'q2', 'q3', 'q4']
   const coreValuesQuarters = coreValueQuarterView === 'all' ? allQuarters : [coreValueQuarterView]
@@ -288,133 +357,6 @@ export default function AdminGradebookPage() {
   const males = filteredStudents.filter(s => s.gender === 'Male').sort((a,b) => a.last_name.localeCompare(b.last_name))
   const females = filteredStudents.filter(s => s.gender === 'Female').sort((a,b) => a.last_name.localeCompare(b.last_name))
 
-  const handleNumericalChange = (studentId: string, quarter: string, value: string) => {
-    if (value !== '' && isNaN(Number(value))) return
-    if (Number(value) > 100) return
-    setHasUnsavedChanges(true)
-
-    setGradesData(prev => {
-      const studentGrades = { ...prev[studentId], [quarter]: value }
-      
-      let sum = 0
-      let count = 0
-      allQuarters.forEach(q => {
-        if (studentGrades[q]) { sum += Number(studentGrades[q]); count++ }
-      })
-
-      if (count > 0) {
-        studentGrades.final = Math.round(sum / count).toString()
-      } else {
-        studentGrades.final = ''
-      }
-
-      return { ...prev, [studentId]: studentGrades }
-    })
-  }
-
-  const handleCoreValueChange = (studentId: string, cvId: string, stmt: string, quarter: string, value: string) => {
-    const valid = ['AO', 'SO', 'RO', 'NO', '']
-    const upper = value.toUpperCase()
-    if (!valid.includes(upper) && upper !== 'A' && upper !== 'S' && upper !== 'R' && upper !== 'N') return
-    
-    setHasUnsavedChanges(true)
-
-    const prevVal = coreValuesData[studentId]?.[`${cvId}_${stmt}`]?.[quarter] || ''
-    
-    let finalVal = upper
-    
-    if (prevVal.length === 2 && upper.length === 1 && prevVal.startsWith(upper)) {
-      finalVal = ''
-    } else {
-      if (upper === 'A') finalVal = 'AO'
-      if (upper === 'S') finalVal = 'SO'
-      if (upper === 'R') finalVal = 'RO'
-      if (upper === 'N') finalVal = 'NO'
-    }
-
-    setCoreValuesData(prev => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        [`${cvId}_${stmt}`]: {
-          ...prev[studentId][`${cvId}_${stmt}`],
-          [quarter]: finalVal
-        }
-      }
-    }))
-  }
-
-  const handleSaveAll = async () => {
-    setSaving(true)
-    const toastId = toast.loading("Saving gradebook...")
-
-    try {
-      if (selectedSubject) {
-        const numUpserts = []
-        for (const student of students) {
-          const grades = gradesData[student.id]
-          if (!grades || !grades.enrollment_id) continue
-          
-          const hasAnyGrade = allQuarters.some(q => grades[q])
-          if (hasAnyGrade) {
-            numUpserts.push({
-              enrollment_id: grades.enrollment_id,
-              q1: grades.q1 ? parseFloat(grades.q1) : null,
-              q2: grades.q2 ? parseFloat(grades.q2) : null,
-              q3: grades.q3 ? parseFloat(grades.q3) : null,
-              q4: grades.q4 ? parseFloat(grades.q4) : null,
-              final_rating: grades.final ? parseFloat(grades.final) : null,
-              remarks: (grades.final && parseFloat(grades.final) >= 75) ? 'PASSED' : 'FAILED'
-            })
-          }
-        }
-        if (numUpserts.length > 0) {
-          const { error } = await supabase.from('grades').upsert(numUpserts, { onConflict: 'enrollment_id' })
-          if (error) throw error
-        }
-      }
-
-      const cvUpserts = []
-      for (const student of students) {
-        const cData = coreValuesData[student.id]
-        if (!cData) continue
-        
-        for (const cv of CORE_VALUES) {
-          for (const stmt of cv.statements) {
-            const vals = cData[`${cv.id}_${stmt}`]
-            if (!vals) continue
-            
-            const hasAny = allQuarters.some(q => vals[q])
-            if (hasAny) {
-              cvUpserts.push({
-                student_id: student.id,
-                school_year: schoolYear,
-                core_value: cv.id,
-                behavior_statement: stmt,
-                q1: vals.q1 || null,
-                q2: vals.q2 || null,
-                q3: vals.q3 || null,
-                q4: vals.q4 || null
-              })
-            }
-          }
-        }
-      }
-      
-      if (cvUpserts.length > 0) {
-        const { error } = await supabase.from('lms_core_values').upsert(cvUpserts, { onConflict: 'student_id, school_year, core_value, behavior_statement' })
-        if (error) throw error
-      }
-
-      toast.success("Gradebook saved successfully!", { id: toastId })
-      setHasUnsavedChanges(false)
-    } catch (err: any) {
-      toast.error(err.message, { id: toastId })
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const handleExportSF9 = (term: string) => {
     downloadSf9({
       sectionName: section?.section_name || 'Unknown',
@@ -427,17 +369,6 @@ export default function AdminGradebookPage() {
       term
     })
   }
-
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault()
-        e.returnValue = ''
-      }
-    }
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [hasUnsavedChanges])
 
   if (loading) {
     return (
@@ -479,11 +410,11 @@ export default function AdminGradebookPage() {
               {allQuarters.map((q) => (
                 <td key={q} className="px-2 py-3 text-center w-20">
                   <Input 
-                    disabled={!hasEnrollment}
+                    disabled={true}
+                    readOnly={true}
                     value={grades[q as keyof typeof grades]}
-                    onChange={(e) => handleNumericalChange(student.id, q, e.target.value)}
                     maxLength={3}
-                    className={`w-14 h-9 text-center font-bold mx-auto border-transparent shadow-none focus-visible:ring-2 disabled:opacity-30 ${isDarkMode ? 'bg-slate-900 focus-visible:ring-blue-500' : 'bg-slate-100 focus-visible:ring-blue-400'}`}
+                    className={`w-14 h-9 text-center font-bold mx-auto border-transparent shadow-none focus-visible:ring-2 disabled:opacity-50 ${isDarkMode ? 'bg-slate-900 focus-visible:ring-blue-500' : 'bg-slate-100 focus-visible:ring-blue-400'}`}
                   />
                 </td>
               ))}
@@ -535,8 +466,9 @@ export default function AdminGradebookPage() {
                   return (
                     <td key={`${cv.id}-${i}-${q}`} className={`px-1 py-2 text-center border-l ${j === 0 ? (isDarkMode ? 'border-slate-800' : 'border-slate-200') : 'border-transparent'}`}>
                       <Input 
+                        disabled={true}
+                        readOnly={true}
                         value={val}
-                        onChange={(e) => handleCoreValueChange(student.id, cv.id, stmt, q, e.target.value)}
                         maxLength={2}
                         className={`w-10 h-8 text-[10px] px-1 text-center font-black uppercase mx-auto border-transparent shadow-none focus-visible:ring-2 ${isDarkMode ? 'bg-slate-900 focus-visible:ring-blue-500' : 'bg-slate-100 focus-visible:ring-blue-400'}
                           ${val === 'AO' ? 'text-emerald-500' : val === 'SO' ? 'text-blue-500' : val === 'RO' ? 'text-amber-500' : val === 'NO' ? 'text-red-500' : ''}
@@ -576,17 +508,11 @@ export default function AdminGradebookPage() {
               <span className="text-blue-500">M: {males.length}</span>
               <span className="text-pink-500">F: {females.length}</span>
               <span>•</span>
-              <span className="text-amber-500 border border-amber-500/30 px-1.5 rounded bg-amber-500/10">Admin Access</span>
+              <span className="text-amber-500 border border-amber-500/30 px-1.5 rounded bg-amber-500/10">View-Only Mode</span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          {hasUnsavedChanges && (
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 animate-pulse">
-              Unsaved Changes
-            </span>
-          )}
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="rounded-xl font-bold px-4 shadow-md bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -608,11 +534,6 @@ export default function AdminGradebookPage() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Button onClick={handleSaveAll} disabled={saving} className={`rounded-xl font-bold px-6 shadow-md ${isDarkMode ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}>
-            {saving ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
-            Save Changes
-          </Button>
         </div>
       </header>
 

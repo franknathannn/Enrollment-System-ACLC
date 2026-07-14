@@ -91,7 +91,7 @@ export async function getStudentBalances() {
       // If they are a payee, their voucher discount is 0 (handled by DB trigger too, but enforced here)
       const discount = student.is_payee ? 0 : voucherAmount
 
-      const balance = (tuition + totalCustomFees) - (discount + totalPayments)
+      const balance = Math.max(0, (tuition + totalCustomFees) - (discount + totalPayments))
 
       return {
         ...student,
@@ -217,7 +217,7 @@ export async function getStudentBalanceDetails(studentId: string) {
     const totalFees = tuition + (customFees || []).reduce((acc, curr) => acc + curr.amount, 0)
     const confirmedPayments = (payments || []).filter(p => p.status === 'confirmed').reduce((acc, curr) => acc + curr.amount, 0)
     const pendingPayments = (payments || []).filter(p => p.status === 'pending').reduce((acc, curr) => acc + curr.amount, 0)
-    const remainingBalance = totalFees - (voucherDiscount + confirmedPayments)
+    const remainingBalance = Math.max(0, totalFees - (voucherDiscount + confirmedPayments))
 
     return {
       success: true,
@@ -310,3 +310,121 @@ export async function getUniqueCustomCharges() {
     return { success: false, error: err.message, charges: [] }
   }
 }
+
+/**
+ * DELETE INDIVIDUAL CUSTOM CHARGE BY ID
+ */
+export async function deleteCustomCharge(chargeId: string) {
+  try {
+    const supabase = createAdminClient()
+    
+    // Get student ID before deleting
+    const { data: charge } = await supabase
+      .from('student_balances')
+      .select('student_id')
+      .eq('id', chargeId)
+      .single()
+
+    const { error } = await supabase
+      .from('student_balances')
+      .delete()
+      .eq('id', chargeId)
+    
+    if (error) throw error
+
+    if (charge?.student_id) {
+      const details = await getStudentBalanceDetails(charge.student_id)
+      if (details.success && details.data) {
+        const { tuition, voucherDiscount, confirmedPayments, customFees } = details.data
+        const totalFees = tuition + (customFees || []).reduce((acc: any, curr: any) => acc + curr.amount, 0)
+        
+        // If payments exceed new total fees minus discount, they have a negative balance
+        if (confirmedPayments > (totalFees - voucherDiscount)) {
+          await supabase
+            .from('payments')
+            .delete()
+            .eq('student_id', charge.student_id)
+        }
+      }
+    }
+
+    revalidatePath("/admin/financial")
+    return { success: true }
+  } catch (err: any) {
+    console.error("Error deleting custom charge:", err)
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * DELETE CUSTOM CHARGE GROUP BY NAME AND AMOUNT FOR ACTIVE SY
+ */
+export async function deleteCustomChargeGroup(feeName: string, amount: number) {
+  try {
+    const supabase = createAdminClient()
+    const { data: config } = await supabase.from('system_config').select('school_year').single()
+    const activeSY = config?.school_year ?? '2027-2028'
+
+    // Get all students with this charge
+    const { data: charges } = await supabase
+      .from('student_balances')
+      .select('student_id')
+      .eq('fee_name', feeName)
+      .eq('amount', amount)
+      .eq('school_year', activeSY)
+
+    const { error } = await supabase
+      .from('student_balances')
+      .delete()
+      .eq('fee_name', feeName)
+      .eq('amount', amount)
+      .eq('school_year', activeSY)
+    
+    if (error) throw error
+
+    if (charges && charges.length > 0) {
+      for (const c of charges) {
+        const details = await getStudentBalanceDetails(c.student_id)
+        if (details.success && details.data) {
+          const { tuition, voucherDiscount, confirmedPayments, customFees } = details.data
+          const totalFees = tuition + (customFees || []).reduce((acc: any, curr: any) => acc + curr.amount, 0)
+          
+          if (confirmedPayments > (totalFees - voucherDiscount)) {
+            await supabase
+              .from('payments')
+              .delete()
+              .eq('student_id', c.student_id)
+          }
+        }
+      }
+    }
+
+    revalidatePath("/admin/financial")
+    return { success: true }
+  } catch (err: any) {
+    console.error("Error deleting custom charge group:", err)
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * CLEAR ALL PAYMENTS FOR A SINGLE STUDENT
+ */
+export async function clearStudentPayments(studentId: string) {
+  try {
+    const supabase = createAdminClient()
+    const { error } = await supabase
+      .from('payments')
+      .delete()
+      .eq('student_id', studentId)
+    
+    if (error) throw error
+    revalidatePath("/admin/financial")
+    return { success: true }
+  } catch (err: any) {
+    console.error("Error clearing student payments:", err)
+    return { success: false, error: err.message }
+  }
+}
+
+

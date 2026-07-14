@@ -645,7 +645,7 @@ export default function TeacherGradebookPage() {
         </div>
         <div className="flex items-center gap-4">
           {hasUnsavedChanges && (
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 animate-pulse">
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 rounded-md animate-pulse">
               Unsaved Changes
             </span>
           )}
@@ -672,7 +672,15 @@ export default function TeacherGradebookPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button onClick={handleSaveAll} disabled={saving} className={`rounded-xl font-bold px-6 shadow-md ${isDarkMode ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}>
+          <Button 
+            onClick={handleSaveAll} 
+            disabled={saving} 
+            className={`rounded-xl font-bold px-6 shadow-md transition-all duration-300
+              ${hasUnsavedChanges 
+                ? "bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 hover:from-amber-600 hover:to-red-700 text-white scale-105 shadow-xl shadow-orange-500/40 animate-pulse ring-4 ring-orange-500/30"
+                : isDarkMode ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"
+              }`}
+          >
             {saving ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
             Save Changes
           </Button>

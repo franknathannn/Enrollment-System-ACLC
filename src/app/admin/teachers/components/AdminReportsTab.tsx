@@ -70,41 +70,26 @@ interface RiskClassification {
 }
 
 function classifyAttendanceRisk(
-  absences: number,
-  late: number,
-  excused: number,
-  scheduledDays: number,
-  totalExpectedDays: number
+  pct: number,
+  scheduledDays: number
 ): RiskClassification {
-  const effectiveAbsences = absences + Math.floor(late / 3)
-  const cap = Math.floor(totalExpectedDays * 0.2)
-  const absencesRemaining = cap - effectiveAbsences
-
   if (scheduledDays < 20) {
-    return { status: "Monitoring", projectedTotal: 0, absencesRemaining, isAtRisk: false, effectiveAbsences }
+    return { status: "Monitoring", projectedTotal: 0, absencesRemaining: 0, isAtRisk: false, effectiveAbsences: 0 }
   }
-
-  const absenceRate = effectiveAbsences / scheduledDays
-  const projectedTotal = Math.round(absenceRate * totalExpectedDays)
 
   let status: RiskStatus
   let isAtRisk = false
 
-  const warningThreshold = Math.ceil(cap * 0.8)
-
-  if (effectiveAbsences >= cap) {
+  if (pct < 50) {
     status = "Failed"
     isAtRisk = true
-  } else if (projectedTotal > cap) {
-    status = "At Risk"
-    isAtRisk = true
-  } else if (projectedTotal >= warningThreshold) {
+  } else if (pct < 75) {
     status = "Warning"
   } else {
     status = "Safe"
   }
 
-  return { status, projectedTotal, absencesRemaining, isAtRisk, effectiveAbsences }
+  return { status, projectedTotal: 0, absencesRemaining: 0, isAtRisk, effectiveAbsences: 0 }
 }
 
 // --- SUB-COMPONENT: Circular Progress Ring ---
@@ -723,7 +708,7 @@ export function AdminReportsTab({ dm, session, schoolYear }: Props) {
                             <td style={{ padding: "5px 8px", color: "#dc2626", fontWeight: 700 }}>{absent}</td>
                             <td style={{ padding: "5px 8px", color: "#dc2626", fontWeight: 700 }}>{pct}%</td>
                             <td style={{ padding: "5px 8px", fontSize: "9px", color: "#9ca3af" }}>
-                              <span style={{ fontWeight: 700, color: status === "Failed" ? "#dc2626" : "#ea580c" }}>{status}</span> — {absencesRemaining > 0 ? `${absencesRemaining} more leads to Failure.` : "Absent cap exceeded."} {hasCutting ? `(${cuttingCount} cutting incident(s))` : ""}
+                              <span style={{ fontWeight: 700, color: status === "Failed" ? "#dc2626" : "#ea580c" }}>{status}</span> — {classification.absencesRemaining > 0 ? `${classification.absencesRemaining} more leads to Failure.` : "Absent cap exceeded."} {hasCutting ? `(${cuttingCount} cutting incident(s))` : ""}
                             </td>
                           </tr>
                         )

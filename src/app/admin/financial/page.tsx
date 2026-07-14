@@ -37,10 +37,8 @@ export default function FinancialPage() {
   const [selectedTier, setSelectedTier] = useState<string>("NCR")
   const [selectedGoal, setSelectedGoal] = useState<string>("8100000")
   const [categoryRates, setCategoryRates] = useState<Record<string, number | string>>({
-    "JHS Graduate": 22500,
-    "ALS Passer": 18000,
-    "PEPT Passer": 22500,
-    "Private non-ESC": 18000
+    "CATEGORY A, B, C": 22500,
+    "CATEGORY D, E": 18000
   })
 
   // Synchronize school years once configuration loads
@@ -72,10 +70,8 @@ export default function FinancialPage() {
     // Set Category Rates
     const yearRates = rates.filter(r => r.school_year === activeYear)
     const newRates: Record<string, number | string> = {
-      "JHS Graduate": 22500,
-      "ALS Passer": 18000,
-      "PEPT Passer": 22500,
-      "Private non-ESC": 18000
+      "CATEGORY A, B, C": 22500,
+      "CATEGORY D, E": 18000
     }
     yearRates.forEach(r => {
       newRates[r.student_category] = r.amount

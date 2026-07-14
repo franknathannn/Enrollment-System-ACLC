@@ -626,7 +626,6 @@ export default function Step2Academic() {
       try {
         const { data: settings } = await supabase.from("system_settings").select("setting_key, value_text")
         if (settings) {
-          const acIdSetting = settings.find(s => s.setting_key === "active_curriculum_id")
           const avStrandsSetting = settings.find(s => s.setting_key === "available_strands")
           
           let parsedStrands: string[] = []
@@ -638,28 +637,11 @@ export default function Step2Academic() {
             }
           }
           
-          let baseStrands = ["ICT", "GAS", "STEM", "HUMSS", "ABM"]
-          if (acIdSetting?.value_text) {
-            const { data: curr } = await supabase
-              .from("curricula")
-              .select("name")
-              .eq("id", acIdSetting.value_text)
-              .maybeSingle()
-              
-            if (curr?.name) {
-              const nameLower = curr.name.toLowerCase()
-              if (nameLower.includes("k-12") || nameLower.includes("k12")) {
-                baseStrands = ["Academic Track", "TechPro"]
-              }
-            }
-          }
-          
-          let finalStrands = baseStrands
           if (parsedStrands && parsedStrands.length > 0) {
-            finalStrands = baseStrands.filter(s => parsedStrands.includes(s))
+            setAvailableStrands(parsedStrands)
+          } else {
+            setAvailableStrands(["ICT", "GAS", "STEM", "HUMSS", "ABM"])
           }
-          
-          setAvailableStrands(finalStrands.length > 0 ? finalStrands : baseStrands)
         } else {
           setAvailableStrands(["ICT", "GAS", "STEM", "HUMSS", "ABM"])
         }

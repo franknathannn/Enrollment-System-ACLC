@@ -457,10 +457,10 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
 
                 <div className="grid grid-cols-4 gap-2 mt-2">
                   {[
-                    { l: "P", v: selectedProfile.present, c: "text-emerald-500", bg: "bg-emerald-500/10" },
-                    { l: "L", v: selectedProfile.late, c: "text-amber-500", bg: "bg-amber-500/10" },
-                    { l: "E", v: selectedProfile.excused, c: "text-blue-500", bg: "bg-blue-500/10" },
-                    { l: "A", v: selectedProfile.absent, c: selectedProfile.absent > 0 ? "text-rose-500" : sub, bg: selectedProfile.absent > 0 ? "bg-rose-500/10" : dm ? "bg-slate-800" : "bg-slate-100" }
+                    { l: "PRESENT", v: selectedProfile.present, c: "text-emerald-500", bg: "bg-emerald-500/10" },
+                    { l: "LATE", v: selectedProfile.late, c: "text-amber-500", bg: "bg-amber-500/10" },
+                    { l: "EXCUSED", v: selectedProfile.excused, c: "text-blue-500", bg: "bg-blue-500/10" },
+                    { l: "ABSENT", v: selectedProfile.absent, c: selectedProfile.absent > 0 ? "text-rose-500" : sub, bg: selectedProfile.absent > 0 ? "bg-rose-500/10" : dm ? "bg-slate-800" : "bg-slate-100" }
                   ].map((s) => (
                     <div key={s.l} className={`p-2 rounded-xl border flex flex-col items-center ${dm ? "border-slate-800" : "border-slate-100"}`}>
                       <span className={`text-sm font-black ${s.c}`}>{s.v}</span>
@@ -932,42 +932,48 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                     <div className="text-[8px] font-black uppercase text-center mt-3 tracking-widest opacity-40">Cumulative Attendance Density</div>
                   </div>
 
-                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 pt-4`}>
+                  <div className="grid grid-cols-1 gap-4 pt-4">
                     {report.subjects.sort((a, b) => b.attendancePct - a.attendancePct).map((subj, idx) => (
-                      <div key={subj.subject} className={`p-5 rounded-[24px] border border-transparent flex gap-4 items-start ${glass} animate-in fade-in duration-500`} style={{ animationDelay: `${idx * 100}ms` }}>
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${dm ? "bg-white/5" : "bg-white shadow-sm"}`}>
-                          <p className="text-[10px] font-black text-blue-500">{idx + 1}</p>
+                      <div key={subj.subject} className={`p-5 rounded-[24px] border flex flex-col md:flex-row justify-between items-stretch md:items-center gap-6 ${glass} animate-in fade-in duration-500`} style={{ animationDelay: `${idx * 100}ms` }}>
+                        
+                        {/* Left Side: Index, Name, Progress, Days */}
+                        <div className="flex-1 flex items-center gap-4 min-w-0">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-sm border ${dm ? "bg-slate-800 border-slate-700 text-blue-400" : "bg-white border-slate-200 text-blue-500 shadow-sm"}`}>
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-baseline mb-2">
+                              <p className={`text-[12px] font-black uppercase truncate tracking-tight ${head}`}>{subj.subject}</p>
+                              <p className={`text-[12px] font-black italic tracking-tighter ${subj.attendancePct >= 80 ? "text-emerald-500" : subj.attendancePct >= 60 ? "text-amber-500" : "text-rose-500"}`}>{subj.attendancePct}%</p>
+                            </div>
+                            <StackedBar
+                              present={subj.presentCount - subj.lateCount}
+                              late={subj.lateCount}
+                              excused={subj.excusedCount}
+                              absent={subj.absentCount}
+                              total={subj.totalSessions}
+                            />
+                            <p className={`text-[8px] font-black uppercase tracking-widest mt-2 ${sub}`}>
+                              {subj.scheduledDays === 1 ? "RECENT" : subj.scheduledDays === 2 ? "LAST 2 DAYS" : `${subj.scheduledDays} DAYS`}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start mb-2">
-                            <p className={`text-[11px] font-black uppercase truncate leading-none ${head}`}>{subj.subject}</p>
-                            <p className={`text-[11px] font-black italic tracking-tighter ${subj.attendancePct >= 80 ? "text-emerald-500" : "text-rose-500"}`}>{subj.attendancePct}%</p>
-                          </div>
-                          <StackedBar
-                            present={subj.presentCount - subj.lateCount}
-                            late={subj.lateCount}
-                            excused={subj.excusedCount}
-                            absent={subj.absentCount}
-                            total={subj.totalSessions}
-                          />
-                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
-                            <span className="text-[7px] font-black uppercase tracking-wider text-emerald-500">P: {subj.presentCount - subj.lateCount}</span>
-                            <span className="text-[7px] font-black uppercase tracking-wider text-amber-500">L: {subj.lateCount}</span>
-                            <span className="text-[7px] font-black uppercase tracking-wider text-blue-500">E: {subj.excusedCount}</span>
-                            <span className="text-[7px] font-black uppercase tracking-wider text-rose-500">A: {subj.absentCount}</span>
-                            <span className={`text-[7px] font-black uppercase tracking-wider ${sub} ml-auto`}>{subj.scheduledDays} Days</span>
-                          </div>
+
+                        {/* Right Side: View Detailed List Button */}
+                        <div className={`flex flex-row items-center justify-end gap-6 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 md:border-l ${dm ? "border-slate-800/60" : "border-slate-200"} md:pl-6`}>
+
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleSubjectFocus(report.section, subj.subject) }}
-                            className={`mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border
+                            className={`h-10 px-4 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-wider transition-all border shrink-0
                                  ${subjectFocus[report.section] === subj.subject
                                 ? "bg-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/20"
-                                : dm ? "bg-white/5 text-slate-400 hover:bg-white/10 border-white/5" : "bg-slate-100/80 text-slate-500 hover:bg-slate-200 border-slate-200"}`}
+                                : dm ? "bg-white/5 text-slate-300 hover:bg-white/10 border-white/5" : "bg-white text-slate-600 hover:bg-slate-50 border-slate-200 shadow-sm"}`}
                           >
-                            <Users size={9} />
-                            {subjectFocus[report.section] === subj.subject ? "Close List" : "View List"}
+                            <Users size={12} />
+                            {subjectFocus[report.section] === subj.subject ? "Close List" : "View Detailed List"}
                           </button>
                         </div>
+
                       </div>
                     ))}
                   </div>
@@ -1018,7 +1024,17 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                       const pct = total > 0 ? Math.round(((present + late) / total) * 100) : 0
                       const classification = classifyAttendanceRisk(pct, scheduledDays)
 
-                      return { student, present, late, absent, excused, total, pct, cuttingCount, classification }
+                      // Calculate subject breakdown for global tooltip hover
+                      const subjectsList = [...new Set(attData.filter(r => r.student_id === student.id).map(r => r.subject))].sort()
+                      const subjectBreakdown = subjectsList.map(subj => {
+                        const subjRecs = attData.filter(r => r.student_id === student.id && r.subject === subj)
+                        const pCount = subjRecs.filter(r => r.status === "Present" || r.status === "Late").length
+                        const totalDays = [...new Set(subjRecs.map(r => r.date))].length
+                        const subjPct = totalDays > 0 ? Math.round((pCount / totalDays) * 100) : 0
+                        return { subject: subj, pct: subjPct }
+                      })
+
+                      return { student, present, late, absent, excused, total, pct, cuttingCount, classification, subjectBreakdown }
                     }).sort((a, b) => b.absent - a.absent)
 
                     const q = listSearch.trim().toLowerCase()
@@ -1094,10 +1110,10 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                               <tr className={`${dm ? "bg-slate-800/95 backdrop-blur-sm" : "bg-slate-50/95 backdrop-blur-sm"}`}>
                                 <th className={`px-4 py-3 text-left text-[7px] font-black uppercase tracking-widest ${sub}`}>#</th>
                                 <th className={`px-4 py-3 text-left text-[7px] font-black uppercase tracking-widest ${sub}`}>Student</th>
-                                <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-emerald-500">P</th>
-                                {(!isGlobal) && <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-amber-500">L</th>}
-                                <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-blue-500">E</th>
-                                <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-rose-500">A</th>
+                                <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-emerald-500">PRESENT</th>
+                                <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-amber-500">LATE</th>
+                                <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-blue-500">EXCUSED</th>
+                                <th className="px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest text-rose-500">ABSENT</th>
                                 <th className={`px-3 py-3 text-center text-[7px] font-black uppercase tracking-widest ${sub}`}>Att%</th>
                                 <th className={`px-4 py-3 text-center text-[7px] font-black uppercase tracking-widest ${sub}`}>Status</th>
                               </tr>
@@ -1105,7 +1121,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                             <tbody className={`divide-y ${divideB}`}>
                               {visibleStats.length === 0 ? (
                                 <tr><td colSpan={8} className={`px-4 py-6 text-center text-[10px] font-bold ${sub}`}>No students match your search.</td></tr>
-                              ) : visibleStats.map(({ student, present, late, absent, excused, pct, cuttingCount, classification }, i) => {
+                              ) : visibleStats.map(({ student, present, late, absent, excused, pct, cuttingCount, classification, subjectBreakdown }, i) => {
                                 const { status } = classification;
                                 const hasCutting = cuttingCount > 0;
                                 let rowBgClass = dm ? (i % 2 === 0 ? "bg-slate-800/20 hover:bg-slate-800/40" : "hover:bg-slate-800/40") : (i % 2 === 0 ? "bg-slate-50/50 hover:bg-slate-100/80" : "hover:bg-slate-50/80");
@@ -1166,11 +1182,34 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                                       </div>
                                     </td>
                                     <td className="px-3 py-2.5 text-center text-[10px] font-black text-emerald-500">{present}</td>
-                                    {(!isGlobal) && <td className="px-3 py-2.5 text-center text-[10px] font-black text-amber-500">{late}</td>}
+                                    <td className="px-3 py-2.5 text-center text-[10px] font-black text-amber-500">{late}</td>
                                     <td className="px-3 py-2.5 text-center text-[10px] font-black text-blue-500">{excused}</td>
                                     <td className={`px-3 py-2.5 text-center text-[10px] font-black ${absent > 0 ? "text-rose-500" : sub}`}>{absent}</td>
-                                    <td className="px-3 py-2.5 text-center">
-                                      <span className={`text-[10px] font-black ${pct >= 80 ? "text-emerald-500" : pct >= 60 ? "text-amber-500" : "text-rose-500"}`}>{pct}%</span>
+                                    <td className="px-3 py-2.5">
+                                      <div className="relative group cursor-pointer flex justify-center items-center">
+                                        <CircularProgress pct={pct} size={36} strokeWidth={3} dm={dm} />
+                                        
+                                        {/* Hover Popover Breakdown */}
+                                        {isGlobal && subjectBreakdown && subjectBreakdown.length > 0 && (
+                                          <div className={`absolute right-full mr-3 top-1/2 -translate-y-1/2 hidden group-hover:block z-50 p-4 rounded-2xl border shadow-2xl min-w-[200px] pointer-events-none transition-all scale-95 group-hover:scale-100 duration-200 ${dm ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-200 text-slate-800"}`}>
+                                            <p className={`text-[8px] font-black uppercase tracking-wider mb-2.5 border-b pb-1.5 text-left ${dm ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-500"}`}>Subject Breakdown</p>
+                                            <div className="space-y-2">
+                                              {subjectBreakdown.map((sb: { subject: string; pct: number }, sIdx: number) => {
+                                                const iconColor = sb.pct >= 80 ? "text-emerald-500" : sb.pct >= 60 ? "text-amber-500" : "text-rose-500";
+                                                return (
+                                                  <div key={sIdx} className="flex items-center justify-between gap-3 text-[10px] font-bold">
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                      <span className={`w-2 h-2 rounded-full shrink-0 ${iconColor} border border-current`} />
+                                                      <span className="truncate uppercase">{sb.subject}</span>
+                                                    </div>
+                                                    <span className={`font-black ${iconColor}`}>{sb.pct}%</span>
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
                                     </td>
                                     <td className="px-4 py-2.5 text-center">
                                       <StatusBadge classification={classification} pct={pct} />

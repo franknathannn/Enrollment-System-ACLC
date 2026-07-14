@@ -18,3 +18,5 @@ jobs:
             
       - name: Keepalive Workflow
         uses: gautamkrishnar/keepalive-workflow@v1
+        with:
+          use_api: true

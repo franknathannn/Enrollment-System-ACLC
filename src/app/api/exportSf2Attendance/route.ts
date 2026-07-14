@@ -138,6 +138,10 @@ function setCell(xml: string, ref: string, value: string): string {
         if (!value) {
             return `<c r="${ref}"${cleanAttrs}/>`;
         }
+        // If it's a numeric string, write it as a number cell (no t attribute, use <v>)
+        if (/^\d+$/.test(value)) {
+            return `<c r="${ref}"${cleanAttrs}><v>${value}</v></c>`;
+        }
         return `<c r="${ref}"${cleanAttrs} t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
     });
 }
@@ -158,6 +162,9 @@ function setCellOverride(xml: string, ref: string, value: string): string {
         replaced = true;
         const cleanAttrs = attrs.replace(/\s+t="[^"]*"/g, "");
         if (!value) return `<c r="${ref}"${cleanAttrs}/>`;
+        if (/^\d+$/.test(value)) {
+            return `<c r="${ref}"${cleanAttrs}><v>${value}</v></c>`;
+        }
         return `<c r="${ref}"${cleanAttrs} t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
     });
 
@@ -166,6 +173,9 @@ function setCellOverride(xml: string, ref: string, value: string): string {
         result = result.replace(fullPattern, (_, attrs) => {
             const cleanAttrs = attrs.replace(/\s+t="[^"]*"/g, "");
             if (!value) return `<c r="${ref}"${cleanAttrs}/>`;
+            if (/^\d+$/.test(value)) {
+                return `<c r="${ref}"${cleanAttrs}><v>${value}</v></c>`;
+            }
             return `<c r="${ref}"${cleanAttrs} t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
         });
     }
@@ -193,24 +203,90 @@ function setCells(xml: string, updates: Record<string, string>): string {
  * Validated: correct toggle confirmed on real sheet3.xml.
  */
 function toggleSaturday(xml: string, hide: boolean): string {
-    const SAT_COLS = [10, 17, 24, 31, 38];
     let result = xml;
 
-    for (const col of SAT_COLS) {
-        // Capture: <col ...before... min="N" max="N" ...after... />
+    // Helper to split a group and toggle the Saturday column's hidden state
+    const splitAndToggle = (minVal: number, maxVal: number, satVal: number) => {
+        // Match <col ... min="minVal" max="maxVal" ... />
         const pat = new RegExp(
-            `(<col\\b(?:[^>]*?))(\\bmin="${col}"\\s+max="${col}")([^/]*?)\\s*/>`,
+            `(<col\\b[^>]*?\\bmin="${minVal}"\\s+max="${maxVal}"[^>]*?\\/?>)`,
             "g"
         );
-        result = result.replace(pat, (_, before, minMax, after) => {
-            const b = before.replace(/\s*hidden="[^"]*"/g, "");
-            const a = after.replace(/\s*hidden="[^"]*"/g, "");
-            const h = hide ? ' hidden="1"' : "";
-            return `${b} ${minMax}${a}${h}/>`;
+        result = result.replace(pat, (fullTag) => {
+            // Strip any existing hidden="..." attribute
+            const cleanTag = fullTag.replace(/\s*hidden="[^"]*"/g, "");
+            
+            // Create the first group (Monday to Friday equivalent)
+            const firstGroup = cleanTag.replace(`max="${maxVal}"`, `max="${satVal - 1}"`);
+            
+            // Create the Saturday column
+            const satHidden = hide ? ' hidden="1"' : "";
+            const satTag = cleanTag
+                .replace(`min="${minVal}"`, `min="${satVal}"`)
+                .replace(`max="${maxVal}"`, `max="${satVal}"`)
+                .replace(/\/?>$/, `${satHidden}/>`);
+                
+            return firstGroup + satTag;
         });
+    };
+
+    // If the Saturday columns are already split (e.g. from a previous save/run),
+    // we can just toggle them directly.
+    const SAT_COLS = [10, 17, 24, 31, 38];
+    let alreadySplit = true;
+    for (const col of SAT_COLS) {
+        if (!xml.includes(`min="${col}" max="${col}"`)) {
+            alreadySplit = false;
+            break;
+        }
+    }
+
+    if (alreadySplit) {
+        // Just toggle direct
+        for (const col of SAT_COLS) {
+            const pat = new RegExp(
+                `(<col\\b[^>]*?\\bmin="${col}"\\s+max="${col}")([^/]*?)\\s*/>`,
+                "g"
+            );
+            result = result.replace(pat, (_, before, after) => {
+                const b = before.replace(/\s*hidden="[^"]*"/g, "");
+                const a = after.replace(/\s*hidden="[^"]*"/g, "");
+                const h = hide ? ' hidden="1"' : "";
+                return `${b}${a}${h}/>`;
+            });
+        }
+    } else {
+        // Split them first
+        splitAndToggle(6, 10, 10);
+        splitAndToggle(12, 17, 17);
+        splitAndToggle(19, 24, 24);
+        splitAndToggle(26, 31, 31);
+        splitAndToggle(33, 38, 38);
     }
 
     return result;
+}
+
+/**
+ * Injects conditional formatting rules for Saturdays so they are highlighted in blue on suspension/holiday.
+ */
+function injectSaturdayConditionalFormatting(xml: string): string {
+    if (xml.includes('sqref="J12:J52')) return xml; // Already injected
+    
+    const rules = [
+        '<conditionalFormatting sqref="J12:J52 J54:J93"><cfRule type="expression" dxfId="408" priority="100"><formula>$J$129=1</formula></cfRule></conditionalFormatting>',
+        '<conditionalFormatting sqref="Q12:Q52 Q54:Q93"><cfRule type="expression" dxfId="408" priority="101"><formula>$Q$129=1</formula></cfRule></conditionalFormatting>',
+        '<conditionalFormatting sqref="X12:X52 X54:X93"><cfRule type="expression" dxfId="408" priority="102"><formula>$X$129=1</formula></cfRule></conditionalFormatting>',
+        '<conditionalFormatting sqref="AE12:AE52 AE54:AE93"><cfRule type="expression" dxfId="408" priority="103"><formula>$AE$129=1</formula></cfRule></conditionalFormatting>',
+        '<conditionalFormatting sqref="AL12:AL52 AL54:AL93"><cfRule type="expression" dxfId="408" priority="104"><formula>$AL$129=1</formula></cfRule></conditionalFormatting>'
+    ].join("");
+
+    const lastIndex = xml.lastIndexOf("</conditionalFormatting>");
+    if (lastIndex !== -1) {
+        const insertPosition = lastIndex + "</conditionalFormatting>".length;
+        return xml.slice(0, insertPosition) + rules + xml.slice(insertPosition);
+    }
+    return xml;
 }
 
 // ─── Attendance Helpers ──────────────────────────────────────────────────────
@@ -400,8 +476,17 @@ export async function POST(req: NextRequest) {
             const filePath = `xl/worksheets/sheet${n}.xml`;
             const file = zip.file(filePath);
             if (!file) continue;
-            const xml = await file.async("string");
-            zip.file(filePath, toggleSaturday(xml, hideSat));
+            let xml = await file.async("string");
+            
+            // Fix DepEd Template Saturday 18th formula copy-paste bug (pointing to X54 instead of X13)
+            xml = xml.replace(
+                'ref="X135:X174" si="43">IF(C135="","",IF($X$131=0,COUNTIF(X54,"x"),""))',
+                'ref="X135:X174" si="43">IF(C135="","",IF($X$131=0,COUNTIF(X13,"x"),""))'
+            );
+
+            xml = toggleSaturday(xml, hideSat);
+            xml = injectSaturdayConditionalFormatting(xml);
+            zip.file(filePath, xml);
         }
 
         // 5.5 ── Fill Holidays sheet (sheet2) with calendar events ─────────────────
@@ -411,40 +496,53 @@ export async function POST(req: NextRequest) {
             e.event_type === "holiday" || e.event_type === "suspension"
         );
         
-        if (validEvents.length > 0) {
-            const holidaysFile = zip.file("xl/worksheets/sheet2.xml");
-            if (holidaysFile) {
-                let hXml = await holidaysFile.async("string");
-                const hUpdates: Record<string, string> = {};
+        const holidaysFile = zip.file("xl/worksheets/sheet2.xml");
+        if (holidaysFile) {
+            let hXml = await holidaysFile.async("string");
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            // Sort events chronologically
+            const sorted = [...validEvents].sort((a, b) => a.event_date.localeCompare(b.event_date));
+            
+            const START_ROW = 6;
+            const MAX_ROW = 55;
+            let rowIndex = START_ROW;
+            
+            // Write database holidays
+            for (const ev of sorted) {
+                if (rowIndex > MAX_ROW) break;
                 
-                // Keep track of the row to write to. Rows 33-55 are available (6-32 have existing holidays).
-                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                const parts = ev.event_date.split("-");
+                if (parts.length < 3) continue;
                 
-                let rowIndex = 33;
-                for (const ev of validEvents) {
-                    if (rowIndex > 55) break; // Template only has 50 slots
-                    
-                    const parts = ev.event_date.split("-");
-                    if (parts.length < 3) continue;
-                    
-                    const mName = monthNames[parseInt(parts[1], 10) - 1];
-                    const dayNum = parseInt(parts[2], 10);
-                    
-                    // Column B = Month name, Column C = Day number, Column D = Title
-                    hUpdates[`B${rowIndex}`] = String(mName);
-                    hUpdates[`C${rowIndex}`] = String(dayNum);
-                    hUpdates[`D${rowIndex}`] = String(ev.title);
-                    
-                    rowIndex++;
-                }
+                const mName = monthNames[parseInt(parts[1], 10) - 1];
+                const dayNum = parseInt(parts[2], 10);
                 
-                // Apply to Holidays sheet using setCellOverride
-                for (const [ref, value] of Object.entries(hUpdates)) {
-                    hXml = setCellOverride(hXml, ref, value);
-                }
+                // Write only to B (Month name string), C (Day), and D (Reason)
+                // Column A, F, G contain formulas which will auto-calculate when B is filled
+                hXml = setCellOverride(hXml, `B${rowIndex}`, String(mName));
+                hXml = setCellOverride(hXml, `C${rowIndex}`, String(dayNum));
+                hXml = setCellOverride(hXml, `D${rowIndex}`, String(ev.title));
                 
-                zip.file("xl/worksheets/sheet2.xml", hXml);
+                rowIndex++;
             }
+            
+            // Clear any remaining rows up to MAX_ROW to remove pre-existing template data
+            for (let r = rowIndex; r <= MAX_ROW; r++) {
+                hXml = setCellOverride(hXml, `B${r}`, "");
+                hXml = setCellOverride(hXml, `C${r}`, "");
+                hXml = setCellOverride(hXml, `D${r}`, "");
+            }
+            
+            zip.file("xl/worksheets/sheet2.xml", hXml);
+        }
+
+        // 5.6 ── Patch Consolidation sheet (sheet14.xml) to clear hardcoded April school days (0)
+        const consolidationFile = zip.file("xl/worksheets/sheet14.xml");
+        if (consolidationFile) {
+            let cXml = await consolidationFile.async("string");
+            cXml = setCellOverride(cXml, "M4", ""); // Clearing M4 lets April sheet auto-calculate days
+            zip.file("xl/worksheets/sheet14.xml", cXml);
         }
 
         // 6 ── Fill attendance marks into SF2 monthly sheets ──────────────────
@@ -457,10 +555,12 @@ export async function POST(req: NextRequest) {
 
             // Group attendance: "studentId|date" → records[]
             const byStudentDate = new Map<string, { status: string }[]>();
+            const datesWithAttendance = new Set<string>();
             for (const rec of attendance) {
                 const key = `${rec.student_id}|${rec.date}`;
                 if (!byStudentDate.has(key)) byStudentDate.set(key, []);
                 byStudentDate.get(key)!.push({ status: rec.status });
+                datesWithAttendance.add(rec.date);
             }
 
             // Iterate school-year months from JUN through currentMonth
@@ -493,7 +593,12 @@ export async function POST(req: NextRequest) {
                     for (const [studentId, idx] of maleIndex) {
                         const key = `${studentId}|${dateStr}`;
                         const records = byStudentDate.get(key);
-                        const mark = records ? resolveDailyStatus(records) : "";
+                        let mark = "";
+                        if (records) {
+                            mark = resolveDailyStatus(records);
+                        } else if (datesWithAttendance.has(dateStr)) {
+                            mark = "x";
+                        }
                         const row = 13 + idx;
                         cellUpdates[`${col}${row}`] = mark;
                     }
@@ -502,7 +607,12 @@ export async function POST(req: NextRequest) {
                     for (const [studentId, idx] of femaleIndex) {
                         const key = `${studentId}|${dateStr}`;
                         const records = byStudentDate.get(key);
-                        const mark = records ? resolveDailyStatus(records) : "";
+                        let mark = "";
+                        if (records) {
+                            mark = resolveDailyStatus(records);
+                        } else if (datesWithAttendance.has(dateStr)) {
+                            mark = "x";
+                        }
                         const row = 54 + idx;
                         cellUpdates[`${col}${row}`] = mark;
                     }
@@ -514,7 +624,25 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // 7 ── Re-pack and return
+        // 7 ── Force Excel to recalculate ALL formulas on open ─────────────────
+        const wbFile = zip.file("xl/workbook.xml");
+        if (wbFile) {
+            let wbXml = await wbFile.async("string");
+            if (wbXml.includes("<calcPr")) {
+                wbXml = wbXml.replace(
+                    /<calcPr([^/]*?)\/>/,
+                    (_, attrs) => {
+                        let clean = attrs
+                            .replace(/\s*fullCalcOnLoad="[^"]*"/g, "")
+                            .replace(/\s*forceFullCalc="[^"]*"/g, "");
+                        return `<calcPr${clean} fullCalcOnLoad="1" forceFullCalc="1"/>`;
+                    }
+                );
+            }
+            zip.file("xl/workbook.xml", wbXml);
+        }
+
+        // 8 ── Re-pack and return
         const output = await zip.generateAsync({
             type: "nodebuffer",
             compression: "DEFLATE",

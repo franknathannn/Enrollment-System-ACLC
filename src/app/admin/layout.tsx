@@ -166,7 +166,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { href: "/admin/sections", icon: <Users size={18} />, label: "Sections" },
         { href: "/admin/teachers", icon: <GraduationCap size={18} />, label: "Teachers" },
         { href: "/admin/schedules", icon: <CalendarRange size={18} />, label: "Schedules" },
-        { href: "/admin/quarterly-updates", icon: <BarChart2 size={18} />, label: "Quarterly Update" },
         { href: "/admin/lms", icon: <Settings size={18} />, label: "LMS" },
       ],
     },

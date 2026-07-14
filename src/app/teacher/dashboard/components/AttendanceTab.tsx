@@ -1157,9 +1157,8 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
     if (!selectedDay) return []
     const dow = new Date(selectedDay + "T00:00:00").toLocaleDateString("en-US", { weekday: "long" })
     const scheduled = [...new Set(schedules.filter(s => s.section === calSection && s.day === dow).map(s => s.subject))].sort()
-    const recorded = [...new Set(dayRecords.map(r => r.subject))].sort()
-    return [...scheduled, ...recorded.filter(s => !scheduled.includes(s))]
-  }, [selectedDay, schedules, calSection, dayRecords])
+    return scheduled
+  }, [selectedDay, schedules, calSection])
 
   const calDaySectionStudents = useMemo(() => {
     const raw = students.filter(s => {
@@ -1855,12 +1854,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                         total: sectionSize,
                       }
                     })
-                    // Include any extra subjects that were recorded but not in schedule
-                    Object.entries(data?.bySubject ?? {}).forEach(([subj, sd]) => {
-                      if (!bySubjectAdjusted[subj]) {
-                        bySubjectAdjusted[subj] = { present: sd.present, total: Math.max(sd.total, sectionSize) }
-                      }
-                    })
+
 
                     // Overall pct = average across per-subject percentages
                     // This prevents cross-subject double-counting (a student present in 2
@@ -1870,7 +1864,7 @@ export function AttendanceTab({ schedules, students, dm, session, schoolYear, ad
                       ? subjValues.reduce((sum, s) => sum + (s.total > 0 ? s.present / s.total : 0), 0) / subjValues.length
                       : 0
 
-                    const hasData = !!data
+                    const hasData = !!data && dayClasses.some(subj => data.bySubject[subj] !== undefined)
 
                     const dayCalEvents = getCalendarEventsForDate(dateStr)
                     const isHoliday = dayCalEvents.some(e => e.event_type === "holiday")
