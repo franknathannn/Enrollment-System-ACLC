@@ -5,7 +5,8 @@ export const revalidate = 60 // Revalidate every 60 seconds
 
 export default async function HomePage() {
   const supabase = await createClient()
-  
+  console.log("Changed");
+
   // Fetch site settings
   const { data: settingsData } = await supabase.from('site_settings').select('*')
   const settings: any = {}
@@ -15,14 +16,14 @@ export default async function HomePage() {
 
   // Fetch programs
   const { data: programs } = await supabase.from('programs').select('*').order('created_at', { ascending: true })
-  
+
   // Fetch announcements
   const { data: announcements } = await supabase.from('announcements_landing')
     .select('*')
     .eq('published', true)
     .order('published_at', { ascending: false })
     .limit(6)
-    
+
   // Fetch stats
   const { data: stats } = await supabase.from('campus_stats').select('*').order('display_order', { ascending: true })
 
@@ -31,7 +32,7 @@ export default async function HomePage() {
   const systemConfig = systemConfigData || null
 
   return (
-    <LandingClient 
+    <LandingClient
       settings={settings}
       programs={programs || []}
       announcements={announcements || []}
