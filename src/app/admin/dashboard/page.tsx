@@ -82,7 +82,7 @@ export default function AdminDashboard() {
       fetchTimeoutRef.current = setTimeout(async () => {
         try {
           const [studentsRes, configRes, sectionsRes, historyRes] = await Promise.all([
-            supabase.from('students').select('id,first_name,last_name,gender,strand,section,status,student_category,gwa_grade_10,two_by_two_url,created_at,preferred_shift,last_school_attended,grade_level,is_archived,school_type,school_year').order('created_at', { ascending: false }),
+            supabase.from('students').select('id,first_name,last_name,gender,strand,section,status,student_category,gwa_grade_10,two_by_two_url,created_at,preferred_shift,preferred_modality,last_school_attended,grade_level,is_archived,school_type,school_year').order('created_at', { ascending: false }),
             supabase.from('system_config').select('*').maybeSingle(),
             supabase.from('sections').select('capacity'),
             supabase.from('enrollment_history').select('*').order('school_year', { ascending: false })
@@ -234,6 +234,8 @@ export default function AdminDashboard() {
       pendingFemales: pendingList.filter((s: any) => s.gender === 'Female').length,
       amShift: approved.filter((s: any) => s.preferred_shift === 'AM').length,
       pmShift: approved.filter((s: any) => s.preferred_shift === 'PM').length,
+      faceToFace: approved.filter((s: any) => s.preferred_modality === 'Face to Face').length,
+      online: approved.filter((s: any) => s.preferred_modality === 'Online').length,
       // Grade level breakdown (enrolled/accepted only)
       g11Count: approved.filter((s: any) => s.grade_level !== '12').length,
       g12Count: approved.filter((s: any) => s.grade_level === '12').length,

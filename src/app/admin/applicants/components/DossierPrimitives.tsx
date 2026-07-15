@@ -42,7 +42,7 @@ export const InfoBlock = memo(function InfoBlock({
             {icon}
           </span>
         )}
-        <p className={`font-semibold text-sm md:text-base leading-snug transition-colors duration-200 w-full min-w-0 flex-1 break-all ${
+        <p className={`font-semibold text-sm md:text-base leading-snug transition-colors duration-200 w-full min-w-0 flex-1 break-all whitespace-pre-line ${
           isDarkMode ? "text-slate-200 group-hover:text-white" : "text-slate-800 group-hover:text-slate-900"
         }`}>
           {animate ? <AnimatedText text={value || "—"} className="block" /> : (value || "—")}

@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import {
   CheckCircle2, Cpu, BookText, Clock, Calendar, Zap, TrendingUp, TrendingDown,
   Target, Activity, Users, Banknote, Landmark, Timer, Trophy, PieChart as PieIcon,
-  ChevronRight, User, UserCircle2, Sun, Moon, School, GraduationCap, Medal, Star, Award
+  ChevronRight, User, UserCircle2, Sun, Moon, School, GraduationCap, Medal, Star, Award, Monitor, Globe
 } from "lucide-react"
 import { ThemedText } from "@/components/ThemedText"
 import { themeColors } from "@/lib/themeColors"
@@ -115,6 +115,24 @@ export const CensusGrid = memo(function CensusGrid({ stats, totalMaleEnrollees, 
         icon={<Moon size={48} className="text-white" />}
         isDarkMode={isDarkMode}
         tooltip="Enrolled students that PREFERS PM SHIFT"
+      />
+      <MetricCard
+        label="FACE TO FACE (MODALITY)"
+        value={<AnimatedNumber value={stats.faceToFace} />}
+        colorLight="linear-gradient(135deg, rgb(16, 185, 129), rgb(5, 150, 105))"
+        colorDark="linear-gradient(135deg, rgba(4, 120, 87, 0.7), rgba(6, 95, 70, 0.7))"
+        icon={<Monitor size={48} className="text-white" />}
+        isDarkMode={isDarkMode}
+        tooltip="Enrolled students that PREFERS FACE TO FACE modality"
+      />
+      <MetricCard
+        label="ONLINE (MODALITY)"
+        value={<AnimatedNumber value={stats.online} />}
+        colorLight="linear-gradient(135deg, rgb(14, 165, 233), rgb(2, 132, 199))"
+        colorDark="linear-gradient(135deg, rgba(3, 105, 161, 0.7), rgba(7, 89, 133, 0.7))"
+        icon={<Globe size={48} className="text-white" />}
+        isDarkMode={isDarkMode}
+        tooltip="Enrolled students that PREFERS ONLINE modality"
       />
     </div>
   )
