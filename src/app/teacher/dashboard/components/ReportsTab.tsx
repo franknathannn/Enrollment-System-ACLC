@@ -136,6 +136,11 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
   const [listSearch, setListSearch] = useState("")
   const [printSubject, setPrintSubject] = useState<{ section: string; subject: string } | null | undefined>(undefined)
   const [selectedProfile, setSelectedProfile] = useState<any>(null)
+  const [activeTooltip, setActiveTooltip] = useState<{
+    studentId: string;
+    rect: DOMRect;
+    breakdown: { subject: string; pct: number }[];
+  } | null>(null)
 
   const toggleSubjectFocus = (section: string, subject: string) => {
     setListSearch("")
@@ -480,6 +485,37 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                 )}
               </div>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* --- HOVER ATTENDANCE TOOLTIP PORTAL --- */}
+      {activeTooltip && typeof document !== "undefined" && createPortal(
+        <div
+          style={{
+            position: "fixed",
+            top: activeTooltip.rect.top + activeTooltip.rect.height / 2,
+            right: window.innerWidth - activeTooltip.rect.left + 12,
+            transform: "translateY(-50%)",
+            zIndex: 99999,
+          }}
+          className={`p-4 rounded-2xl border shadow-2xl min-w-[200px] pointer-events-none transition-all duration-200 ${dm ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-200 text-slate-800"}`}
+        >
+          <p className={`text-[8px] font-black uppercase tracking-wider mb-2.5 border-b pb-1.5 text-left ${dm ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-500"}`}>Subject Breakdown</p>
+          <div className="space-y-2">
+            {activeTooltip.breakdown.map((sb: { subject: string; pct: number }, sIdx: number) => {
+              const iconColor = sb.pct >= 80 ? "text-emerald-500" : sb.pct >= 60 ? "text-amber-500" : "text-rose-500";
+              return (
+                <div key={sIdx} className="flex items-center justify-between gap-3 text-[10px] font-bold">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${iconColor} border border-current`} />
+                    <span className="truncate uppercase">{sb.subject}</span>
+                  </div>
+                  <span className={`font-black ${iconColor}`}>{sb.pct}%</span>
+                </div>
+              );
+            })}
           </div>
         </div>,
         document.body
@@ -1150,7 +1186,7 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                                 }
 
                                 return (
-                                  <tr key={student.id} className={`transition-colors ${rowBgClass}`}>
+                                  <tr key={student.id} className={`transition-colors hover:relative hover:z-30 ${rowBgClass}`}>
                                     <td className={`px-4 py-2.5 text-[8px] font-black opacity-40 ${sub}`}>{i + 1}</td>
                                     <td className="px-4 py-3">
                                       <div className="flex items-center gap-3">
@@ -1186,29 +1222,23 @@ export function ReportsTab({ schedules, students, dm, session, schoolYear, advis
                                     <td className="px-3 py-2.5 text-center text-[10px] font-black text-blue-500">{excused}</td>
                                     <td className={`px-3 py-2.5 text-center text-[10px] font-black ${absent > 0 ? "text-rose-500" : sub}`}>{absent}</td>
                                     <td className="px-3 py-2.5">
-                                      <div className="relative group cursor-pointer flex justify-center items-center">
+                                      <div
+                                        className="relative cursor-pointer flex justify-center items-center"
+                                        onMouseEnter={(e) => {
+                                          if (isGlobal && subjectBreakdown && subjectBreakdown.length > 0) {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setActiveTooltip({
+                                              studentId: student.id,
+                                              rect,
+                                              breakdown: subjectBreakdown
+                                            });
+                                          }
+                                        }}
+                                        onMouseLeave={() => {
+                                          setActiveTooltip(null);
+                                        }}
+                                      >
                                         <CircularProgress pct={pct} size={36} strokeWidth={3} dm={dm} />
-                                        
-                                        {/* Hover Popover Breakdown */}
-                                        {isGlobal && subjectBreakdown && subjectBreakdown.length > 0 && (
-                                          <div className={`absolute right-full mr-3 top-1/2 -translate-y-1/2 hidden group-hover:block z-50 p-4 rounded-2xl border shadow-2xl min-w-[200px] pointer-events-none transition-all scale-95 group-hover:scale-100 duration-200 ${dm ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-200 text-slate-800"}`}>
-                                            <p className={`text-[8px] font-black uppercase tracking-wider mb-2.5 border-b pb-1.5 text-left ${dm ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-500"}`}>Subject Breakdown</p>
-                                            <div className="space-y-2">
-                                              {subjectBreakdown.map((sb: { subject: string; pct: number }, sIdx: number) => {
-                                                const iconColor = sb.pct >= 80 ? "text-emerald-500" : sb.pct >= 60 ? "text-amber-500" : "text-rose-500";
-                                                return (
-                                                  <div key={sIdx} className="flex items-center justify-between gap-3 text-[10px] font-bold">
-                                                    <div className="flex items-center gap-1.5 min-w-0">
-                                                      <span className={`w-2 h-2 rounded-full shrink-0 ${iconColor} border border-current`} />
-                                                      <span className="truncate uppercase">{sb.subject}</span>
-                                                    </div>
-                                                    <span className={`font-black ${iconColor}`}>{sb.pct}%</span>
-                                                  </div>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
-                                        )}
                                       </div>
                                     </td>
                                     <td className="px-4 py-2.5 text-center">

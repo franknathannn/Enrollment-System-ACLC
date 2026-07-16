@@ -27,6 +27,8 @@ export default function StudentBalancePage() {
   // Charge dialog states
   const [chargeType, setChargeType] = useState<"individual" | "bulk">("individual")
   const [selectedStudentId, setSelectedStudentId] = useState("")
+  const [chargeStudentSearch, setChargeStudentSearch] = useState("")
+  const [chargeStudentDropdownOpen, setChargeStudentDropdownOpen] = useState(false)
   const [feeName, setFeeName] = useState("")
   const [feeAmount, setFeeAmount] = useState("")
   const [targetGrade, setTargetGrade] = useState("")
@@ -40,6 +42,8 @@ export default function StudentBalancePage() {
   const [payeeType, setPayeeType] = useState<"Guardian" | "Self-pay">("Self-pay")
   const [submittingPayment, setSubmittingPayment] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [payeeSearch, setPayeeSearch] = useState("")
+  const [payeeDropdownOpen, setPayeeDropdownOpen] = useState(false)
 
   // Strands & Unique Charges states
   const [availableStrands, setAvailableStrands] = useState<string[]>(["ICT", "GAS"])
@@ -277,19 +281,36 @@ export default function StudentBalancePage() {
                 </div>
 
                 {chargeType === "individual" ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative">
                     <label className="text-[9px] uppercase font-black tracking-widest text-slate-400">Select Student</label>
-                    <select 
-                      value={selectedStudentId} 
-                      onChange={(e) => setSelectedStudentId(e.target.value)}
-                      className={`h-11 w-full rounded-xl border-none font-bold text-xs px-4 outline-none ${isDarkMode ? 'bg-slate-850 text-white' : 'bg-slate-100 text-slate-900'}`}
-                      required
-                    >
-                      <option value="">-- Choose Student --</option>
-                      {balances.map(b => (
-                        <option key={b.id} value={b.id}>{b.last_name}, {b.first_name} (LRN: {b.lrn})</option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <Input 
+                        placeholder="Search student..."
+                        value={chargeStudentSearch}
+                        onChange={(e) => { setChargeStudentSearch(e.target.value); setChargeStudentDropdownOpen(true); }}
+                        onFocus={() => setChargeStudentDropdownOpen(true)}
+                        className={`h-11 w-full rounded-xl border-none font-bold text-xs px-4 outline-none ${isDarkMode ? 'bg-slate-850 text-white' : 'bg-slate-100 text-slate-900'}`}
+                      />
+                      {chargeStudentDropdownOpen && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setChargeStudentDropdownOpen(false)} />
+                          <div className={`absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-xl shadow-xl z-50 p-1 border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                            {balances.filter(b => `${b.first_name} ${b.last_name} ${b.lrn}`.toLowerCase().includes(chargeStudentSearch.toLowerCase())).map(b => (
+                              <div 
+                                key={b.id} 
+                                onClick={() => { setSelectedStudentId(b.id); setChargeStudentSearch(`${b.last_name}, ${b.first_name}`); setChargeStudentDropdownOpen(false); }}
+                                className={`px-3 py-2 text-xs font-bold rounded-lg cursor-pointer ${selectedStudentId === b.id ? (isDarkMode ? 'bg-blue-500/20 text-blue-500' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-50')}`}
+                              >
+                                {b.last_name}, {b.first_name} (LRN: {b.lrn})
+                              </div>
+                            ))}
+                            {balances.filter(b => `${b.first_name} ${b.last_name} ${b.lrn}`.toLowerCase().includes(chargeStudentSearch.toLowerCase())).length === 0 && (
+                              <div className="px-3 py-2 text-xs text-slate-400">No students found</div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
@@ -363,19 +384,36 @@ export default function StudentBalancePage() {
                 <DialogTitle className="uppercase font-black tracking-wider text-base italic text-emerald-600">Record Cash Payment</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleRecordPayment} className="space-y-4 pt-4">
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <label className="text-[9px] uppercase font-black tracking-widest text-slate-400">Select Student</label>
-                  <select 
-                    value={payStudentId} 
-                    onChange={(e) => setPayStudentId(e.target.value)}
-                    className={`h-11 w-full rounded-xl border-none font-bold text-xs px-4 outline-none ${isDarkMode ? 'bg-slate-850 text-white' : 'bg-slate-100 text-slate-900'}`}
-                    required
-                  >
-                    <option value="">-- Choose Student --</option>
-                    {balances.map(b => (
-                      <option key={b.id} value={b.id}>{b.last_name}, {b.first_name} (LRN: {b.lrn})</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <Input 
+                      placeholder="Search student..."
+                      value={payeeSearch}
+                      onChange={(e) => { setPayeeSearch(e.target.value); setPayeeDropdownOpen(true); }}
+                      onFocus={() => setPayeeDropdownOpen(true)}
+                      className={`h-11 w-full rounded-xl border-none font-bold text-xs px-4 outline-none ${isDarkMode ? 'bg-slate-850 text-white' : 'bg-slate-100 text-slate-900'}`}
+                    />
+                    {payeeDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setPayeeDropdownOpen(false)} />
+                        <div className={`absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-xl shadow-xl z-50 p-1 border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                          {balances.filter(b => `${b.first_name} ${b.last_name} ${b.lrn}`.toLowerCase().includes(payeeSearch.toLowerCase())).map(b => (
+                            <div 
+                              key={b.id} 
+                              onClick={() => { setPayStudentId(b.id); setPayeeSearch(`${b.last_name}, ${b.first_name}`); setPayeeDropdownOpen(false); }}
+                              className={`px-3 py-2 text-xs font-bold rounded-lg cursor-pointer ${payStudentId === b.id ? (isDarkMode ? 'bg-emerald-500/20 text-emerald-500' : 'bg-emerald-50 text-emerald-600') : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-50')}`}
+                            >
+                              {b.last_name}, {b.first_name} (LRN: {b.lrn})
+                            </div>
+                          ))}
+                          {balances.filter(b => `${b.first_name} ${b.last_name} ${b.lrn}`.toLowerCase().includes(payeeSearch.toLowerCase())).length === 0 && (
+                            <div className="px-3 py-2 text-xs text-slate-400">No students found</div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">

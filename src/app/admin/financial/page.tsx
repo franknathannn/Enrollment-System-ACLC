@@ -795,7 +795,9 @@ export default function FinancialPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {Object.keys(categoryRates).map((category) => (
+                      {Object.keys(categoryRates)
+                        .filter(category => category === "CATEGORY A, B, C" || category === "CATEGORY D, E")
+                        .map((category) => (
                         <tr key={category} className={`hover:bg-slate-500/5 transition-colors ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                           <td className="px-6 py-4">{category}</td>
                           <td className="px-6 py-4">

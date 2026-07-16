@@ -5,7 +5,6 @@ export const revalidate = 60 // Revalidate every 60 seconds
 
 export default async function HomePage() {
   const supabase = await createClient()
-  console.log("Changed");
 
   // Fetch site settings
   const { data: settingsData } = await supabase.from('site_settings').select('*')

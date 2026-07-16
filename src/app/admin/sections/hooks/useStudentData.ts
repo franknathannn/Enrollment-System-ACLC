@@ -49,7 +49,7 @@ export function useStudentData() {
             // new fields
             'school_type', 'year_completed_jhs', 'last_school_address',
             'facebook_user', 'facebook_link', 'preferred_modality', 'preferred_shift',
-            'oed_usn',
+            'oed_usn', 'voucher_status', 'is_payee', 'grade_level',
           ].join(', '))
           .order('created_at', { ascending: false })
           .range(0, 5999),

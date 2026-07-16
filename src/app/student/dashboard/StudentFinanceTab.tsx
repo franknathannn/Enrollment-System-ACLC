@@ -4,20 +4,55 @@ import { useEffect, useState } from "react"
 import { getStudentBalanceDetails } from "@/lib/actions/financial"
 import { Loader2, DollarSign, FileText, CheckCircle2 } from "lucide-react"
 
+import { studentSupabase } from "@/lib/supabase/student-client"
+
 export default function StudentFinanceTab({ studentId, dm }: { studentId: string; dm: boolean }) {
   const [loading, setLoading] = useState(true)
   const [details, setDetails] = useState<any | null>(null)
 
   useEffect(() => {
-    async function load() {
-      setLoading(true)
+    async function load(isRefresh = false) {
+      if (!isRefresh) setLoading(true)
       const res = await getStudentBalanceDetails(studentId)
       if (res.success) {
         setDetails(res.data)
       }
-      setLoading(false)
+      if (!isRefresh) setLoading(false)
     }
     load()
+
+    // POLLING FALLBACK — 3 seconds (guarantees live updates even if realtime misses)
+    const pollingInterval = setInterval(() => load(true), 3000)
+
+    // REALTIME SUBSCRIPTIONS — Push updates for instant response
+    const channel = studentSupabase
+      .channel(`finance_live_${studentId.slice(0, 8)}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'payments', filter: `student_id=eq.${studentId}` },
+        () => load(true)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'student_balances', filter: `student_id=eq.${studentId}` },
+        () => load(true)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'voucher_ledger', filter: `student_id=eq.${studentId}` },
+        () => load(true)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'system_config' },
+        () => load(true)
+      )
+      .subscribe()
+
+    return () => {
+      clearInterval(pollingInterval)
+      studentSupabase.removeChannel(channel)
+    }
   }, [studentId])
 
   if (loading) {

@@ -55,9 +55,9 @@ export const EnrolledDossier = memo(function EnrolledDossier({
 
   useEffect(() => { setFormData(student) }, [student])
 
-  const isJHS = student.student_category?.toLowerCase().includes("jhs") ||
-                student.student_category === "Standard" ||
-                student.student_category === "JHS Graduate"
+  const isJHS = student.student_category?.toLowerCase().includes("category") ||
+                student.student_category?.toLowerCase().includes("jhs") ||
+                student.student_category === "Standard"
 
   const hasChanges = useMemo(() => {
     if (!student || !formData) return false

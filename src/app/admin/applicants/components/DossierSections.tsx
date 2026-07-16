@@ -470,9 +470,11 @@ export const DossierSections = memo(function DossierSections({
             </div>
 
             {/* Voucher Category */}
-            <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 min-w-0 ${isDarkMode ? "bg-emerald-900/10 border-emerald-900/40" : "bg-emerald-50 border-emerald-200"}`}>
-              <p className={`text-[10px] font-black uppercase mb-2 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`}>Voucher Category</p>
-              {isEditing ? (
+            <div className={`p-6 rounded-[32px] border text-center shadow-sm transition-colors duration-500 min-w-0 ${student.is_payee ? (isDarkMode ? "bg-slate-800/40 border-slate-700/40" : "bg-slate-50 border-slate-200") : isDarkMode ? "bg-emerald-900/10 border-emerald-900/40" : "bg-emerald-50 border-emerald-200"}`}>
+              <p className={`text-[10px] font-black uppercase mb-2 ${student.is_payee ? (isDarkMode ? "text-slate-400" : "text-slate-500") : isDarkMode ? "text-emerald-400" : "text-emerald-600"}`}>Voucher Category</p>
+              {student.is_payee ? (
+                <p className={`text-xl md:text-2xl font-black leading-none ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>PAYEE</p>
+              ) : isEditing ? (
                 <div className="relative">
                   <Button onClick={() => setCategoryOpen(!categoryOpen)} className={`w-full justify-between ${inputClass} px-3`} variant="ghost">
                     {formData.student_category || "Standard"}
@@ -481,7 +483,7 @@ export const DossierSections = memo(function DossierSections({
                   {categoryOpen && (
                     <div className={`absolute top-full left-0 w-full mt-2 rounded-xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 max-h-[200px] overflow-y-auto ${isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-100"}`}>
                       <div className="p-1 space-y-1">
-                        {["JHS Graduate", "ALS Passer", "PEPT Passer", "Private non-ESC", "Transferee"].map((cat) => (
+                        {["CATEGORY A, B, C", "CATEGORY D, E", "Transferee"].map((cat) => (
                           <button key={cat} onClick={() => { onChange("student_category", cat); setCategoryOpen(false) }}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors text-left ${formData.student_category === cat ? isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-50 text-blue-600" : isDarkMode ? "text-slate-400 hover:bg-slate-800 hover:text-white" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
                             {cat} {formData.student_category === cat && <Check size={12} />}
@@ -492,7 +494,16 @@ export const DossierSections = memo(function DossierSections({
                   )}
                 </div>
               ) : (
-                <p className={`text-xl md:text-2xl font-black leading-none ${isDarkMode ? "text-emerald-400" : "text-emerald-700"}`}>{formData.student_category || "Standard"}</p>
+                <p className={`text-xl md:text-2xl font-black leading-none ${isDarkMode ? "text-emerald-400" : "text-emerald-700"}`}>{(() => {
+                  const vs = student.voucher_status || formData.student_category || ""
+                  const vl = vs.toLowerCase()
+                  if (vl.includes("a, b, c") || vl.includes("a,b,c") || vl.includes("category a")) return "A, B, C"
+                  if (vl.includes("d, e") || vl.includes("d,e") || vl.includes("category d")) return "D, E"
+                  if (vl.includes("transferee")) return "Transferee"
+                  // Map old student_category values to proper category
+                  if (vl.includes("esc") || vl.includes("private") || vl.includes("80%")) return "D, E"
+                  return "A, B, C"
+                })()}</p>
               )}
             </div>
 

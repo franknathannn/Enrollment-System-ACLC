@@ -22,6 +22,8 @@ export default function PayeesPage() {
   const [payAmount, setPayAmount] = useState("")
   const [payeeType, setPayeeType] = useState<"Guardian" | "Self-pay">("Self-pay")
   const [submittingPayment, setSubmittingPayment] = useState(false)
+  const [payeeSearch, setPayeeSearch] = useState("")
+  const [payeeDropdownOpen, setPayeeDropdownOpen] = useState(false)
 
   const fetchData = async () => {
     setLoading(true)
@@ -30,7 +32,7 @@ export default function PayeesPage() {
       // Filter only payee/transferee students
       const payeeList = (res.balances || []).filter(b => 
         b.is_payee || 
-        b.voucher_status?.includes("CATEGORY D") || 
+        b.voucher_status?.includes("CATEGORY") || 
         b.voucher_status === "Transferee"
       )
       setPayees(payeeList)
@@ -99,19 +101,36 @@ export default function PayeesPage() {
               <DialogTitle className="uppercase font-black tracking-wider text-base italic text-amber-500">Record Tuition Payment</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleRecordPayment} className="space-y-4 pt-4">
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label className="text-[9px] uppercase font-black tracking-widest text-slate-400">Select Payee Student</label>
-                <select 
-                  value={payStudentId} 
-                  onChange={(e) => setPayStudentId(e.target.value)}
-                  className={`h-11 w-full rounded-xl border-none font-bold text-xs px-4 outline-none ${isDarkMode ? 'bg-slate-850 text-white' : 'bg-slate-100 text-slate-900'}`}
-                  required
-                >
-                  <option value="">-- Choose Payee --</option>
-                  {payees.map(b => (
-                    <option key={b.id} value={b.id}>{b.last_name}, {b.first_name} (LRN: {b.lrn}) — Balance: ₱{b.balance.toLocaleString()}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <Input 
+                    placeholder="Search student..."
+                    value={payeeSearch}
+                    onChange={(e) => { setPayeeSearch(e.target.value); setPayeeDropdownOpen(true); }}
+                    onFocus={() => setPayeeDropdownOpen(true)}
+                    className={`h-11 w-full rounded-xl border-none font-bold text-xs px-4 outline-none ${isDarkMode ? 'bg-slate-850 text-white' : 'bg-slate-100 text-slate-900'}`}
+                  />
+                  {payeeDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setPayeeDropdownOpen(false)} />
+                      <div className={`absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-xl shadow-xl z-50 p-1 border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                        {payees.filter(b => `${b.first_name} ${b.last_name} ${b.lrn}`.toLowerCase().includes(payeeSearch.toLowerCase())).map(b => (
+                          <div 
+                            key={b.id} 
+                            onClick={() => { setPayStudentId(b.id); setPayeeSearch(`${b.last_name}, ${b.first_name}`); setPayeeDropdownOpen(false); }}
+                            className={`px-3 py-2 text-xs font-bold rounded-lg cursor-pointer ${payStudentId === b.id ? (isDarkMode ? 'bg-amber-500/20 text-amber-500' : 'bg-amber-50 text-amber-600') : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-50')}`}
+                          >
+                            {b.last_name}, {b.first_name} (LRN: {b.lrn}) — Balance: ₱{b.balance.toLocaleString()}
+                          </div>
+                        ))}
+                        {payees.filter(b => `${b.first_name} ${b.last_name} ${b.lrn}`.toLowerCase().includes(payeeSearch.toLowerCase())).length === 0 && (
+                          <div className="px-3 py-2 text-xs text-slate-400">No students found</div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">

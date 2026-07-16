@@ -45,10 +45,21 @@ serve(async (req: Request) => {
     const shouldNotifyParents = config?.notify_parents_status ?? true;
 
     const isApproved = record.status === 'Approved';
-    const logoUrl = "https://sms-aclc-northbay.vercel.app/logo-aclc.png";
-    const statusLink = "https://sms-aclc-northbay.vercel.app/status";
-    const portalLink = record.id ? 'https://sms-aclc-northbay.vercel.app/portal/' + record.id : statusLink;
+    const BASE_URL = Deno.env.get('NEXT_PUBLIC_BASE_URL') || 'https://sms-aclc-northbay.vercel.app';
+    const logoUrl = BASE_URL + '/logo-aclc.png';
+    const statusLink = BASE_URL + '/status';
+    const portalLink = record.id ? BASE_URL + '/portal/' + record.id : statusLink;
+    const studentPortalLink = BASE_URL + '/student/login';
     const studentUuid = record.id ? record.id.split('-')[0].toUpperCase() : '';
+
+    const studentPortalCtaHtml = [
+      '<div style="margin-top:12px;text-align:center;">',
+      '<a href="' + studentPortalLink + '" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#ffffff;text-decoration:none;padding:12px 30px;border-radius:14px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:2px;box-shadow:0 10px 25px -5px rgba(29,78,216,0.4);">',
+      'Student Portal',
+      '</a>',
+      '<p style="margin:10px 0 0;font-size:9px;color:#64748b;font-weight:700;">Set up your account · Access your dashboard, QR code &amp; schedule</p>',
+      '</div>',
+    ].join('');
 
     // QR Code URLs — dark and light themed matching the status page StudentQRCard
     const qrDarkUrl = record.id ? 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + record.id + '&color=e2e8f0&bgcolor=0a0f1e' : '';
@@ -243,6 +254,7 @@ serve(async (req: Request) => {
         + '<p style="margin:8px 0 0 0;font-size:14px;color:#64748b;">(Previously: ' + old_record.section + ')</p>'
         + '</div>'
         + scheduleHtml
+        + (isApproved ? studentPortalCtaHtml : '')
         + qrCardHtml;
     } else if (isApproved) {
       contentHtml = '<h1 style="color:#15803d;margin-top:0;font-size:28px;text-align:center;font-weight:800;">Congratulations, ' + record.last_name + '!</h1>'
@@ -254,6 +266,7 @@ serve(async (req: Request) => {
         + '<p style="margin:8px 0 0 0;font-size:32px;font-weight:900;color:#166534;">' + (record.section || 'TBA') + '</p>'
         + '</div>'
         + scheduleHtml
+        + (isApproved ? studentPortalCtaHtml : '')
         + qrCardHtml;
     } else {
       contentHtml = '<h1 style="color:#991b1b;margin-top:0;font-size:26px;text-align:center;font-weight:800;">Application Status Update</h1>'
@@ -273,7 +286,7 @@ serve(async (req: Request) => {
     // Wrapper
     const htmlContent = '<div style="font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#1f2937;max-width:600px;margin:0 auto;padding:20px;background-color:#f9fafb;">'
       + '<div style="text-align:center;margin-bottom:30px;">'
-      + '<a href="https://sms-aclc-northbay.vercel.app" target="_blank" style="text-decoration:none;">'
+      + '<a href="' + BASE_URL + '" target="_blank" style="text-decoration:none;">'
       + '<img src="' + logoUrl + '" alt="ACLC Logo" style="width:80px;height:80px;object-fit:contain;" />'
       + '</a>'
       + '<h2 style="color:#1d4ed8;margin-top:10px;text-transform:uppercase;letter-spacing:2px;font-weight:800;">ACLC NORTHBAY</h2>'
@@ -351,7 +364,7 @@ serve(async (req: Request) => {
 
       const guardianHtmlContent = '<div style="font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#1f2937;max-width:600px;margin:0 auto;padding:20px;background-color:#f9fafb;">'
         + '<div style="text-align:center;margin-bottom:30px;">'
-        + '<a href="https://sms-aclc-northbay.vercel.app" target="_blank" style="text-decoration:none;">'
+        + '<a href="' + BASE_URL + '" target="_blank" style="text-decoration:none;">'
         + '<img src="' + logoUrl + '" alt="ACLC Logo" style="width:80px;height:80px;object-fit:contain;" />'
         + '</a>'
         + '<h2 style="color:#1d4ed8;margin-top:10px;text-transform:uppercase;letter-spacing:2px;font-weight:800;">ACLC NORTHBAY</h2>'

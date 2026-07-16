@@ -222,8 +222,17 @@ Address: ${student.address}
 
         {/* Category badge — top right below controls */}
         <div className="absolute top-14 right-4 z-20">
-          <Badge className={`${isALS ? "bg-orange-500 shadow-orange-500/30" : "bg-blue-600 shadow-blue-500/30"} backdrop-blur-md text-white text-[8px] md:text-[9px] font-black px-3 py-1.5 uppercase tracking-widest border-none shadow-lg`}>
-            {student.student_category || "Regular"}
+          <Badge className={`${student.is_payee ? "bg-slate-500 shadow-slate-500/30" : isALS ? "bg-orange-500 shadow-orange-500/30" : "bg-blue-600 shadow-blue-500/30"} backdrop-blur-md text-white text-[8px] md:text-[9px] font-black px-3 py-1.5 uppercase tracking-widest border-none shadow-lg`}>
+            {(() => {
+              if (student.is_payee) return "PAYEE"
+              const vs = student.voucher_status || student.student_category || ""
+              const vl = vs.toLowerCase()
+              if (vl.includes("a, b, c") || vl.includes("a,b,c") || vl.includes("category a")) return "Category A, B, C"
+              if (vl.includes("d, e") || vl.includes("d,e") || vl.includes("category d")) return "Category D, E"
+              if (vl.includes("transferee")) return "Transferee"
+              if (vl.includes("esc") || vl.includes("private") || vl.includes("80%")) return "Category D, E"
+              return "Category A, B, C"
+            })()}
           </Badge>
         </div>
 

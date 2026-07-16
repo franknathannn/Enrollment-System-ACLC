@@ -81,11 +81,12 @@ export default function AdminDashboard() {
 
       fetchTimeoutRef.current = setTimeout(async () => {
         try {
-          const [studentsRes, configRes, sectionsRes, historyRes] = await Promise.all([
+          const [studentsRes, configRes, sectionsRes, historyRes, settingsRes] = await Promise.all([
             supabase.from('students').select('id,first_name,last_name,gender,strand,section,status,student_category,gwa_grade_10,two_by_two_url,created_at,preferred_shift,preferred_modality,last_school_attended,grade_level,is_archived,school_type,school_year').order('created_at', { ascending: false }),
             supabase.from('system_config').select('*').maybeSingle(),
-            supabase.from('sections').select('capacity'),
-            supabase.from('enrollment_history').select('*').order('school_year', { ascending: false })
+            supabase.from('sections').select('capacity,strand'),
+            supabase.from('enrollment_history').select('*').order('school_year', { ascending: false }),
+            supabase.from('system_settings').select('*').eq('setting_key', 'available_strands')
           ])
 
           if (studentsRes.error) {
@@ -105,7 +106,16 @@ export default function AdminDashboard() {
           if (historyRes.data) setHistory(historyRes.data)
 
           if (sectionsRes.data) {
-            const totalCapacity = sectionsRes.data.reduce((acc: number, s: any) => acc + (s.capacity || 40), 0) || 1000
+            // Only count capacity from sections whose strand is in the available strands list
+            // This prevents hidden strands (e.g. ABM, GAS, HUMSS) from inflating the max capacity
+            let availableStrands: string[] = ['ICT', 'GAS'] // default fallback
+            if (settingsRes.data && settingsRes.data.length > 0 && settingsRes.data[0].value_text) {
+              try {
+                availableStrands = JSON.parse(settingsRes.data[0].value_text)
+              } catch (e) {}
+            }
+            const visibleSections = sectionsRes.data.filter((s: any) => availableStrands.includes(s.strand))
+            const totalCapacity = visibleSections.reduce((acc: number, s: any) => acc + (s.capacity || 40), 0) || 1000
             setSystem({ currentCount: 0, capacity: totalCapacity })
           }
 
